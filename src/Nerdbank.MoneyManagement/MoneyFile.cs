@@ -21,12 +21,20 @@
         {
             Requires.NotNullOrEmpty(path, nameof(path));
             var db = new SQLiteConnection(path);
+
+            // Define all the tables (in case this is a new).
+            db.CreateTable<Account>();
+
             return new MoneyFile(db);
         }
 
-        public SQLiteConnection Connection => this.connection;
-
         public TableQuery<Account> Accounts => this.connection.Table<Account>();
+
+        public T Get<T>(object primaryKey) where T : new() => this.connection.Get<T>(primaryKey);
+
+        public int Insert(object obj) => this.connection.Insert(obj);
+
+        public int Update(object obj) => this.connection.Update(obj);
 
         public void Dispose()
         {
