@@ -5,14 +5,28 @@
     using SQLite;
     using Validation;
 
+    /// <summary>
+    /// Describes a bank account.
+    /// </summary>
     public class Account
     {
+        /// <summary>
+        /// Gets or sets the primary key of this database entity.
+        /// </summary>
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
+        /// <summary>
+        /// Gets or sets the name of this account.
+        /// </summary>
         [NotNull]
         public string Name { get; set; }
 
+        /// <summary>
+        /// Creates a new <see cref="Transaction"/> that describes a withdrawal from this account.
+        /// </summary>
+        /// <param name="amount">The amount to withdraw.</param>
+        /// <returns>The created transaction that has not yet been added to the database.</returns>
         public Transaction Withdraw(decimal amount)
         {
             Verify.Operation(this.Id != 0, "This account has not been saved yet.");
@@ -24,6 +38,11 @@
             };
         }
 
+        /// <summary>
+        /// Creates a new <see cref="Transaction"/> that describes a deposit to this account.
+        /// </summary>
+        /// <param name="amount">The amount to deposit.</param>
+        /// <returns>The created transaction that has not yet been added to the database.</returns>
         public Transaction Deposit(decimal amount)
         {
             Verify.Operation(this.Id != 0, "This account has not been saved yet.");
@@ -35,6 +54,12 @@
             };
         }
 
+        /// <summary>
+        /// Creates a new <see cref="Transaction"/> that describes a transfer from this account to another one.
+        /// </summary>
+        /// <param name="receivingAccount">The account to receive funds from this account.</param>
+        /// <param name="amount">The amount to transfer.</param>
+        /// <returns>The created transaction that has not yet been added to the database.</returns>
         public Transaction Transfer(Account receivingAccount, decimal amount)
         {
             Requires.NotNull(receivingAccount, nameof(receivingAccount));

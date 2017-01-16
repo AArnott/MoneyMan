@@ -7,16 +7,32 @@
     using SQLite;
     using Validation;
 
+    /// <summary>
+    /// Manages the database that stores accounts, transactions, and other entities.
+    /// </summary>
     public class MoneyFile : IDisposable
     {
+        /// <summary>
+        /// The SQLite database connection.
+        /// </summary>
         private readonly SQLiteConnection connection;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MoneyFile"/> class.
+        /// </summary>
+        /// <param name="connection">The database connection.</param>
         private MoneyFile(SQLiteConnection connection)
         {
             Requires.NotNull(connection, nameof(connection));
             this.connection = connection;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MoneyFile"/> class
+        /// that persists to a given file path.
+        /// </summary>
+        /// <param name="path">The path of the file to open or create.</param>
+        /// <returns>The new instance of <see cref="MoneyFile"/>.</returns>
         public static MoneyFile Load(string path)
         {
             Requires.NotNullOrEmpty(path, nameof(path));

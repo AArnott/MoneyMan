@@ -6,11 +6,24 @@
     using SQLite;
     using Validation;
 
+    /// <summary>
+    /// Describes a deposit, withdrawal, or transfer regarding one or two accounts.
+    /// </summary>
     public class Transaction
     {
+        /// <summary>
+        /// Gets or sets the primary key of this database entity.
+        /// </summary>
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
+        /// <summary>
+        /// The date the transaction is to be sorted by.
+        /// </summary>
+        /// <remarks>
+        /// The time component and timezone components are to be ignored.
+        /// We don't want a change in the user's timezone to change the date that is displayed for a transaction.
+        /// </remarks>
         [NotNull]
         public DateTimeOffset When { get; set; }
 
@@ -20,8 +33,14 @@
         [NotNull]
         public decimal Amount { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="Account.Id"/> of the account to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+        /// </summary>
         public int? CreditAccountId { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="Account.Id"/> of the account to be debited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+        /// </summary>
         public int? DebitAccountId { get; set; }
 
         private void Validate()
