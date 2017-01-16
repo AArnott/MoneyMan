@@ -60,20 +60,16 @@
         /// <summary>
         /// Calculates the sum of all accounts' final balances.
         /// </summary>
-        /// <param name="asOfDate">If specified, calculates the net worth as of a specific date, considering all transactions that occurred on the specified date.</param>
+        /// <param name="options">Query options</param>
         /// <returns>The net worth.</returns>
-        public decimal GetNetWorth(DateTime? asOfDate = null)
+        public decimal GetNetWorth(NetWorthQueryOptions options = default(NetWorthQueryOptions))
         {
-            // Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
-            // add a whole day, then drop the time component. We'll look for transactions that happened before that.
-            DateTime? dayAfter = asOfDate?.AddDays(1).Date;
-
             var args = new List<object>();
             string whenConstraint;
-            if (dayAfter.HasValue)
+            if (options.BeforeDate.HasValue)
             {
                 whenConstraint = $@" AND ""{nameof(Transaction.When)}"" < ?";
-                args.Add(dayAfter);
+                args.Add(options.BeforeDate);
             }else
             {
                 whenConstraint = string.Empty;
@@ -113,6 +109,24 @@
         public void Dispose()
         {
             this.connection.Dispose();
+        }
+
+        public struct NetWorthQueryOptions
+        {
+            /// <summary>
+            /// If specified, calculates the net worth as of a specific date, considering all transactions that occurred on the specified date.
+            /// </summary>
+            public DateTime? AsOfDate { get; set; }
+
+            /// <summary>
+            /// Gets the date to use as the constraint argument for when transactions must have posted *before*
+            /// in order to be included in the query.
+            /// </summary>
+            /// <remarks>
+            /// Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
+            /// add a whole day, then drop the time component. We'll look for transactions that happened before that.
+            /// </remarks>
+            internal DateTime? BeforeDate => this.AsOfDate?.AddDays(1).Date;
         }
     }
 }

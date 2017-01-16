@@ -80,7 +80,7 @@ public class MoneyFileFacts : IDisposable
             money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2016"), Amount = 4m });
             money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2222"), Amount = 0.3m });
 
-            Assert.Equal(6.2m, money.GetNetWorth(DateTime.Parse("2/1/2016")));
+            Assert.Equal(6.2m, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Parse("2/1/2016") }));
             Assert.Equal(1.9m, money.GetNetWorth());
         }
     }
