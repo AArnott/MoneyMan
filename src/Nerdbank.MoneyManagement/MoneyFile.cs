@@ -31,13 +31,30 @@
 
         public TableQuery<Account> Accounts => this.connection.Table<Account>();
 
+        public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
+
         public T Get<T>(object primaryKey) where T : new() => this.connection.Get<T>(primaryKey);
 
         public int Insert(object obj) => this.connection.Insert(obj);
 
         public int Update(object obj) => this.connection.Update(obj);
 
-        public int InsertOrReplace(object obj) => this.connection.InsertOrReplace(obj);
+        public decimal GetBalance(Account account)
+        {
+            Requires.NotNull(account, nameof(account));
+            Requires.Argument(account.Id > 0, nameof(account), "Account must be saved to the database first.");
+
+            decimal credits = this.connection.ExecuteScalar<decimal>($@"
+                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+                WHERE ""{nameof(Transaction.CreditAccountId)}"" = ?",
+                account.Id);
+            decimal debits = this.connection.ExecuteScalar<decimal>($@"
+                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+                WHERE ""{nameof(Transaction.DebitAccountId)}"" = ?",
+                account.Id);
+            decimal sum = credits - debits;
+            return sum;
+        }
 
         public void Dispose()
         {
