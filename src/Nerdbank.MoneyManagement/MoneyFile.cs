@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Text;
     using SQLite;
@@ -47,6 +48,8 @@
             return new MoneyFile(db);
         }
 
+        public TextWriter Logger { get; set; }
+
         public TableQuery<Account> Accounts => this.connection.Table<Account>();
 
         public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
@@ -85,12 +88,12 @@
             string sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
                 + $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.CreditAccountId)}"""
                 + SqlWhere(SqlAnd(constraints.Add(netCreditConstraint)));
-            decimal credits = this.connection.ExecuteScalar<decimal>(sql, args.ToArray());
+            decimal credits = this.ExecuteScalar<decimal>(sql, args.ToArray());
 
             sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
                 + $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.DebitAccountId)}"""
                 + SqlWhere(SqlAnd(constraints.Add(netDebitConstraint)));
-            decimal debits = this.connection.ExecuteScalar<decimal>(sql, args.ToArray());
+            decimal debits = this.ExecuteScalar<decimal>(sql, args.ToArray());
 
             decimal sum = credits - debits;
             return sum;
@@ -101,11 +104,11 @@
             Requires.NotNull(account, nameof(account));
             Requires.Argument(account.Id > 0, nameof(account), "Account must be saved to the database first.");
 
-            decimal credits = this.connection.ExecuteScalar<decimal>($@"
+            decimal credits = this.ExecuteScalar<decimal>($@"
                 SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.CreditAccountId)}"" = ?",
                 account.Id);
-            decimal debits = this.connection.ExecuteScalar<decimal>($@"
+            decimal debits = this.ExecuteScalar<decimal>($@"
                 SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.DebitAccountId)}"" = ?",
                 account.Id);
@@ -123,6 +126,17 @@
         private static string SqlAnd(IEnumerable<string> constraints) => SqlJoinConditionWithOperator("AND", constraints);
 
         private static string SqlWhere(string condition) => string.IsNullOrEmpty(condition) ? string.Empty : $" WHERE {condition}";
+
+        private T ExecuteScalar<T>(string query, params object[] args)
+        {
+            this.Logger?.WriteLine(query);
+            if (args?.Length > 0)
+            {
+                this.Logger?.WriteLine("With parameters: " + string.Join(", ", args));
+            }
+
+            return this.connection.ExecuteScalar<T>(query, args);
+        }
 
         public struct NetWorthQueryOptions
         {

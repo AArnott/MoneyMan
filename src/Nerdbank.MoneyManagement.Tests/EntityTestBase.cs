@@ -5,15 +5,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nerdbank.MoneyManagement;
+using Xunit.Abstractions;
 
 public class EntityTestBase : IDisposable
 {
     private readonly string dbPath;
+    private readonly ITestOutputHelper logger;
 
-    public EntityTestBase()
+    public EntityTestBase(ITestOutputHelper logger)
     {
+        this.logger = logger;
         this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         this.Money = MoneyFile.Load(this.dbPath);
+        this.Money.Logger = new TestLoggerAdapter(this.logger);
     }
 
     public void Dispose()

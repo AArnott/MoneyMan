@@ -5,9 +5,15 @@ using System.Text;
 using System.Threading.Tasks;
 using Nerdbank.MoneyManagement;
 using Xunit;
+using Xunit.Abstractions;
 
 public class TransactionFacts : EntityTestBase
 {
+    public TransactionFacts(ITestOutputHelper logger)
+        : base(logger)
+    {
+    }
+
     [Fact]
     public void BasicPropertiesSerialization()
     {
@@ -24,7 +30,7 @@ public class TransactionFacts : EntityTestBase
         Assert.Equal(amount, t.Amount);
 
         var t2 = this.SaveAndReload(t);
-        
+
         Assert.NotEqual(0, t.Id);
         Assert.Equal(t.Id, t2.Id);
         Assert.Equal(when, t2.When);

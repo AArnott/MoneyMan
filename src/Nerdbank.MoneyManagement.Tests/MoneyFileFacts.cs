@@ -2,13 +2,16 @@
 using System.IO;
 using Nerdbank.MoneyManagement;
 using Xunit;
+using Xunit.Abstractions;
 
 public class MoneyFileFacts : IDisposable
 {
+    private readonly ITestOutputHelper logger;
     private string dbPath;
 
-    public MoneyFileFacts()
+    public MoneyFileFacts(ITestOutputHelper logger)
     {
+        this.logger = logger;
         this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
     }
 
@@ -27,7 +30,7 @@ public class MoneyFileFacts : IDisposable
     [Fact]
     public void Load_NonExistentFile()
     {
-        using (var money = MoneyFile.Load(this.dbPath))
+        using (var money = this.Load())
         {
             Assert.NotNull(money);
             Assert.True(File.Exists(this.dbPath));
@@ -38,14 +41,14 @@ public class MoneyFileFacts : IDisposable
     public void Account_StoreReloadAndChange()
     {
         int accountKey;
-        using (var money = MoneyFile.Load(this.dbPath))
+        using (var money = this.Load())
         {
             var account = new Account { Name = "foo" };
             accountKey = money.Insert(account);
             Assert.Equal(accountKey, account.Id);
         }
 
-        using (var money = MoneyFile.Load(this.dbPath))
+        using (var money = this.Load())
         {
             var account = money.Accounts.First();
             Assert.Equal(accountKey, account.Id);
@@ -54,7 +57,7 @@ public class MoneyFileFacts : IDisposable
             money.Update(account);
         }
 
-        using (var money = MoneyFile.Load(this.dbPath))
+        using (var money = this.Load())
         {
             Assert.Equal(1, money.Accounts.Count());
             var account = money.Get<Account>(accountKey);
@@ -66,7 +69,7 @@ public class MoneyFileFacts : IDisposable
     [Fact]
     public void GetNetWorth_WithAndWithoutAsOfDate()
     {
-        using (var money = MoneyFile.Load(this.dbPath))
+        using (var money = this.Load())
         {
             var acct1 = new Account { Name = "first" };
             var acct2 = new Account { Name = "second" };
@@ -88,7 +91,7 @@ public class MoneyFileFacts : IDisposable
     [Fact]
     public void GetNetWorth_WithClosedAccounts()
     {
-        using (var money = MoneyFile.Load(this.dbPath))
+        using (var money = this.Load())
         {
             var openAccount = new Account { Name = "first" };
             var closedAccount = new Account { Name = "second", IsClosed = true };
@@ -100,5 +103,12 @@ public class MoneyFileFacts : IDisposable
             Assert.Equal(7, money.GetNetWorth());
             Assert.Equal(10, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { IncludeClosedAccounts = true }));
         }
+    }
+
+    private MoneyFile Load()
+    {
+        var file = MoneyFile.Load(this.dbPath);
+        file.Logger = new TestLoggerAdapter(this.logger);
+        return file;
     }
 }

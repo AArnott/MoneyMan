@@ -1,12 +1,14 @@
 ﻿using Nerdbank.MoneyManagement;
 using System;
 using Xunit;
+using Xunit.Abstractions;
 
 public class AccountFacts : EntityTestBase
 {
     private Account account;
 
-    public AccountFacts()
+    public AccountFacts(ITestOutputHelper logger)
+        : base(logger)
     {
         this.account = new Account
         {
