@@ -24,6 +24,7 @@
 
             // Define all the tables (in case this is a new).
             db.CreateTable<Account>();
+            db.CreateTable<Transaction>();
 
             return new MoneyFile(db);
         }
@@ -35,6 +36,8 @@
         public int Insert(object obj) => this.connection.Insert(obj);
 
         public int Update(object obj) => this.connection.Update(obj);
+
+        public int InsertOrReplace(object obj) => this.connection.InsertOrReplace(obj);
 
         public void Dispose()
         {
