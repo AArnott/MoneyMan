@@ -57,21 +57,38 @@
 
         public int Update(object obj) => this.connection.Update(obj);
 
-        public decimal GetNetWorth(DateTime asOfDate)
+        /// <summary>
+        /// Calculates the sum of all accounts' final balances.
+        /// </summary>
+        /// <param name="asOfDate">If specified, calculates the net worth as of a specific date, considering all transactions that occurred on the specified date.</param>
+        /// <returns>The net worth.</returns>
+        public decimal GetNetWorth(DateTime? asOfDate = null)
         {
             // Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
             // add a whole day, then drop the time component. We'll look for transactions that happened before that.
-            DateTime dayAfter = asOfDate.AddDays(1).Date;
+            DateTime? dayAfter = asOfDate?.AddDays(1).Date;
+
+            var args = new List<object>();
+            string whenConstraint;
+            if (dayAfter.HasValue)
+            {
+                whenConstraint = $@" AND ""{nameof(Transaction.When)}"" < ?";
+                args.Add(dayAfter);
+            }else
+            {
+                whenConstraint = string.Empty;
+            }
+
             decimal credits = this.connection.ExecuteScalar<decimal>($@"
                 SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL
-                AND ""{nameof(Transaction.When)}"" < ?",
-                dayAfter);
+                " + whenConstraint,
+                args.ToArray());
             decimal debits = this.connection.ExecuteScalar<decimal>($@"
                 SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL
-                AND ""{nameof(Transaction.When)}"" < ?",
-                dayAfter);
+                " + whenConstraint,
+                args.ToArray());
             decimal sum = credits - debits;
             return sum;
         }
