@@ -8,13 +8,15 @@ public class AccountFacts : EntityTestBase
 
     public AccountFacts()
     {
-        this.account = new Account();
+        this.account = new Account
+        {
+            Name = "test",
+        };
     }
 
     [Fact]
     public void BasicPropertiesSerialization()
     {
-        Assert.Null(this.account.Name);
         string expected = "some name";
         this.account.Name = expected;
 
@@ -25,6 +27,13 @@ public class AccountFacts : EntityTestBase
         Assert.NotEqual(0, this.account.Id);
         Assert.Equal(this.account.Id, account2.Id);
         Assert.Equal(expected, account2.Name);
+    }
+
+    [Fact]
+    public void Name_CannotBeNull()
+    {
+        var acct = new Account();
+        Assert.Throws<SQLite.NotNullConstraintViolationException>(() => this.Money.Insert(acct));
     }
 
     [Fact]
@@ -47,7 +56,7 @@ public class AccountFacts : EntityTestBase
     [Fact]
     public void GetBalance_AcrossAccounts()
     {
-        var account2 = new Account();
+        var account2 = new Account { Name = "test2" };
         this.Money.Insert(this.account);
         this.Money.Insert(account2);
 

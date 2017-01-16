@@ -11,11 +11,13 @@
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
+        [NotNull]
         public DateTimeOffset When { get; set; }
 
         /// <summary>
         /// Gets the amount of the transaction. Always non-negative.
         /// </summary>
+        [NotNull]
         public decimal Amount { get; set; }
 
         public int? CreditAccountId { get; set; }

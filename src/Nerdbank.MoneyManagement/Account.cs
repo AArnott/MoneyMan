@@ -10,6 +10,7 @@
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
+        [NotNull]
         public string Name { get; set; }
 
         public Transaction Withdraw(decimal amount)
