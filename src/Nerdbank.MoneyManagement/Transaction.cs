@@ -25,7 +25,7 @@
         /// We don't want a change in the user's timezone to change the date that is displayed for a transaction.
         /// </remarks>
         [NotNull]
-        public DateTimeOffset When { get; set; }
+        public DateTime When { get; set; }
 
         /// <summary>
         /// Gets the amount of the transaction. Always non-negative.

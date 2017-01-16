@@ -62,4 +62,24 @@ public class MoneyFileFacts : IDisposable
             Assert.Equal("bar", account.Name);
         }
     }
+
+    [Fact]
+    public void GetNetWorth()
+    {
+        using (var money = MoneyFile.Load(this.dbPath))
+        {
+            var acct1 = new Account { Name = "first" };
+            var acct2 = new Account { Name = "second" };
+
+            money.InsertAll(acct1, acct2);
+            money.Insert(new Transaction { CreditAccountId = acct1.Id, When = DateTime.Parse("1/1/2015"), Amount = 7 });
+            money.Insert(new Transaction { CreditAccountId = acct2.Id, When = DateTime.Parse("1/1/2016"), Amount = 3 });
+            money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016"), Amount = 2.5m });
+            money.Insert(new Transaction { DebitAccountId = acct1.Id, CreditAccountId = acct2.Id, When = DateTime.Parse("2/1/2016"), Amount = 1 });
+            money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016 11:59 PM"), Amount = 1.3m });
+            money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2016"), Amount = 4m });
+
+            Assert.Equal(6.2m, money.GetNetWorth(DateTime.Parse("2/1/2016")));
+        }
+    }
 }

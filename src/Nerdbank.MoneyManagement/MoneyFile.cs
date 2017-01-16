@@ -53,7 +53,28 @@
 
         public int Insert(object obj) => this.connection.Insert(obj);
 
+        public void InsertAll(params object[] objects) => this.connection.InsertAll(objects);
+
         public int Update(object obj) => this.connection.Update(obj);
+
+        public decimal GetNetWorth(DateTime asOfDate)
+        {
+            // Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
+            // add a whole day, then drop the time component. We'll look for transactions that happened before that.
+            DateTime dayAfter = asOfDate.AddDays(1).Date;
+            decimal credits = this.connection.ExecuteScalar<decimal>($@"
+                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+                WHERE ""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL
+                AND ""{nameof(Transaction.When)}"" < ?",
+                dayAfter);
+            decimal debits = this.connection.ExecuteScalar<decimal>($@"
+                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+                WHERE ""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL
+                AND ""{nameof(Transaction.When)}"" < ?",
+                dayAfter);
+            decimal sum = credits - debits;
+            return sum;
+        }
 
         public decimal GetBalance(Account account)
         {

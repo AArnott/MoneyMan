@@ -32,7 +32,7 @@
             Verify.Operation(this.Id != 0, "This account has not been saved yet.");
             return new Transaction
             {
-                When = DateTimeOffset.Now,
+                When = DateTime.Now,
                 DebitAccountId = this.Id,
                 Amount = amount,
             };
@@ -48,7 +48,7 @@
             Verify.Operation(this.Id != 0, "This account has not been saved yet.");
             return new Transaction
             {
-                When = DateTimeOffset.Now,
+                When = DateTime.Now,
                 CreditAccountId = this.Id,
                 Amount = amount,
             };

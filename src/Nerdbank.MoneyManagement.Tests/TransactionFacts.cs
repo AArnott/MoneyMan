@@ -11,7 +11,7 @@ public class TransactionFacts : EntityTestBase
     [Fact]
     public void BasicPropertiesSerialization()
     {
-        DateTimeOffset when = DateTimeOffset.Now;
+        DateTime when = DateTime.Now;
         decimal amount = 5.2398345m;
 
         var t = new Transaction
