@@ -64,7 +64,7 @@ public class MoneyFileFacts : IDisposable
     }
 
     [Fact]
-    public void GetNetWorth()
+    public void GetNetWorth_WithAndWithoutAsOfDate()
     {
         using (var money = MoneyFile.Load(this.dbPath))
         {
@@ -82,6 +82,23 @@ public class MoneyFileFacts : IDisposable
 
             Assert.Equal(6.2m, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Parse("2/1/2016") }));
             Assert.Equal(1.9m, money.GetNetWorth());
+        }
+    }
+
+    [Fact]
+    public void GetNetWorth_WithClosedAccounts()
+    {
+        using (var money = MoneyFile.Load(this.dbPath))
+        {
+            var openAccount = new Account { Name = "first" };
+            var closedAccount = new Account { Name = "second", IsClosed = true };
+
+            money.InsertAll(openAccount, closedAccount);
+            money.Insert(openAccount.Deposit(7));
+            money.Insert(closedAccount.Deposit(3));
+
+            Assert.Equal(7, money.GetNetWorth());
+            Assert.Equal(10, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { IncludeClosedAccounts = true }));
         }
     }
 }

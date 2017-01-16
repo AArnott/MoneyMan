@@ -23,6 +23,15 @@
         public string Name { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the account has been closed.
+        /// </summary>
+        /// <remarks>
+        /// Closed accounts are excluded from most queries by default.
+        /// </remarks>
+        [NotNull]
+        public bool IsClosed { get; set; }
+
+        /// <summary>
         /// Creates a new <see cref="Transaction"/> that describes a withdrawal from this account.
         /// </summary>
         /// <param name="amount">The amount to withdraw.</param>

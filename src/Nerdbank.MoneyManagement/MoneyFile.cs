@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using SQLite;
@@ -64,27 +66,32 @@
         /// <returns>The net worth.</returns>
         public decimal GetNetWorth(NetWorthQueryOptions options = default(NetWorthQueryOptions))
         {
-            var args = new List<object>();
-            string whenConstraint;
+            var constraints = ImmutableList<string>.Empty;
+            var args = ImmutableList<object>.Empty;
             if (options.BeforeDate.HasValue)
             {
-                whenConstraint = $@" AND ""{nameof(Transaction.When)}"" < ?";
-                args.Add(options.BeforeDate);
-            }else
-            {
-                whenConstraint = string.Empty;
+                constraints = constraints.Add($@"""{nameof(Transaction.When)}"" < ?");
+                args = args.Add(options.BeforeDate);
             }
 
-            decimal credits = this.connection.ExecuteScalar<decimal>($@"
-                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
-                WHERE ""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL
-                " + whenConstraint,
-                args.ToArray());
-            decimal debits = this.connection.ExecuteScalar<decimal>($@"
-                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
-                WHERE ""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL
-                " + whenConstraint,
-                args.ToArray());
+            if (!options.IncludeClosedAccounts)
+            {
+                constraints = constraints.Add($@"a.""{nameof(Account.IsClosed)}"" = 0");
+            }
+
+            string netCreditConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL";
+            string netDebitConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL";
+
+            string sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
+                + $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.CreditAccountId)}"""
+                + SqlWhere(SqlAnd(constraints.Add(netCreditConstraint)));
+            decimal credits = this.connection.ExecuteScalar<decimal>(sql, args.ToArray());
+
+            sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
+                + $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.DebitAccountId)}"""
+                + SqlWhere(SqlAnd(constraints.Add(netDebitConstraint)));
+            decimal debits = this.connection.ExecuteScalar<decimal>(sql, args.ToArray());
+
             decimal sum = credits - debits;
             return sum;
         }
@@ -111,12 +118,23 @@
             this.connection.Dispose();
         }
 
+        private static string SqlJoinConditionWithOperator(string op, IEnumerable<string> constraints) => string.Join($" {op} ", constraints.Select(c => $"({c})"));
+
+        private static string SqlAnd(IEnumerable<string> constraints) => SqlJoinConditionWithOperator("AND", constraints);
+
+        private static string SqlWhere(string condition) => string.IsNullOrEmpty(condition) ? string.Empty : $" WHERE {condition}";
+
         public struct NetWorthQueryOptions
         {
             /// <summary>
             /// If specified, calculates the net worth as of a specific date, considering all transactions that occurred on the specified date.
             /// </summary>
             public DateTime? AsOfDate { get; set; }
+
+            /// <summary>
+            /// Gets a value indicating whether to consider the balance of closed accounts when calculating net worth.
+            /// </summary>
+            public bool IncludeClosedAccounts { get; set; }
 
             /// <summary>
             /// Gets the date to use as the constraint argument for when transactions must have posted *before*
