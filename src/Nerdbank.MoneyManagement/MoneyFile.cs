@@ -45,6 +45,7 @@
             db.CreateTable<Account>();
             db.CreateTable<Transaction>();
             db.CreateTable<Payee>();
+            db.CreateTable<Category>();
 
             return new MoneyFile(db);
         }
