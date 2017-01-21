@@ -19,15 +19,18 @@ public class TransactionFacts : EntityTestBase
     {
         DateTime when = DateTime.Now;
         decimal amount = 5.2398345m;
+        int payeeId = 5;
 
         var t = new Transaction
         {
             When = when,
             Amount = amount,
+            PayeeId = payeeId,
         };
 
         Assert.Equal(when, t.When);
         Assert.Equal(amount, t.Amount);
+        Assert.Equal(payeeId, t.PayeeId);
 
         var t2 = this.SaveAndReload(t);
 
@@ -35,5 +38,6 @@ public class TransactionFacts : EntityTestBase
         Assert.Equal(t.Id, t2.Id);
         Assert.Equal(when, t2.When);
         Assert.Equal(amount, t2.Amount);
+        Assert.Equal(payeeId, t2.PayeeId);
     }
 }

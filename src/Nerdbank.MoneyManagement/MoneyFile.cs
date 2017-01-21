@@ -44,6 +44,7 @@
             // Define all the tables (in case this is a new).
             db.CreateTable<Account>();
             db.CreateTable<Transaction>();
+            db.CreateTable<Payee>();
 
             return new MoneyFile(db);
         }

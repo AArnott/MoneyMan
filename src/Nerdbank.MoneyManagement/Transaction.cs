@@ -34,6 +34,11 @@
         public decimal Amount { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="Payee.Id"/> of the <see cref="Payee"/> receiving or funding this transaction.
+        /// </summary>
+        public int? PayeeId { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="Account.Id"/> of the account to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
         /// </summary>
         public int? CreditAccountId { get; set; }
