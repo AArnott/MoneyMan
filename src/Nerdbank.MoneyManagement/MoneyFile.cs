@@ -1,4 +1,7 @@
-﻿namespace Nerdbank.MoneyManagement
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
+
+namespace Nerdbank.MoneyManagement
 {
     using System;
     using System.Collections.Generic;
@@ -30,6 +33,12 @@
             this.connection = connection;
         }
 
+        public TextWriter Logger { get; set; }
+
+        public TableQuery<Account> Accounts => this.connection.Table<Account>();
+
+        public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MoneyFile"/> class
         /// that persists to a given file path.
@@ -50,13 +59,11 @@
             return new MoneyFile(db);
         }
 
-        public TextWriter Logger { get; set; }
-
-        public TableQuery<Account> Accounts => this.connection.Table<Account>();
-
-        public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
-
-        public T Get<T>(object primaryKey) where T : new() => this.connection.Get<T>(primaryKey);
+        public T Get<T>(object primaryKey)
+            where T : new()
+        {
+            return this.connection.Get<T>(primaryKey);
+        }
 
         public int Insert(object obj) => this.connection.Insert(obj);
 
@@ -106,18 +113,19 @@
             Requires.NotNull(account, nameof(account));
             Requires.Argument(account.Id > 0, nameof(account), "Account must be saved to the database first.");
 
-            decimal credits = this.ExecuteScalar<decimal>($@"
-                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+            decimal credits = this.ExecuteScalar<decimal>(
+                $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.CreditAccountId)}"" = ?",
                 account.Id);
-            decimal debits = this.ExecuteScalar<decimal>($@"
-                SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+            decimal debits = this.ExecuteScalar<decimal>(
+                $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.DebitAccountId)}"" = ?",
                 account.Id);
             decimal sum = credits - debits;
             return sum;
         }
 
+        /// <inheritdoc/>
         public void Dispose()
         {
             this.connection.Dispose();
@@ -143,12 +151,13 @@
         public struct NetWorthQueryOptions
         {
             /// <summary>
-            /// If specified, calculates the net worth as of a specific date, considering all transactions that occurred on the specified date.
+            /// Gets or sets the date to calculate the net worth for, considering all transactions that occurred on the specified date.
+            /// If null, all transactions are considered regardless of when they occurred.
             /// </summary>
             public DateTime? AsOfDate { get; set; }
 
             /// <summary>
-            /// Gets a value indicating whether to consider the balance of closed accounts when calculating net worth.
+            /// Gets or sets a value indicating whether to consider the balance of closed accounts when calculating net worth.
             /// </summary>
             public bool IncludeClosedAccounts { get; set; }
 

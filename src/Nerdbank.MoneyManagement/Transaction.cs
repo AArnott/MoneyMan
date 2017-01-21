@@ -1,4 +1,7 @@
-﻿namespace Nerdbank.MoneyManagement
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
+
+namespace Nerdbank.MoneyManagement
 {
     using System;
     using System.Collections.Generic;
@@ -18,7 +21,7 @@
         public int Id { get; set; }
 
         /// <summary>
-        /// The date the transaction is to be sorted by.
+        /// Gets or sets the date the transaction is to be sorted by.
         /// </summary>
         /// <remarks>
         /// The time component and timezone components are to be ignored.
@@ -28,7 +31,7 @@
         public DateTime When { get; set; }
 
         /// <summary>
-        /// Gets the amount of the transaction. Always non-negative.
+        /// Gets or sets the amount of the transaction. Always non-negative.
         /// </summary>
         [NotNull]
         public decimal Amount { get; set; }

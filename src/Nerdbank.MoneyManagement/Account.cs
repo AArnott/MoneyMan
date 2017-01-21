@@ -1,4 +1,7 @@
-﻿namespace Nerdbank.MoneyManagement
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
+
+namespace Nerdbank.MoneyManagement
 {
     using System;
     using System.Linq;
@@ -74,7 +77,7 @@
             Requires.NotNull(receivingAccount, nameof(receivingAccount));
             Requires.Range(amount >= 0, nameof(amount), "Must be a non-negative amount.");
 
-            var transaction = Withdraw(amount);
+            var transaction = this.Withdraw(amount);
             transaction.CreditAccountId = receivingAccount.Id;
             return transaction;
         }
