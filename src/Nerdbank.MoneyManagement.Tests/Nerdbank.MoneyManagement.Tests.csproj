@@ -2,10 +2,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
+    <DocumentationFile>bin\$(Configuration)\Nerdbank.MoneyManagement.Tests.xml</DocumentationFile>
+    <CodeAnalysisRuleSet>MoneyMan.Tests.ruleset</CodeAnalysisRuleSet>
+    <NoWarn>1701;1702;1705;CS1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.0.0" />
     <PackageReference Include="xunit" Version="2.2.0-beta5-build3474" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0-beta5-build1225" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="..\Nerdbank.MoneyManagement\stylecop.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nerdbank.MoneyManagement\Nerdbank.MoneyManagement.csproj" />

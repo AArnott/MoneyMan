@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,6 +23,8 @@ public class EntityTestBase : IDisposable
         this.Money.Logger = new TestLoggerAdapter(this.logger);
     }
 
+    protected MoneyFile Money { get; set; }
+
     public void Dispose()
     {
         this.Money.Dispose();
@@ -32,6 +37,4 @@ public class EntityTestBase : IDisposable
         int pk = this.Money.Insert(obj);
         return this.Money.Get<T>(pk);
     }
-
-    protected MoneyFile Money { get; set; }
 }
