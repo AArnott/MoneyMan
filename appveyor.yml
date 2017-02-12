@@ -18,7 +18,7 @@ build_script:
     dotnet build -c Release
 test_script:
 - ps: >-
-    cd src\Nerdbank.MoneyManagement.Tests
+    cd Nerdbank.MoneyManagement.Tests
 
     dotnet test
 artifacts:
