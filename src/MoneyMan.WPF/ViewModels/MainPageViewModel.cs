@@ -1,20 +1,17 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace MoneyMan
+namespace MoneyMan.ViewModels
 {
     using System;
     using System.Collections.Generic;
-    using System.Configuration;
-    using System.Data;
     using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
-    using System.Windows;
+    using PCLCommandBase;
 
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : Application
+    public class MainPageViewModel : BindableBase
     {
+        public AccountsPanelViewModel AccountsPanel { get; set; } = new AccountsPanelViewModel();
     }
 }
