@@ -4,6 +4,7 @@ MoneyMan
 A financial money management library and applications that utilize it.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/mg755f28s2gcy2bg/branch/master?svg=true)](https://ci.appveyor.com/project/AArnott/moneyman/branch/master)
+[![Join the chat at https://gitter.im/MoneyManagement/Lobby](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/MoneyManagement/Lobby?utm_source=badge&utm_medium=badge&utm_content=badge)
 
 ## Why?
 Because Intuit Quicken has become far too old to work well on modern systems. It suffers from:
