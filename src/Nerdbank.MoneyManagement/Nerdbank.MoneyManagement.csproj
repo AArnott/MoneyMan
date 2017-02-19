@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
-    <DocumentationFile>bin\$(Configuration)\Nerdbank.MoneyManagement.xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>MoneyMan.ruleset</CodeAnalysisRuleSet>
     <NoWarn>1701;1702;1705;CS1591</NoWarn>
   </PropertyGroup>
@@ -12,9 +12,10 @@
     <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.19-beta" PrivateAssets="all" />
     <PackageReference Include="PCLCommandBase" Version="0.3.5" />
     <PackageReference Include="sqlite-net-pcl" Version="1.3.1" />
-    <PackageReference Include="Stylecop.Analyzers" Version="1.0.0" />
+    <PackageReference Include="Stylecop.Analyzers" Version="1.0.0" PrivateAssets="all" />
     <PackageReference Include="System.Collections.Immutable" Version="1.2.0" />
     <PackageReference Include="Validation" Version="2.3.7" />
   </ItemGroup>
