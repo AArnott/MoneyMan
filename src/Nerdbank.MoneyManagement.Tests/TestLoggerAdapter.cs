@@ -2,11 +2,8 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Validation;
 using Xunit.Abstractions;
 
@@ -21,6 +18,11 @@ internal class TestLoggerAdapter : TextWriter
     }
 
     public override Encoding Encoding => Encoding.Unicode;
+
+    public override void Write(char ch)
+    {
+        throw new NotImplementedException();
+    }
 
     public override void WriteLine()
     {

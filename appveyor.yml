@@ -5,10 +5,9 @@ configuration: Release
 environment:
   VisualStudioVersion: 15.0
 build_script:
-- msbuild /nologo /m src\MoneyMan.sln /t:Restore
-- msbuild /nologo /m src\MoneyMan.sln /t:Build
+- msbuild /nologo /m /v:quiet src\MoneyMan.sln /t:Restore
+- msbuild /nologo /m /v:minimal src\MoneyMan.sln /t:Build,Pack
 test_script:
-- cd Nerdbank.MoneyManagement.Tests
-- dotnet test
+- dotnet test src\Nerdbank.MoneyManagement.Tests\Nerdbank.MoneyManagement.Tests.csproj
 artifacts:
-- path: src\**\*.nupkg
+- path: bin\**\*.nupkg
