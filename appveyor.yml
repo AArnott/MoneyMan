@@ -1,16 +1,14 @@
-version: 99.0.{build}
+version: '{build}'
 skip_tags: true
-os: Visual Studio 2017 RC
+os: Visual Studio 2017
 configuration: Release
 environment:
   VisualStudioVersion: 15.0
 build_script:
-- ps: >-
-    msbuild /nologo /m src\MoneyMan.sln /t:Restore,Build
+- msbuild /nologo /m src\MoneyMan.sln /t:Restore
+- msbuild /nologo /m src\MoneyMan.sln /t:Build
 test_script:
-- ps: >-
-    cd Nerdbank.MoneyManagement.Tests
-
-    dotnet test
+- cd Nerdbank.MoneyManagement.Tests
+- dotnet test
 artifacts:
 - path: src\**\*.nupkg
