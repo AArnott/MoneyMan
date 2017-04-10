@@ -6,7 +6,8 @@ environment:
   VisualStudioVersion: 15.0
 build_script:
 - msbuild /nologo /m /v:quiet src\MoneyMan.sln /t:Restore
-- msbuild /nologo /m /v:minimal src\MoneyMan.sln /t:Build,Pack
+- msbuild /nologo /m /v:minimal src\MoneyMan.sln /t:Build
+- dotnet pack /nologo --no-build src\Nerdbank.MoneyManagement\Nerdbank.MoneyManagement.csproj
 test_script:
 - dotnet test src\Nerdbank.MoneyManagement.Tests\Nerdbank.MoneyManagement.Tests.csproj
 artifacts:
