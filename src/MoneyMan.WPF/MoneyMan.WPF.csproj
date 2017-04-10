@@ -14,31 +14,25 @@
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
+    <DocumentationFile Condition=" '$(MSBuildProjectName)' == 'MoneyMan.WPF' ">$(OutputPath)MoneyMan.xml</DocumentationFile>
+    <CodeAnalysisRuleSet>MoneyMan.WPF.ruleset</CodeAnalysisRuleSet>
+    <NoWarn>CS1591</NoWarn>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\MoneyMan.xml</DocumentationFile>
-    <NoWarn>CS1591</NoWarn>
-    <CodeAnalysisRuleSet>MoneyMan.WPF.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\MoneyMan.xml</DocumentationFile>
-    <NoWarn>CS1591</NoWarn>
-    <CodeAnalysisRuleSet>MoneyMan.WPF.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -115,8 +109,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NuGet.Build.Tasks.Workaround" Version="1.0.0" />
     <PackageReference Include="PCLCommandBase" Version="0.3.5" />
-    <PackageReference Include="ReadOnlySourceTree" Version="0.1.37-beta" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.0.0" PrivateAssets="all" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
