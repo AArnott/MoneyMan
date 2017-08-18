@@ -109,5 +109,6 @@
     <PackageReference Include="Microsoft.NuGet.Build.Tasks.Workaround" Version="1.0.0" />
     <PackageReference Include="PCLCommandBase" Version="0.3.5" />
   </ItemGroup>
+  <Target Name="Pack" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
