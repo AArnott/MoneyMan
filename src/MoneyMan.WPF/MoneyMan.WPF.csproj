@@ -17,7 +17,6 @@
     <DocumentationFile Condition=" '$(MSBuildProjectName)' == 'MoneyMan.WPF' ">$(OutputPath)MoneyMan.xml</DocumentationFile>
     <CodeAnalysisRuleSet>MoneyMan.WPF.ruleset</CodeAnalysisRuleSet>
     <NoWarn>CS1591</NoWarn>
-    <DebugType>portable</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
