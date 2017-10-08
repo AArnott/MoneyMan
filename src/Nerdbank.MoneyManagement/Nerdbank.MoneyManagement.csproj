@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.4;net46</TargetFrameworks>
     <CodeAnalysisRuleSet>MoneyMan.ruleset</CodeAnalysisRuleSet>
     <NoWarn>1701;1702;1705;CS1591</NoWarn>
   </PropertyGroup>

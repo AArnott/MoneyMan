@@ -1,34 +1,35 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace MoneyMan
+namespace MoneyMan.UWP
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
+    using System.IO;
     using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Windows;
-    using System.Windows.Controls;
-    using System.Windows.Data;
-    using System.Windows.Documents;
-    using System.Windows.Input;
-    using System.Windows.Media;
-    using System.Windows.Media.Imaging;
-    using System.Windows.Navigation;
-    using System.Windows.Shapes;
+    using System.Runtime.InteropServices.WindowsRuntime;
     using Nerdbank.MoneyManagement.ViewModels;
+    using Windows.Foundation;
+    using Windows.Foundation.Collections;
+    using Windows.UI.Xaml;
+    using Windows.UI.Xaml.Controls;
+    using Windows.UI.Xaml.Controls.Primitives;
+    using Windows.UI.Xaml.Data;
+    using Windows.UI.Xaml.Input;
+    using Windows.UI.Xaml.Media;
+    using Windows.UI.Xaml.Navigation;
 
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public partial class MainWindow : Window
+    public sealed partial class MainPage : Page
     {
-        public MainWindow()
+        public MainPage()
         {
             this.InitializeComponent();
 
+            this.ViewModel = new MainPageViewModel();
+            this.DataContext = this.ViewModel;
             this.ViewModel.AccountsPanel.Accounts.Add(new AccountViewModel { Name = "Checking" });
         }
 
