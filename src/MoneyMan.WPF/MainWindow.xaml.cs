@@ -18,7 +18,6 @@ namespace MoneyMan
     using System.Windows.Media.Imaging;
     using System.Windows.Navigation;
     using System.Windows.Shapes;
-    using MoneyMan.ViewModels;
     using Nerdbank.MoneyManagement.ViewModels;
 
     /// <summary>

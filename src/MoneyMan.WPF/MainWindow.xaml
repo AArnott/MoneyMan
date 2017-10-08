@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MoneyMan"
-        xmlns:vm="clr-namespace:MoneyMan.ViewModels"
+        xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
         mc:Ignorable="d"
         Title="Nerdbank Money Management" Height="350" Width="525">
     <Window.Resources>

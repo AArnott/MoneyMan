@@ -55,8 +55,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="ViewModels\AccountsPanelViewModel.cs" />
-    <Compile Include="ViewModels\MainPageViewModel.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -110,5 +108,6 @@
     <PackageReference Include="Microsoft.NuGet.Build.Tasks.Workaround" Version="1.0.0" />
     <PackageReference Include="PCLCommandBase" Version="0.3.5" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

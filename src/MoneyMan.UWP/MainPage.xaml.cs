@@ -8,6 +8,7 @@ namespace MoneyMan.UWP
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices.WindowsRuntime;
+    using Nerdbank.MoneyManagement.ViewModels;
     using Windows.Foundation;
     using Windows.Foundation.Collections;
     using Windows.UI.Xaml;
@@ -26,6 +27,16 @@ namespace MoneyMan.UWP
         public MainPage()
         {
             this.InitializeComponent();
+
+            this.ViewModel = new MainPageViewModel();
+            this.DataContext = this.ViewModel;
+            this.ViewModel.AccountsPanel.Accounts.Add(new AccountViewModel { Name = "Checking" });
+        }
+
+        public MainPageViewModel ViewModel
+        {
+            get => (MainPageViewModel)this.Resources["viewModel"];
+            set => this.Resources["viewModel"] = value;
         }
     }
 }
