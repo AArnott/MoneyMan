@@ -28,6 +28,14 @@ public class AccountsPanelViewModelTests : TestBase
     }
 
     [Fact]
+    public void AccountsPanel_RetainsAssignment()
+    {
+        var newValue = new ObservableCollection<AccountViewModel>();
+        this.viewModel.Accounts = newValue;
+        Assert.Same(newValue, this.viewModel.Accounts);
+    }
+
+    [Fact]
     public void Accounts_PropertyChanged()
     {
         TestUtilities.AssertPropertyChangedEvent(
