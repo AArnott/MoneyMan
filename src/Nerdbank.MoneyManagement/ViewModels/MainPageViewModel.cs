@@ -12,6 +12,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
     public class MainPageViewModel : BindableBase
     {
-        public AccountsPanelViewModel AccountsPanel { get; set; } = new AccountsPanelViewModel();
+        private AccountsPanelViewModel accountsPanel = new AccountsPanelViewModel();
+
+        public AccountsPanelViewModel AccountsPanel
+        {
+            get => this.accountsPanel;
+            set => this.SetProperty(ref this.accountsPanel, value);
+        }
     }
 }
