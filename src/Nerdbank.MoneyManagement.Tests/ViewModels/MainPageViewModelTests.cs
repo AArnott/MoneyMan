@@ -32,14 +32,10 @@ namespace Nerdbank.MoneyManagement.Tests.ViewModels
         [Fact]
         public void AccountsPanel_PropertyChanged()
         {
-            int eventRaised = 0;
-            this.viewModel.PropertyChanged += (s, e) =>
-            {
-                Assert.Equal(nameof(this.viewModel.AccountsPanel), e.PropertyName);
-                eventRaised++;
-            };
-            this.viewModel.AccountsPanel = new AccountsPanelViewModel();
-            Assert.Equal(1, eventRaised);
+            TestUtilities.AssertPropertyChangedEvent(
+                this.viewModel,
+                () => this.viewModel.AccountsPanel = new AccountsPanelViewModel(),
+                nameof(this.viewModel.AccountsPanel));
         }
     }
 }
