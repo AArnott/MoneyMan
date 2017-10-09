@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 public abstract class TestBase
 {
-    protected TestBase(ITestOutputHelper logger)
+    public TestBase(ITestOutputHelper logger)
     {
         this.Logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
