@@ -14,6 +14,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
     public class AccountsPanelViewModel : BindableBase
     {
-        public ObservableCollection<AccountViewModel> Accounts { get; set; } = new ObservableCollection<AccountViewModel>();
+        private ObservableCollection<AccountViewModel> accounts = new ObservableCollection<AccountViewModel>();
+
+        public ObservableCollection<AccountViewModel> Accounts
+        {
+            get => this.accounts;
+            set => this.SetProperty(ref this.accounts, value);
+        }
     }
 }

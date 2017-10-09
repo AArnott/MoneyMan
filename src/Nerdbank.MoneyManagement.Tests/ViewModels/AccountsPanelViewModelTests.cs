@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,30 +12,30 @@ using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class MainPageViewModelTests : TestBase
+public class AccountsPanelViewModelTests : TestBase
 {
-    private MainPageViewModel viewModel = new MainPageViewModel();
+    private AccountsPanelViewModel viewModel = new AccountsPanelViewModel();
 
-    public MainPageViewModelTests(ITestOutputHelper logger)
+    public AccountsPanelViewModelTests(ITestOutputHelper logger)
         : base(logger)
     {
     }
 
     [Fact]
-    public void AccountsPanel_NotNull()
+    public void Accounts_NotNull()
     {
-        Assert.NotNull(this.viewModel.AccountsPanel);
+        Assert.NotNull(this.viewModel.Accounts);
     }
 
     [Fact]
-    public void AccountsPanel_PropertyChanged()
+    public void Accounts_PropertyChanged()
     {
         TestUtilities.AssertPropertyChangedEvent(
             this.viewModel,
-            () => this.viewModel.AccountsPanel = new AccountsPanelViewModel(),
-            nameof(this.viewModel.AccountsPanel));
+            () => this.viewModel.Accounts = new ObservableCollection<AccountViewModel>(),
+            nameof(this.viewModel.Accounts));
         TestUtilities.AssertPropertyChangedEvent(
             this.viewModel,
-            () => this.viewModel.AccountsPanel = this.viewModel.AccountsPanel);
+            () => this.viewModel.Accounts = this.viewModel.Accounts);
     }
 }
