@@ -54,6 +54,9 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the <see cref="Category.Id"/> of the <see cref="Category"/> assigned to this transaction.
 		/// </summary>
+		/// <remarks>
+		/// Use <see cref="Category.Split"/> for the value where the transaction is split across multiple categories.
+		/// </remarks>
 		public int? CategoryId { get; set; }
 
 		/// <summary>

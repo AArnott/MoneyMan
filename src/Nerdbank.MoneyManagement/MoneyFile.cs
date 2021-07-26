@@ -39,6 +39,8 @@ namespace Nerdbank.MoneyManagement
 
 		public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
 
+		public TableQuery<SplitTransaction> SplitTransactions => this.connection.Table<SplitTransaction>();
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="MoneyFile"/> class
 		/// that persists to a given file path.
@@ -53,6 +55,7 @@ namespace Nerdbank.MoneyManagement
 			// Define all the tables (in case this is a new file).
 			db.CreateTable<Account>();
 			db.CreateTable<Transaction>();
+			db.CreateTable<SplitTransaction>();
 			db.CreateTable<Payee>();
 			db.CreateTable<Category>();
 
