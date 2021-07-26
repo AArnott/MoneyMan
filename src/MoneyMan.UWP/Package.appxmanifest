@@ -8,7 +8,7 @@
 
   <Identity
     Name="a309d0ef-833d-4344-8676-76256de3c959"
-    Publisher="CN=andarno"
+    Publisher="CN=Andrew Arnott"
     Version="1.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="a309d0ef-833d-4344-8676-76256de3c959" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>

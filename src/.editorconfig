@@ -1,0 +1,10 @@
+[*.cs]
+
+# SA1600: Elements should be documented
+dotnet_diagnostic.SA1600.severity = suggestion
+
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CS1591.severity = suggestion
+
+# SA1601: Partial elements should be documented
+dotnet_diagnostic.SA1601.severity = silent

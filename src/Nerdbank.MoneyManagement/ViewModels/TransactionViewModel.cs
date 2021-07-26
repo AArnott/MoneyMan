@@ -11,8 +11,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
     {
         private DateTime when;
         private decimal amount;
-        private AccountViewModel transferAccount;
-        private PayeeViewModel payee;
+        private AccountViewModel? transferAccount;
+        private PayeeViewModel? payee;
 
         public DateTime When
         {
@@ -26,13 +26,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
             set => this.SetProperty(ref this.amount, value);
         }
 
-        public AccountViewModel Transfer
+        public AccountViewModel? Transfer
         {
             get => this.transferAccount;
             set => this.SetProperty(ref this.transferAccount, value);
         }
 
-        public PayeeViewModel Payee
+        public PayeeViewModel? Payee
         {
             get => this.payee;
             set => this.SetProperty(ref this.payee, value);

@@ -1,0 +1,7 @@
+{
+  "version": "0.1-alpha",
+  "publicReleaseRefSpec": [
+    "^refs/heads/main$", // we release out of main
+    "^refs/heads/v\\d+(?:\\.\\d+)?$" // we also release out of vNN branches
+  ]
+}

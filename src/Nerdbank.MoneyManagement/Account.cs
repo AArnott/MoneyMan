@@ -23,7 +23,7 @@ namespace Nerdbank.MoneyManagement
         /// Gets or sets the name of this account.
         /// </summary>
         [NotNull]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the account has been closed.
@@ -77,7 +77,7 @@ namespace Nerdbank.MoneyManagement
             Requires.NotNull(receivingAccount, nameof(receivingAccount));
             Requires.Range(amount >= 0, nameof(amount), "Must be a non-negative amount.");
 
-            var transaction = this.Withdraw(amount);
+            Transaction? transaction = this.Withdraw(amount);
             transaction.CreditAccountId = receivingAccount.Id;
             return transaction;
         }

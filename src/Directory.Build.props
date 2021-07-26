@@ -1,25 +1,8 @@
 <Project>
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(MSBuildThisFileDirectory)..\bin\$(MSBuildProjectName)\</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)\$(Configuration)\</OutputPath>
-    
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <IsTestProject Condition=" $(MSBuildProjectName.Contains('Test')) ">true</IsTestProject>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, Directory.Build.props))\Directory.Build.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, Directory.Build.props))' != '' " />
 
-    <!-- Use Windows-style PDBs so it works with GitLink. -->
-    <DebugType>full</DebugType>
-    <DebugType Condition=" '$(Configuration)' == 'release' ">pdbonly</DebugType>
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
-  <ItemGroup>
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.25" PrivateAssets="all" />
-    <PackageReference Include="Stylecop.Analyzers" Version="1.1.0-beta004" PrivateAssets="all" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(IsTestProject)' != 'true' ">
-    <PackageReference Include="GitLink" Version="3.0.0" PrivateAssets="all" />
-  </ItemGroup>
+
 </Project>

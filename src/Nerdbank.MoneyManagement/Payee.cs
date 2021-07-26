@@ -11,6 +11,6 @@ namespace Nerdbank.MoneyManagement
         public int Id { get; set; }
 
         [NotNull]
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 }

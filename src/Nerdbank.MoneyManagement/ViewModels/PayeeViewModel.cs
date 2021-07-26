@@ -8,9 +8,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
     public class PayeeViewModel : BindableBase
     {
-        private string name;
+        private string? name;
 
-        public string Name
+        public string? Name
         {
             get => this.name;
             set => this.SetProperty(ref this.name, value);

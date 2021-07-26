@@ -33,7 +33,7 @@ namespace Nerdbank.MoneyManagement
             this.connection = connection;
         }
 
-        public TextWriter Logger { get; set; }
+        public TextWriter? Logger { get; set; }
 
         public TableQuery<Account> Accounts => this.connection.Table<Account>();
 
@@ -50,7 +50,7 @@ namespace Nerdbank.MoneyManagement
             Requires.NotNullOrEmpty(path, nameof(path));
             var db = new SQLiteConnection(path);
 
-            // Define all the tables (in case this is a new).
+            // Define all the tables (in case this is a new file).
             db.CreateTable<Account>();
             db.CreateTable<Transaction>();
             db.CreateTable<Payee>();
@@ -74,12 +74,12 @@ namespace Nerdbank.MoneyManagement
         /// <summary>
         /// Calculates the sum of all accounts' final balances.
         /// </summary>
-        /// <param name="options">Query options</param>
+        /// <param name="options">Query options.</param>
         /// <returns>The net worth.</returns>
         public decimal GetNetWorth(NetWorthQueryOptions options = default(NetWorthQueryOptions))
         {
-            var constraints = ImmutableList<string>.Empty;
-            var args = ImmutableList<object>.Empty;
+            ImmutableList<string> constraints = ImmutableList<string>.Empty;
+            ImmutableList<object> args = ImmutableList<object>.Empty;
             if (options.BeforeDate.HasValue)
             {
                 constraints = constraints.Add($@"""{nameof(Transaction.When)}"" < ?");

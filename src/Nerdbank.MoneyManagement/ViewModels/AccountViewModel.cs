@@ -8,10 +8,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
     public class AccountViewModel : BindableBase
     {
-        private string name;
+        private string? name;
         private bool isClosed;
 
-        public string Name
+        public string? Name
         {
             get => this.name;
             set => this.SetProperty(ref this.name, value);

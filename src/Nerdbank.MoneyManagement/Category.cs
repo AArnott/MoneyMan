@@ -20,7 +20,7 @@ namespace Nerdbank.MoneyManagement
         /// Gets or sets the name of this category.
         /// </summary>
         [NotNull]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets the optional parent category for this category.
