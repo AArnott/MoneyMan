@@ -1,22 +1,7 @@
-parameters:
-  WindowsPlatforms:
-  - x64
-  - x86
-  - ARM
-
 steps:
-
-- ${{ each Platform in parameters.WindowsPlatforms }}:
-  - task: VSBuild@1
-    displayName: Building ${{ Platform }}
-    inputs:
-      solution: '**\*.sln'
-      platform: ${{ Platform }}
-    condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 - script: dotnet build --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
   displayName: dotnet build
-  condition: ne(variables['Agent.OS'], 'Windows_NT')
 
 - script: dotnet pack --no-build -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/pack.binlog"
   displayName: dotnet pack
