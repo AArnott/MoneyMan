@@ -19,7 +19,7 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the <see cref="Transaction.Id"/> of the <see cref="Transaction"/> to which this split belongs.
 		/// </summary>
-		[NotNull]
+		[NotNull, Indexed]
 		public int TransactionId { get; set; }
 
 		/// <summary>

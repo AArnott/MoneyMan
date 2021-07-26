@@ -14,6 +14,8 @@ namespace Nerdbank.MoneyManagement
 	/// </summary>
 	public class Transaction
 	{
+		private decimal amount;
+
 		/// <summary>
 		/// Gets or sets the primary key of this database entity.
 		/// </summary>
@@ -39,7 +41,15 @@ namespace Nerdbank.MoneyManagement
 		/// Gets or sets the amount of the transaction. Always non-negative.
 		/// </summary>
 		[NotNull]
-		public decimal Amount { get; set; }
+		public decimal Amount
+		{
+			get => this.amount;
+			set
+			{
+				Requires.Range(value >= 0, nameof(value));
+				this.amount = value;
+			}
+		}
 
 		/// <summary>
 		/// Gets or sets a memo to go with this transaction.
@@ -57,6 +67,7 @@ namespace Nerdbank.MoneyManagement
 		/// <remarks>
 		/// Use <see cref="Category.Split"/> for the value where the transaction is split across multiple categories.
 		/// </remarks>
+		[Indexed]
 		public int? CategoryId { get; set; }
 
 		/// <summary>
@@ -74,10 +85,5 @@ namespace Nerdbank.MoneyManagement
 		/// </summary>
 		[NotNull]
 		public ClearedState Cleared { get; set; }
-
-		private void Validate()
-		{
-			Assumes.True(this.Amount >= 0, "Amount must be non-negative.");
-		}
 	}
 }

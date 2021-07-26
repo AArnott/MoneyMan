@@ -18,6 +18,12 @@ public class TransactionFacts : EntityTestBase
 	}
 
 	[Fact]
+	public void AmountRejectsNegativeValue()
+	{
+		Assert.Throws<ArgumentOutOfRangeException>(() => new Transaction { Amount = -1 });
+	}
+
+	[Fact]
 	public void BasicPropertiesSerialization()
 	{
 		DateTime when = DateTime.Now;

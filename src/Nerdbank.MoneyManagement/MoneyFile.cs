@@ -6,10 +6,9 @@ namespace Nerdbank.MoneyManagement
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Immutable;
-	using System.Diagnostics;
 	using System.IO;
 	using System.Linq;
-	using System.Text;
+	using System.Threading;
 	using SQLite;
 	using Validation;
 
@@ -134,6 +133,20 @@ namespace Nerdbank.MoneyManagement
 			this.connection.Dispose();
 		}
 
+		internal IEnumerable<IntegrityChecks.SplitTransactionTotalMismatch> FindBadSplitTransactions(CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			string sql = $@"SELECT t.*, (SELECT SUM(""{nameof(SplitTransaction.Amount)}"") FROM [{nameof(SplitTransaction)}] s WHERE s.[{nameof(SplitTransaction.TransactionId)}] == t.[{nameof(Transaction.Id)}]) AS ""{nameof(TransactionAndSplitTotal.SplitTotal)}"""
+				+ $@" FROM ""{nameof(Transaction)}"" t"
+				+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND t.[{nameof(Transaction.Amount)}] != [{nameof(TransactionAndSplitTotal.SplitTotal)}]";
+
+			foreach (TransactionAndSplitTotal badSplit in this.connection.Query<TransactionAndSplitTotal>(sql))
+			{
+				yield return new IntegrityChecks.SplitTransactionTotalMismatch(badSplit, badSplit.SplitTotal);
+				cancellationToken.ThrowIfCancellationRequested();
+			}
+		}
+
 		private static string SqlJoinConditionWithOperator(string op, IEnumerable<string> constraints) => string.Join($" {op} ", constraints.Select(c => $"({c})"));
 
 		private static string SqlAnd(IEnumerable<string> constraints) => SqlJoinConditionWithOperator("AND", constraints);
@@ -173,6 +186,11 @@ namespace Nerdbank.MoneyManagement
 			/// add a whole day, then drop the time component. We'll look for transactions that happened before that.
 			/// </remarks>
 			internal DateTime? BeforeDate => this.AsOfDate?.AddDays(1).Date;
+		}
+
+		private class TransactionAndSplitTotal : Transaction
+		{
+			public decimal SplitTotal { get; set; }
 		}
 	}
 }
