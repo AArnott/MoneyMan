@@ -14,36 +14,36 @@ using Xunit.Abstractions;
 
 public class MainPageViewModelTests : TestBase
 {
-    private MainPageViewModel viewModel = new MainPageViewModel();
+	private MainPageViewModel viewModel = new MainPageViewModel();
 
-    public MainPageViewModelTests(ITestOutputHelper logger)
-        : base(logger)
-    {
-    }
+	public MainPageViewModelTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+	}
 
-    [Fact]
-    public void AccountsPanel_NotNull()
-    {
-        Assert.NotNull(this.viewModel.AccountsPanel);
-    }
+	[Fact]
+	public void AccountsPanel_NotNull()
+	{
+		Assert.NotNull(this.viewModel.AccountsPanel);
+	}
 
-    [Fact]
-    public void AccountsPanel_RetainsAssignment()
-    {
-        var newValue = new AccountsPanelViewModel();
-        this.viewModel.AccountsPanel = newValue;
-        Assert.Same(newValue, this.viewModel.AccountsPanel);
-    }
+	[Fact]
+	public void AccountsPanel_RetainsAssignment()
+	{
+		var newValue = new AccountsPanelViewModel();
+		this.viewModel.AccountsPanel = newValue;
+		Assert.Same(newValue, this.viewModel.AccountsPanel);
+	}
 
-    [Fact]
-    public void AccountsPanel_PropertyChanged()
-    {
-        TestUtilities.AssertPropertyChangedEvent(
-            this.viewModel,
-            () => this.viewModel.AccountsPanel = new AccountsPanelViewModel(),
-            nameof(this.viewModel.AccountsPanel));
-        TestUtilities.AssertPropertyChangedEvent(
-            this.viewModel,
-            () => this.viewModel.AccountsPanel = this.viewModel.AccountsPanel);
-    }
+	[Fact]
+	public void AccountsPanel_PropertyChanged()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.AccountsPanel = new AccountsPanelViewModel(),
+			nameof(this.viewModel.AccountsPanel));
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.AccountsPanel = this.viewModel.AccountsPanel);
+	}
 }

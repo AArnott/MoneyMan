@@ -3,31 +3,31 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
-    using PCLCommandBase;
-    using Validation;
+	using PCLCommandBase;
+	using Validation;
 
-    public class PayeeViewModel : BindableBase
-    {
-        private string? name;
+	public class PayeeViewModel : BindableBase
+	{
+		private string? name;
 
-        public string? Name
-        {
-            get => this.name;
-            set => this.SetProperty(ref this.name, value);
-        }
+		public string? Name
+		{
+			get => this.name;
+			set => this.SetProperty(ref this.name, value);
+		}
 
-        public void ApplyTo(Payee payee)
-        {
-            Requires.NotNull(payee, nameof(payee));
+		public void ApplyTo(Payee payee)
+		{
+			Requires.NotNull(payee, nameof(payee));
 
-            payee.Name = this.name;
-        }
+			payee.Name = this.name;
+		}
 
-        public void CopyFrom(Payee payee)
-        {
-            Requires.NotNull(payee, nameof(payee));
+		public void CopyFrom(Payee payee)
+		{
+			Requires.NotNull(payee, nameof(payee));
 
-            this.Name = payee.Name;
-        }
-    }
+			this.Name = payee.Name;
+		}
+	}
 }

@@ -12,24 +12,24 @@ using Xunit.Abstractions;
 
 public class PayeeFacts : EntityTestBase
 {
-    public PayeeFacts(ITestOutputHelper logger)
-        : base(logger)
-    {
-    }
+	public PayeeFacts(ITestOutputHelper logger)
+		: base(logger)
+	{
+	}
 
-    [Fact]
-    public void BasicPropertiesSerialization()
-    {
-        const string name = "Some name";
-        var p = new Payee
-        {
-            Name = name,
-        };
+	[Fact]
+	public void BasicPropertiesSerialization()
+	{
+		const string name = "Some name";
+		var p = new Payee
+		{
+			Name = name,
+		};
 
-        Assert.Equal(name, p.Name);
+		Assert.Equal(name, p.Name);
 
-        Payee? p2 = this.SaveAndReload(p);
+		Payee? p2 = this.SaveAndReload(p);
 
-        Assert.Equal(name, p2.Name);
-    }
+		Assert.Equal(name, p2.Name);
+	}
 }

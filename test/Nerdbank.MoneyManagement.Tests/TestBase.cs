@@ -6,10 +6,10 @@ using Xunit.Abstractions;
 
 public abstract class TestBase
 {
-    public TestBase(ITestOutputHelper logger)
-    {
-        this.Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+	public TestBase(ITestOutputHelper logger)
+	{
+		this.Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+	}
 
-    protected ITestOutputHelper Logger { get; }
+	protected ITestOutputHelper Logger { get; }
 }

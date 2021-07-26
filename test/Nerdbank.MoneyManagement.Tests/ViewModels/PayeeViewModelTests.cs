@@ -14,54 +14,54 @@ using Xunit.Abstractions;
 
 public class PayeeViewModelTests : TestBase
 {
-    private PayeeViewModel viewModel = new PayeeViewModel();
+	private PayeeViewModel viewModel = new PayeeViewModel();
 
-    public PayeeViewModelTests(ITestOutputHelper logger)
-        : base(logger)
-    {
-    }
+	public PayeeViewModelTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+	}
 
-    [Fact]
-    public void Name()
-    {
-        Assert.Null(this.viewModel.Name);
-        this.viewModel.Name = "changed";
-        Assert.Equal("changed", this.viewModel.Name);
-    }
+	[Fact]
+	public void Name()
+	{
+		Assert.Null(this.viewModel.Name);
+		this.viewModel.Name = "changed";
+		Assert.Equal("changed", this.viewModel.Name);
+	}
 
-    [Fact]
-    public void Name_PropertyChanged()
-    {
-        TestUtilities.AssertPropertyChangedEvent(
-            this.viewModel,
-            () => this.viewModel.Name = "foo",
-            nameof(this.viewModel.Name));
-    }
+	[Fact]
+	public void Name_PropertyChanged()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.Name = "foo",
+			nameof(this.viewModel.Name));
+	}
 
-    [Fact]
-    public void ApplyTo()
-    {
-        Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
+	[Fact]
+	public void ApplyTo()
+	{
+		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
 
-        var payee = new Payee();
+		var payee = new Payee();
 
-        this.viewModel.Name = "some name";
+		this.viewModel.Name = "some name";
 
-        this.viewModel.ApplyTo(payee);
+		this.viewModel.ApplyTo(payee);
 
-        Assert.Equal(this.viewModel.Name, payee.Name);
-    }
+		Assert.Equal(this.viewModel.Name, payee.Name);
+	}
 
-    [Fact]
-    public void CopyFrom()
-    {
-        Assert.Throws<ArgumentNullException>(() => this.viewModel.CopyFrom(null!));
+	[Fact]
+	public void CopyFrom()
+	{
+		Assert.Throws<ArgumentNullException>(() => this.viewModel.CopyFrom(null!));
 
-        var payee = new Payee();
-        payee.Name = "some name";
+		var payee = new Payee();
+		payee.Name = "some name";
 
-        this.viewModel.CopyFrom(payee);
+		this.viewModel.CopyFrom(payee);
 
-        Assert.Equal(payee.Name, this.viewModel.Name);
-    }
+		Assert.Equal(payee.Name, this.viewModel.Name);
+	}
 }

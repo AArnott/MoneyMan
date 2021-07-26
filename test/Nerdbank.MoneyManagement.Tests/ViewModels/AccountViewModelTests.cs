@@ -14,78 +14,78 @@ using Xunit.Abstractions;
 
 public class AccountViewModelTests : TestBase
 {
-    private AccountViewModel viewModel = new AccountViewModel();
+	private AccountViewModel viewModel = new AccountViewModel();
 
-    public AccountViewModelTests(ITestOutputHelper logger)
-        : base(logger)
-    {
-    }
+	public AccountViewModelTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+	}
 
-    [Fact]
-    public void Name()
-    {
-        Assert.Null(this.viewModel.Name);
-        this.viewModel.Name = "changed";
-        Assert.Equal("changed", this.viewModel.Name);
-    }
+	[Fact]
+	public void Name()
+	{
+		Assert.Null(this.viewModel.Name);
+		this.viewModel.Name = "changed";
+		Assert.Equal("changed", this.viewModel.Name);
+	}
 
-    [Fact]
-    public void Name_PropertyChanged()
-    {
-        TestUtilities.AssertPropertyChangedEvent(
-            this.viewModel,
-            () => this.viewModel.Name = "foo",
-            nameof(this.viewModel.Name));
-    }
+	[Fact]
+	public void Name_PropertyChanged()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.Name = "foo",
+			nameof(this.viewModel.Name));
+	}
 
-    [Fact]
-    public void IsClosed()
-    {
-        Assert.False(this.viewModel.IsClosed);
-        this.viewModel.IsClosed = true;
-        Assert.True(this.viewModel.IsClosed);
-    }
+	[Fact]
+	public void IsClosed()
+	{
+		Assert.False(this.viewModel.IsClosed);
+		this.viewModel.IsClosed = true;
+		Assert.True(this.viewModel.IsClosed);
+	}
 
-    [Fact]
-    public void IsClosed_PropertyChanged()
-    {
-        TestUtilities.AssertPropertyChangedEvent(
-            this.viewModel,
-            () => this.viewModel.IsClosed = true,
-            nameof(this.viewModel.IsClosed));
-        TestUtilities.AssertPropertyChangedEvent(
-                this.viewModel,
-                () => this.viewModel.IsClosed = true);
-    }
+	[Fact]
+	public void IsClosed_PropertyChanged()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.IsClosed = true,
+			nameof(this.viewModel.IsClosed));
+		TestUtilities.AssertPropertyChangedEvent(
+				this.viewModel,
+				() => this.viewModel.IsClosed = true);
+	}
 
-    [Fact]
-    public void ApplyTo()
-    {
-        Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
+	[Fact]
+	public void ApplyTo()
+	{
+		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
 
-        var account = new Account();
+		var account = new Account();
 
-        this.viewModel.Name = "some name";
-        this.viewModel.IsClosed = !account.IsClosed;
+		this.viewModel.Name = "some name";
+		this.viewModel.IsClosed = !account.IsClosed;
 
-        this.viewModel.ApplyTo(account);
+		this.viewModel.ApplyTo(account);
 
-        Assert.Equal(this.viewModel.Name, account.Name);
-        Assert.Equal(this.viewModel.IsClosed, account.IsClosed);
-    }
+		Assert.Equal(this.viewModel.Name, account.Name);
+		Assert.Equal(this.viewModel.IsClosed, account.IsClosed);
+	}
 
-    [Fact]
-    public void CopyFrom()
-    {
-        Assert.Throws<ArgumentNullException>(() => this.viewModel.CopyFrom(null!));
+	[Fact]
+	public void CopyFrom()
+	{
+		Assert.Throws<ArgumentNullException>(() => this.viewModel.CopyFrom(null!));
 
-        var account = new Account();
-        account.Name = "some name";
-        account.IsClosed = !this.viewModel.IsClosed;
+		var account = new Account();
+		account.Name = "some name";
+		account.IsClosed = !this.viewModel.IsClosed;
 
-        this.viewModel.CopyFrom(account);
+		this.viewModel.CopyFrom(account);
 
-        Assert.Equal(account.Name, this.viewModel.Name);
-        Assert.Equal(account.IsClosed, this.viewModel.IsClosed);
-    }
+		Assert.Equal(account.Name, this.viewModel.Name);
+		Assert.Equal(account.IsClosed, this.viewModel.IsClosed);
+	}
 }

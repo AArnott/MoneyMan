@@ -14,36 +14,36 @@ using Xunit.Abstractions;
 
 public class AccountsPanelViewModelTests : TestBase
 {
-    private AccountsPanelViewModel viewModel = new AccountsPanelViewModel();
+	private AccountsPanelViewModel viewModel = new AccountsPanelViewModel();
 
-    public AccountsPanelViewModelTests(ITestOutputHelper logger)
-        : base(logger)
-    {
-    }
+	public AccountsPanelViewModelTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+	}
 
-    [Fact]
-    public void Accounts_NotNull()
-    {
-        Assert.NotNull(this.viewModel.Accounts);
-    }
+	[Fact]
+	public void Accounts_NotNull()
+	{
+		Assert.NotNull(this.viewModel.Accounts);
+	}
 
-    [Fact]
-    public void AccountsPanel_RetainsAssignment()
-    {
-        var newValue = new ObservableCollection<AccountViewModel>();
-        this.viewModel.Accounts = newValue;
-        Assert.Same(newValue, this.viewModel.Accounts);
-    }
+	[Fact]
+	public void AccountsPanel_RetainsAssignment()
+	{
+		var newValue = new ObservableCollection<AccountViewModel>();
+		this.viewModel.Accounts = newValue;
+		Assert.Same(newValue, this.viewModel.Accounts);
+	}
 
-    [Fact]
-    public void Accounts_PropertyChanged()
-    {
-        TestUtilities.AssertPropertyChangedEvent(
-            this.viewModel,
-            () => this.viewModel.Accounts = new ObservableCollection<AccountViewModel>(),
-            nameof(this.viewModel.Accounts));
-        TestUtilities.AssertPropertyChangedEvent(
-            this.viewModel,
-            () => this.viewModel.Accounts = this.viewModel.Accounts);
-    }
+	[Fact]
+	public void Accounts_PropertyChanged()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.Accounts = new ObservableCollection<AccountViewModel>(),
+			nameof(this.viewModel.Accounts));
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.Accounts = this.viewModel.Accounts);
+	}
 }

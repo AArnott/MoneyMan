@@ -3,23 +3,23 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using Nerdbank.MoneyManagement.ViewModels;
-    using PCLCommandBase;
+	using System;
+	using System.Collections.Generic;
+	using System.Collections.ObjectModel;
+	using System.Linq;
+	using System.Text;
+	using System.Threading.Tasks;
+	using Nerdbank.MoneyManagement.ViewModels;
+	using PCLCommandBase;
 
-    public class AccountsPanelViewModel : BindableBase
-    {
-        private ObservableCollection<AccountViewModel> accounts = new ObservableCollection<AccountViewModel>();
+	public class AccountsPanelViewModel : BindableBase
+	{
+		private ObservableCollection<AccountViewModel> accounts = new ObservableCollection<AccountViewModel>();
 
-        public ObservableCollection<AccountViewModel> Accounts
-        {
-            get => this.accounts;
-            set => this.SetProperty(ref this.accounts, value);
-        }
-    }
+		public ObservableCollection<AccountViewModel> Accounts
+		{
+			get => this.accounts;
+			set => this.SetProperty(ref this.accounts, value);
+		}
+	}
 }

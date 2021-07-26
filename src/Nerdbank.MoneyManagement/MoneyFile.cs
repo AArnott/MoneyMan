@@ -3,173 +3,173 @@
 
 namespace Nerdbank.MoneyManagement
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Immutable;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using SQLite;
-    using Validation;
+	using System;
+	using System.Collections.Generic;
+	using System.Collections.Immutable;
+	using System.Diagnostics;
+	using System.IO;
+	using System.Linq;
+	using System.Text;
+	using SQLite;
+	using Validation;
 
-    /// <summary>
-    /// Manages the database that stores accounts, transactions, and other entities.
-    /// </summary>
-    public class MoneyFile : IDisposable
-    {
-        /// <summary>
-        /// The SQLite database connection.
-        /// </summary>
-        private readonly SQLiteConnection connection;
+	/// <summary>
+	/// Manages the database that stores accounts, transactions, and other entities.
+	/// </summary>
+	public class MoneyFile : IDisposable
+	{
+		/// <summary>
+		/// The SQLite database connection.
+		/// </summary>
+		private readonly SQLiteConnection connection;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MoneyFile"/> class.
-        /// </summary>
-        /// <param name="connection">The database connection.</param>
-        private MoneyFile(SQLiteConnection connection)
-        {
-            Requires.NotNull(connection, nameof(connection));
-            this.connection = connection;
-        }
+		/// <summary>
+		/// Initializes a new instance of the <see cref="MoneyFile"/> class.
+		/// </summary>
+		/// <param name="connection">The database connection.</param>
+		private MoneyFile(SQLiteConnection connection)
+		{
+			Requires.NotNull(connection, nameof(connection));
+			this.connection = connection;
+		}
 
-        public TextWriter? Logger { get; set; }
+		public TextWriter? Logger { get; set; }
 
-        public TableQuery<Account> Accounts => this.connection.Table<Account>();
+		public TableQuery<Account> Accounts => this.connection.Table<Account>();
 
-        public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
+		public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MoneyFile"/> class
-        /// that persists to a given file path.
-        /// </summary>
-        /// <param name="path">The path of the file to open or create.</param>
-        /// <returns>The new instance of <see cref="MoneyFile"/>.</returns>
-        public static MoneyFile Load(string path)
-        {
-            Requires.NotNullOrEmpty(path, nameof(path));
-            var db = new SQLiteConnection(path);
+		/// <summary>
+		/// Initializes a new instance of the <see cref="MoneyFile"/> class
+		/// that persists to a given file path.
+		/// </summary>
+		/// <param name="path">The path of the file to open or create.</param>
+		/// <returns>The new instance of <see cref="MoneyFile"/>.</returns>
+		public static MoneyFile Load(string path)
+		{
+			Requires.NotNullOrEmpty(path, nameof(path));
+			var db = new SQLiteConnection(path);
 
-            // Define all the tables (in case this is a new file).
-            db.CreateTable<Account>();
-            db.CreateTable<Transaction>();
-            db.CreateTable<Payee>();
-            db.CreateTable<Category>();
+			// Define all the tables (in case this is a new file).
+			db.CreateTable<Account>();
+			db.CreateTable<Transaction>();
+			db.CreateTable<Payee>();
+			db.CreateTable<Category>();
 
-            return new MoneyFile(db);
-        }
+			return new MoneyFile(db);
+		}
 
-        public T Get<T>(object primaryKey)
-            where T : new()
-        {
-            return this.connection.Get<T>(primaryKey);
-        }
+		public T Get<T>(object primaryKey)
+			where T : new()
+		{
+			return this.connection.Get<T>(primaryKey);
+		}
 
-        public int Insert(object obj) => this.connection.Insert(obj);
+		public int Insert(object obj) => this.connection.Insert(obj);
 
-        public void InsertAll(params object[] objects) => this.connection.InsertAll(objects);
+		public void InsertAll(params object[] objects) => this.connection.InsertAll(objects);
 
-        public int Update(object obj) => this.connection.Update(obj);
+		public int Update(object obj) => this.connection.Update(obj);
 
-        /// <summary>
-        /// Calculates the sum of all accounts' final balances.
-        /// </summary>
-        /// <param name="options">Query options.</param>
-        /// <returns>The net worth.</returns>
-        public decimal GetNetWorth(NetWorthQueryOptions options = default(NetWorthQueryOptions))
-        {
-            ImmutableList<string> constraints = ImmutableList<string>.Empty;
-            ImmutableList<object> args = ImmutableList<object>.Empty;
-            if (options.BeforeDate.HasValue)
-            {
-                constraints = constraints.Add($@"""{nameof(Transaction.When)}"" < ?");
-                args = args.Add(options.BeforeDate);
-            }
+		/// <summary>
+		/// Calculates the sum of all accounts' final balances.
+		/// </summary>
+		/// <param name="options">Query options.</param>
+		/// <returns>The net worth.</returns>
+		public decimal GetNetWorth(NetWorthQueryOptions options = default(NetWorthQueryOptions))
+		{
+			ImmutableList<string> constraints = ImmutableList<string>.Empty;
+			ImmutableList<object> args = ImmutableList<object>.Empty;
+			if (options.BeforeDate.HasValue)
+			{
+				constraints = constraints.Add($@"""{nameof(Transaction.When)}"" < ?");
+				args = args.Add(options.BeforeDate);
+			}
 
-            if (!options.IncludeClosedAccounts)
-            {
-                constraints = constraints.Add($@"a.""{nameof(Account.IsClosed)}"" = 0");
-            }
+			if (!options.IncludeClosedAccounts)
+			{
+				constraints = constraints.Add($@"a.""{nameof(Account.IsClosed)}"" = 0");
+			}
 
-            string netCreditConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL";
-            string netDebitConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL";
+			string netCreditConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL";
+			string netDebitConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL";
 
-            string sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
-                + $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.CreditAccountId)}"""
-                + SqlWhere(SqlAnd(constraints.Add(netCreditConstraint)));
-            decimal credits = this.ExecuteScalar<decimal>(sql, args.ToArray());
+			string sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
+				+ $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.CreditAccountId)}"""
+				+ SqlWhere(SqlAnd(constraints.Add(netCreditConstraint)));
+			decimal credits = this.ExecuteScalar<decimal>(sql, args.ToArray());
 
-            sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
-                + $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.DebitAccountId)}"""
-                + SqlWhere(SqlAnd(constraints.Add(netDebitConstraint)));
-            decimal debits = this.ExecuteScalar<decimal>(sql, args.ToArray());
+			sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
+				+ $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.DebitAccountId)}"""
+				+ SqlWhere(SqlAnd(constraints.Add(netDebitConstraint)));
+			decimal debits = this.ExecuteScalar<decimal>(sql, args.ToArray());
 
-            decimal sum = credits - debits;
-            return sum;
-        }
+			decimal sum = credits - debits;
+			return sum;
+		}
 
-        public decimal GetBalance(Account account)
-        {
-            Requires.NotNull(account, nameof(account));
-            Requires.Argument(account.Id > 0, nameof(account), "Account must be saved to the database first.");
+		public decimal GetBalance(Account account)
+		{
+			Requires.NotNull(account, nameof(account));
+			Requires.Argument(account.Id > 0, nameof(account), "Account must be saved to the database first.");
 
-            decimal credits = this.ExecuteScalar<decimal>(
-                $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+			decimal credits = this.ExecuteScalar<decimal>(
+				$@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.CreditAccountId)}"" = ?",
-                account.Id);
-            decimal debits = this.ExecuteScalar<decimal>(
-                $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
+				account.Id);
+			decimal debits = this.ExecuteScalar<decimal>(
+				$@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
                 WHERE ""{nameof(Transaction.DebitAccountId)}"" = ?",
-                account.Id);
-            decimal sum = credits - debits;
-            return sum;
-        }
+				account.Id);
+			decimal sum = credits - debits;
+			return sum;
+		}
 
-        /// <inheritdoc/>
-        public void Dispose()
-        {
-            this.connection.Dispose();
-        }
+		/// <inheritdoc/>
+		public void Dispose()
+		{
+			this.connection.Dispose();
+		}
 
-        private static string SqlJoinConditionWithOperator(string op, IEnumerable<string> constraints) => string.Join($" {op} ", constraints.Select(c => $"({c})"));
+		private static string SqlJoinConditionWithOperator(string op, IEnumerable<string> constraints) => string.Join($" {op} ", constraints.Select(c => $"({c})"));
 
-        private static string SqlAnd(IEnumerable<string> constraints) => SqlJoinConditionWithOperator("AND", constraints);
+		private static string SqlAnd(IEnumerable<string> constraints) => SqlJoinConditionWithOperator("AND", constraints);
 
-        private static string SqlWhere(string condition) => string.IsNullOrEmpty(condition) ? string.Empty : $" WHERE {condition}";
+		private static string SqlWhere(string condition) => string.IsNullOrEmpty(condition) ? string.Empty : $" WHERE {condition}";
 
-        private T ExecuteScalar<T>(string query, params object[] args)
-        {
-            this.Logger?.WriteLine(query);
-            if (args?.Length > 0)
-            {
-                this.Logger?.WriteLine("With parameters: " + string.Join(", ", args));
-            }
+		private T ExecuteScalar<T>(string query, params object[] args)
+		{
+			this.Logger?.WriteLine(query);
+			if (args?.Length > 0)
+			{
+				this.Logger?.WriteLine("With parameters: " + string.Join(", ", args));
+			}
 
-            return this.connection.ExecuteScalar<T>(query, args);
-        }
+			return this.connection.ExecuteScalar<T>(query, args);
+		}
 
-        public struct NetWorthQueryOptions
-        {
-            /// <summary>
-            /// Gets or sets the date to calculate the net worth for, considering all transactions that occurred on the specified date.
-            /// If null, all transactions are considered regardless of when they occurred.
-            /// </summary>
-            public DateTime? AsOfDate { get; set; }
+		public struct NetWorthQueryOptions
+		{
+			/// <summary>
+			/// Gets or sets the date to calculate the net worth for, considering all transactions that occurred on the specified date.
+			/// If null, all transactions are considered regardless of when they occurred.
+			/// </summary>
+			public DateTime? AsOfDate { get; set; }
 
-            /// <summary>
-            /// Gets or sets a value indicating whether to consider the balance of closed accounts when calculating net worth.
-            /// </summary>
-            public bool IncludeClosedAccounts { get; set; }
+			/// <summary>
+			/// Gets or sets a value indicating whether to consider the balance of closed accounts when calculating net worth.
+			/// </summary>
+			public bool IncludeClosedAccounts { get; set; }
 
-            /// <summary>
-            /// Gets the date to use as the constraint argument for when transactions must have posted *before*
-            /// in order to be included in the query.
-            /// </summary>
-            /// <remarks>
-            /// Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
-            /// add a whole day, then drop the time component. We'll look for transactions that happened before that.
-            /// </remarks>
-            internal DateTime? BeforeDate => this.AsOfDate?.AddDays(1).Date;
-        }
-    }
+			/// <summary>
+			/// Gets the date to use as the constraint argument for when transactions must have posted *before*
+			/// in order to be included in the query.
+			/// </summary>
+			/// <remarks>
+			/// Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
+			/// add a whole day, then drop the time component. We'll look for transactions that happened before that.
+			/// </remarks>
+			internal DateTime? BeforeDate => this.AsOfDate?.AddDays(1).Date;
+		}
+	}
 }

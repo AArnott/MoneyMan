@@ -7,28 +7,28 @@ using Xunit.Abstractions;
 
 public class EntityTestBase : TestBase
 {
-    private readonly string dbPath;
+	private readonly string dbPath;
 
-    public EntityTestBase(ITestOutputHelper logger)
-        : base(logger)
-    {
-        this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        this.Money = MoneyFile.Load(this.dbPath);
-        this.Money.Logger = new TestLoggerAdapter(this.Logger);
-    }
+	public EntityTestBase(ITestOutputHelper logger)
+		: base(logger)
+	{
+		this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+		this.Money = MoneyFile.Load(this.dbPath);
+		this.Money.Logger = new TestLoggerAdapter(this.Logger);
+	}
 
-    protected MoneyFile Money { get; set; }
+	protected MoneyFile Money { get; set; }
 
-    public void Dispose()
-    {
-        this.Money.Dispose();
-        File.Delete(this.dbPath);
-    }
+	public void Dispose()
+	{
+		this.Money.Dispose();
+		File.Delete(this.dbPath);
+	}
 
-    public T SaveAndReload<T>(T obj)
-        where T : notnull, new()
-    {
-        int pk = this.Money.Insert(obj);
-        return this.Money.Get<T>(pk);
-    }
+	public T SaveAndReload<T>(T obj)
+		where T : notnull, new()
+	{
+		int pk = this.Money.Insert(obj);
+		return this.Money.Get<T>(pk);
+	}
 }
