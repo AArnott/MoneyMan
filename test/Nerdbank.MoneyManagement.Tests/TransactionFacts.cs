@@ -21,6 +21,7 @@ public class TransactionFacts : EntityTestBase
 	public void BasicPropertiesSerialization()
 	{
 		DateTime when = DateTime.Now;
+		const int checkNo = 3;
 		const decimal amount = 5.2398345m;
 		const int payeeId = 5;
 		const int categoryId = 8;
@@ -29,6 +30,7 @@ public class TransactionFacts : EntityTestBase
 		var t = new Transaction
 		{
 			When = when,
+			CheckNumber = checkNo,
 			Amount = amount,
 			PayeeId = payeeId,
 			CategoryId = categoryId,
@@ -36,6 +38,7 @@ public class TransactionFacts : EntityTestBase
 		};
 
 		Assert.Equal(when, t.When);
+		Assert.Equal(checkNo, t.CheckNumber);
 		Assert.Equal(amount, t.Amount);
 		Assert.Equal(payeeId, t.PayeeId);
 		Assert.Equal(categoryId, t.CategoryId);
@@ -46,6 +49,7 @@ public class TransactionFacts : EntityTestBase
 		Assert.NotEqual(0, t.Id);
 		Assert.Equal(t.Id, t2.Id);
 		Assert.Equal(when, t2.When);
+		Assert.Equal(checkNo, t2.CheckNumber);
 		Assert.Equal(amount, t2.Amount);
 		Assert.Equal(payeeId, t2.PayeeId);
 		Assert.Equal(categoryId, t2.CategoryId);

@@ -22,6 +22,8 @@ public class TransactionViewModelTests : TestBase
 
 	private DateTime when = DateTime.Now - TimeSpan.FromDays(3);
 
+	private int? checkNumber = 15;
+
 	public TransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
@@ -35,6 +37,16 @@ public class TransactionViewModelTests : TestBase
 			() => this.viewModel.When = this.when,
 			nameof(this.viewModel.When));
 		Assert.Equal(this.when, this.viewModel.When);
+	}
+
+	[Fact]
+	public void CheckNumber()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.CheckNumber = this.checkNumber,
+			nameof(this.viewModel.CheckNumber));
+		Assert.Equal(this.checkNumber, this.viewModel.CheckNumber);
 	}
 
 	[Fact]
@@ -78,11 +90,13 @@ public class TransactionViewModelTests : TestBase
 		this.viewModel.Amount = this.amount;
 		this.viewModel.When = this.when;
 		this.viewModel.Memo = this.memo;
+		this.viewModel.CheckNumber = this.checkNumber;
 		this.viewModel.ApplyTo(transaction);
 
 		Assert.Equal(this.amount, transaction.Amount);
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(this.memo, transaction.Memo);
+		Assert.Equal(this.checkNumber, transaction.CheckNumber);
 	}
 
 	[Fact]
@@ -95,6 +109,7 @@ public class TransactionViewModelTests : TestBase
 			Amount = this.amount,
 			When = this.when,
 			Memo = this.memo,
+			CheckNumber = this.checkNumber,
 		};
 
 		this.viewModel.CopyFrom(transaction);
@@ -102,5 +117,6 @@ public class TransactionViewModelTests : TestBase
 		Assert.Equal(transaction.Amount, this.viewModel.Amount);
 		Assert.Equal(transaction.When, this.viewModel.When);
 		Assert.Equal(transaction.Memo, this.viewModel.Memo);
+		Assert.Equal(transaction.CheckNumber, this.viewModel.CheckNumber);
 	}
 }

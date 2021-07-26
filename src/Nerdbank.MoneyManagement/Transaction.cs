@@ -31,6 +31,11 @@ namespace Nerdbank.MoneyManagement
 		public DateTime When { get; set; }
 
 		/// <summary>
+		/// Gets or sets the check number associated with this transaction, if any.
+		/// </summary>
+		public int? CheckNumber { get; set; }
+
+		/// <summary>
 		/// Gets or sets the amount of the transaction. Always non-negative.
 		/// </summary>
 		[NotNull]

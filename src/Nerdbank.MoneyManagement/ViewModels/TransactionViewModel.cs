@@ -10,6 +10,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class TransactionViewModel : BindableBase
 	{
 		private DateTime when;
+		private int? checkNumber;
 		private decimal amount;
 		private string? memo;
 		private AccountViewModel? transferAccount;
@@ -19,6 +20,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.when;
 			set => this.SetProperty(ref this.when, value);
+		}
+
+		public int? CheckNumber
+		{
+			get => this.checkNumber;
+			set => this.SetProperty(ref this.checkNumber, value);
 		}
 
 		public decimal Amount
@@ -52,6 +59,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.When = this.When;
 			transaction.Amount = this.Amount;
 			transaction.Memo = this.Memo;
+			transaction.CheckNumber = this.CheckNumber;
 		}
 
 		public void CopyFrom(Transaction transaction)
@@ -61,6 +69,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.When = transaction.When;
 			this.Amount = transaction.Amount;
 			this.Memo = transaction.Memo;
+			this.CheckNumber = transaction.CheckNumber;
 		}
 	}
 }
