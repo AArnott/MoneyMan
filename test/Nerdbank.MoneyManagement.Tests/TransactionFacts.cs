@@ -26,6 +26,7 @@ public class TransactionFacts : EntityTestBase
 		const int payeeId = 5;
 		const int categoryId = 8;
 		const string memo = "Some memo";
+		const ClearedState cleared = ClearedState.Reconciled;
 
 		var t = new Transaction
 		{
@@ -35,6 +36,7 @@ public class TransactionFacts : EntityTestBase
 			PayeeId = payeeId,
 			CategoryId = categoryId,
 			Memo = memo,
+			Cleared = cleared,
 		};
 
 		Assert.Equal(when, t.When);
@@ -43,6 +45,7 @@ public class TransactionFacts : EntityTestBase
 		Assert.Equal(payeeId, t.PayeeId);
 		Assert.Equal(categoryId, t.CategoryId);
 		Assert.Equal(memo, t.Memo);
+		Assert.Equal(cleared, t.Cleared);
 
 		Transaction? t2 = this.SaveAndReload(t);
 
@@ -54,5 +57,6 @@ public class TransactionFacts : EntityTestBase
 		Assert.Equal(payeeId, t2.PayeeId);
 		Assert.Equal(categoryId, t2.CategoryId);
 		Assert.Equal(memo, t2.Memo);
+		Assert.Equal(cleared, t2.Cleared);
 	}
 }

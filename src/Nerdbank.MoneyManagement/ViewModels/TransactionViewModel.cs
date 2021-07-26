@@ -13,6 +13,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private int? checkNumber;
 		private decimal amount;
 		private string? memo;
+		private ClearedState cleared;
 		private AccountViewModel? transferAccount;
 		private PayeeViewModel? payee;
 
@@ -40,6 +41,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.memo, value);
 		}
 
+		public ClearedState Cleared
+		{
+			get => this.cleared;
+			set => this.SetProperty(ref this.cleared, value);
+		}
+
 		public AccountViewModel? Transfer
 		{
 			get => this.transferAccount;
@@ -60,6 +67,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.Amount = this.Amount;
 			transaction.Memo = this.Memo;
 			transaction.CheckNumber = this.CheckNumber;
+			transaction.Cleared = this.Cleared;
 		}
 
 		public void CopyFrom(Transaction transaction)
@@ -70,6 +78,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.Amount = transaction.Amount;
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
+			this.Cleared = transaction.Cleared;
 		}
 	}
 }

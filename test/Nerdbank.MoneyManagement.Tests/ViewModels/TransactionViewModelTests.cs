@@ -24,6 +24,8 @@ public class TransactionViewModelTests : TestBase
 
 	private int? checkNumber = 15;
 
+	private ClearedState cleared = ClearedState.Cleared;
+
 	public TransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
@@ -70,6 +72,16 @@ public class TransactionViewModelTests : TestBase
 	}
 
 	[Fact]
+	public void Cleared()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.Cleared = this.cleared,
+			nameof(this.viewModel.Cleared));
+		Assert.Equal(this.cleared, this.viewModel.Cleared);
+	}
+
+	[Fact]
 	public void Payee()
 	{
 		var payeeViewModel = new PayeeViewModel();
@@ -91,12 +103,14 @@ public class TransactionViewModelTests : TestBase
 		this.viewModel.When = this.when;
 		this.viewModel.Memo = this.memo;
 		this.viewModel.CheckNumber = this.checkNumber;
+		this.viewModel.Cleared = this.cleared;
 		this.viewModel.ApplyTo(transaction);
 
 		Assert.Equal(this.amount, transaction.Amount);
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(this.memo, transaction.Memo);
 		Assert.Equal(this.checkNumber, transaction.CheckNumber);
+		Assert.Equal(this.cleared, transaction.Cleared);
 	}
 
 	[Fact]
@@ -110,6 +124,7 @@ public class TransactionViewModelTests : TestBase
 			When = this.when,
 			Memo = this.memo,
 			CheckNumber = this.checkNumber,
+			Cleared = this.cleared,
 		};
 
 		this.viewModel.CopyFrom(transaction);
@@ -118,5 +133,6 @@ public class TransactionViewModelTests : TestBase
 		Assert.Equal(transaction.When, this.viewModel.When);
 		Assert.Equal(transaction.Memo, this.viewModel.Memo);
 		Assert.Equal(transaction.CheckNumber, this.viewModel.CheckNumber);
+		Assert.Equal(transaction.Cleared, this.viewModel.Cleared);
 	}
 }

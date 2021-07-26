@@ -66,6 +66,12 @@ namespace Nerdbank.MoneyManagement
 		/// </summary>
 		public int? DebitAccountId { get; set; }
 
+		/// <summary>
+		/// Gets or sets the cleared or reconciled state of the transaction.
+		/// </summary>
+		[NotNull]
+		public ClearedState Cleared { get; set; }
+
 		private void Validate()
 		{
 			Assumes.True(this.Amount >= 0, "Amount must be non-negative.");
