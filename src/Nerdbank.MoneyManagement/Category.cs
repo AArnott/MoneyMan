@@ -25,6 +25,6 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the optional parent category for this category.
 		/// </summary>
-		public int ParentCategoryId { get; set; }
+		public int? ParentCategoryId { get; set; }
 	}
 }
