@@ -21,9 +21,10 @@ public class TransactionFacts : EntityTestBase
 	public void BasicPropertiesSerialization()
 	{
 		DateTime when = DateTime.Now;
-		decimal amount = 5.2398345m;
-		int payeeId = 5;
-		int categoryId = 8;
+		const decimal amount = 5.2398345m;
+		const int payeeId = 5;
+		const int categoryId = 8;
+		const string memo = "Some memo";
 
 		var t = new Transaction
 		{
@@ -31,12 +32,14 @@ public class TransactionFacts : EntityTestBase
 			Amount = amount,
 			PayeeId = payeeId,
 			CategoryId = categoryId,
+			Memo = memo,
 		};
 
 		Assert.Equal(when, t.When);
 		Assert.Equal(amount, t.Amount);
 		Assert.Equal(payeeId, t.PayeeId);
 		Assert.Equal(categoryId, t.CategoryId);
+		Assert.Equal(memo, t.Memo);
 
 		Transaction? t2 = this.SaveAndReload(t);
 
@@ -46,5 +49,6 @@ public class TransactionFacts : EntityTestBase
 		Assert.Equal(amount, t2.Amount);
 		Assert.Equal(payeeId, t2.PayeeId);
 		Assert.Equal(categoryId, t2.CategoryId);
+		Assert.Equal(memo, t2.Memo);
 	}
 }

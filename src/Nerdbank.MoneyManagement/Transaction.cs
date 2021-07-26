@@ -37,6 +37,11 @@ namespace Nerdbank.MoneyManagement
 		public decimal Amount { get; set; }
 
 		/// <summary>
+		/// Gets or sets a memo to go with this transaction.
+		/// </summary>
+		public string? Memo { get; set; }
+
+		/// <summary>
 		/// Gets or sets the <see cref="Payee.Id"/> of the <see cref="Payee"/> receiving or funding this transaction.
 		/// </summary>
 		public int? PayeeId { get; set; }

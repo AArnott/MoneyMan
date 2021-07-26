@@ -18,6 +18,8 @@ public class TransactionViewModelTests : TestBase
 
 	private decimal amount = 5.5m;
 
+	private string memo = "Some memo";
+
 	private DateTime when = DateTime.Now - TimeSpan.FromDays(3);
 
 	public TransactionViewModelTests(ITestOutputHelper logger)
@@ -46,6 +48,16 @@ public class TransactionViewModelTests : TestBase
 	}
 
 	[Fact]
+	public void Memo()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.Memo = this.memo,
+			nameof(this.viewModel.Memo));
+		Assert.Equal(this.memo, this.viewModel.Memo);
+	}
+
+	[Fact]
 	public void Payee()
 	{
 		var payeeViewModel = new PayeeViewModel();
@@ -65,10 +77,12 @@ public class TransactionViewModelTests : TestBase
 
 		this.viewModel.Amount = this.amount;
 		this.viewModel.When = this.when;
+		this.viewModel.Memo = this.memo;
 		this.viewModel.ApplyTo(transaction);
 
 		Assert.Equal(this.amount, transaction.Amount);
 		Assert.Equal(this.when, transaction.When);
+		Assert.Equal(this.memo, transaction.Memo);
 	}
 
 	[Fact]
@@ -80,11 +94,13 @@ public class TransactionViewModelTests : TestBase
 		{
 			Amount = this.amount,
 			When = this.when,
+			Memo = this.memo,
 		};
 
 		this.viewModel.CopyFrom(transaction);
 
 		Assert.Equal(transaction.Amount, this.viewModel.Amount);
 		Assert.Equal(transaction.When, this.viewModel.When);
+		Assert.Equal(transaction.Memo, this.viewModel.Memo);
 	}
 }

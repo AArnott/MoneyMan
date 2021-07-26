@@ -11,6 +11,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	{
 		private DateTime when;
 		private decimal amount;
+		private string? memo;
 		private AccountViewModel? transferAccount;
 		private PayeeViewModel? payee;
 
@@ -24,6 +25,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.amount;
 			set => this.SetProperty(ref this.amount, value);
+		}
+
+		public string? Memo
+		{
+			get => this.memo;
+			set => this.SetProperty(ref this.memo, value);
 		}
 
 		public AccountViewModel? Transfer
@@ -44,6 +51,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			transaction.When = this.When;
 			transaction.Amount = this.Amount;
+			transaction.Memo = this.Memo;
 		}
 
 		public void CopyFrom(Transaction transaction)
@@ -52,6 +60,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.When = transaction.When;
 			this.Amount = transaction.Amount;
+			this.Memo = transaction.Memo;
 		}
 	}
 }
