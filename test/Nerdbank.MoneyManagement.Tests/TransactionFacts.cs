@@ -18,33 +18,51 @@ public class TransactionFacts : EntityTestBase
 	}
 
 	[Fact]
+	public void AmountRejectsNegativeValue()
+	{
+		Assert.Throws<ArgumentOutOfRangeException>(() => new Transaction { Amount = -1 });
+	}
+
+	[Fact]
 	public void BasicPropertiesSerialization()
 	{
 		DateTime when = DateTime.Now;
-		decimal amount = 5.2398345m;
-		int payeeId = 5;
-		int categoryId = 8;
+		const int checkNo = 3;
+		const decimal amount = 5.2398345m;
+		const int payeeId = 5;
+		const int categoryId = 8;
+		const string memo = "Some memo";
+		const ClearedState cleared = ClearedState.Reconciled;
 
 		var t = new Transaction
 		{
 			When = when,
+			CheckNumber = checkNo,
 			Amount = amount,
 			PayeeId = payeeId,
 			CategoryId = categoryId,
+			Memo = memo,
+			Cleared = cleared,
 		};
 
 		Assert.Equal(when, t.When);
+		Assert.Equal(checkNo, t.CheckNumber);
 		Assert.Equal(amount, t.Amount);
 		Assert.Equal(payeeId, t.PayeeId);
 		Assert.Equal(categoryId, t.CategoryId);
+		Assert.Equal(memo, t.Memo);
+		Assert.Equal(cleared, t.Cleared);
 
 		Transaction? t2 = this.SaveAndReload(t);
 
 		Assert.NotEqual(0, t.Id);
 		Assert.Equal(t.Id, t2.Id);
 		Assert.Equal(when, t2.When);
+		Assert.Equal(checkNo, t2.CheckNumber);
 		Assert.Equal(amount, t2.Amount);
 		Assert.Equal(payeeId, t2.PayeeId);
 		Assert.Equal(categoryId, t2.CategoryId);
+		Assert.Equal(memo, t2.Memo);
+		Assert.Equal(cleared, t2.Cleared);
 	}
 }

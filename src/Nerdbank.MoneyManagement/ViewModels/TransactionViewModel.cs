@@ -10,7 +10,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class TransactionViewModel : BindableBase
 	{
 		private DateTime when;
+		private int? checkNumber;
 		private decimal amount;
+		private string? memo;
+		private ClearedState cleared;
 		private AccountViewModel? transferAccount;
 		private PayeeViewModel? payee;
 
@@ -20,10 +23,28 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.when, value);
 		}
 
+		public int? CheckNumber
+		{
+			get => this.checkNumber;
+			set => this.SetProperty(ref this.checkNumber, value);
+		}
+
 		public decimal Amount
 		{
 			get => this.amount;
 			set => this.SetProperty(ref this.amount, value);
+		}
+
+		public string? Memo
+		{
+			get => this.memo;
+			set => this.SetProperty(ref this.memo, value);
+		}
+
+		public ClearedState Cleared
+		{
+			get => this.cleared;
+			set => this.SetProperty(ref this.cleared, value);
 		}
 
 		public AccountViewModel? Transfer
@@ -44,6 +65,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			transaction.When = this.When;
 			transaction.Amount = this.Amount;
+			transaction.Memo = this.Memo;
+			transaction.CheckNumber = this.CheckNumber;
+			transaction.Cleared = this.Cleared;
 		}
 
 		public void CopyFrom(Transaction transaction)
@@ -52,6 +76,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.When = transaction.When;
 			this.Amount = transaction.Amount;
+			this.Memo = transaction.Memo;
+			this.CheckNumber = transaction.CheckNumber;
+			this.Cleared = transaction.Cleared;
 		}
 	}
 }

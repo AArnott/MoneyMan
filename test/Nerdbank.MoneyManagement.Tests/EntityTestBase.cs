@@ -5,24 +5,11 @@ using System.IO;
 using Nerdbank.MoneyManagement;
 using Xunit.Abstractions;
 
-public class EntityTestBase : TestBase
+public class EntityTestBase : MoneyTestBase
 {
-	private readonly string dbPath;
-
 	public EntityTestBase(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-		this.Money = MoneyFile.Load(this.dbPath);
-		this.Money.Logger = new TestLoggerAdapter(this.Logger);
-	}
-
-	protected MoneyFile Money { get; set; }
-
-	public void Dispose()
-	{
-		this.Money.Dispose();
-		File.Delete(this.dbPath);
 	}
 
 	public T SaveAndReload<T>(T obj)

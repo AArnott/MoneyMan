@@ -47,3 +47,6 @@ dotnet_diagnostic.CA1816.severity = silent
 
 # CA2007: Consider calling ConfigureAwait on the awaited task
 dotnet_diagnostic.CA2007.severity = none
+
+# IDE0008: Use explicit type
+dotnet_diagnostic.IDE0008.severity = suggestion

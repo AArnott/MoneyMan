@@ -14,6 +14,8 @@ namespace Nerdbank.MoneyManagement
 	/// </summary>
 	public class Transaction
 	{
+		private decimal amount;
+
 		/// <summary>
 		/// Gets or sets the primary key of this database entity.
 		/// </summary>
@@ -31,10 +33,28 @@ namespace Nerdbank.MoneyManagement
 		public DateTime When { get; set; }
 
 		/// <summary>
+		/// Gets or sets the check number associated with this transaction, if any.
+		/// </summary>
+		public int? CheckNumber { get; set; }
+
+		/// <summary>
 		/// Gets or sets the amount of the transaction. Always non-negative.
 		/// </summary>
 		[NotNull]
-		public decimal Amount { get; set; }
+		public decimal Amount
+		{
+			get => this.amount;
+			set
+			{
+				Requires.Range(value >= 0, nameof(value));
+				this.amount = value;
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets a memo to go with this transaction.
+		/// </summary>
+		public string? Memo { get; set; }
 
 		/// <summary>
 		/// Gets or sets the <see cref="Payee.Id"/> of the <see cref="Payee"/> receiving or funding this transaction.
@@ -44,6 +64,10 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the <see cref="Category.Id"/> of the <see cref="Category"/> assigned to this transaction.
 		/// </summary>
+		/// <remarks>
+		/// Use <see cref="Category.Split"/> for the value where the transaction is split across multiple categories.
+		/// </remarks>
+		[Indexed]
 		public int? CategoryId { get; set; }
 
 		/// <summary>
@@ -56,9 +80,10 @@ namespace Nerdbank.MoneyManagement
 		/// </summary>
 		public int? DebitAccountId { get; set; }
 
-		private void Validate()
-		{
-			Assumes.True(this.Amount >= 0, "Amount must be non-negative.");
-		}
+		/// <summary>
+		/// Gets or sets the cleared or reconciled state of the transaction.
+		/// </summary>
+		[NotNull]
+		public ClearedState Cleared { get; set; }
 	}
 }

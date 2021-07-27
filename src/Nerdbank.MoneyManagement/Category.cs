@@ -11,6 +11,11 @@ namespace Nerdbank.MoneyManagement
 	public class Category
 	{
 		/// <summary>
+		/// The sentinel value to use for <see cref="Transaction.CategoryId"/> on split transactions.
+		/// </summary>
+		public const int Split = -1;
+
+		/// <summary>
 		/// Gets or sets the primary key for this entity.
 		/// </summary>
 		[PrimaryKey, AutoIncrement]
@@ -25,6 +30,6 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the optional parent category for this category.
 		/// </summary>
-		public int ParentCategoryId { get; set; }
+		public int? ParentCategoryId { get; set; }
 	}
 }
