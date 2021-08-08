@@ -6,7 +6,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using PCLCommandBase;
 	using Validation;
 
-	public class CategoryViewModel : BindableBase
+	public class CategoryViewModel : EntityViewModel<Category>
 	{
 		private string? name;
 
@@ -22,7 +22,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.name, value);
 		}
 
-		public void ApplyTo(Category category)
+		public override void ApplyTo(Category category)
 		{
 			Requires.NotNull(category, nameof(category));
 			Requires.Argument(this.Id is null || category.Id == this.Id, nameof(category), "The provided object is not the original template.");
@@ -30,7 +30,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			category.Name = this.name;
 		}
 
-		public void CopyFrom(Category category)
+		public override void CopyFrom(Category category)
 		{
 			Requires.NotNull(category, nameof(category));
 

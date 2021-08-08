@@ -7,7 +7,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using PCLCommandBase;
 	using Validation;
 
-	public class TransactionViewModel : BindableBase
+	public class TransactionViewModel : EntityViewModel<Transaction>
 	{
 		private DateTime when;
 		private int? checkNumber;
@@ -59,7 +59,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.payee, value);
 		}
 
-		public void ApplyTo(Transaction transaction)
+		public override void ApplyTo(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 
@@ -70,7 +70,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.Cleared = this.Cleared;
 		}
 
-		public void CopyFrom(Transaction transaction)
+		public override void CopyFrom(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 

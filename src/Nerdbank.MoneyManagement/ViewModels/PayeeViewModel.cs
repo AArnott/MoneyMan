@@ -6,7 +6,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using PCLCommandBase;
 	using Validation;
 
-	public class PayeeViewModel : BindableBase
+	public class PayeeViewModel : EntityViewModel<Payee>
 	{
 		private string? name;
 
@@ -16,14 +16,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.name, value);
 		}
 
-		public void ApplyTo(Payee payee)
+		public override void ApplyTo(Payee payee)
 		{
 			Requires.NotNull(payee, nameof(payee));
 
 			payee.Name = this.name;
 		}
 
-		public void CopyFrom(Payee payee)
+		public override void CopyFrom(Payee payee)
 		{
 			Requires.NotNull(payee, nameof(payee));
 

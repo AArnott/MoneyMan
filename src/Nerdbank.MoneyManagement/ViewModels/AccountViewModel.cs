@@ -6,7 +6,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using PCLCommandBase;
 	using Validation;
 
-	public class AccountViewModel : BindableBase
+	public class AccountViewModel : EntityViewModel<Account>
 	{
 		private string? name;
 		private bool isClosed;
@@ -23,7 +23,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.isClosed, value);
 		}
 
-		public void ApplyTo(Account account)
+		public override void ApplyTo(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
 
@@ -31,7 +31,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			account.IsClosed = this.IsClosed;
 		}
 
-		public void CopyFrom(Account account)
+		public override void CopyFrom(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
 
