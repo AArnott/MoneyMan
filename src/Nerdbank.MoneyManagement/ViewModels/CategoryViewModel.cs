@@ -8,7 +8,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 	public class CategoryViewModel : EntityViewModel<Category>
 	{
-		private string? name;
+		private string name = string.Empty;
 
 		/// <summary>
 		/// Gets the primary key for this entity.
@@ -16,10 +16,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public int? Id { get; private set; }
 
 		/// <inheritdoc cref="Category.Name"/>
-		public string? Name
+		public string Name
 		{
 			get => this.name;
-			set => this.SetProperty(ref this.name, value);
+			set
+			{
+				Requires.NotNullOrEmpty(value, nameof(value));
+				this.SetProperty(ref this.name, value);
+			}
 		}
 
 		public override void ApplyTo(Category category)

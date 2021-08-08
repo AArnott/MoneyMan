@@ -28,8 +28,6 @@ namespace MoneyMan
 		public MainWindow()
 		{
 			this.InitializeComponent();
-
-			this.ViewModel.AccountsPanel.Accounts.Add(new AccountViewModel { Name = "Checking" });
 		}
 
 		public MainPageViewModel ViewModel
