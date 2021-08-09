@@ -45,4 +45,36 @@ public class CategoriesPanelViewModelTests : TestBase
 		Assert.Empty(this.viewModel.Categories);
 		Assert.Null(this.viewModel.SelectedCategory);
 	}
+
+	[Fact]
+	public void AddTwiceRedirectsToFirstIfNotCommitted()
+	{
+		Assert.True(this.viewModel.AddCommand.CanExecute(null));
+		this.viewModel.AddCommand.Execute(null);
+		CategoryViewModel? first = this.viewModel.SelectedCategory;
+		Assert.NotNull(first);
+
+		Assert.True(this.viewModel.AddCommand.CanExecute(null));
+		this.viewModel.AddCommand.Execute(null);
+		CategoryViewModel? second = this.viewModel.SelectedCategory;
+		Assert.Same(first, second);
+
+		first!.Name = "Some category";
+		Assert.True(this.viewModel.AddCommand.CanExecute(null));
+		this.viewModel.AddCommand.Execute(null);
+		CategoryViewModel? third = this.viewModel.SelectedCategory;
+		Assert.NotNull(third);
+		Assert.NotSame(first, third);
+		Assert.Equal(string.Empty, third!.Name);
+	}
+
+	[Fact]
+	public void AddThenDelete()
+	{
+		this.viewModel.AddCommand.Execute(null);
+		Assert.True(this.viewModel.DeleteCommand.CanExecute(null));
+		this.viewModel.DeleteCommand.Execute(null);
+		Assert.Null(this.viewModel.SelectedCategory);
+		Assert.Empty(this.viewModel.Categories);
+	}
 }

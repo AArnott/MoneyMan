@@ -10,6 +10,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System.Threading.Tasks;
 	using System.Windows.Input;
 	using PCLCommandBase;
+	using Validation;
 
 	public class CategoriesPanelViewModel : BindableBase
 	{
@@ -34,6 +35,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.selectedCategory, value);
 		}
 
+		internal CategoryViewModel? AddingCategory { get; set; }
+
 		private class AddCategoryCommand : CommandBase
 		{
 			private readonly CategoriesPanelViewModel viewModel;
@@ -45,10 +48,35 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			protected override Task ExecuteCoreAsync(object parameter, CancellationToken cancellationToken)
 			{
-				CategoryViewModel newCategoryViewModel = new();
-				this.viewModel.Categories.Add(newCategoryViewModel);
-				this.viewModel.SelectedCategory = newCategoryViewModel;
+				if (this.viewModel.AddingCategory is object)
+				{
+					// We are already in the state of adding a category. Re-select it.
+					this.viewModel.SelectedCategory = this.viewModel.AddingCategory;
+				}
+				else
+				{
+					CategoryViewModel newCategoryViewModel = new();
+					newCategoryViewModel.PropertyChanged += this.NewCategoryViewModel_PropertyChanged;
+					this.viewModel.Categories.Add(newCategoryViewModel);
+					this.viewModel.SelectedCategory = newCategoryViewModel;
+					this.viewModel.AddingCategory = newCategoryViewModel;
+				}
+
 				return Task.CompletedTask;
+			}
+
+			private void NewCategoryViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+			{
+				CategoryViewModel newCategory = (CategoryViewModel)Requires.NotNull(sender!, nameof(sender));
+				if (!string.IsNullOrEmpty(newCategory.Name))
+				{
+					newCategory.PropertyChanged -= this.NewCategoryViewModel_PropertyChanged;
+				}
+
+				if (this.viewModel.AddingCategory == newCategory)
+				{
+					this.viewModel.AddingCategory = null;
+				}
 			}
 		}
 
