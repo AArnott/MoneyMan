@@ -3,9 +3,11 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System.Diagnostics;
 	using PCLCommandBase;
 	using Validation;
 
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class CategoryViewModel : EntityViewModel<Category>
 	{
 		private string name = string.Empty;
@@ -25,6 +27,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.SetProperty(ref this.name, value);
 			}
 		}
+
+		private string DebuggerDisplay => this.Name;
 
 		public override void ApplyTo(Category category)
 		{

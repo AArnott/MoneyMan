@@ -64,9 +64,9 @@
 				</Style>
 			</TabItem.Resources>
 			<DockPanel>
-				<DockPanel DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
-					<Button Content="_Delete" DockPanel.Dock="Bottom" />
-					<StackPanel Margin="5,0,5,0">
+				<DockPanel DockPanel.Dock="Right" Width="150pt" >
+					<Button Content="_Delete" DockPanel.Dock="Bottom" Command="{Binding DeleteCommand}" />
+					<StackPanel Margin="5,0,5,0" DataContext="{StaticResource categories}">
 						<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
 								 MaxLength="100"
@@ -81,8 +81,8 @@
 						</TextBox>
 					</StackPanel>
 				</DockPanel>
-				<Button Content="_Add new" DockPanel.Dock="Bottom" />
-				<ListView ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True">
+				<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
+				<ListView ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory}">
 					<ListView.ItemTemplate>
 						<DataTemplate>
 							<TextBlock Text="{Binding Name}" />
