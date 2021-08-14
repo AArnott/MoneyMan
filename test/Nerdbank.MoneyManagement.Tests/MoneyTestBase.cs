@@ -12,23 +12,29 @@ using Xunit.Abstractions;
 
 public class MoneyTestBase : TestBase
 {
-	private readonly string dbPath;
+	private Lazy<MoneyFile> money;
 
 	public MoneyTestBase(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.dbPath = this.GenerateTemporaryFileName();
-		this.Money = MoneyFile.Load(this.dbPath);
-		this.Money.Logger = new TestLoggerAdapter(this.Logger);
+		this.money = new Lazy<MoneyFile>(() =>
+		{
+			MoneyFile result = MoneyFile.Load(this.GenerateTemporaryFileName());
+			result.Logger = new TestLoggerAdapter(this.Logger);
+			return result;
+		});
 	}
 
-	protected MoneyFile Money { get; set; }
+	protected MoneyFile Money => this.money.Value;
 
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
 		{
-			this.Money.Dispose();
+			if (this.money.IsValueCreated)
+			{
+				this.Money.Dispose();
+			}
 		}
 
 		base.Dispose(disposing);
