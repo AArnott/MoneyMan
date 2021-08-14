@@ -48,6 +48,18 @@
 					</ListView>
 					<DockPanel Grid.Column="1" DataContext="{StaticResource accounts}">
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
+						<DataGrid AlternatingRowBackground="LightBlue" AlternationCount="2">
+							<DataGrid.Columns>
+								<DataGridTextColumn Header="Date" />
+								<DataGridTextColumn Header="Payee" />
+								<DataGridComboBoxColumn Header="Category" />
+								<DataGridTextColumn Header="Memo" />
+								<DataGridTextColumn Header="Payment" />
+								<DataGridComboBoxColumn Header="Clr" />
+								<DataGridTextColumn Header="Deposit" />
+								<DataGridTextColumn Header="Balance" />
+							</DataGrid.Columns>
+						</DataGrid>
 					</DockPanel>
 				</Grid>
 			</TabItem>
