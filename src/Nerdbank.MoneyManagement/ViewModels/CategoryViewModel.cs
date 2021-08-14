@@ -12,6 +12,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	{
 		private string name = string.Empty;
 
+		public CategoryViewModel()
+		{
+		}
+
+		public CategoryViewModel(Category model)
+		{
+			this.CopyFrom(model);
+		}
+
 		/// <summary>
 		/// Gets the primary key for this entity.
 		/// </summary>

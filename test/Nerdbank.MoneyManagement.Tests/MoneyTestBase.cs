@@ -17,7 +17,7 @@ public class MoneyTestBase : TestBase
 	public MoneyTestBase(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+		this.dbPath = this.GenerateTemporaryFileName();
 		this.Money = MoneyFile.Load(this.dbPath);
 		this.Money.Logger = new TestLoggerAdapter(this.Logger);
 	}
@@ -29,7 +29,6 @@ public class MoneyTestBase : TestBase
 		if (disposing)
 		{
 			this.Money.Dispose();
-			File.Delete(this.dbPath);
 		}
 
 		base.Dispose(disposing);
