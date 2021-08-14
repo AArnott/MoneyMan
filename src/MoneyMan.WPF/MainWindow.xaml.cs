@@ -39,6 +39,11 @@ namespace MoneyMan
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, this.FileClose, this.CanFileClose));
+
+			if (!string.IsNullOrEmpty(AppSettings.Default.LastOpenedFile))
+			{
+				this.FileOpen(AppSettings.Default.LastOpenedFile);
+			}
 		}
 
 		public MainPageViewModel ViewModel
@@ -50,6 +55,7 @@ namespace MoneyMan
 		protected override void OnClosed(EventArgs e)
 		{
 			this.closingTokenSource.Cancel();
+			AppSettings.Default.Save();
 			base.OnClosed(e);
 		}
 
@@ -77,11 +83,28 @@ namespace MoneyMan
 			this.InitializeFileDialog(dialog);
 			if (dialog.ShowDialog() is true)
 			{
-				this.ReplaceViewModel(DocumentViewModel.Open(dialog.FileName));
+				this.FileOpen(dialog.FileName);
 			}
 		}
 
-		private void FileClose(object sender, ExecutedRoutedEventArgs e) => this.ReplaceViewModel(new DocumentViewModel(null));
+		private void FileOpen(string path)
+		{
+			try
+			{
+				this.ReplaceViewModel(DocumentViewModel.Open(path));
+				AppSettings.Default.LastOpenedFile = path;
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($@"Failed to open ""{path}"". {ex.Message}");
+			}
+		}
+
+		private void FileClose(object sender, ExecutedRoutedEventArgs e)
+		{
+			this.ReplaceViewModel(new DocumentViewModel(null));
+			AppSettings.Default.LastOpenedFile = null;
+		}
 
 		private void CanFileClose(object sender, CanExecuteRoutedEventArgs e)
 		{
