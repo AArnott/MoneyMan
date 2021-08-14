@@ -18,6 +18,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private AccountViewModel? transferAccount;
 		private PayeeViewModel? payee;
 		private CategoryViewModel? category;
+		private bool isSelected;
 
 		public DateTime When
 		{
@@ -67,7 +68,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.category, value);
 		}
 
-		private string DebuggerDisplay => $"{this.When} {this.Payee} {this.Amount}";
+		public bool IsSelected
+		{
+			get => this.isSelected;
+			set => this.SetProperty(ref this.isSelected, value);
+		}
+
+		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
 
 		public override void ApplyTo(Transaction transaction)
 		{

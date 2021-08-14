@@ -5,6 +5,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
+	using System.Linq;
+	using System.Threading;
+	using System.Threading.Tasks;
+	using System.Windows.Input;
+	using PCLCommandBase;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
@@ -16,9 +21,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public AccountViewModel()
 		{
+			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
 		}
 
 		public AccountViewModel(Account model)
+			: this()
 		{
 			this.CopyFrom(model);
 		}
@@ -43,6 +50,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.selectedTransaction, value);
 		}
 
+		/// <summary>
+		/// Gets a command that deletes the transactions where <see cref="TransactionViewModel.IsSelected"/> is <see langword="true"/>.
+		/// </summary>
+		public ICommand DeleteTransactionCommand { get; }
+
 		private string? DebuggerDisplay => this.Name;
 
 		public override void ApplyTo(Account account)
@@ -59,6 +71,38 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.Name = account.Name;
 			this.IsClosed = account.IsClosed;
+		}
+
+		private class DeleteTransactionCommandImpl : CommandBase
+		{
+			private readonly AccountViewModel viewModel;
+
+			internal DeleteTransactionCommandImpl(AccountViewModel viewModel)
+			{
+				this.viewModel = viewModel;
+				this.viewModel.PropertyChanged += (s, e) =>
+				{
+					if (e.PropertyName == nameof(AccountViewModel.SelectedTransaction))
+					{
+						this.OnCanExecuteChanged();
+					}
+				};
+			}
+
+			public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.viewModel.SelectedTransaction is object;
+
+			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
+			{
+				for (int i = this.viewModel.Transactions.Count - 1; i >= 0; i--)
+				{
+					if (this.viewModel.Transactions[i].IsSelected)
+					{
+						this.viewModel.Transactions.RemoveAt(i);
+					}
+				}
+
+				return Task.CompletedTask;
+			}
 		}
 	}
 }

@@ -7,7 +7,7 @@
 		xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
 		xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
 		mc:Ignorable="d"
-		Title="{Binding Document.Title}" Height="350" Width="525">
+		Title="{Binding Document.Title}" Height="350" Width="653">
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
 	</Window.Resources>
@@ -48,7 +48,11 @@
 					</ListView>
 					<DockPanel Grid.Column="1" DataContext="{Binding SelectedAccount}">
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-						<DataGrid AlternatingRowBackground="LightBlue" AlternationCount="2" ItemsSource="{Binding Transactions}" AutoGenerateColumns="False">
+						<DataGrid AlternatingRowBackground="LightBlue"
+								  AlternationCount="2" 
+								  ItemsSource="{Binding Transactions}" 
+								  SelectedItem="{Binding SelectedTransaction, Mode=TwoWay}"
+								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="Date">
 									<DataGridTemplateColumn.CellTemplate>
@@ -62,7 +66,7 @@
 								<DataGridTemplateColumn Header="Category">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<TextBlock Text="{Binding Category.Name}" />
+											<TextBlock Text="{Binding Category.Name}" Margin="3pt" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
@@ -84,7 +88,26 @@
 								<DataGridComboBoxColumn Header="Clr" SelectedItemBinding="{Binding Cleared}" />
 								<DataGridTextColumn Header="Deposit" />
 								<DataGridTextColumn Header="Balance" />
+								<DataGridTemplateColumn Header="Actions">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<StackPanel Orientation="Horizontal">
+												<Button Content="❌" Command="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=DataContext.DeleteTransactionCommand}" CommandParameter="{Binding}" />
+											</StackPanel>
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+								</DataGridTemplateColumn>
 							</DataGrid.Columns>
+							<DataGrid.ContextMenu>
+								<ContextMenu>
+									<MenuItem Header="_Delete" Command="{Binding DeleteTransactionCommand}" />
+								</ContextMenu>
+							</DataGrid.ContextMenu>
+							<DataGrid.RowStyle>
+								<Style TargetType="{x:Type DataGridRow}">
+									<Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+								</Style>
+							</DataGrid.RowStyle>
 						</DataGrid>
 					</DockPanel>
 				</Grid>
