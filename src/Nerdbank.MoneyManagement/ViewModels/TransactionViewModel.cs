@@ -4,9 +4,10 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
-	using PCLCommandBase;
+	using System.Diagnostics;
 	using Validation;
 
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class TransactionViewModel : EntityViewModel<Transaction>
 	{
 		private DateTime when;
@@ -59,10 +60,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.payee, value);
 		}
 
+		private string DebuggerDisplay => $"{this.When} {this.Payee} {this.Amount}";
+
 		public override void ApplyTo(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
-
 			transaction.When = this.When;
 			transaction.Amount = this.Amount;
 			transaction.Memo = this.Memo;

@@ -3,9 +3,10 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
-	using PCLCommandBase;
+	using System.Diagnostics;
 	using Validation;
 
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class PayeeViewModel : EntityViewModel<Payee>
 	{
 		private string? name;
@@ -15,6 +16,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.name;
 			set => this.SetProperty(ref this.name, value);
 		}
+
+		private string? DebuggerDisplay => this.Name;
 
 		public override void ApplyTo(Payee payee)
 		{
