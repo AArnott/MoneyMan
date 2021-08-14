@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net5.0-windows</TargetFramework>
+    <RootNamespace>MoneyMan</RootNamespace>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 

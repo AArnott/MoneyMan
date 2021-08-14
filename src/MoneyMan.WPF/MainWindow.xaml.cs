@@ -21,7 +21,7 @@ namespace MoneyMan
 	using System.Windows.Navigation;
 	using System.Windows.Shapes;
 	using Microsoft.Win32;
-	using MoneyMan.WPF.ViewModel;
+	using MoneyMan.ViewModel;
 	using Nerdbank.MoneyManagement;
 	using Nerdbank.MoneyManagement.ViewModels;
 
