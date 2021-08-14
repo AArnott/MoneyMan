@@ -19,7 +19,7 @@
 				<MenuItem Header="_Close" Command="ApplicationCommands.Close" />
 			</MenuItem>
 		</Menu>
-		<ToolBarTray DockPanel.Dock="Top">
+		<ToolBarTray DockPanel.Dock="Top" Visibility="Collapsed">
 			<ToolBar>
 				<Button Command="NavigationCommands.BrowseBack">
 					Back
@@ -31,19 +31,23 @@
 		</ToolBarTray>
 		<TabControl TabStripPlacement="Bottom">
 			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}">
+				<TabItem.Resources>
+					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" />
+				</TabItem.Resources>
 				<Grid>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="1*" />
 						<ColumnDefinition Width="4*" />
 					</Grid.ColumnDefinitions>
-					<DockPanel Grid.Column="0">
-						<ListView ItemsSource="{Binding Accounts}">
-							<ListView.ItemTemplate>
-								<DataTemplate>
-									<TextBlock Text="{Binding Name}" />
-								</DataTemplate>
-							</ListView.ItemTemplate>
-						</ListView>
+					<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" Grid.Column="0">
+						<ListView.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Name}" />
+							</DataTemplate>
+						</ListView.ItemTemplate>
+					</ListView>
+					<DockPanel Grid.Column="1" DataContext="{StaticResource accounts}">
+						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 					</DockPanel>
 				</Grid>
 			</TabItem>

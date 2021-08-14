@@ -4,13 +4,14 @@
 namespace Nerdbank.MoneyManagement
 {
 	using System;
-	using System.Linq;
+	using System.Diagnostics;
 	using SQLite;
 	using Validation;
 
 	/// <summary>
 	/// Describes a bank account.
 	/// </summary>
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class Account
 	{
 		/// <summary>
@@ -33,6 +34,8 @@ namespace Nerdbank.MoneyManagement
 		/// </remarks>
 		[NotNull]
 		public bool IsClosed { get; set; }
+
+		private string? DebuggerDisplay => this.Name;
 
 		/// <summary>
 		/// Creates a new <see cref="Transaction"/> that describes a withdrawal from this account.

@@ -3,11 +3,13 @@
 
 namespace Nerdbank.MoneyManagement
 {
+	using System.Diagnostics;
 	using SQLite;
 
 	/// <summary>
 	/// A category that is assignable to a transaction.
 	/// </summary>
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class Category
 	{
 		/// <summary>
@@ -31,5 +33,7 @@ namespace Nerdbank.MoneyManagement
 		/// Gets or sets the optional parent category for this category.
 		/// </summary>
 		public int? ParentCategoryId { get; set; }
+
+		private string? DebuggerDisplay => this.Name;
 	}
 }

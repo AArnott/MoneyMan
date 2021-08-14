@@ -14,6 +14,9 @@ namespace Nerdbank.MoneyManagement
 			moneyFile.InsertAll(new object[]
 			{
 				new Category { Name = "Groceries" },
+				new Category { Name = "Entertainment" },
+				new Account { Name = "Checking" },
+				new Account { Name = "Savings" },
 			});
 		}
 	}

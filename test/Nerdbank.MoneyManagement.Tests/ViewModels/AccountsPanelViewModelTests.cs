@@ -22,9 +22,10 @@ public class AccountsPanelViewModelTests : TestBase
 	}
 
 	[Fact]
-	public void Accounts_NotNull()
+	public void InitialState()
 	{
-		Assert.NotNull(this.viewModel.Accounts);
+		Assert.Empty(this.viewModel.Accounts);
+		Assert.Null(this.viewModel.SelectedAccount);
 	}
 
 	[Fact]
