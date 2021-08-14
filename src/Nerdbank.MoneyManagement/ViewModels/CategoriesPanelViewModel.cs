@@ -9,14 +9,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System.Threading;
 	using System.Threading.Tasks;
 	using System.Windows.Input;
-	using Microsoft.VisualStudio.Threading;
 	using PCLCommandBase;
 	using Validation;
 
 	public class CategoriesPanelViewModel : BindableBase
 	{
-		private readonly ObservableCollection<CategoryViewModel> categories = new ObservableCollection<CategoryViewModel>();
-		private readonly CancellationTokenSource disposalToken = new();
 		private CategoryViewModel? selectedCategory;
 
 		public CategoriesPanelViewModel()
@@ -29,7 +26,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public ICommand DeleteCommand { get; }
 
-		public ObservableCollection<CategoryViewModel> Categories => this.categories;
+		public ObservableCollection<CategoryViewModel> Categories { get; } = new();
 
 		public CategoryViewModel? SelectedCategory
 		{

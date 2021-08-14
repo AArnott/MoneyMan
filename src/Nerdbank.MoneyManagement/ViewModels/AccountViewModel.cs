@@ -3,13 +3,14 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System.Collections.ObjectModel;
 	using System.Diagnostics;
-	using PCLCommandBase;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class AccountViewModel : EntityViewModel<Account>
 	{
+		private TransactionViewModel? selectedTransaction;
 		private string? name;
 		private bool isClosed;
 
@@ -32,6 +33,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.isClosed;
 			set => this.SetProperty(ref this.isClosed, value);
+		}
+
+		public ObservableCollection<TransactionViewModel> Transactions { get; } = new();
+
+		public TransactionViewModel? SelectedTransaction
+		{
+			get => this.selectedTransaction;
+			set => this.SetProperty(ref this.selectedTransaction, value);
 		}
 
 		private string? DebuggerDisplay => this.Name;

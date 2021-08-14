@@ -46,16 +46,42 @@
 							</DataTemplate>
 						</ListView.ItemTemplate>
 					</ListView>
-					<DockPanel Grid.Column="1" DataContext="{StaticResource accounts}">
+					<DockPanel Grid.Column="1" DataContext="{Binding SelectedAccount}">
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-						<DataGrid AlternatingRowBackground="LightBlue" AlternationCount="2">
+						<DataGrid AlternatingRowBackground="LightBlue" AlternationCount="2" ItemsSource="{Binding Transactions}" AutoGenerateColumns="False">
 							<DataGrid.Columns>
-								<DataGridTextColumn Header="Date" />
+								<DataGridTemplateColumn Header="Date">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<DatePicker SelectedDate="{Binding When}" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+								</DataGridTemplateColumn>
+								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber}" />
 								<DataGridTextColumn Header="Payee" />
-								<DataGridComboBoxColumn Header="Category" />
-								<DataGridTextColumn Header="Memo" />
+								<DataGridTemplateColumn Header="Category">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Text="{Binding Category.Name}" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<ComboBox
+												ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.CategoriesPanel.Categories}"
+												SelectedItem="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+												<ComboBox.ItemTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding Name}" />
+													</DataTemplate>
+												</ComboBox.ItemTemplate>
+											</ComboBox>
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
+								</DataGridTemplateColumn>
+								<DataGridTextColumn Header="Memo" Binding="{Binding Memo}" />
 								<DataGridTextColumn Header="Payment" />
-								<DataGridComboBoxColumn Header="Clr" />
+								<DataGridComboBoxColumn Header="Clr" SelectedItemBinding="{Binding Cleared}" />
 								<DataGridTextColumn Header="Deposit" />
 								<DataGridTextColumn Header="Balance" />
 							</DataGrid.Columns>

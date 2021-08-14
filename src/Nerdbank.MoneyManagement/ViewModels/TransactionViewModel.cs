@@ -17,6 +17,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private ClearedState cleared;
 		private AccountViewModel? transferAccount;
 		private PayeeViewModel? payee;
+		private CategoryViewModel? category;
 
 		public DateTime When
 		{
@@ -58,6 +59,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.payee;
 			set => this.SetProperty(ref this.payee, value);
+		}
+
+		public CategoryViewModel? Category
+		{
+			get => this.category;
+			set => this.SetProperty(ref this.category, value);
 		}
 
 		private string DebuggerDisplay => $"{this.When} {this.Payee} {this.Amount}";
