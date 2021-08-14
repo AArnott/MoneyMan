@@ -45,7 +45,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.viewModel = viewModel;
 			}
 
-			protected override Task ExecuteCoreAsync(object parameter, CancellationToken cancellationToken)
+			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 			{
 				if (this.viewModel.AddingCategory is object)
 				{
@@ -89,9 +89,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
 			}
 
-			public override bool CanExecute(object parameter) => base.CanExecute(parameter) && this.viewModel.SelectedCategory is object;
+			public override bool CanExecute(object? parameter) => base.CanExecute(parameter) && this.viewModel.SelectedCategory is object;
 
-			protected override Task ExecuteCoreAsync(object parameter, CancellationToken cancellationToken)
+			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 			{
 				this.viewModel.Categories.Remove(this.viewModel.SelectedCategory ?? throw new InvalidOperationException("No category is selected."));
 				this.viewModel.SelectedCategory = null;
