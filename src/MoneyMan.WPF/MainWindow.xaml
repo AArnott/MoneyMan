@@ -7,7 +7,7 @@
 		xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
 		xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
 		mc:Ignorable="d"
-		Title="Nerdbank Money Management" Height="350" Width="525">
+		Title="{Binding Document.Title}" Height="350" Width="525">
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
 	</Window.Resources>

@@ -35,6 +35,7 @@ namespace MoneyMan
 		public MainWindow()
 		{
 			this.InitializeComponent();
+			this.DataContext = this.ViewModel;
 
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));

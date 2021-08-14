@@ -5,6 +5,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
 	using System.ComponentModel;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using Microsoft.Win32;
 	using PCLCommandBase;
 
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class DocumentViewModel : BindableBase, IDisposable
 	{
 		private MoneyFile? model;
@@ -44,9 +46,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public bool IsFileOpen => this.model is object;
 
+		public string Title => this.model is { Path: string path } ? $"Nerdbank Money Management - {Path.GetFileNameWithoutExtension(path)}" : "Nerdbank Money Management";
+
 		public AccountsPanelViewModel? AccountsPanel { get; }
 
 		public CategoriesPanelViewModel? CategoriesPanel { get; }
+
+		private string DebuggerDisplay => this.model?.Path ?? "(not backed by a file)";
 
 		public static DocumentViewModel CreateNew(string moneyFilePath)
 		{

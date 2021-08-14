@@ -6,6 +6,7 @@ namespace Nerdbank.MoneyManagement
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Immutable;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Linq;
 	using System.Threading;
@@ -15,6 +16,7 @@ namespace Nerdbank.MoneyManagement
 	/// <summary>
 	/// Manages the database that stores accounts, transactions, and other entities.
 	/// </summary>
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class MoneyFile : IDisposable
 	{
 		/// <summary>
@@ -32,6 +34,8 @@ namespace Nerdbank.MoneyManagement
 			this.connection = connection;
 		}
 
+		public string Path => this.connection.DatabasePath;
+
 		public TextWriter? Logger { get; set; }
 
 		public TableQuery<Account> Accounts => this.connection.Table<Account>();
@@ -41,6 +45,8 @@ namespace Nerdbank.MoneyManagement
 		public TableQuery<SplitTransaction> SplitTransactions => this.connection.Table<SplitTransaction>();
 
 		public TableQuery<Category> Categories => this.connection.Table<Category>();
+
+		private string DebuggerDisplay => this.Path;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="MoneyFile"/> class
