@@ -40,6 +40,8 @@ namespace Nerdbank.MoneyManagement
 
 		public TableQuery<SplitTransaction> SplitTransactions => this.connection.Table<SplitTransaction>();
 
+		public TableQuery<Category> Categories => this.connection.Table<Category>();
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="MoneyFile"/> class
 		/// that persists to a given file path.
@@ -50,15 +52,22 @@ namespace Nerdbank.MoneyManagement
 		{
 			Requires.NotNullOrEmpty(path, nameof(path));
 			var db = new SQLiteConnection(path);
+			try
+			{
+				// Define all the tables (in case this is a new file).
+				db.CreateTable<Account>();
+				db.CreateTable<Transaction>();
+				db.CreateTable<SplitTransaction>();
+				db.CreateTable<Payee>();
+				db.CreateTable<Category>();
 
-			// Define all the tables (in case this is a new file).
-			db.CreateTable<Account>();
-			db.CreateTable<Transaction>();
-			db.CreateTable<SplitTransaction>();
-			db.CreateTable<Payee>();
-			db.CreateTable<Category>();
-
-			return new MoneyFile(db);
+				return new MoneyFile(db);
+			}
+			catch
+			{
+				db.Dispose();
+				throw;
+			}
 		}
 
 		public T Get<T>(object primaryKey)

@@ -4,10 +4,11 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
-	using PCLCommandBase;
+	using System.Diagnostics;
 	using Validation;
 
-	public class TransactionViewModel : BindableBase
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+	public class TransactionViewModel : EntityViewModel<Transaction>
 	{
 		private DateTime when;
 		private int? checkNumber;
@@ -59,10 +60,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.payee, value);
 		}
 
-		public void ApplyTo(Transaction transaction)
+		private string DebuggerDisplay => $"{this.When} {this.Payee} {this.Amount}";
+
+		public override void ApplyTo(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
-
 			transaction.When = this.When;
 			transaction.Amount = this.Amount;
 			transaction.Memo = this.Memo;
@@ -70,7 +72,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.Cleared = this.Cleared;
 		}
 
-		public void CopyFrom(Transaction transaction)
+		public override void CopyFrom(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 

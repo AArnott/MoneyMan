@@ -6,8 +6,10 @@ namespace MoneyMan
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
+	using System.IO;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
 	using System.Windows;
 	using System.Windows.Controls;
@@ -18,6 +20,9 @@ namespace MoneyMan
 	using System.Windows.Media.Imaging;
 	using System.Windows.Navigation;
 	using System.Windows.Shapes;
+	using Microsoft.Win32;
+	using MoneyMan.WPF.ViewModel;
+	using Nerdbank.MoneyManagement;
 	using Nerdbank.MoneyManagement.ViewModels;
 
 	/// <summary>
@@ -25,17 +30,79 @@ namespace MoneyMan
 	/// </summary>
 	public partial class MainWindow : Window
 	{
+		private readonly CancellationTokenSource closingTokenSource = new();
+
 		public MainWindow()
 		{
 			this.InitializeComponent();
 
-			this.ViewModel.AccountsPanel.Accounts.Add(new AccountViewModel { Name = "Checking" });
+			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
+			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
+			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, this.FileClose, this.CanFileClose));
 		}
 
 		public MainPageViewModel ViewModel
 		{
 			get => (MainPageViewModel)this.Resources["viewModel"];
 			set => this.Resources["viewModel"] = value;
+		}
+
+		protected override void OnClosed(EventArgs e)
+		{
+			this.closingTokenSource.Cancel();
+			base.OnClosed(e);
+		}
+
+		private void FileNew(object sender, ExecutedRoutedEventArgs e)
+		{
+			SaveFileDialog dialog = new()
+			{
+				Title = "Create new MoneyMan file",
+				OverwritePrompt = true,
+			};
+			this.InitializeFileDialog(dialog);
+			if (dialog.ShowDialog() is true)
+			{
+				this.ReplaceViewModel(DocumentViewModel.CreateNew(dialog.FileName));
+			}
+		}
+
+		private void FileOpen(object sender, ExecutedRoutedEventArgs e)
+		{
+			OpenFileDialog dialog = new()
+			{
+				CheckFileExists = true,
+				Title = "Open MoneyMan file",
+			};
+			this.InitializeFileDialog(dialog);
+			if (dialog.ShowDialog() is true)
+			{
+				this.ReplaceViewModel(DocumentViewModel.Open(dialog.FileName));
+			}
+		}
+
+		private void FileClose(object sender, ExecutedRoutedEventArgs e) => this.ReplaceViewModel(new DocumentViewModel(null));
+
+		private void CanFileClose(object sender, CanExecuteRoutedEventArgs e)
+		{
+			e.CanExecute = this.ViewModel.Document.IsFileOpen;
+		}
+
+		private void ReplaceViewModel(DocumentViewModel viewModel)
+		{
+			this.ViewModel.Document.Dispose();
+
+			// BUGBUG: This doesn't trigger data-binding to reapply to the new view model.
+			this.ViewModel.Document = viewModel;
+		}
+
+		private void InitializeFileDialog(FileDialog dialog)
+		{
+			dialog.AddExtension = true;
+			dialog.DefaultExt = ".moneyman";
+			dialog.CheckPathExists = true;
+			dialog.Filter = "MoneyMan files (*.moneyman)|*.moneyman|All files|*.*";
+			dialog.FilterIndex = 0;
 		}
 	}
 }

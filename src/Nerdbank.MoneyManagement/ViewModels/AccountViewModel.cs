@@ -3,13 +3,24 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System.Diagnostics;
 	using PCLCommandBase;
 	using Validation;
 
-	public class AccountViewModel : BindableBase
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+	public class AccountViewModel : EntityViewModel<Account>
 	{
 		private string? name;
 		private bool isClosed;
+
+		public AccountViewModel()
+		{
+		}
+
+		public AccountViewModel(Account model)
+		{
+			this.CopyFrom(model);
+		}
 
 		public string? Name
 		{
@@ -23,7 +34,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.isClosed, value);
 		}
 
-		public void ApplyTo(Account account)
+		private string? DebuggerDisplay => this.Name;
+
+		public override void ApplyTo(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
 
@@ -31,7 +44,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			account.IsClosed = this.IsClosed;
 		}
 
-		public void CopyFrom(Account account)
+		public override void CopyFrom(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
 

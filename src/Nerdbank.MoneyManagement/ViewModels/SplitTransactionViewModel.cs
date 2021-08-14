@@ -3,11 +3,12 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System;
 	using System.Collections.Generic;
 	using PCLCommandBase;
 	using Validation;
 
-	public class SplitTransactionViewModel : BindableBase
+	public class SplitTransactionViewModel : EntityViewModel<SplitTransaction>
 	{
 		private decimal amount;
 		private string? memo;
@@ -31,7 +32,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.category, value);
 		}
 
-		public void ApplyTo(SplitTransaction transaction)
+		public override void ApplyTo(SplitTransaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 
@@ -58,5 +59,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.Category = null;
 			}
 		}
+
+		public override void CopyFrom(SplitTransaction category) => throw new NotSupportedException("Use the other overload instead.");
 	}
 }

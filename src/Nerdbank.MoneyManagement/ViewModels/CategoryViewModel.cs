@@ -3,12 +3,23 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System.Diagnostics;
 	using PCLCommandBase;
 	using Validation;
 
-	public class CategoryViewModel : BindableBase
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+	public class CategoryViewModel : EntityViewModel<Category>
 	{
-		private string? name;
+		private string name = string.Empty;
+
+		public CategoryViewModel()
+		{
+		}
+
+		public CategoryViewModel(Category model)
+		{
+			this.CopyFrom(model);
+		}
 
 		/// <summary>
 		/// Gets the primary key for this entity.
@@ -16,13 +27,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public int? Id { get; private set; }
 
 		/// <inheritdoc cref="Category.Name"/>
-		public string? Name
+		public string Name
 		{
 			get => this.name;
-			set => this.SetProperty(ref this.name, value);
+			set
+			{
+				Requires.NotNullOrEmpty(value, nameof(value));
+				this.SetProperty(ref this.name, value);
+			}
 		}
 
-		public void ApplyTo(Category category)
+		private string DebuggerDisplay => this.Name;
+
+		public override void ApplyTo(Category category)
 		{
 			Requires.NotNull(category, nameof(category));
 			Requires.Argument(this.Id is null || category.Id == this.Id, nameof(category), "The provided object is not the original template.");
@@ -30,7 +47,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			category.Name = this.name;
 		}
 
-		public void CopyFrom(Category category)
+		public override void CopyFrom(Category category)
 		{
 			Requires.NotNull(category, nameof(category));
 

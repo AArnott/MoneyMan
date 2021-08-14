@@ -20,9 +20,11 @@ public class CategoryViewModelTests : TestBase
 	[Fact]
 	public void Name()
 	{
-		Assert.Null(this.viewModel.Name);
+		Assert.Equal(string.Empty, this.viewModel.Name);
 		this.viewModel.Name = "changed";
 		Assert.Equal("changed", this.viewModel.Name);
+
+		Assert.Throws<ArgumentNullException>(() => this.viewModel.Name = null!);
 	}
 
 	[Fact]
@@ -51,7 +53,7 @@ public class CategoryViewModelTests : TestBase
 	[Fact]
 	public void ApplyToThrowsOnEntityMismatch()
 	{
-		this.viewModel.CopyFrom(new Category { Id = 2 });
+		this.viewModel.CopyFrom(new Category { Id = 2, Name = "Groceries" });
 		Assert.Throws<ArgumentException>(() => this.viewModel.ApplyTo(new Category { Id = 4 }));
 	}
 

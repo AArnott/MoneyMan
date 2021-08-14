@@ -1,28 +1,113 @@
 ﻿<Window x:Class="MoneyMan.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MoneyMan"
-        xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
-        mc:Ignorable="d"
-        Title="Nerdbank Money Management" Height="350" Width="525">
-    <Window.Resources>
-        <vm:MainPageViewModel x:Key="viewModel" />
-    </Window.Resources>
-    <Grid DataContext="{StaticResource viewModel}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1*" />
-            <ColumnDefinition Width="4*" />
-        </Grid.ColumnDefinitions>
-        <DockPanel Grid.Column="0" DataContext="{Binding AccountsPanel}">
-            <ListView ItemsSource="{Binding Accounts}">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
-        </DockPanel>
-    </Grid>
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"	
+		xmlns:local="clr-namespace:MoneyMan.WPF.ViewModel"
+		xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
+		xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
+		mc:Ignorable="d"
+		Title="Nerdbank Money Management" Height="350" Width="525">
+	<Window.Resources>
+		<local:MainPageViewModel x:Key="viewModel" />
+	</Window.Resources>
+	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
+		<Menu DockPanel.Dock="Top">
+			<MenuItem Header="_File">
+				<MenuItem Header="_New" Command="ApplicationCommands.New" />
+				<MenuItem Header="_Open" Command="ApplicationCommands.Open" />
+				<MenuItem Header="_Close" Command="ApplicationCommands.Close" />
+			</MenuItem>
+		</Menu>
+		<ToolBarTray DockPanel.Dock="Top" Visibility="Collapsed">
+			<ToolBar>
+				<Button Command="NavigationCommands.BrowseBack">
+					Back
+				</Button>
+				<Button Command="NavigationCommands.BrowseForward">
+					Forward
+				</Button>
+			</ToolBar>
+		</ToolBarTray>
+		<TabControl TabStripPlacement="Bottom">
+			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}">
+				<TabItem.Resources>
+					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" />
+				</TabItem.Resources>
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="1*" />
+						<ColumnDefinition Width="4*" />
+					</Grid.ColumnDefinitions>
+					<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" Grid.Column="0">
+						<ListView.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Name}" />
+							</DataTemplate>
+						</ListView.ItemTemplate>
+					</ListView>
+					<DockPanel Grid.Column="1" DataContext="{StaticResource accounts}">
+						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
+						<DataGrid AlternatingRowBackground="LightBlue" AlternationCount="2">
+							<DataGrid.Columns>
+								<DataGridTextColumn Header="Date" />
+								<DataGridTextColumn Header="Payee" />
+								<DataGridComboBoxColumn Header="Category" />
+								<DataGridTextColumn Header="Memo" />
+								<DataGridTextColumn Header="Payment" />
+								<DataGridComboBoxColumn Header="Clr" />
+								<DataGridTextColumn Header="Deposit" />
+								<DataGridTextColumn Header="Balance" />
+							</DataGrid.Columns>
+						</DataGrid>
+					</DockPanel>
+				</Grid>
+			</TabItem>
+			<TabItem Header="Categories" DataContext="{Binding CategoriesPanel}" Height="20" VerticalAlignment="Top">
+				<TabItem.Resources>
+					<CollectionViewSource Source="{Binding Categories}" x:Key="categories" IsLiveSortingRequested="True">
+						<CollectionViewSource.SortDescriptions>
+							<componentmodel:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
+					</CollectionViewSource>
+					<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
+						<Style.Triggers>
+							<Trigger Property="Validation.HasError" Value="True">
+								<Setter Property="Background" Value="Pink" />
+								<Setter Property="ToolTip"
+									Value="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=(Validation.Errors)/ErrorContent}" />
+							</Trigger>
+						</Style.Triggers>
+					</Style>
+				</TabItem.Resources>
+				<DockPanel>
+					<DockPanel DockPanel.Dock="Right" Width="150pt" >
+						<Button Content="_Delete" DockPanel.Dock="Bottom" Command="{Binding DeleteCommand}" />
+						<StackPanel Margin="5,0,5,0" DataContext="{StaticResource categories}">
+							<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
+							<TextBox Name="CategoryName"
+								 MaxLength="100"
+								 Style="{StaticResource textBoxInError}">
+								<TextBox.Text>
+									<Binding Path="Name" UpdateSourceTrigger="LostFocus">
+										<Binding.ValidationRules>
+											<ExceptionValidationRule />
+										</Binding.ValidationRules>
+									</Binding>
+								</TextBox.Text>
+							</TextBox>
+						</StackPanel>
+					</DockPanel>
+					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
+					<ListView ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory}">
+						<ListView.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Name}" />
+							</DataTemplate>
+						</ListView.ItemTemplate>
+					</ListView>
+				</DockPanel>
+			</TabItem>
+		</TabControl>
+	</DockPanel>
 </Window>

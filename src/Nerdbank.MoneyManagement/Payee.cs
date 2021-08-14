@@ -3,8 +3,10 @@
 
 namespace Nerdbank.MoneyManagement
 {
+	using System.Diagnostics;
 	using SQLite;
 
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class Payee
 	{
 		[PrimaryKey, AutoIncrement]
@@ -12,5 +14,7 @@ namespace Nerdbank.MoneyManagement
 
 		[NotNull]
 		public string? Name { get; set; }
+
+		private string? DebuggerDisplay => this.Name;
 	}
 }

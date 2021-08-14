@@ -4,14 +4,14 @@
 namespace Nerdbank.MoneyManagement
 {
 	using System;
-	using System.Collections.Generic;
-	using System.Text;
+	using System.Diagnostics;
 	using SQLite;
 	using Validation;
 
 	/// <summary>
 	/// Describes a deposit, withdrawal, or transfer regarding one or two accounts.
 	/// </summary>
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class Transaction
 	{
 		private decimal amount;
@@ -85,5 +85,7 @@ namespace Nerdbank.MoneyManagement
 		/// </summary>
 		[NotNull]
 		public ClearedState Cleared { get; set; }
+
+		private string DebuggerDisplay => $"{this.When} {this.PayeeId} {this.Amount}";
 	}
 }
