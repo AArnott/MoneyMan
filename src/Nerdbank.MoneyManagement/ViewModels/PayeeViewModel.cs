@@ -11,6 +11,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	{
 		private string? name;
 
+		public PayeeViewModel()
+		{
+		}
+
+		public PayeeViewModel(Payee model)
+			: this()
+		{
+			this.CopyFrom(model);
+		}
+
 		public string? Name
 		{
 			get => this.name;

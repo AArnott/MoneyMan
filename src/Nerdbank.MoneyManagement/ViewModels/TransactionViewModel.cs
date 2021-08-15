@@ -4,20 +4,32 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections.ObjectModel;
 	using System.Diagnostics;
+	using System.Linq;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class TransactionViewModel : EntityViewModel<Transaction>
 	{
+		public static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new[]
+		{
+			new ClearedStateViewModel(ClearedState.None, "None", string.Empty),
+			new ClearedStateViewModel(ClearedState.Cleared, "Cleared", "C"),
+			new ClearedStateViewModel(ClearedState.Reconciled, "Reconciled", "R"),
+		});
+
 		private DateTime when;
 		private int? checkNumber;
 		private decimal amount;
 		private string? memo;
-		private ClearedState cleared;
+		private ClearedStateViewModel cleared = SharedClearedStates[0];
 		private AccountViewModel? transferAccount;
 		private PayeeViewModel? payee;
 		private CategoryViewModel? category;
+		private bool isSelected;
+
+		public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
 
 		public DateTime When
 		{
@@ -43,7 +55,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.memo, value);
 		}
 
-		public ClearedState Cleared
+		public ClearedStateViewModel Cleared
 		{
 			get => this.cleared;
 			set => this.SetProperty(ref this.cleared, value);
@@ -67,7 +79,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.category, value);
 		}
 
-		private string DebuggerDisplay => $"{this.When} {this.Payee} {this.Amount}";
+		public bool IsSelected
+		{
+			get => this.isSelected;
+			set => this.SetProperty(ref this.isSelected, value);
+		}
+
+		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
 
 		public override void ApplyTo(Transaction transaction)
 		{
@@ -76,7 +94,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.Amount = this.Amount;
 			transaction.Memo = this.Memo;
 			transaction.CheckNumber = this.CheckNumber;
-			transaction.Cleared = this.Cleared;
+			transaction.Cleared = this.Cleared.Value;
 		}
 
 		public override void CopyFrom(Transaction transaction)
@@ -87,7 +105,26 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.Amount = transaction.Amount;
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
-			this.Cleared = transaction.Cleared;
+			this.Cleared = SharedClearedStates.Single(cs => cs.Value == transaction.Cleared);
+		}
+
+		[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+		public class ClearedStateViewModel
+		{
+			public ClearedStateViewModel(ClearedState value, string caption, string shortCaption)
+			{
+				this.Value = value;
+				this.Caption = caption;
+				this.ShortCaption = shortCaption;
+			}
+
+			public ClearedState Value { get; }
+
+			public string Caption { get; }
+
+			public string ShortCaption { get; }
+
+			private string DebuggerDisplay => this.Caption;
 		}
 	}
 }

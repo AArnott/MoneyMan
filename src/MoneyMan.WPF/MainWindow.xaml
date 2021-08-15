@@ -6,10 +6,12 @@
 		xmlns:local="clr-namespace:MoneyMan.ViewModel"
 		xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
 		xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
+		xmlns:converters="clr-namespace:MoneyMan.Converters"
 		mc:Ignorable="d"
-		Title="{Binding Document.Title}" Height="350" Width="525">
+		Title="{Binding Document.Title}" Height="456" Width="762">
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
+		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
 	</Window.Resources>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
@@ -46,9 +48,15 @@
 							</DataTemplate>
 						</ListView.ItemTemplate>
 					</ListView>
-					<DockPanel Grid.Column="1" DataContext="{Binding SelectedAccount}">
+					<DockPanel Grid.Column="1"
+							   DataContext="{Binding SelectedAccount}" 
+							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-						<DataGrid AlternatingRowBackground="LightBlue" AlternationCount="2" ItemsSource="{Binding Transactions}" AutoGenerateColumns="False">
+						<DataGrid AlternatingRowBackground="LightBlue"
+								  AlternationCount="2" 
+								  ItemsSource="{Binding Transactions}" 
+								  SelectedItem="{Binding SelectedTransaction, Mode=TwoWay}"
+								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="Date">
 									<DataGridTemplateColumn.CellTemplate>
@@ -58,11 +66,25 @@
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
 								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber}" />
-								<DataGridTextColumn Header="Payee" />
+								<DataGridTemplateColumn Header="Payee">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Text="{Binding Payee.Name, Mode=OneWay}" Margin="3pt" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<ComboBox IsEditable="True" 
+											          ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.Payees}"
+											          DisplayMemberPath="Name"
+											          SelectedItem="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
+								</DataGridTemplateColumn>
 								<DataGridTemplateColumn Header="Category">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<TextBlock Text="{Binding Category.Name}" />
+											<TextBlock Text="{Binding Category.Name}" Margin="3pt" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
@@ -80,11 +102,45 @@
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
 								<DataGridTextColumn Header="Memo" Binding="{Binding Memo}" />
-								<DataGridTextColumn Header="Payment" />
-								<DataGridComboBoxColumn Header="Clr" SelectedItemBinding="{Binding Cleared}" />
-								<DataGridTextColumn Header="Deposit" />
-								<DataGridTextColumn Header="Balance" />
+								<DataGridTemplateColumn Header="Amount">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Margin="3pt" Text="{Binding Amount}" HorizontalAlignment="Right" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
+								</DataGridTemplateColumn>
+								<DataGridTemplateColumn Header="Clr">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Margin="3pt" Text="{Binding Cleared.ShortCaption}" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<ComboBox SelectedItem="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+											          ItemsSource="{Binding ClearedStates}"
+											          DisplayMemberPath="Caption" 
+											          SelectedValuePath="Value" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
+								</DataGridTemplateColumn>
+								<DataGridTextColumn Header="Balance" IsReadOnly="True" />
 							</DataGrid.Columns>
+							<DataGrid.ContextMenu>
+								<ContextMenu>
+									<MenuItem Header="_Delete" Command="{Binding DeleteTransactionCommand}" />
+								</ContextMenu>
+							</DataGrid.ContextMenu>
+							<DataGrid.RowStyle>
+								<Style TargetType="{x:Type DataGridRow}">
+									<Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+								</Style>
+							</DataGrid.RowStyle>
 						</DataGrid>
 					</DockPanel>
 				</Grid>
