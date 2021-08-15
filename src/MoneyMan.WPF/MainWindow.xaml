@@ -8,7 +8,7 @@
 		xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
 		xmlns:converters="clr-namespace:MoneyMan.Converters"
 		mc:Ignorable="d"
-		Title="{Binding Document.Title}" Height="350" Width="653">
+		Title="{Binding Document.Title}" Height="456" Width="762">
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
 		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
