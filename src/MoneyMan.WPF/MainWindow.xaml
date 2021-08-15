@@ -6,10 +6,12 @@
 		xmlns:local="clr-namespace:MoneyMan.ViewModel"
 		xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
 		xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
+		xmlns:converters="clr-namespace:MoneyMan.Converters"
 		mc:Ignorable="d"
 		Title="{Binding Document.Title}" Height="350" Width="653">
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
+		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
 	</Window.Resources>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
@@ -46,7 +48,9 @@
 							</DataTemplate>
 						</ListView.ItemTemplate>
 					</ListView>
-					<DockPanel Grid.Column="1" DataContext="{Binding SelectedAccount}">
+					<DockPanel Grid.Column="1"
+							   DataContext="{Binding SelectedAccount}" 
+							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 						<DataGrid AlternatingRowBackground="LightBlue"
 								  AlternationCount="2" 
@@ -88,15 +92,6 @@
 								<DataGridComboBoxColumn Header="Clr" SelectedItemBinding="{Binding Cleared}" />
 								<DataGridTextColumn Header="Deposit" />
 								<DataGridTextColumn Header="Balance" />
-								<DataGridTemplateColumn Header="Actions">
-									<DataGridTemplateColumn.CellTemplate>
-										<DataTemplate>
-											<StackPanel Orientation="Horizontal">
-												<Button Content="❌" Command="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=DataContext.DeleteTransactionCommand}" CommandParameter="{Binding}" />
-											</StackPanel>
-										</DataTemplate>
-									</DataGridTemplateColumn.CellTemplate>
-								</DataGridTemplateColumn>
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
