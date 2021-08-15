@@ -46,6 +46,8 @@ namespace Nerdbank.MoneyManagement
 
 		public TableQuery<Category> Categories => this.connection.Table<Category>();
 
+		public TableQuery<Payee> Payees => this.connection.Table<Payee>();
+
 		private string DebuggerDisplay => this.Path;
 
 		/// <summary>

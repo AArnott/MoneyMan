@@ -4,6 +4,7 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections.ObjectModel;
 	using System.ComponentModel;
 	using System.Diagnostics;
 	using System.IO;
@@ -41,6 +42,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					this.CategoriesPanel.Categories.Add(new CategoryViewModel(category));
 				}
+
+				foreach (Payee payee in model.Payees)
+				{
+					this.Payees.Add(new PayeeViewModel(payee));
+				}
 			}
 		}
 
@@ -51,6 +57,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public AccountsPanelViewModel? AccountsPanel { get; }
 
 		public CategoriesPanelViewModel? CategoriesPanel { get; }
+
+		public ObservableCollection<PayeeViewModel> Payees { get; } = new();
 
 		private string DebuggerDisplay => this.model?.Path ?? "(not backed by a file)";
 
