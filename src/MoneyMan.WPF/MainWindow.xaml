@@ -91,7 +91,7 @@
 								<DataGridTextColumn Header="Payment" />
 								<DataGridComboBoxColumn Header="Clr" SelectedItemBinding="{Binding Cleared}" />
 								<DataGridTextColumn Header="Deposit" />
-								<DataGridTextColumn Header="Balance" />
+								<DataGridTextColumn Header="Balance" IsReadOnly="True" />
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
