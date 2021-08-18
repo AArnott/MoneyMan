@@ -25,7 +25,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private string? memo;
 		private ClearedStateViewModel cleared = SharedClearedStates[0];
 		private AccountViewModel? transferAccount;
-		private PayeeViewModel? payee;
+		private string? payee;
 		private CategoryViewModel? category;
 		private bool isSelected;
 
@@ -67,7 +67,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.transferAccount, value);
 		}
 
-		public PayeeViewModel? Payee
+		public string? Payee
 		{
 			get => this.payee;
 			set => this.SetProperty(ref this.payee, value);

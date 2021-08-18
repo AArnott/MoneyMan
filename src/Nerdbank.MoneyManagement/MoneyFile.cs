@@ -46,8 +46,6 @@ namespace Nerdbank.MoneyManagement
 
 		public TableQuery<Category> Categories => this.connection.Table<Category>();
 
-		public TableQuery<Payee> Payees => this.connection.Table<Payee>();
-
 		private string DebuggerDisplay => this.Path;
 
 		/// <summary>
@@ -66,7 +64,6 @@ namespace Nerdbank.MoneyManagement
 				db.CreateTable<Account>();
 				db.CreateTable<Transaction>();
 				db.CreateTable<SplitTransaction>();
-				db.CreateTable<Payee>();
 				db.CreateTable<Category>();
 
 				return new MoneyFile(db);

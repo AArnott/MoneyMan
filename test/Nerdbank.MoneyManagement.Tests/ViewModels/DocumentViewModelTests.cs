@@ -37,12 +37,10 @@ public class DocumentViewModelTests : MoneyTestBase
 		{
 			new Account { Name = "Checking" },
 			new Category { Name = "Cat1" },
-			new Payee { Name = "Sally" },
 		});
 		this.viewModel = new DocumentViewModel(this.Money);
 		Assert.Contains(this.viewModel.AccountsPanel?.Accounts, acct => acct.Name == "Checking");
 		Assert.Contains(this.viewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
-		Assert.Contains(this.viewModel.Payees, p => p.Name == "Sally");
 	}
 
 	[Fact]

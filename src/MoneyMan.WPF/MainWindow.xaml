@@ -71,15 +71,12 @@
 								<DataGridTemplateColumn Header="Payee">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<TextBlock Text="{Binding Payee.Name, Mode=OneWay}" Margin="3pt" />
+											<TextBlock Text="{Binding Payee, Mode=OneWay}" Margin="3pt" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<ComboBox IsEditable="True" 
-											          ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.Payees}"
-											          DisplayMemberPath="Name"
-											          SelectedItem="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+											<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>

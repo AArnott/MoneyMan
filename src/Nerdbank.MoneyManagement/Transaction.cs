@@ -57,9 +57,9 @@ namespace Nerdbank.MoneyManagement
 		public string? Memo { get; set; }
 
 		/// <summary>
-		/// Gets or sets the <see cref="Payee.Id"/> of the <see cref="Payee"/> receiving or funding this transaction.
+		/// Gets or sets the party receiving or funding this transaction.
 		/// </summary>
-		public int? PayeeId { get; set; }
+		public string? Payee { get; set; }
 
 		/// <summary>
 		/// Gets or sets the <see cref="Category.Id"/> of the <see cref="Category"/> assigned to this transaction.
@@ -86,6 +86,6 @@ namespace Nerdbank.MoneyManagement
 		[NotNull]
 		public ClearedState Cleared { get; set; }
 
-		private string DebuggerDisplay => $"{this.When} {this.PayeeId} {this.Amount}";
+		private string DebuggerDisplay => $"{this.When} {this.Payee} {this.Amount}";
 	}
 }

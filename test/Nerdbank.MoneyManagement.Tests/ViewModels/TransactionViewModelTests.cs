@@ -85,12 +85,11 @@ public class TransactionViewModelTests : TestBase
 	[Fact]
 	public void Payee()
 	{
-		var payeeViewModel = new PayeeViewModel();
 		TestUtilities.AssertPropertyChangedEvent(
 			this.viewModel,
-			() => this.viewModel.Payee = payeeViewModel,
+			() => this.viewModel.Payee = "somebody",
 			nameof(this.viewModel.Payee));
-		Assert.Same(payeeViewModel, this.viewModel.Payee);
+		Assert.Same("somebody", this.viewModel.Payee);
 	}
 
 	[Fact]
