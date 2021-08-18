@@ -19,7 +19,6 @@ namespace MoneyMan
 	using System.Windows.Media;
 	using System.Windows.Media.Imaging;
 	using System.Windows.Navigation;
-	using System.Windows.Shapes;
 	using Microsoft.Win32;
 	using MoneyMan.ViewModel;
 	using Nerdbank.MoneyManagement;
@@ -70,7 +69,12 @@ namespace MoneyMan
 			this.InitializeFileDialog(dialog);
 			if (dialog.ShowDialog() is true)
 			{
-				this.ReplaceViewModel(DocumentViewModel.CreateNew(dialog.FileName));
+				// Create the new file in a temporary location so we don't conflict with the currently open document.
+				string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+				DocumentViewModel.CreateNew(tempFile).Dispose();
+				this.ViewModel.Document.Dispose();
+				File.Move(tempFile, dialog.FileName, overwrite: true);
+				this.ReplaceViewModel(DocumentViewModel.Open(dialog.FileName));
 			}
 		}
 
