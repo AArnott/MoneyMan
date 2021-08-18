@@ -12,6 +12,7 @@
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
 		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
+		<BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 	</Window.Resources>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
@@ -31,7 +32,8 @@
 				</Button>
 			</ToolBar>
 		</ToolBarTray>
-		<TabControl TabStripPlacement="Bottom">
+		<TabControl TabStripPlacement="Bottom"
+					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
 			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" />
