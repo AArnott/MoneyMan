@@ -5,19 +5,31 @@ namespace MoneyMan.Converters
 {
 	using System;
 	using System.Globalization;
-	using System.Windows;
 	using System.Windows.Data;
 
-	public class NullToVisibilityConverter : IValueConverter
+	public class NumberOrNullConverter : IValueConverter
 	{
 		public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
 		{
-			return value is object ? Visibility.Visible : Visibility.Collapsed;
+			// Converts an int? to a string.
+			return value is null ? string.Empty : value;
 		}
 
 		public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
 		{
-			throw new NotImplementedException();
+			// Converts a string to an int?
+			string? str = (string?)value;
+			if (string.IsNullOrEmpty(str))
+			{
+				return null;
+			}
+
+			if (int.TryParse(str, NumberStyles.Integer, culture, out int result))
+			{
+				return result;
+			}
+
+			return value;
 		}
 	}
 }

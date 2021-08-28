@@ -12,6 +12,7 @@
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
 		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
+		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
 		<BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 	</Window.Resources>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
@@ -67,7 +68,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber}" />
+								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" />
 								<DataGridTemplateColumn Header="Payee">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
