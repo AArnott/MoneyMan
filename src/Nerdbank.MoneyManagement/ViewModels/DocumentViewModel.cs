@@ -37,7 +37,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					this.AccountsPanel.Accounts.Add(new AccountViewModel(account, model));
 				}
 
-				this.CategoriesPanel = new CategoriesPanelViewModel();
+				this.CategoriesPanel = new CategoriesPanelViewModel(model);
 				foreach (Category category in model.Categories)
 				{
 					this.CategoriesPanel.Categories.Add(new CategoryViewModel(category, model));

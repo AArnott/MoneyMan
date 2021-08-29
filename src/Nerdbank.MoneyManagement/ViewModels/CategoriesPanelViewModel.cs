@@ -14,12 +14,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 	public class CategoriesPanelViewModel : BindableBase
 	{
+		private readonly MoneyFile moneyFile;
 		private CategoryViewModel? selectedCategory;
 
-		public CategoriesPanelViewModel()
+		public CategoriesPanelViewModel(MoneyFile moneyFile)
 		{
 			this.AddCommand = new AddCategoryCommand(this);
 			this.DeleteCommand = new DeleteCategoryCommand(this);
+			this.moneyFile = moneyFile;
 		}
 
 		public CommandBase AddCommand { get; }
@@ -54,8 +56,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 				else
 				{
-					CategoryViewModel newCategoryViewModel = new();
+					CategoryViewModel newCategoryViewModel = new(null, this.viewModel.moneyFile);
 					newCategoryViewModel.PropertyChanged += this.NewCategoryViewModel_PropertyChanged;
+					newCategoryViewModel.Model = new Category();
 					this.viewModel.Categories.Add(newCategoryViewModel);
 					this.viewModel.SelectedCategory = newCategoryViewModel;
 					this.viewModel.AddingCategory = newCategoryViewModel;
@@ -93,8 +96,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 			{
-				this.viewModel.Categories.Remove(this.viewModel.SelectedCategory ?? throw new InvalidOperationException("No category is selected."));
+				CategoryViewModel viewModel = this.viewModel.SelectedCategory ?? throw new InvalidOperationException("No category is selected.");
+				this.viewModel.Categories.Remove(viewModel);
 				this.viewModel.SelectedCategory = null;
+				if (viewModel.Model is object)
+				{
+					this.viewModel.moneyFile.Delete(viewModel.Model);
+				}
+
 				return Task.CompletedTask;
 			}
 

@@ -1,17 +1,20 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Threading.Tasks;
+using Nerdbank.MoneyManagement;
 using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class CategoriesPanelViewModelTests : TestBase
+public class CategoriesPanelViewModelTests : MoneyTestBase
 {
-	private CategoriesPanelViewModel viewModel = new CategoriesPanelViewModel();
+	private CategoriesPanelViewModel viewModel;
 
 	public CategoriesPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.viewModel = new CategoriesPanelViewModel(this.Money);
 	}
 
 	[Fact]
@@ -30,10 +33,13 @@ public class CategoriesPanelViewModelTests : TestBase
 		CategoryViewModel newCategory = Assert.Single(this.viewModel.Categories);
 		Assert.Same(newCategory, this.viewModel.SelectedCategory);
 		Assert.Equal(string.Empty, newCategory.Name);
+
+		newCategory.Name = "cat";
+		Assert.Equal("cat", Assert.Single(this.Money.Categories).Name);
 	}
 
 	[Fact]
-	public async Task DeleteCommand()
+	public async Task DeleteCommand_Volatile()
 	{
 		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
 		this.viewModel.Categories.Add(new CategoryViewModel());
@@ -44,6 +50,24 @@ public class CategoriesPanelViewModelTests : TestBase
 		await this.viewModel.DeleteCommand.ExecuteAsync();
 		Assert.Empty(this.viewModel.Categories);
 		Assert.Null(this.viewModel.SelectedCategory);
+	}
+
+	[Fact]
+	public async Task DeleteCommand()
+	{
+		var category = new Category { Name = "cat" };
+		this.Money.Insert(category);
+		var viewModel = new CategoryViewModel(category, this.Money);
+		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
+		this.viewModel.Categories.Add(viewModel);
+		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
+		this.viewModel.SelectedCategory = this.viewModel.Categories[0];
+		Assert.True(this.viewModel.DeleteCommand.CanExecute(null));
+
+		await this.viewModel.DeleteCommand.ExecuteAsync();
+		Assert.Empty(this.viewModel.Categories);
+		Assert.Null(this.viewModel.SelectedCategory);
+		Assert.Empty(this.Money.Categories);
 	}
 
 	[Fact]
