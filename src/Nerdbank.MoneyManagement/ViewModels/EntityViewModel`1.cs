@@ -18,14 +18,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (this.AutoSave && this.Model is object)
 				{
 					this.ApplyToModel();
+					if (this.MoneyFile is object)
+					{
+						this.MoneyFile.InsertOrReplace(this.Model);
+					}
 				}
 			};
 		}
 
-		protected EntityViewModel(TEntity? model)
+		protected EntityViewModel(TEntity? model, MoneyFile? moneyFile)
 			: this()
 		{
 			this.Model = model;
+			this.MoneyFile = moneyFile;
 			if (model is object)
 			{
 				this.CopyFrom(model);
@@ -42,6 +47,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		/// <value>May be <see langword="null"/> if this view model represents an entity that has not been created yet.</value>
 		public TEntity? Model { get; set; }
+
+		/// <summary>
+		/// Gets or sets the file to which this view model should be saved or from which it should be refreshed.
+		/// </summary>
+		public MoneyFile? MoneyFile { get; set; }
 
 		/// <summary>
 		/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.

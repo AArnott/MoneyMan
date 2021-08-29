@@ -13,12 +13,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private string name = string.Empty;
 
 		public CategoryViewModel()
-			: this(null)
+			: this(null, null)
 		{
 		}
 
-		public CategoryViewModel(Category? model)
-			: base(model)
+		public CategoryViewModel(Category? model, MoneyFile? moneyFile)
+			: base(model, moneyFile)
 		{
 			this.AutoSave = true;
 		}

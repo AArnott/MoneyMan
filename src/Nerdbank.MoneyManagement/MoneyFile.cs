@@ -87,6 +87,8 @@ namespace Nerdbank.MoneyManagement
 
 		public int Update(object obj) => this.connection.Update(obj);
 
+		public void InsertOrReplace(object obj) => this.connection.InsertOrReplace(obj);
+
 		/// <summary>
 		/// Calculates the sum of all accounts' final balances.
 		/// </summary>

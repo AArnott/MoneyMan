@@ -20,12 +20,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private bool isClosed;
 
 		public AccountViewModel()
-			: this(null)
+			: this(null, null)
 		{
 		}
 
-		public AccountViewModel(Account? model)
-			: base(model)
+		public AccountViewModel(Account? model, MoneyFile? moneyFile)
+			: base(model, moneyFile)
 		{
 			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
 		}

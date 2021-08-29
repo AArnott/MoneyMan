@@ -30,12 +30,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private bool isSelected;
 
 		public TransactionViewModel()
-			: this(null)
+			: this(null, null)
 		{
 		}
 
-		public TransactionViewModel(Transaction? model)
-			: base(model)
+		public TransactionViewModel(Transaction? model, MoneyFile? moneyFile)
+			: base(model, moneyFile)
 		{
 		}
 

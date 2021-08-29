@@ -8,7 +8,7 @@ using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class CategoryViewModelTests : TestBase
+public class CategoryViewModelTests : MoneyTestBase
 {
 	private CategoryViewModel viewModel = new CategoryViewModel();
 
@@ -82,7 +82,7 @@ public class CategoryViewModelTests : TestBase
 	}
 
 	[Fact]
-	public void Ctor_From_Entity()
+	public void Ctor_From_Volatile_Entity()
 	{
 		var category = new Category
 		{
@@ -90,7 +90,7 @@ public class CategoryViewModelTests : TestBase
 			Name = "some name",
 		};
 
-		this.viewModel = new CategoryViewModel(category);
+		this.viewModel = new CategoryViewModel(category, this.Money);
 
 		Assert.Equal(category.Id, this.viewModel.Id);
 		Assert.Equal(category.Name, this.viewModel.Name);
@@ -98,5 +98,32 @@ public class CategoryViewModelTests : TestBase
 		// Test auto-save behavior.
 		this.viewModel.Name = "another name";
 		Assert.Equal(this.viewModel.Name, category.Name);
+
+		Category fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
+		Assert.Equal(category.Name, fromDb.Name);
+		Assert.Single(this.Money.Categories);
+	}
+
+	[Fact]
+	public void Ctor_From_Db_Entity()
+	{
+		var category = new Category
+		{
+			Name = "some name",
+		};
+		this.Money.Insert(category);
+
+		this.viewModel = new CategoryViewModel(category, this.Money);
+
+		Assert.Equal(category.Id, this.viewModel.Id);
+		Assert.Equal(category.Name, this.viewModel.Name);
+
+		// Test auto-save behavior.
+		this.viewModel.Name = "another name";
+		Assert.Equal(this.viewModel.Name, category.Name);
+
+		Category fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
+		Assert.Equal(category.Name, fromDb.Name);
+		Assert.Single(this.Money.Categories);
 	}
 }
