@@ -18,6 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.rsp = Directory.Build.rsp
 		Directory.Build.targets = Directory.Build.targets
 		global.json = global.json
+		init.ps1 = init.ps1
 		nuget.config = nuget.config
 		README.md = README.md
 		stylecop.json = stylecop.json
@@ -38,7 +39,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{98805063-2
 		test\Directory.Build.targets = test\Directory.Build.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyMan.WPF.Tests", "test\MoneyMan.WPF.Tests\MoneyMan.WPF.Tests.csproj", "{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MoneyMan.WPF.Tests", "test\MoneyMan.WPF.Tests\MoneyMan.WPF.Tests.csproj", "{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

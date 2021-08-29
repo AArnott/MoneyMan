@@ -29,6 +29,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private CategoryViewModel? category;
 		private bool isSelected;
 
+		public TransactionViewModel()
+			: this(null)
+		{
+		}
+
+		public TransactionViewModel(Transaction? model)
+			: base(model)
+		{
+		}
+
 		public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
 
 		public DateTime When
@@ -87,7 +97,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
 
-		public override void ApplyTo(Transaction transaction)
+		protected override void ApplyToCore(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 			transaction.When = this.When;
@@ -97,7 +107,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.Cleared = this.Cleared.Value;
 		}
 
-		public override void CopyFrom(Transaction transaction)
+		protected override void CopyFromCore(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 

@@ -173,5 +173,11 @@ dotnet_diagnostic.CA1508.severity = warning
 # SA1133: Do not combine attributes
 dotnet_diagnostic.SA1133.severity = none
 
+# CSIsNull001: Use `is null` for null checks
+dotnet_diagnostic.CSIsNull001.severity = warning
+
+# CSIsNull002: Use `is object` for non-null checks
+dotnet_diagnostic.CSIsNull002.severity = warning
+
 [*.sln]
 indent_style = tab

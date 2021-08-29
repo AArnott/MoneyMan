@@ -20,14 +20,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private bool isClosed;
 
 		public AccountViewModel()
+			: this(null)
 		{
-			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
 		}
 
-		public AccountViewModel(Account model)
-			: this()
+		public AccountViewModel(Account? model)
+			: base(model)
 		{
-			this.CopyFrom(model);
+			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
 		}
 
 		public string? Name
@@ -57,7 +57,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private string? DebuggerDisplay => this.Name;
 
-		public override void ApplyTo(Account account)
+		protected override void ApplyToCore(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
 
@@ -65,7 +65,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			account.IsClosed = this.IsClosed;
 		}
 
-		public override void CopyFrom(Account account)
+		protected override void CopyFromCore(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
 

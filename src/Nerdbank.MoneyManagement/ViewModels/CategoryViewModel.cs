@@ -13,12 +13,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private string name = string.Empty;
 
 		public CategoryViewModel()
+			: this(null)
 		{
 		}
 
-		public CategoryViewModel(Category model)
+		public CategoryViewModel(Category? model)
+			: base(model)
 		{
-			this.CopyFrom(model);
 		}
 
 		/// <summary>
@@ -39,7 +40,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private string DebuggerDisplay => this.Name;
 
-		public override void ApplyTo(Category category)
+		protected override void ApplyToCore(Category category)
 		{
 			Requires.NotNull(category, nameof(category));
 			Requires.Argument(this.Id is null || category.Id == this.Id, nameof(category), "The provided object is not the original template.");
@@ -47,7 +48,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			category.Name = this.name;
 		}
 
-		public override void CopyFrom(Category category)
+		protected override void CopyFromCore(Category category)
 		{
 			Requires.NotNull(category, nameof(category));
 

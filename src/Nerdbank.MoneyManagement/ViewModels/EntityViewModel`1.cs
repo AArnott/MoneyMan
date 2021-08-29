@@ -3,13 +3,57 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System;
+	using Microsoft;
 	using PCLCommandBase;
 
 	public abstract class EntityViewModel<TEntity> : BindableBase
 		where TEntity : class
 	{
-		public abstract void ApplyTo(TEntity category);
+		protected EntityViewModel()
+		{
+			this.PropertyChanged += (s, e) => this.IsDirty = true;
+		}
 
-		public abstract void CopyFrom(TEntity category);
+		protected EntityViewModel(TEntity? model)
+			: this()
+		{
+			this.Model = model;
+			if (model is object)
+			{
+				this.CopyFrom(model);
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets a value indicating whether this entity has been changed since <see cref="ApplyTo(TEntity)"/> was last called.
+		/// </summary>
+		public bool IsDirty { get; set; }
+
+		/// <summary>
+		/// Gets or sets the model that underlies this view model.
+		/// </summary>
+		/// <value>May be <see langword="null"/> if this view model represents an entity that has not been created yet.</value>
+		public TEntity? Model { get; set; }
+
+		public void ApplyToModel() => this.ApplyTo(this.Model ?? throw new InvalidOperationException("This view model has no model yet."));
+
+		public void ApplyTo(TEntity model)
+		{
+			this.ApplyToCore(model);
+			this.IsDirty = false;
+			this.Model ??= model;
+		}
+
+		public void CopyFrom(TEntity model)
+		{
+			this.CopyFromCore(model);
+			this.IsDirty = false;
+			this.Model ??= model;
+		}
+
+		protected abstract void ApplyToCore(TEntity model);
+
+		protected abstract void CopyFromCore(TEntity model);
 	}
 }

@@ -32,15 +32,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.category, value);
 		}
 
-		public override void ApplyTo(SplitTransaction transaction)
-		{
-			Requires.NotNull(transaction, nameof(transaction));
-
-			transaction.Amount = this.Amount;
-			transaction.Memo = this.Memo;
-			transaction.CategoryId = this.Category?.Id;
-		}
-
 		public void CopyFrom(SplitTransaction transaction, IReadOnlyDictionary<int, CategoryViewModel> categories)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
@@ -58,8 +49,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.Category = null;
 			}
+
+			this.IsDirty = false;
+			this.Model ??= transaction;
 		}
 
-		public override void CopyFrom(SplitTransaction category) => throw new NotSupportedException("Use the other overload instead.");
+		protected override void ApplyToCore(SplitTransaction transaction)
+		{
+			Requires.NotNull(transaction, nameof(transaction));
+
+			transaction.Amount = this.Amount;
+			transaction.Memo = this.Memo;
+			transaction.CategoryId = this.Category?.Id;
+		}
+
+		protected override void CopyFromCore(SplitTransaction category) => throw new NotSupportedException("Use the other overload instead.");
 	}
 }
