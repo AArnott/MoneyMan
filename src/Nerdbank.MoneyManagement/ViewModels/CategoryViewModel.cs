@@ -20,6 +20,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public CategoryViewModel(Category? model)
 			: base(model)
 		{
+			this.AutoSave = true;
 		}
 
 		/// <summary>

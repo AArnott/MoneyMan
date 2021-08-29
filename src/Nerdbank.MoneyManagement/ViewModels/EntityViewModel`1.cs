@@ -12,7 +12,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	{
 		protected EntityViewModel()
 		{
-			this.PropertyChanged += (s, e) => this.IsDirty = true;
+			this.PropertyChanged += (s, e) =>
+			{
+				this.IsDirty = true;
+				if (this.AutoSave && this.Model is object)
+				{
+					this.ApplyToModel();
+				}
+			};
 		}
 
 		protected EntityViewModel(TEntity? model)
@@ -36,6 +43,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// <value>May be <see langword="null"/> if this view model represents an entity that has not been created yet.</value>
 		public TEntity? Model { get; set; }
 
+		/// <summary>
+		/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.
+		/// </summary>
+		protected bool AutoSave { get; set; }
+
+		/// <summary>
+		/// Writes this view model to the underlying model.
+		/// </summary>
+		/// <exception cref="InvalidOperationException">Thrown if <see cref="Model"/> is <see langword="null"/>.</exception>
 		public void ApplyToModel() => this.ApplyTo(this.Model ?? throw new InvalidOperationException("This view model has no model yet."));
 
 		public void ApplyTo(TEntity model)

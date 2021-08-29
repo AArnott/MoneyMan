@@ -46,7 +46,10 @@ public class CategoryViewModelTests : TestBase
 		this.viewModel.Name = "some name";
 
 		this.viewModel.ApplyTo(category);
+		Assert.Equal(this.viewModel.Name, category.Name);
 
+		// Test auto-save behavior.
+		this.viewModel.Name = "another name";
 		Assert.Equal(this.viewModel.Name, category.Name);
 	}
 
@@ -72,5 +75,28 @@ public class CategoryViewModelTests : TestBase
 
 		Assert.Equal(category.Id, this.viewModel.Id);
 		Assert.Equal(category.Name, this.viewModel.Name);
+
+		// Test auto-save behavior.
+		this.viewModel.Name = "another name";
+		Assert.Equal(this.viewModel.Name, category.Name);
+	}
+
+	[Fact]
+	public void Ctor_From_Entity()
+	{
+		var category = new Category
+		{
+			Id = 5,
+			Name = "some name",
+		};
+
+		this.viewModel = new CategoryViewModel(category);
+
+		Assert.Equal(category.Id, this.viewModel.Id);
+		Assert.Equal(category.Name, this.viewModel.Name);
+
+		// Test auto-save behavior.
+		this.viewModel.Name = "another name";
+		Assert.Equal(this.viewModel.Name, category.Name);
 	}
 }
