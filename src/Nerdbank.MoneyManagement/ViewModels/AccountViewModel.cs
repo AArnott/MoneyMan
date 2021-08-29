@@ -53,7 +53,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// <summary>
 		/// Gets a command that deletes the transactions where <see cref="TransactionViewModel.IsSelected"/> is <see langword="true"/>.
 		/// </summary>
-		public ICommand DeleteTransactionCommand { get; }
+		public CommandBase DeleteTransactionCommand { get; }
 
 		private string? DebuggerDisplay => this.Name;
 

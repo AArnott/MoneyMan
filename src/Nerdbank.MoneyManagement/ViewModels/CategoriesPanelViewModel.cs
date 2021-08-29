@@ -22,9 +22,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.DeleteCommand = new DeleteCategoryCommand(this);
 		}
 
-		public ICommand AddCommand { get; }
+		public CommandBase AddCommand { get; }
 
-		public ICommand DeleteCommand { get; }
+		public CommandBase DeleteCommand { get; }
 
 		public ObservableCollection<CategoryViewModel> Categories { get; } = new();
 

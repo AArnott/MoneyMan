@@ -22,18 +22,18 @@ public class CategoriesPanelViewModelTests : TestBase
 	}
 
 	[Fact]
-	public void AddCommand()
+	public async Task AddCommand()
 	{
 		Assert.True(this.viewModel.AddCommand.CanExecute(null));
 
-		this.viewModel.AddCommand.Execute(null);
+		await this.viewModel.AddCommand.ExecuteAsync();
 		CategoryViewModel newCategory = Assert.Single(this.viewModel.Categories);
 		Assert.Same(newCategory, this.viewModel.SelectedCategory);
 		Assert.Equal(string.Empty, newCategory.Name);
 	}
 
 	[Fact]
-	public void DeleteCommand()
+	public async Task DeleteCommand()
 	{
 		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
 		this.viewModel.Categories.Add(new CategoryViewModel());
@@ -41,27 +41,27 @@ public class CategoriesPanelViewModelTests : TestBase
 		this.viewModel.SelectedCategory = this.viewModel.Categories[0];
 		Assert.True(this.viewModel.DeleteCommand.CanExecute(null));
 
-		this.viewModel.DeleteCommand.Execute(null);
+		await this.viewModel.DeleteCommand.ExecuteAsync();
 		Assert.Empty(this.viewModel.Categories);
 		Assert.Null(this.viewModel.SelectedCategory);
 	}
 
 	[Fact]
-	public void AddTwiceRedirectsToFirstIfNotCommitted()
+	public async Task AddTwiceRedirectsToFirstIfNotCommitted()
 	{
 		Assert.True(this.viewModel.AddCommand.CanExecute(null));
-		this.viewModel.AddCommand.Execute(null);
+		await this.viewModel.AddCommand.ExecuteAsync();
 		CategoryViewModel? first = this.viewModel.SelectedCategory;
 		Assert.NotNull(first);
 
 		Assert.True(this.viewModel.AddCommand.CanExecute(null));
-		this.viewModel.AddCommand.Execute(null);
+		await this.viewModel.AddCommand.ExecuteAsync();
 		CategoryViewModel? second = this.viewModel.SelectedCategory;
 		Assert.Same(first, second);
 
 		first!.Name = "Some category";
 		Assert.True(this.viewModel.AddCommand.CanExecute(null));
-		this.viewModel.AddCommand.Execute(null);
+		await this.viewModel.AddCommand.ExecuteAsync();
 		CategoryViewModel? third = this.viewModel.SelectedCategory;
 		Assert.NotNull(third);
 		Assert.NotSame(first, third);
@@ -69,11 +69,11 @@ public class CategoriesPanelViewModelTests : TestBase
 	}
 
 	[Fact]
-	public void AddThenDelete()
+	public async Task AddThenDelete()
 	{
-		this.viewModel.AddCommand.Execute(null);
+		await this.viewModel.AddCommand.ExecuteAsync();
 		Assert.True(this.viewModel.DeleteCommand.CanExecute(null));
-		this.viewModel.DeleteCommand.Execute(null);
+		await this.viewModel.DeleteCommand.ExecuteAsync();
 		Assert.Null(this.viewModel.SelectedCategory);
 		Assert.Empty(this.viewModel.Categories);
 	}
