@@ -39,6 +39,22 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public async Task AddCommand_Twice()
+	{
+		await this.viewModel.AddCommand.ExecuteAsync();
+		CategoryViewModel? newCategory = this.viewModel.SelectedCategory;
+		Assert.NotNull(newCategory);
+		newCategory!.Name = "cat";
+
+		await this.viewModel.AddCommand.ExecuteAsync();
+		newCategory = this.viewModel.SelectedCategory;
+		Assert.NotNull(newCategory);
+		newCategory!.Name = "dog";
+
+		Assert.Equal(2, this.Money.Categories.Count());
+	}
+
+	[Fact]
 	public async Task DeleteCommand_Volatile()
 	{
 		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));

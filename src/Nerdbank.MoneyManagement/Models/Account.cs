@@ -12,14 +12,8 @@ namespace Nerdbank.MoneyManagement
 	/// Describes a bank account.
 	/// </summary>
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class Account
+	public class Account : ModelBase
 	{
-		/// <summary>
-		/// Gets or sets the primary key of this database entity.
-		/// </summary>
-		[PrimaryKey, AutoIncrement]
-		public int Id { get; set; }
-
 		/// <summary>
 		/// Gets or sets the name of this account.
 		/// </summary>

@@ -10,18 +10,12 @@ namespace Nerdbank.MoneyManagement
 	/// A category that is assignable to a transaction.
 	/// </summary>
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class Category
+	public class Category : ModelBase
 	{
 		/// <summary>
 		/// The sentinel value to use for <see cref="Transaction.CategoryId"/> on split transactions.
 		/// </summary>
 		public const int Split = -1;
-
-		/// <summary>
-		/// Gets or sets the primary key for this entity.
-		/// </summary>
-		[PrimaryKey, AutoIncrement]
-		public int Id { get; set; }
 
 		/// <summary>
 		/// Gets or sets the name of this category.

@@ -8,22 +8,16 @@ namespace Nerdbank.MoneyManagement
 	/// <summary>
 	/// Represents one line of a split transaction.
 	/// </summary>
-	public class SplitTransaction
+	public class SplitTransaction : ModelBase
 	{
 		/// <summary>
-		/// Gets or sets the primary key of this database entity.
-		/// </summary>
-		[PrimaryKey, AutoIncrement]
-		public int Id { get; set; }
-
-		/// <summary>
-		/// Gets or sets the <see cref="Transaction.Id"/> of the <see cref="Transaction"/> to which this split belongs.
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Transaction"/> to which this split belongs.
 		/// </summary>
 		[NotNull, Indexed]
 		public int TransactionId { get; set; }
 
 		/// <summary>
-		/// Gets or sets the <see cref="Category.Id"/> of the <see cref="Category"/> assigned to this line of the split transaction.
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Category"/> assigned to this line of the split transaction.
 		/// </summary>
 		public int? CategoryId { get; set; }
 

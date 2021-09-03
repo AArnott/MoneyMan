@@ -8,7 +8,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using PCLCommandBase;
 
 	public abstract class EntityViewModel<TEntity> : BindableBase
-		where TEntity : class
+		where TEntity : ModelBase
 	{
 		protected EntityViewModel()
 		{
@@ -20,7 +20,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					this.ApplyToModel();
 					if (this.MoneyFile is object)
 					{
-						this.MoneyFile.InsertOrReplace(this.Model);
+						this.Model.Save(this.MoneyFile);
 					}
 				}
 			};

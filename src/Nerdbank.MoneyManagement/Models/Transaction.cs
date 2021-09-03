@@ -12,15 +12,9 @@ namespace Nerdbank.MoneyManagement
 	/// Describes a deposit, withdrawal, or transfer regarding one or two accounts.
 	/// </summary>
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class Transaction
+	public class Transaction : ModelBase
 	{
 		private decimal amount;
-
-		/// <summary>
-		/// Gets or sets the primary key of this database entity.
-		/// </summary>
-		[PrimaryKey, AutoIncrement]
-		public int Id { get; set; }
 
 		/// <summary>
 		/// Gets or sets the date the transaction is to be sorted by.
@@ -62,7 +56,7 @@ namespace Nerdbank.MoneyManagement
 		public string? Payee { get; set; }
 
 		/// <summary>
-		/// Gets or sets the <see cref="Category.Id"/> of the <see cref="Category"/> assigned to this transaction.
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Category"/> assigned to this transaction.
 		/// </summary>
 		/// <remarks>
 		/// Use <see cref="Category.Split"/> for the value where the transaction is split across multiple categories.
@@ -71,12 +65,12 @@ namespace Nerdbank.MoneyManagement
 		public int? CategoryId { get; set; }
 
 		/// <summary>
-		/// Gets or sets the <see cref="Account.Id"/> of the account to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the account to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
 		/// </summary>
 		public int? CreditAccountId { get; set; }
 
 		/// <summary>
-		/// Gets or sets the <see cref="Account.Id"/> of the account to be debited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the account to be debited the <see cref="Amount"/> of this <see cref="Transaction"/>.
 		/// </summary>
 		public int? DebitAccountId { get; set; }
 
