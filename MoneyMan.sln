@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31522.541
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MoneyMan.WPF", "src\MoneyMan.WPF\MoneyMan.WPF.csproj", "{0403ADA8-0C66-4B96-AD59-11E112DD4AFD}"
 EndProject
@@ -74,11 +74,9 @@ Global
 		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Debug|NonWindows.ActiveCfg = Debug|Any CPU
-		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Debug|NonWindows.Build.0 = Debug|Any CPU
 		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Release|NonWindows.ActiveCfg = Release|Any CPU
-		{518C2D9E-7BF9-4CAF-8EEA-94790A18092A}.Release|NonWindows.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
