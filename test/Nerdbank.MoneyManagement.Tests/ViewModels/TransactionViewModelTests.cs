@@ -16,6 +16,8 @@ public class TransactionViewModelTests : TestBase
 {
 	private TransactionViewModel viewModel = new TransactionViewModel();
 
+	private string payee = "some person";
+
 	private decimal amount = 5.5m;
 
 	private string memo = "Some memo";
@@ -99,6 +101,7 @@ public class TransactionViewModelTests : TestBase
 
 		Transaction transaction = new Transaction();
 
+		this.viewModel.Payee = this.payee;
 		this.viewModel.Amount = this.amount;
 		this.viewModel.When = this.when;
 		this.viewModel.Memo = this.memo;
@@ -106,6 +109,7 @@ public class TransactionViewModelTests : TestBase
 		this.viewModel.Cleared = this.cleared;
 		this.viewModel.ApplyTo(transaction);
 
+		Assert.Equal(this.payee, transaction.Payee);
 		Assert.Equal(this.amount, transaction.Amount);
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(this.memo, transaction.Memo);
@@ -120,6 +124,7 @@ public class TransactionViewModelTests : TestBase
 
 		Transaction transaction = new Transaction
 		{
+			Payee = this.payee,
 			Amount = this.amount,
 			When = this.when,
 			Memo = this.memo,
@@ -129,6 +134,7 @@ public class TransactionViewModelTests : TestBase
 
 		this.viewModel.CopyFrom(transaction);
 
+		Assert.Equal(transaction.Payee, this.viewModel.Payee);
 		Assert.Equal(transaction.Amount, this.viewModel.Amount);
 		Assert.Equal(transaction.When, this.viewModel.When);
 		Assert.Equal(transaction.Memo, this.viewModel.Memo);

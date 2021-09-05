@@ -100,6 +100,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		protected override void ApplyToCore(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
+			transaction.Payee = this.Payee;
 			transaction.When = this.When;
 			transaction.Amount = this.Amount;
 			transaction.Memo = this.Memo;
@@ -111,6 +112,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 
+			this.payee = transaction.Payee;
 			this.When = transaction.When;
 			this.Amount = transaction.Amount;
 			this.Memo = transaction.Memo;
