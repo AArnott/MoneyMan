@@ -22,5 +22,5 @@ MoneyMan is intended to offer users an alternative.
 
 ## How?
 
-MoneyMan is primarily implemented in a .NETStandard library, with applications for each platform and device.
+MoneyMan is primarily implemented in a .NET 5 library, with applications for (eventually) each platform and device.
 It utilizes SQLite as its data store due to its cross-platform availability, compact size and high performance.
