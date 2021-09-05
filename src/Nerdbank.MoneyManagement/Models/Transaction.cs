@@ -65,12 +65,12 @@ namespace Nerdbank.MoneyManagement
 		public int? CategoryId { get; set; }
 
 		/// <summary>
-		/// Gets or sets the <see cref="ModelBase.Id"/> of the account to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
 		/// </summary>
 		public int? CreditAccountId { get; set; }
 
 		/// <summary>
-		/// Gets or sets the <see cref="ModelBase.Id"/> of the account to be debited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be debited the <see cref="Amount"/> of this <see cref="Transaction"/>.
 		/// </summary>
 		public int? DebitAccountId { get; set; }
 

@@ -37,7 +37,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public TransactionViewModel(Transaction? model, MoneyFile? moneyFile)
 			: base(model, moneyFile)
 		{
+			this.AutoSave = true;
 		}
+
+		/// <summary>
+		/// Gets the primary key for this entity.
+		/// </summary>
+		public int? Id { get; private set; }
 
 		public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
 
@@ -100,6 +106,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		protected override void ApplyToCore(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
+			Requires.Argument(this.Id is null || transaction.Id == this.Id, nameof(transaction), "The provided object is not the original template.");
+
 			transaction.Payee = this.Payee;
 			transaction.When = this.When;
 			transaction.Amount = this.Amount;
@@ -118,6 +126,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
 			this.Cleared = SharedClearedStates.Single(cs => cs.Value == transaction.Cleared);
+			this.Id = transaction.Id;
 		}
 
 		[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
