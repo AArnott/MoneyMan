@@ -59,6 +59,7 @@
 								  AlternationCount="2" 
 								  ItemsSource="{Binding Transactions}" 
 								  SelectedItem="{Binding SelectedTransaction, Mode=TwoWay}"
+								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="Date">
