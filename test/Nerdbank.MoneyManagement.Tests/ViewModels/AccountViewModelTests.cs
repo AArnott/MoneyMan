@@ -134,4 +134,21 @@ public class AccountViewModelTests : MoneyTestBase
 		Assert.Equal(account.Name, fromDb.Name);
 		Assert.Single(this.Money.Accounts);
 	}
+
+	[Fact]
+	public void PopulatesWithTransactionsFromDb()
+	{
+		var account = new Account
+		{
+			Name = "some person",
+		};
+		this.Money.Insert(account);
+		this.Money.InsertAll(new object[]
+		{
+			new Transaction { CreditAccountId = account.Id },
+			new Transaction { DebitAccountId = account.Id },
+		});
+		this.viewModel = new AccountViewModel(account, this.Money);
+		Assert.Equal(2, this.viewModel.Transactions.Count);
+	}
 }

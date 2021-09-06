@@ -6,16 +6,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System;
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
-	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using System.Windows.Input;
 	using PCLCommandBase;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class AccountViewModel : EntityViewModel<Account>
 	{
+		private ObservableCollection<TransactionViewModel>? transactions;
 		private TransactionViewModel? selectedTransaction;
 		private string? name;
 		private bool isClosed;
@@ -44,7 +43,26 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.isClosed, value);
 		}
 
-		public ObservableCollection<TransactionViewModel> Transactions { get; } = new();
+		public ObservableCollection<TransactionViewModel> Transactions
+		{
+			get
+			{
+				if (this.transactions is null)
+				{
+					this.transactions = new();
+					if (this.MoneyFile is object)
+					{
+						SQLite.TableQuery<Transaction> transactions = this.MoneyFile.Transactions.Where(tx => tx.CreditAccountId == this.Id || tx.DebitAccountId == this.Id);
+						foreach (Transaction transaction in transactions)
+						{
+							this.transactions.Add(new TransactionViewModel(this, transaction, this.MoneyFile));
+						}
+					}
+				}
+
+				return this.transactions;
+			}
+		}
 
 		public TransactionViewModel? SelectedTransaction
 		{
@@ -85,6 +103,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.Name = account.Name;
 			this.IsClosed = account.IsClosed;
+
+			// Force reinitialization.
+			this.transactions = null;
 		}
 
 		private class DeleteTransactionCommandImpl : CommandBase
