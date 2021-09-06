@@ -12,7 +12,7 @@ using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class AccountViewModelTests : TestBase
+public class AccountViewModelTests : MoneyTestBase
 {
 	private AccountViewModel viewModel = new AccountViewModel();
 
@@ -87,5 +87,51 @@ public class AccountViewModelTests : TestBase
 
 		Assert.Equal(account.Name, this.viewModel.Name);
 		Assert.Equal(account.IsClosed, this.viewModel.IsClosed);
+	}
+
+	[Fact]
+	public void Ctor_From_Volatile_Entity()
+	{
+		var account = new Account
+		{
+			Id = 5,
+			Name = "some person",
+		};
+
+		this.viewModel = new AccountViewModel(account, this.Money);
+
+		Assert.Equal(account.Id, this.viewModel.Id);
+		Assert.Equal(account.Name, this.viewModel.Name);
+
+		// Test auto-save behavior.
+		this.viewModel.Name = "another name";
+		Assert.Equal(this.viewModel.Name, account.Name);
+
+		Account fromDb = this.Money.Accounts.First(tx => tx.Id == account.Id);
+		Assert.Equal(account.Name, fromDb.Name);
+		Assert.Single(this.Money.Accounts);
+	}
+
+	[Fact]
+	public void Ctor_From_Db_Entity()
+	{
+		var account = new Account
+		{
+			Name = "some person",
+		};
+		this.Money.Insert(account);
+
+		this.viewModel = new AccountViewModel(account, this.Money);
+
+		Assert.Equal(account.Id, this.viewModel.Id);
+		Assert.Equal(account.Name, this.viewModel.Name);
+
+		// Test auto-save behavior.
+		this.viewModel.Name = "some other person";
+		Assert.Equal(this.viewModel.Name, account.Name);
+
+		Account fromDb = this.Money.Accounts.First(tx => tx.Id == account.Id);
+		Assert.Equal(account.Name, fromDb.Name);
+		Assert.Single(this.Money.Accounts);
 	}
 }

@@ -57,7 +57,7 @@
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 						<DataGrid AlternatingRowBackground="LightBlue"
 								  AlternationCount="2" 
-								  ItemsSource="{Binding Transactions}" 
+								  ItemsSource="{Binding Transactions}"
 								  SelectedItem="{Binding SelectedTransaction, Mode=TwoWay}"
 								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">

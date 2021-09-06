@@ -3,6 +3,7 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System;
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
 	using System.Linq;
@@ -27,6 +28,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public AccountViewModel(Account? model, MoneyFile? moneyFile)
 			: base(model, moneyFile)
 		{
+			this.AutoSave = true;
 			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
 		}
 
@@ -56,6 +58,18 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public CommandBase DeleteTransactionCommand { get; }
 
 		private string? DebuggerDisplay => this.Name;
+
+		/// <summary>
+		/// Creates a new <see cref="TransactionViewModel"/> for this account.
+		/// </summary>
+		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
+		public TransactionViewModel NewTransaction()
+		{
+			TransactionViewModel viewModel = new(this, null, this.MoneyFile);
+			viewModel.When = DateTime.Now;
+			viewModel.Model = new();
+			return viewModel;
+		}
 
 		protected override void ApplyToCore(Account account)
 		{

@@ -28,22 +28,21 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private string? payee;
 		private CategoryViewModel? category;
 		private bool isSelected;
+		private AccountViewModel? otherAccount;
 
+		[Obsolete("Do not use this constructor.")]
 		public TransactionViewModel()
-			: this(null, null)
 		{
+			// This constructor exists only to get WPF to allow the user to add transaction rows.
+			throw new NotSupportedException();
 		}
 
-		public TransactionViewModel(Transaction? model, MoneyFile? moneyFile)
+		public TransactionViewModel(AccountViewModel thisAccount, Transaction? model, MoneyFile? moneyFile)
 			: base(model, moneyFile)
 		{
+			this.ThisAccount = thisAccount;
 			this.AutoSave = true;
 		}
-
-		/// <summary>
-		/// Gets the primary key for this entity.
-		/// </summary>
-		public int? Id { get; private set; }
 
 		public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
 
@@ -101,19 +100,43 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.isSelected, value);
 		}
 
+		/// <summary>
+		/// Gets the account this transaction was created to be displayed within.
+		/// </summary>
+		public AccountViewModel ThisAccount { get; }
+
+		/// <summary>
+		/// Gets or sets the account that is party to a transfer transaction, if applicable.
+		/// </summary>
+		public AccountViewModel? OtherAccount
+		{
+			get => this.otherAccount;
+			set => this.SetProperty(ref this.otherAccount, value);
+		}
+
 		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
 
 		protected override void ApplyToCore(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
-			Requires.Argument(this.Id is null || transaction.Id == this.Id, nameof(transaction), "The provided object is not the original template.");
 
 			transaction.Payee = this.Payee;
 			transaction.When = this.When;
-			transaction.Amount = this.Amount;
+			transaction.Amount = Math.Abs(this.Amount);
 			transaction.Memo = this.Memo;
 			transaction.CheckNumber = this.CheckNumber;
 			transaction.Cleared = this.Cleared.Value;
+
+			if (this.Amount < 0)
+			{
+				transaction.DebitAccountId = this.ThisAccount.Id;
+				transaction.CreditAccountId = this.OtherAccount?.Id;
+			}
+			else
+			{
+				transaction.CreditAccountId = this.ThisAccount.Id;
+				transaction.DebitAccountId = this.OtherAccount?.Id;
+			}
 		}
 
 		protected override void CopyFromCore(Transaction transaction)
@@ -126,7 +149,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
 			this.Cleared = SharedClearedStates.Single(cs => cs.Value == transaction.Cleared);
-			this.Id = transaction.Id;
 		}
 
 		[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]

@@ -14,7 +14,10 @@ using Xunit.Abstractions;
 
 public class TransactionViewModelTests : MoneyTestBase
 {
-	private TransactionViewModel viewModel = new TransactionViewModel();
+	private AccountViewModel account;
+	private AccountViewModel otherAccount;
+
+	private TransactionViewModel viewModel;
 
 	private string payee = "some person";
 
@@ -31,6 +34,9 @@ public class TransactionViewModelTests : MoneyTestBase
 	public TransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.account = new AccountViewModel(new Account { Id = 1 }, null);
+		this.otherAccount = new AccountViewModel(new Account { Id = 2 }, null);
+		this.viewModel = new TransactionViewModel(this.account, null, null);
 	}
 
 	[Fact]
@@ -109,6 +115,8 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.viewModel.Cleared = this.cleared;
 		this.viewModel.ApplyTo(transaction);
 
+		Assert.Equal(this.account.Id, transaction.CreditAccountId);
+		Assert.Null(transaction.DebitAccountId);
 		Assert.Equal(this.payee, transaction.Payee);
 		Assert.Equal(this.amount, transaction.Amount);
 		Assert.Equal(this.when, transaction.When);
@@ -119,6 +127,16 @@ public class TransactionViewModelTests : MoneyTestBase
 		// Test auto-save behavior.
 		this.viewModel.Memo = "bonus";
 		Assert.Equal(this.viewModel.Memo, transaction.Memo);
+
+		// Test negative amount.
+		this.viewModel.Amount *= -1;
+		Assert.Equal(transaction.Amount, this.amount);
+		Assert.Equal(this.account.Id, transaction.DebitAccountId);
+		Assert.Null(transaction.CreditAccountId);
+
+		// Test a money transfer.
+		this.viewModel.OtherAccount = this.otherAccount;
+		Assert.Equal(this.otherAccount.Id, transaction.CreditAccountId);
 	}
 
 	[Fact]
@@ -162,18 +180,20 @@ public class TransactionViewModelTests : MoneyTestBase
 	{
 		var transaction = new Transaction
 		{
-			Id = 5,
 			Payee = "some person",
 		};
 
-		this.viewModel = new TransactionViewModel(transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
 
 		// Test auto-save behavior.
+		Assert.Equal(0, this.viewModel.Id);
 		this.viewModel.Payee = "another name";
 		Assert.Equal(this.viewModel.Payee, transaction.Payee);
+		Assert.Equal(transaction.Id, this.viewModel.Id);
+		Assert.NotEqual(0, this.viewModel.Id);
 
 		Transaction fromDb = this.Money.Transactions.First(tx => tx.Id == transaction.Id);
 		Assert.Equal(transaction.Payee, fromDb.Payee);
@@ -189,7 +209,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		this.viewModel = new TransactionViewModel(transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);

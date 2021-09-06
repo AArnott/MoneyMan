@@ -135,7 +135,7 @@ namespace MoneyMan
 
 		private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 		{
-			e.NewItem = this.ViewModel.Document.NewTransaction() ?? throw new InvalidOperationException();
+			e.NewItem = this.ViewModel.Document.AccountsPanel?.SelectedAccount?.NewTransaction() ?? throw new InvalidOperationException();
 		}
 	}
 }

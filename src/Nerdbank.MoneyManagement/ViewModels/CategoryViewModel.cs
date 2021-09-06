@@ -23,11 +23,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.AutoSave = true;
 		}
 
-		/// <summary>
-		/// Gets the primary key for this entity.
-		/// </summary>
-		public int? Id { get; private set; }
-
 		/// <inheritdoc cref="Category.Name"/>
 		public string Name
 		{
@@ -43,18 +38,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		protected override void ApplyToCore(Category category)
 		{
-			Requires.NotNull(category, nameof(category));
-			Requires.Argument(this.Id is null || category.Id == this.Id, nameof(category), "The provided object is not the original template.");
-
 			category.Name = this.name;
 		}
 
 		protected override void CopyFromCore(Category category)
 		{
-			Requires.NotNull(category, nameof(category));
-
 			this.Name = category.Name;
-			this.Id = category.Id;
 		}
 	}
 }
