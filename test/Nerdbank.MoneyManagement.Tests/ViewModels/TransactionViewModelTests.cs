@@ -12,9 +12,14 @@ using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class TransactionViewModelTests : TestBase
+public class TransactionViewModelTests : MoneyTestBase
 {
-	private TransactionViewModel viewModel = new TransactionViewModel();
+	private AccountViewModel account;
+	private AccountViewModel otherAccount;
+
+	private TransactionViewModel viewModel;
+
+	private string payee = "some person";
 
 	private decimal amount = 5.5m;
 
@@ -29,6 +34,9 @@ public class TransactionViewModelTests : TestBase
 	public TransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.account = new AccountViewModel(new Account { Id = 1 }, null);
+		this.otherAccount = new AccountViewModel(new Account { Id = 2 }, null);
+		this.viewModel = new TransactionViewModel(this.account, null, null);
 	}
 
 	[Fact]
@@ -99,6 +107,7 @@ public class TransactionViewModelTests : TestBase
 
 		Transaction transaction = new Transaction();
 
+		this.viewModel.Payee = this.payee;
 		this.viewModel.Amount = this.amount;
 		this.viewModel.When = this.when;
 		this.viewModel.Memo = this.memo;
@@ -106,11 +115,35 @@ public class TransactionViewModelTests : TestBase
 		this.viewModel.Cleared = this.cleared;
 		this.viewModel.ApplyTo(transaction);
 
+		Assert.Equal(this.account.Id, transaction.CreditAccountId);
+		Assert.Null(transaction.DebitAccountId);
+		Assert.Equal(this.payee, transaction.Payee);
 		Assert.Equal(this.amount, transaction.Amount);
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(this.memo, transaction.Memo);
 		Assert.Equal(this.checkNumber, transaction.CheckNumber);
 		Assert.Equal(this.cleared.Value, transaction.Cleared);
+
+		// Test auto-save behavior.
+		this.viewModel.Memo = "bonus";
+		Assert.Equal(this.viewModel.Memo, transaction.Memo);
+
+		// Test negative amount.
+		this.viewModel.Amount *= -1;
+		Assert.Equal(transaction.Amount, this.amount);
+		Assert.Equal(this.account.Id, transaction.DebitAccountId);
+		Assert.Null(transaction.CreditAccountId);
+
+		// Test a money transfer.
+		this.viewModel.OtherAccount = this.otherAccount;
+		Assert.Equal(this.otherAccount.Id, transaction.CreditAccountId);
+	}
+
+	[Fact]
+	public void ApplyToThrowsOnEntityMismatch()
+	{
+		this.viewModel.CopyFrom(new Transaction { Id = 2, Memo = "Groceries" });
+		Assert.Throws<ArgumentException>(() => this.viewModel.ApplyTo(new Transaction { Id = 4 }));
 	}
 
 	[Fact]
@@ -120,6 +153,7 @@ public class TransactionViewModelTests : TestBase
 
 		Transaction transaction = new Transaction
 		{
+			Payee = this.payee,
 			Amount = this.amount,
 			When = this.when,
 			Memo = this.memo,
@@ -129,10 +163,64 @@ public class TransactionViewModelTests : TestBase
 
 		this.viewModel.CopyFrom(transaction);
 
+		Assert.Equal(transaction.Payee, this.viewModel.Payee);
 		Assert.Equal(transaction.Amount, this.viewModel.Amount);
 		Assert.Equal(transaction.When, this.viewModel.When);
 		Assert.Equal(transaction.Memo, this.viewModel.Memo);
 		Assert.Equal(transaction.CheckNumber, this.viewModel.CheckNumber);
 		Assert.Equal(transaction.Cleared, this.viewModel.Cleared.Value);
+
+		// Test auto-save behavior.
+		this.viewModel.Memo = "another memo";
+		Assert.Equal(this.viewModel.Memo, transaction.Memo);
+	}
+
+	[Fact]
+	public void Ctor_From_Volatile_Entity()
+	{
+		var transaction = new Transaction
+		{
+			Payee = "some person",
+		};
+
+		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+
+		Assert.Equal(transaction.Id, this.viewModel.Id);
+		Assert.Equal(transaction.Payee, this.viewModel.Payee);
+
+		// Test auto-save behavior.
+		Assert.Equal(0, this.viewModel.Id);
+		this.viewModel.Payee = "another name";
+		Assert.Equal(this.viewModel.Payee, transaction.Payee);
+		Assert.Equal(transaction.Id, this.viewModel.Id);
+		Assert.NotEqual(0, this.viewModel.Id);
+
+		Transaction fromDb = this.Money.Transactions.First(tx => tx.Id == transaction.Id);
+		Assert.Equal(transaction.Payee, fromDb.Payee);
+		Assert.Single(this.Money.Transactions);
+	}
+
+	[Fact]
+	public void Ctor_From_Db_Entity()
+	{
+		var transaction = new Transaction
+		{
+			Payee = "some person",
+		};
+		this.Money.Insert(transaction);
+
+		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+
+		Assert.Equal(transaction.Id, this.viewModel.Id);
+		Assert.Equal(transaction.Payee, this.viewModel.Payee);
+		Assert.Equal(transaction.Memo, this.viewModel.Memo);
+
+		// Test auto-save behavior.
+		this.viewModel.Payee = "some other person";
+		Assert.Equal(this.viewModel.Payee, transaction.Payee);
+
+		Transaction fromDb = this.Money.Transactions.First(tx => tx.Id == transaction.Id);
+		Assert.Equal(transaction.Payee, fromDb.Payee);
+		Assert.Single(this.Money.Transactions);
 	}
 }

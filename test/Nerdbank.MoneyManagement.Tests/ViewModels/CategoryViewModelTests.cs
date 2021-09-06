@@ -86,7 +86,6 @@ public class CategoryViewModelTests : MoneyTestBase
 	{
 		var category = new Category
 		{
-			Id = 5,
 			Name = "some name",
 		};
 
@@ -96,8 +95,11 @@ public class CategoryViewModelTests : MoneyTestBase
 		Assert.Equal(category.Name, this.viewModel.Name);
 
 		// Test auto-save behavior.
+		Assert.Equal(0, this.viewModel.Id);
 		this.viewModel.Name = "another name";
-		Assert.Equal(this.viewModel.Name, category.Name);
+		Assert.Equal(this.viewModel.Name, this.viewModel.Name);
+		Assert.Equal(category.Id, this.viewModel.Id);
+		Assert.NotEqual(0, category.Id);
 
 		Category fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
 		Assert.Equal(category.Name, fromDb.Name);

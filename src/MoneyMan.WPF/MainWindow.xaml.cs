@@ -132,5 +132,10 @@ namespace MoneyMan
 			dialog.Filter = "MoneyMan files (*.moneyman)|*.moneyman|All files|*.*";
 			dialog.FilterIndex = 0;
 		}
+
+		private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
+		{
+			e.NewItem = this.ViewModel.Document.AccountsPanel?.SelectedAccount?.NewTransaction() ?? throw new InvalidOperationException();
+		}
 	}
 }

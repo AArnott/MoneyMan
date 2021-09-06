@@ -21,6 +21,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					if (this.MoneyFile is object)
 					{
 						this.Model.Save(this.MoneyFile);
+
+						// First insert of an entity assigns it an ID. Make sure the view model matches it.
+						this.Id = this.Model.Id;
 					}
 				}
 			};
@@ -36,6 +39,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.CopyFrom(model);
 			}
 		}
+
+		/// <summary>
+		/// Gets the primary key for this entity.
+		/// </summary>
+		public int? Id { get; private set; }
 
 		/// <summary>
 		/// Gets or sets a value indicating whether this entity has been changed since <see cref="ApplyTo(TEntity)"/> was last called.
@@ -66,14 +74,23 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public void ApplyTo(TEntity model)
 		{
+			Requires.NotNull(model, nameof(model));
+			Requires.Argument(this.Id is null || model.Id == this.Id, nameof(model), "The provided object is not the original template.");
+
 			this.ApplyToCore(model);
+
 			this.IsDirty = false;
 			this.Model ??= model;
 		}
 
 		public void CopyFrom(TEntity model)
 		{
+			Requires.NotNull(model, nameof(model));
+
+			this.Id = model.Id;
+
 			this.CopyFromCore(model);
+
 			this.IsDirty = false;
 			this.Model ??= model;
 		}

@@ -54,17 +54,26 @@
 					<DockPanel Grid.Column="1"
 							   DataContext="{Binding SelectedAccount}" 
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
+						<DockPanel.Resources>
+							<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" IsLiveSortingRequested="True">
+								<CollectionViewSource.SortDescriptions>
+									<componentmodel:SortDescription PropertyName="When" />
+								</CollectionViewSource.SortDescriptions>
+							</CollectionViewSource>
+						</DockPanel.Resources>
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 						<DataGrid AlternatingRowBackground="LightBlue"
 								  AlternationCount="2" 
-								  ItemsSource="{Binding Transactions}" 
+								  ItemsSource="{Binding Source={StaticResource transactions}}"
+								  IsSynchronizedWithCurrentItem="True"
 								  SelectedItem="{Binding SelectedTransaction, Mode=TwoWay}"
+								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="Date">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<DatePicker SelectedDate="{Binding When}" />
+											<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
