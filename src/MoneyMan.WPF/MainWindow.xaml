@@ -117,7 +117,7 @@
 								<DataGridTemplateColumn Header="Amount">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<TextBlock Margin="3pt" Text="{Binding Amount}" HorizontalAlignment="Right" />
+											<TextBlock Margin="3pt" Text="{Binding Amount, StringFormat=C}" HorizontalAlignment="Right" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
