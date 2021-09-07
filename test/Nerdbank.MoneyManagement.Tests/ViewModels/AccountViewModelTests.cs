@@ -140,7 +140,7 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		var account = new Account
 		{
-			Name = "some person",
+			Name = "some account",
 		};
 		this.Money.Insert(account);
 		this.Money.InsertAll(new object[]
@@ -150,5 +150,25 @@ public class AccountViewModelTests : MoneyTestBase
 		});
 		this.viewModel = new AccountViewModel(account, this.Money);
 		Assert.Equal(2, this.viewModel.Transactions.Count);
+	}
+
+	[Fact]
+	public void Balance()
+	{
+		var account = new Account
+		{
+			Name = "some account",
+		};
+		this.Money.Insert(account);
+		this.viewModel = new AccountViewModel(account, this.Money);
+		Assert.Equal(0m, this.viewModel.Balance);
+
+		this.Money.InsertAll(new object[]
+		{
+			new Transaction { Amount = 10, CreditAccountId = account.Id },
+			new Transaction { Amount = 2, DebitAccountId = account.Id },
+		});
+		this.viewModel = new AccountViewModel(account, this.Money);
+		Assert.Equal(8m, this.viewModel.Balance);
 	}
 }
