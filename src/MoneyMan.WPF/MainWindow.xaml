@@ -44,16 +44,22 @@
 						<ColumnDefinition Width="1*" />
 						<ColumnDefinition Width="4*" />
 					</Grid.ColumnDefinitions>
-					<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" Grid.Column="0" HorizontalContentAlignment="Stretch">
-						<ListView.ItemTemplate>
-							<DataTemplate>
-								<DockPanel>
-									<TextBlock Text="{Binding Balance, StringFormat=C}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
-									<TextBlock Text="{Binding Name}" />
-								</DockPanel>
-							</DataTemplate>
-						</ListView.ItemTemplate>
-					</ListView>
+					<DockPanel Grid.Column="0">
+						<DockPanel DockPanel.Dock="Bottom" Margin="5">
+							<TextBlock DockPanel.Dock="Right" Text="{Binding Source={StaticResource viewModel}, Path=Document.NetWorth, StringFormat=C}" FontWeight="Bold" />
+							<TextBlock Text="Net worth" FontWeight="Bold" />
+						</DockPanel>
+						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch">
+							<ListView.ItemTemplate>
+								<DataTemplate>
+									<DockPanel>
+										<TextBlock Text="{Binding Balance, StringFormat=C}" DockPanel.Dock="Right" />
+										<TextBlock Text="{Binding Name}" />
+									</DockPanel>
+								</DataTemplate>
+							</ListView.ItemTemplate>
+						</ListView>
+					</DockPanel>
 					<DockPanel Grid.Column="1"
 							   DataContext="{Binding SelectedAccount}" 
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">

@@ -42,12 +42,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					this.CategoriesPanel.Categories.Add(new CategoryViewModel(category, model));
 				}
+
+				this.NetWorth = model.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 			}
 		}
 
 		public bool IsFileOpen => this.model is object;
 
 		public string Title => this.model is { Path: string path } ? $"Nerdbank Money Management - {Path.GetFileNameWithoutExtension(path)}" : "Nerdbank Money Management";
+
+		public decimal NetWorth { get; internal set; }
 
 		public AccountsPanelViewModel? AccountsPanel { get; }
 
