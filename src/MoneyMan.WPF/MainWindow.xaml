@@ -44,10 +44,13 @@
 						<ColumnDefinition Width="1*" />
 						<ColumnDefinition Width="4*" />
 					</Grid.ColumnDefinitions>
-					<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" Grid.Column="0">
+					<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" Grid.Column="0" HorizontalContentAlignment="Stretch">
 						<ListView.ItemTemplate>
 							<DataTemplate>
-								<TextBlock Text="{Binding Name}" />
+								<DockPanel>
+									<TextBlock Text="{Binding Balance, StringFormat=C}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
+									<TextBlock Text="{Binding Name}" />
+								</DockPanel>
 							</DataTemplate>
 						</ListView.ItemTemplate>
 					</ListView>

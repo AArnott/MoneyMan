@@ -43,6 +43,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.isClosed, value);
 		}
 
+		public decimal Balance { get; internal set; } = 1234.5m;
+
 		public ObservableCollection<TransactionViewModel> Transactions
 		{
 			get
