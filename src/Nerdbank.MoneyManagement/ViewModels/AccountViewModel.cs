@@ -4,6 +4,7 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
 	using System.Threading;
@@ -136,9 +137,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				for (int i = this.viewModel.Transactions.Count - 1; i >= 0; i--)
 				{
-					if (this.viewModel.Transactions[i].IsSelected)
+					TransactionViewModel tx = this.viewModel.Transactions[i];
+					if (tx.IsSelected)
 					{
 						this.viewModel.Transactions.RemoveAt(i);
+						if (tx.Model is object && this.viewModel.MoneyFile is object)
+						{
+							this.viewModel.MoneyFile.Delete(tx.Model);
+						}
 					}
 				}
 

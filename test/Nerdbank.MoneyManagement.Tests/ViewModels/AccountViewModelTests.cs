@@ -153,6 +153,23 @@ public class AccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public async Task DeleteTransaction()
+	{
+		var account = new Account
+		{
+			Name = "some account",
+		};
+		this.Money.Insert(account);
+		this.Money.Insert(new Transaction { CreditAccountId = account.Id, Amount = 5 });
+		this.viewModel = new AccountViewModel(account, this.Money);
+		TransactionViewModel txViewModel = Assert.Single(this.viewModel.Transactions);
+		this.viewModel.SelectedTransaction = txViewModel;
+		txViewModel.IsSelected = true;
+		await this.viewModel.DeleteTransactionCommand.ExecuteAsync();
+		Assert.Empty(this.Money.Transactions);
+	}
+
+	[Fact]
 	public void Balance()
 	{
 		var account = new Account
