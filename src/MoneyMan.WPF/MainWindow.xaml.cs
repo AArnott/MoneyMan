@@ -42,7 +42,14 @@ namespace MoneyMan
 
 			if (!string.IsNullOrEmpty(AppSettings.Default.LastOpenedFile))
 			{
-				this.FileOpen(AppSettings.Default.LastOpenedFile);
+				if (File.Exists(AppSettings.Default.LastOpenedFile))
+				{
+					this.FileOpen(AppSettings.Default.LastOpenedFile);
+				}
+				else
+				{
+					AppSettings.Default.LastOpenedFile = null;
+				}
 			}
 		}
 
