@@ -17,7 +17,7 @@ namespace Nerdbank.MoneyManagement
 	/// Manages the database that stores accounts, transactions, and other entities.
 	/// </summary>
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class MoneyFile : IDisposable
+	public class MoneyFile : IDisposableObservable
 	{
 		/// <summary>
 		/// The SQLite database connection.
@@ -34,17 +34,52 @@ namespace Nerdbank.MoneyManagement
 			this.connection = connection;
 		}
 
+		/// <summary>
+		/// Occurs when one or more entities are inserted, updated, and/or removed.
+		/// </summary>
+		public event EventHandler<EntitiesChangedEventArgs>? EntitiesChanged;
+
 		public string Path => this.connection.DatabasePath;
 
 		public TextWriter? Logger { get; set; }
 
-		public TableQuery<Account> Accounts => this.connection.Table<Account>();
+		public TableQuery<Account> Accounts
+		{
+			get
+			{
+				Verify.NotDisposed(this);
+				return this.connection.Table<Account>();
+			}
+		}
 
-		public TableQuery<Transaction> Transactions => this.connection.Table<Transaction>();
+		public TableQuery<Transaction> Transactions
+		{
+			get
+			{
+				Verify.NotDisposed(this);
+				return this.connection.Table<Transaction>();
+			}
+		}
 
-		public TableQuery<SplitTransaction> SplitTransactions => this.connection.Table<SplitTransaction>();
+		public TableQuery<SplitTransaction> SplitTransactions
+		{
+			get
+			{
+				Verify.NotDisposed(this);
+				return this.connection.Table<SplitTransaction>();
+			}
+		}
 
-		public TableQuery<Category> Categories => this.connection.Table<Category>();
+		public TableQuery<Category> Categories
+		{
+			get
+			{
+				Verify.NotDisposed(this);
+				return this.connection.Table<Category>();
+			}
+		}
+
+		public bool IsDisposed => this.connection.Handle is null;
 
 		private string DebuggerDisplay => this.Path;
 
@@ -81,15 +116,40 @@ namespace Nerdbank.MoneyManagement
 			return this.connection.Get<T>(primaryKey);
 		}
 
-		public int Insert(object obj) => this.connection.Insert(obj);
+		public void Insert(ModelBase model)
+		{
+			Verify.NotDisposed(this);
+			this.connection.Insert(model);
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(new[] { model }, Array.Empty<ModelBase>()));
+		}
 
-		public void InsertAll(params object[] objects) => this.connection.InsertAll(objects);
+		public void InsertAll(params ModelBase[] models)
+		{
+			Verify.NotDisposed(this);
+			this.connection.InsertAll(models);
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(models, Array.Empty<ModelBase>()));
+		}
 
-		public int Update(object obj) => this.connection.Update(obj);
+		public void Update(ModelBase model)
+		{
+			Verify.NotDisposed(this);
+			this.connection.Update(model);
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(new[] { model }, Array.Empty<ModelBase>()));
+		}
 
-		public void InsertOrReplace(object obj) => this.connection.InsertOrReplace(obj);
+		public void InsertOrReplace(ModelBase model)
+		{
+			Verify.NotDisposed(this);
+			this.connection.InsertOrReplace(model);
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(new[] { model }, Array.Empty<ModelBase>()));
+		}
 
-		public void Delete(object obj) => this.connection.Delete(obj);
+		public void Delete(ModelBase model)
+		{
+			Verify.NotDisposed(this);
+			this.connection.Delete(model);
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(Array.Empty<ModelBase>(), deleted: new[] { model }));
+		}
 
 		/// <summary>
 		/// Calculates the sum of all accounts' final balances.
@@ -98,6 +158,8 @@ namespace Nerdbank.MoneyManagement
 		/// <returns>The net worth.</returns>
 		public decimal GetNetWorth(NetWorthQueryOptions options = default(NetWorthQueryOptions))
 		{
+			Verify.NotDisposed(this);
+
 			ImmutableList<string> constraints = ImmutableList<string>.Empty;
 			ImmutableList<object> args = ImmutableList<object>.Empty;
 			if (options.BeforeDate.HasValue)
@@ -131,7 +193,8 @@ namespace Nerdbank.MoneyManagement
 		public decimal GetBalance(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
-			Requires.Argument(account.Id > 0, nameof(account), "Account must be saved to the database first.");
+			Requires.Argument(account.IsPersisted, nameof(account), "Account must be saved to the database first.");
+			Verify.NotDisposed(this);
 
 			decimal credits = this.ExecuteScalar<decimal>(
 				$@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
@@ -204,6 +267,19 @@ namespace Nerdbank.MoneyManagement
 			/// add a whole day, then drop the time component. We'll look for transactions that happened before that.
 			/// </remarks>
 			internal DateTime? BeforeDate => this.AsOfDate?.AddDays(1).Date;
+		}
+
+		public class EntitiesChangedEventArgs : EventArgs
+		{
+			public EntitiesChangedEventArgs(IReadOnlyCollection<ModelBase> insertedOrChanged, IReadOnlyCollection<ModelBase> deleted)
+			{
+				this.InsertedOrChanged = insertedOrChanged;
+				this.Deleted = deleted;
+			}
+
+			public IReadOnlyCollection<ModelBase> InsertedOrChanged { get; }
+
+			public IReadOnlyCollection<ModelBase> Deleted { get; }
 		}
 
 		private class TransactionAndSplitTotal : Transaction

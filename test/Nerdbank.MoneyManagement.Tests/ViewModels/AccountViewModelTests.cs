@@ -140,15 +140,102 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		var account = new Account
 		{
-			Name = "some person",
+			Name = "some account",
 		};
 		this.Money.Insert(account);
-		this.Money.InsertAll(new object[]
+		this.Money.InsertAll(new ModelBase[]
 		{
 			new Transaction { CreditAccountId = account.Id },
 			new Transaction { DebitAccountId = account.Id },
 		});
 		this.viewModel = new AccountViewModel(account, this.Money);
 		Assert.Equal(2, this.viewModel.Transactions.Count);
+	}
+
+	[Fact]
+	public async Task DeleteTransaction()
+	{
+		var account = new Account
+		{
+			Name = "some account",
+		};
+		this.Money.Insert(account);
+		this.Money.Insert(new Transaction { CreditAccountId = account.Id, Amount = 5 });
+		this.viewModel = new AccountViewModel(account, this.Money);
+		TransactionViewModel txViewModel = Assert.Single(this.viewModel.Transactions);
+		this.viewModel.SelectedTransaction = txViewModel;
+		txViewModel.IsSelected = true;
+		await this.viewModel.DeleteTransactionCommand.ExecuteAsync();
+		Assert.Empty(this.Money.Transactions);
+	}
+
+	[Fact]
+	public void Balance()
+	{
+		var account = new Account
+		{
+			Name = "some account",
+		};
+		this.Money.Insert(account);
+		this.viewModel = new AccountViewModel(account, this.Money);
+		Assert.Equal(0m, this.viewModel.Balance);
+
+		this.Money.InsertAll(new ModelBase[]
+		{
+			new Transaction { Amount = 10, CreditAccountId = account.Id },
+			new Transaction { Amount = 2, DebitAccountId = account.Id },
+		});
+		this.viewModel = new AccountViewModel(account, this.Money);
+		Assert.Equal(8m, this.viewModel.Balance);
+	}
+
+	[Fact]
+	public async Task Balance_Updates()
+	{
+		var account = new Account
+		{
+			Name = "some account",
+		};
+		this.Money.Insert(account);
+		var documentViewModel = new DocumentViewModel(this.Money);
+		this.viewModel = documentViewModel.AccountsPanel!.Accounts.Single();
+		Assert.Equal(0, this.viewModel.Balance);
+
+		TransactionViewModel txViewModel = this.viewModel.NewTransaction();
+		this.viewModel.Transactions.Add(txViewModel);
+		txViewModel.Amount = 10;
+		Assert.Equal(10, this.viewModel.Balance);
+
+		txViewModel.Amount = 8;
+		Assert.Equal(8, this.viewModel.Balance);
+
+		Assert.Same(txViewModel, Assert.Single(this.viewModel.Transactions));
+		this.viewModel.SelectedTransaction = this.viewModel.Transactions.Last();
+		this.viewModel.SelectedTransaction.IsSelected = true;
+		await TestUtilities.AssertPropertyChangedEventAsync(this.viewModel, () => this.viewModel.DeleteTransactionCommand.ExecuteAsync(), nameof(this.viewModel.Balance));
+		Assert.Equal(0, this.viewModel.Balance);
+	}
+
+	[Fact]
+	public void Balance_ChangesFromTransactionChangeInOtherAccount()
+	{
+		Account checking = new() { Name = "Checking" };
+		Account savings = new() { Name = "Savings" };
+		this.Money.InsertAll(checking, savings);
+
+		var documentViewModel = new DocumentViewModel(this.Money);
+		AccountViewModel checkingViewModel = documentViewModel.AccountsPanel!.Accounts.Single(m => m.Name == checking.Name);
+		AccountViewModel savingsViewModel = documentViewModel.AccountsPanel!.Accounts.Single(m => m.Name == savings.Name);
+
+		TransactionViewModel txViewModel = checkingViewModel.NewTransaction();
+		this.viewModel.Transactions.Add(txViewModel);
+		txViewModel.Amount = -10;
+		txViewModel.OtherAccount = savingsViewModel;
+		Assert.Equal(-10, checkingViewModel.Balance);
+
+		Assert.Equal(10, savingsViewModel.Balance);
+
+		txViewModel.Amount = -5;
+		Assert.Equal(5, savingsViewModel.Balance);
 	}
 }

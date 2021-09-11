@@ -9,6 +9,7 @@ namespace Nerdbank.MoneyManagement
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using Validation;
 
 	public static class IntegrityChecks
 	{
@@ -20,6 +21,7 @@ namespace Nerdbank.MoneyManagement
 		/// <returns>A list of the issues found.</returns>
 		public static IReadOnlyList<Issue> CheckIntegrity(this MoneyFile file, CancellationToken cancellationToken = default)
 		{
+			Verify.NotDisposed(file);
 			List<Issue> issues = new();
 			issues.AddRange(file.FindBadSplitTransactions(cancellationToken));
 			return issues;

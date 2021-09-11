@@ -11,7 +11,7 @@ namespace Nerdbank.MoneyManagement
 		{
 			Requires.NotNull(moneyFile, nameof(moneyFile));
 
-			moneyFile.InsertAll(new object[]
+			moneyFile.InsertAll(new ModelBase[]
 			{
 				new Category { Name = "Groceries" },
 				new Category { Name = "Entertainment" },

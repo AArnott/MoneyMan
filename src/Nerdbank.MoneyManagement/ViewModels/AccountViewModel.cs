@@ -4,6 +4,7 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
 	using System.Threading;
@@ -18,6 +19,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private TransactionViewModel? selectedTransaction;
 		private string? name;
 		private bool isClosed;
+		private decimal balance;
 
 		public AccountViewModel()
 			: this(null, null)
@@ -29,6 +31,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			this.AutoSave = true;
 			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
+			if (moneyFile is object && model is object)
+			{
+				this.balance = moneyFile.GetBalance(model);
+			}
 		}
 
 		public string? Name
@@ -41,6 +47,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.isClosed;
 			set => this.SetProperty(ref this.isClosed, value);
+		}
+
+		public decimal Balance
+		{
+			get => this.balance;
+			set => this.SetProperty(ref this.balance, value);
 		}
 
 		public ObservableCollection<TransactionViewModel> Transactions
@@ -130,9 +142,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				for (int i = this.viewModel.Transactions.Count - 1; i >= 0; i--)
 				{
-					if (this.viewModel.Transactions[i].IsSelected)
+					TransactionViewModel tx = this.viewModel.Transactions[i];
+					if (tx.IsSelected)
 					{
 						this.viewModel.Transactions.RemoveAt(i);
+						if (tx.Model is object && this.viewModel.MoneyFile is object)
+						{
+							this.viewModel.MoneyFile.Delete(tx.Model);
+						}
 					}
 				}
 

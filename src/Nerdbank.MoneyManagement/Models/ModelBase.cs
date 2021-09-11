@@ -3,11 +3,6 @@
 
 namespace Nerdbank.MoneyManagement
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
-	using System.Threading.Tasks;
 	using SQLite;
 
 	public abstract class ModelBase
@@ -17,6 +12,11 @@ namespace Nerdbank.MoneyManagement
 		/// </summary>
 		[PrimaryKey, AutoIncrement]
 		public int Id { get; set; }
+
+		/// <summary>
+		/// Gets a value indicating whether this entity has already received an assigned primary key from the database.
+		/// </summary>
+		internal bool IsPersisted => this.Id > 0;
 
 		/// <summary>
 		/// Saves this entity to the given <see cref="MoneyFile"/>.

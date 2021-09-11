@@ -18,7 +18,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (this.AutoSave && this.Model is object)
 				{
 					this.ApplyToModel();
-					if (this.MoneyFile is object)
+					if (this.MoneyFile is { IsDisposed: false })
 					{
 						this.Model.Save(this.MoneyFile);
 

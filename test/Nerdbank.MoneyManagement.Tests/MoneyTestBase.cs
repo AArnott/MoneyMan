@@ -2,11 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Nerdbank.MoneyManagement;
 using Xunit.Abstractions;
 
@@ -19,7 +14,7 @@ public class MoneyTestBase : TestBase
 	{
 		this.money = new Lazy<MoneyFile>(() =>
 		{
-			MoneyFile result = MoneyFile.Load(this.GenerateTemporaryFileName());
+			MoneyFile result = MoneyFile.Load(":memory:");
 			result.Logger = new TestLoggerAdapter(this.Logger);
 			return result;
 		});
