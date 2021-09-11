@@ -71,6 +71,21 @@ public class MoneyFileTests : IDisposable
 	}
 
 	[Fact]
+	public void GetBalance()
+	{
+		using MoneyFile money = this.Load();
+		Assert.Throws<ArgumentNullException>(() => money.GetBalance(null!));
+		Assert.Throws<ArgumentException>(() => money.GetBalance(new Account()));
+
+		Account account = new() { Name = "Checking" };
+		money.Insert(account);
+		Assert.Equal(0, money.GetBalance(account));
+		Transaction tx = new() { CreditAccountId = account.Id, Amount = 3 };
+		money.Insert(tx);
+		Assert.Equal(3, money.GetBalance(account));
+	}
+
+	[Fact]
 	public void GetNetWorth_WithAndWithoutAsOfDate()
 	{
 		using (MoneyFile? money = this.Load())
@@ -173,14 +188,25 @@ public class MoneyFileTests : IDisposable
 		MoneyFile money = this.Load();
 		money.Dispose();
 		Assert.Throws<ObjectDisposedException>(() => money.Insert(new Account { Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.InsertAll(new Account { Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Update(new Account { Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.InsertOrReplace(new Account { Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Delete(new Account { Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.GetNetWorth());
+		Assert.Throws<ObjectDisposedException>(() => money.GetBalance(new Account { Id = 3, Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Categories);
 		Assert.Throws<ObjectDisposedException>(() => money.Accounts);
 		Assert.Throws<ObjectDisposedException>(() => money.SplitTransactions);
 		Assert.Throws<ObjectDisposedException>(() => money.Transactions);
 		Assert.Throws<ObjectDisposedException>(() => money.CheckIntegrity());
+	}
+
+	[Fact]
+	public void Dispose_Twice()
+	{
+		MoneyFile money = this.Load();
+		money.Dispose();
+		money.Dispose();
 	}
 
 	private MoneyFile Load()

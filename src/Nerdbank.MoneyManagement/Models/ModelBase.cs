@@ -14,6 +14,11 @@ namespace Nerdbank.MoneyManagement
 		public int Id { get; set; }
 
 		/// <summary>
+		/// Gets a value indicating whether this entity has already received an assigned primary key from the database.
+		/// </summary>
+		internal bool IsPersisted => this.Id > 0;
+
+		/// <summary>
 		/// Saves this entity to the given <see cref="MoneyFile"/>.
 		/// </summary>
 		/// <param name="moneyFile">The file to write to.</param>
