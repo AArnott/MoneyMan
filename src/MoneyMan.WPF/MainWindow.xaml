@@ -86,7 +86,6 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" />
 								<DataGridTemplateColumn Header="Payee">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
@@ -132,6 +131,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
+								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" />
 								<DataGridTemplateColumn Header="Clr">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
