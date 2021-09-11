@@ -19,6 +19,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private TransactionViewModel? selectedTransaction;
 		private string? name;
 		private bool isClosed;
+		private decimal balance;
 
 		public AccountViewModel()
 			: this(null, null)
@@ -32,7 +33,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
 			if (moneyFile is object && model is object)
 			{
-				this.Balance = moneyFile.GetBalance(model);
+				this.balance = moneyFile.GetBalance(model);
 			}
 		}
 
@@ -48,7 +49,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.isClosed, value);
 		}
 
-		public decimal Balance { get; internal set; }
+		public decimal Balance
+		{
+			get => this.balance;
+			set => this.SetProperty(ref this.balance, value);
+		}
 
 		public ObservableCollection<TransactionViewModel> Transactions
 		{

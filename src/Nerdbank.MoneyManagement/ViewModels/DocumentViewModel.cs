@@ -4,15 +4,10 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
-	using System.Collections.ObjectModel;
-	using System.ComponentModel;
+	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.IO;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using System.Windows.Input;
 	using Microsoft;
-	using Microsoft.Win32;
 	using PCLCommandBase;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
@@ -110,12 +105,50 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public void Dispose()
 		{
-			this.model?.Dispose();
+			if (this.model is object)
+			{
+				this.model.EntitiesChanged -= this.Model_EntitiesChanged;
+				this.model.Dispose();
+			}
 		}
 
 		private void Model_EntitiesChanged(object? sender, MoneyFile.EntitiesChangedEventArgs e)
 		{
 			Assumes.NotNull(this.model);
+
+			if (this.AccountsPanel is object)
+			{
+				HashSet<int> impactedAccountIds = new();
+				SearchForImpactedAccounts(e.InsertedOrChanged);
+				SearchForImpactedAccounts(e.Deleted);
+				foreach (AccountViewModel accountViewModel in this.AccountsPanel.Accounts)
+				{
+					if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
+					{
+						accountViewModel.Balance = this.model.GetBalance(accountViewModel.Model);
+					}
+				}
+
+				void SearchForImpactedAccounts(IEnumerable<ModelBase> models)
+				{
+					foreach (ModelBase model in models)
+					{
+						if (model is Transaction tx)
+						{
+							if (tx.CreditAccountId is int creditId)
+							{
+								impactedAccountIds.Add(creditId);
+							}
+
+							if (tx.DebitAccountId is int debitId)
+							{
+								impactedAccountIds.Add(debitId);
+							}
+						}
+					}
+				}
+			}
+
 			this.NetWorth = this.model.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 	}

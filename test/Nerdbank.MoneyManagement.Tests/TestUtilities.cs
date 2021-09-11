@@ -6,12 +6,27 @@ namespace Nerdbank.MoneyManagement.Tests
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
+	using System.Threading.Tasks;
 	using Microsoft;
 	using Xunit;
 
 	internal static class TestUtilities
 	{
 		internal static void AssertPropertyChangedEvent(INotifyPropertyChanged sender, Action trigger, params string[] expectedPropertiesChanged)
+		{
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+			AssertPropertyChangedEventAsync(
+				sender,
+				() =>
+				{
+					trigger();
+					return Task.CompletedTask;
+				},
+				expectedPropertiesChanged).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+		}
+
+		internal static async Task AssertPropertyChangedEventAsync(INotifyPropertyChanged sender, Func<Task> trigger, params string[] expectedPropertiesChanged)
 		{
 			Requires.NotNull(sender, nameof(sender));
 			Requires.NotNull(trigger, nameof(trigger));
@@ -28,7 +43,7 @@ namespace Nerdbank.MoneyManagement.Tests
 			sender.PropertyChanged += handler;
 			try
 			{
-				trigger();
+				await trigger();
 				Assert.Equal(expectedPropertiesChanged, actualPropertiesChanged);
 			}
 			finally
