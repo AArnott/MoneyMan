@@ -79,7 +79,7 @@ namespace Nerdbank.MoneyManagement
 			}
 		}
 
-		bool IDisposableObservable.IsDisposed => this.connection.Handle is null;
+		public bool IsDisposed => this.connection.Handle is null;
 
 		private string DebuggerDisplay => this.Path;
 

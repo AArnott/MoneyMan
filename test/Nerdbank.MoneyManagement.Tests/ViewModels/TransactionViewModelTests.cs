@@ -223,4 +223,18 @@ public class TransactionViewModelTests : MoneyTestBase
 		Assert.Equal(transaction.Payee, fromDb.Payee);
 		Assert.Single(this.Money.Transactions);
 	}
+
+	[Fact]
+	public void ChangesAfterCloseDoNotThrowException()
+	{
+		var transaction = new Transaction
+		{
+			Payee = "some person",
+		};
+		this.Money.Insert(transaction);
+
+		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+		this.Money.Dispose();
+		this.viewModel.Amount = 12;
+	}
 }
