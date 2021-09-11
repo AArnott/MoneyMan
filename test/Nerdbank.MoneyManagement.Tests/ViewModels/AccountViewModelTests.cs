@@ -143,7 +143,7 @@ public class AccountViewModelTests : MoneyTestBase
 			Name = "some account",
 		};
 		this.Money.Insert(account);
-		this.Money.InsertAll(new object[]
+		this.Money.InsertAll(new ModelBase[]
 		{
 			new Transaction { CreditAccountId = account.Id },
 			new Transaction { DebitAccountId = account.Id },
@@ -163,7 +163,7 @@ public class AccountViewModelTests : MoneyTestBase
 		this.viewModel = new AccountViewModel(account, this.Money);
 		Assert.Equal(0m, this.viewModel.Balance);
 
-		this.Money.InsertAll(new object[]
+		this.Money.InsertAll(new ModelBase[]
 		{
 			new Transaction { Amount = 10, CreditAccountId = account.Id },
 			new Transaction { Amount = 2, DebitAccountId = account.Id },

@@ -24,7 +24,7 @@ public class UserStoryTests : MoneyTestBase
 	public UserStoryTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.Money.InsertAll(new object[]
+		this.Money.InsertAll(new ModelBase[]
 		{
 			new Account { Name = "Checking" },
 			new Account { Name = "Savings" },

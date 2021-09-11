@@ -33,7 +33,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void LoadFromFile()
 	{
-		this.Money.InsertAll(new object[]
+		this.Money.InsertAll(new ModelBase[]
 		{
 			new Account { Name = "Checking" },
 			new Category { Name = "Cat1" },

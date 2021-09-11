@@ -7,12 +7,12 @@ using Nerdbank.MoneyManagement;
 using Xunit;
 using Xunit.Abstractions;
 
-public class MoneyFileFacts : IDisposable
+public class MoneyFileTests : IDisposable
 {
 	private readonly ITestOutputHelper logger;
 	private string dbPath;
 
-	public MoneyFileFacts(ITestOutputHelper logger)
+	public MoneyFileTests(ITestOutputHelper logger)
 	{
 		this.logger = logger;
 		this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -44,14 +44,15 @@ public class MoneyFileFacts : IDisposable
 	public void Account_StoreReloadAndChange()
 	{
 		int accountKey;
-		using (MoneyFile? money = this.Load())
+		using (MoneyFile money = this.Load())
 		{
 			var account = new Account { Name = "foo" };
-			accountKey = money.Insert(account);
-			Assert.Equal(accountKey, account.Id);
+			money.Insert(account);
+			Assert.NotEqual(0, account.Id);
+			accountKey = account.Id;
 		}
 
-		using (MoneyFile? money = this.Load())
+		using (MoneyFile money = this.Load())
 		{
 			Account? account = money.Accounts.First();
 			Assert.Equal(accountKey, account.Id);
@@ -60,7 +61,7 @@ public class MoneyFileFacts : IDisposable
 			money.Update(account);
 		}
 
-		using (MoneyFile? money = this.Load())
+		using (MoneyFile money = this.Load())
 		{
 			Assert.Equal(1, money.Accounts.Count());
 			Account? account = money.Get<Account>(accountKey);
@@ -106,6 +107,64 @@ public class MoneyFileFacts : IDisposable
 			Assert.Equal(7, money.GetNetWorth());
 			Assert.Equal(10, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { IncludeClosedAccounts = true }));
 		}
+	}
+
+	[Fact]
+	public void Insert_RaisesEvent()
+	{
+		using MoneyFile money = this.Load();
+		Account account = new() { Name = "Checking" };
+		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.Insert(account));
+		Assert.Same(money, evt.Sender);
+		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		Assert.Empty(evt.Arguments.Deleted);
+	}
+
+	[Fact]
+	public void InsertAll_RaisesEvent()
+	{
+		using MoneyFile money = this.Load();
+		Account account = new() { Name = "Checking" };
+		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.InsertAll(account));
+		Assert.Same(money, evt.Sender);
+		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		Assert.Empty(evt.Arguments.Deleted);
+	}
+
+	[Fact]
+	public void Update_RaisesEvent()
+	{
+		using MoneyFile money = this.Load();
+		Account account = new() { Name = "Checking" };
+
+		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.Update(account));
+		Assert.Same(money, evt.Sender);
+		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		Assert.Empty(evt.Arguments.Deleted);
+	}
+
+	[Fact]
+	public void InsertOrReplace_RaisesEvent()
+	{
+		using MoneyFile money = this.Load();
+		Account account = new() { Name = "Checking" };
+
+		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.InsertOrReplace(account));
+		Assert.Same(money, evt.Sender);
+		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		Assert.Empty(evt.Arguments.Deleted);
+	}
+
+	[Fact]
+	public void Delete_RaisesEvent()
+	{
+		using MoneyFile money = this.Load();
+		Account account = new() { Name = "Checking" };
+
+		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.Delete(account));
+		Assert.Same(money, evt.Sender);
+		Assert.Empty(evt.Arguments.InsertedOrChanged);
+		Assert.Same(account, Assert.Single(evt.Arguments.Deleted));
 	}
 
 	private MoneyFile Load()
