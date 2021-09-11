@@ -26,9 +26,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private ClearedStateViewModel cleared = SharedClearedStates[0];
 		private AccountViewModel? transferAccount;
 		private string? payee;
-		private CategoryViewModel? category;
+		private ITransactionTarget? categoryOrTransfer;
 		private bool isSelected;
-		private AccountViewModel? otherAccount;
 
 		[Obsolete("Do not use this constructor.")]
 		public TransactionViewModel()
@@ -37,11 +36,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			throw new NotSupportedException();
 		}
 
-		public TransactionViewModel(AccountViewModel thisAccount, Transaction? model, MoneyFile? moneyFile)
-			: base(model, moneyFile)
+		public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction, MoneyFile? moneyFile)
+			: base(moneyFile)
 		{
 			this.ThisAccount = thisAccount;
 			this.AutoSave = true;
+
+			if (transaction is object)
+			{
+				this.CopyFrom(transaction);
+			}
 		}
 
 		public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
@@ -88,10 +92,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.payee, value);
 		}
 
-		public CategoryViewModel? Category
+		public ITransactionTarget? CategoryOrTransfer
 		{
-			get => this.category;
-			set => this.SetProperty(ref this.category, value);
+			get => this.categoryOrTransfer;
+			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
 		public bool IsSelected
@@ -105,15 +109,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public AccountViewModel ThisAccount { get; }
 
-		/// <summary>
-		/// Gets or sets the account that is party to a transfer transaction, if applicable.
-		/// </summary>
-		public AccountViewModel? OtherAccount
-		{
-			get => this.otherAccount;
-			set => this.SetProperty(ref this.otherAccount, value);
-		}
-
 		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
 
 		protected override void ApplyToCore(Transaction transaction)
@@ -126,16 +121,17 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.Memo = this.Memo;
 			transaction.CheckNumber = this.CheckNumber;
 			transaction.Cleared = this.Cleared.Value;
+			transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
 			if (this.Amount < 0)
 			{
 				transaction.DebitAccountId = this.ThisAccount.Id;
-				transaction.CreditAccountId = this.OtherAccount?.Id;
+				transaction.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
 			else
 			{
 				transaction.CreditAccountId = this.ThisAccount.Id;
-				transaction.DebitAccountId = this.OtherAccount?.Id;
+				transaction.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
 		}
 
@@ -143,12 +139,28 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 
-			this.payee = transaction.Payee;
+			this.payee = transaction.Payee; // add test for property changed.
 			this.When = transaction.When;
-			this.Amount = transaction.Amount;
+			this.Amount = transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount;
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
 			this.Cleared = SharedClearedStates.Single(cs => cs.Value == transaction.Cleared);
+
+			if (transaction.CategoryId is int categoryId)
+			{
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
+			}
+			else
+			{
+				if (transaction.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
+				{
+					this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
+				}
+				else if (transaction.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
+				{
+					this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
+				}
+			}
 		}
 
 		[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]

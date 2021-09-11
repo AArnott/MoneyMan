@@ -37,6 +37,19 @@ public class CategoryViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void TransferTargetName()
+	{
+		this.viewModel.Name = "tt-test";
+		Assert.Equal(this.viewModel.Name, this.viewModel.TransferTargetName);
+	}
+
+	[Fact]
+	public void TransferTargetName_PropertyChanged()
+	{
+		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.Name = "other", nameof(this.viewModel.Name), nameof(this.viewModel.TransferTargetName));
+	}
+
+	[Fact]
 	public void ApplyTo()
 	{
 		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));

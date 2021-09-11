@@ -38,6 +38,30 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		internal CategoryViewModel? AddingCategory { get; set; }
 
+		public CategoryViewModel NewCategory()
+		{
+			CategoryViewModel newCategoryViewModel = new(null, this.moneyFile);
+			newCategoryViewModel.Model = new Category();
+			this.Categories.Add(newCategoryViewModel);
+			this.SelectedCategory = newCategoryViewModel;
+			this.AddingCategory = newCategoryViewModel;
+			return newCategoryViewModel;
+		}
+
+		public void DeleteCategory(CategoryViewModel categoryViewModel)
+		{
+			this.Categories.Remove(categoryViewModel);
+			if (categoryViewModel.Model is object)
+			{
+				this.moneyFile.Delete(categoryViewModel.Model);
+			}
+
+			if (this.SelectedCategory == categoryViewModel)
+			{
+				this.SelectedCategory = null;
+			}
+		}
+
 		private class AddCategoryCommand : CommandBase
 		{
 			private readonly CategoriesPanelViewModel viewModel;
@@ -56,12 +80,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 				else
 				{
-					CategoryViewModel newCategoryViewModel = new(null, this.viewModel.moneyFile);
+					CategoryViewModel newCategoryViewModel = this.viewModel.NewCategory();
 					newCategoryViewModel.PropertyChanged += this.NewCategoryViewModel_PropertyChanged;
-					newCategoryViewModel.Model = new Category();
-					this.viewModel.Categories.Add(newCategoryViewModel);
-					this.viewModel.SelectedCategory = newCategoryViewModel;
-					this.viewModel.AddingCategory = newCategoryViewModel;
 				}
 
 				return Task.CompletedTask;
@@ -97,13 +117,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 			{
 				CategoryViewModel viewModel = this.viewModel.SelectedCategory ?? throw new InvalidOperationException("No category is selected.");
-				this.viewModel.Categories.Remove(viewModel);
-				this.viewModel.SelectedCategory = null;
-				if (viewModel.Model is object)
-				{
-					this.viewModel.moneyFile.Delete(viewModel.Model);
-				}
-
+				this.viewModel.DeleteCategory(viewModel);
 				return Task.CompletedTask;
 			}
 

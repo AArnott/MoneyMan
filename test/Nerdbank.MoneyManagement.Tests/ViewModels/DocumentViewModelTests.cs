@@ -15,8 +15,6 @@ using Xunit.Abstractions;
 
 public class DocumentViewModelTests : MoneyTestBase
 {
-	private DocumentViewModel viewModel = new DocumentViewModel(null);
-
 	public DocumentViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
@@ -25,9 +23,10 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void InitialState()
 	{
-		Assert.False(this.viewModel.IsFileOpen);
-		Assert.Null(this.viewModel.AccountsPanel);
-		Assert.Null(this.viewModel.CategoriesPanel);
+		DocumentViewModel documentViewModel = new DocumentViewModel();
+		Assert.False(documentViewModel.IsFileOpen);
+		Assert.Null(documentViewModel.AccountsPanel);
+		Assert.Null(documentViewModel.CategoriesPanel);
 	}
 
 	[Fact]
@@ -38,16 +37,16 @@ public class DocumentViewModelTests : MoneyTestBase
 			new Account { Name = "Checking" },
 			new Category { Name = "Cat1" },
 		});
-		this.viewModel = new DocumentViewModel(this.Money);
-		Assert.Contains(this.viewModel.AccountsPanel?.Accounts, acct => acct.Name == "Checking");
-		Assert.Contains(this.viewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
+		DocumentViewModel documentViewModel = new(this.Money);
+		Assert.Contains(documentViewModel.AccountsPanel?.Accounts, acct => acct.Name == "Checking");
+		Assert.Contains(documentViewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
 	}
 
 	[Fact]
 	public void NewFileGetsDefaultCategories()
 	{
-		this.viewModel = DocumentViewModel.CreateNew(MoneyFile.Load(":memory:"));
-		Assert.Contains(this.viewModel.CategoriesPanel!.Categories, cat => cat.Name == "Groceries");
+		DocumentViewModel documentViewModel = DocumentViewModel.CreateNew(MoneyFile.Load(":memory:"));
+		Assert.Contains(documentViewModel.CategoriesPanel!.Categories, cat => cat.Name == "Groceries");
 	}
 
 	[Fact]
@@ -57,19 +56,77 @@ public class DocumentViewModelTests : MoneyTestBase
 		this.Money.Insert(account);
 		Transaction tx1 = new() { When = DateTime.Now, CreditAccountId = account.Id, Amount = 10 };
 		this.Money.Insert(tx1);
-		this.viewModel = new DocumentViewModel(this.Money);
-		Assert.Equal(10, this.viewModel.NetWorth);
+		Assert.Equal(10, this.DocumentViewModel.NetWorth);
 
 		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, Amount = 3 };
-		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.Money.Insert(tx2), nameof(this.viewModel.NetWorth));
-		Assert.Equal(7, this.viewModel.NetWorth);
+		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Insert(tx2), nameof(this.DocumentViewModel.NetWorth));
+		Assert.Equal(7, this.DocumentViewModel.NetWorth);
+	}
+
+	[Fact]
+	public void NewAccount()
+	{
+		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		accountViewModel.Name = "some new account";
+		Account account = Assert.Single(this.Money.Accounts);
+		Assert.Equal(accountViewModel.Name, account.Name);
+	}
+
+	[Fact]
+	public void AddedAccountAddsToTransactionTargets()
+	{
+		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		accountViewModel.Name = "some new account";
+		Account account = Assert.Single(this.Money.Accounts);
+		Assert.Equal(accountViewModel.Name, account.Name);
+
+		ITransactionTarget accountTarget = Assert.Single(this.DocumentViewModel.TransactionTargets);
+		Assert.Same(accountViewModel, accountTarget);
+	}
+
+	[Fact]
+	public void DeletedAccountRemovesFromTransactionTargets()
+	{
+		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		accountViewModel.Name = "some new account";
+
+		Assert.Single(this.DocumentViewModel.TransactionTargets);
+
+		this.DocumentViewModel.DeleteAccount(accountViewModel);
+		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+	}
+
+	[Fact]
+	public void AddedCategoryAddsToTransactionTargets()
+	{
+		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel!.NewCategory();
+		categoryViewModel.Name = "some new category";
+		Category category = Assert.Single(this.Money.Categories);
+		Assert.Equal(categoryViewModel.Name, category.Name);
+
+		ITransactionTarget categoryTarget = Assert.Single(this.DocumentViewModel.TransactionTargets);
+		Assert.Equal(categoryViewModel, categoryTarget);
+	}
+
+	[Fact]
+	public void DeletedCategoryRemovesFromTransactionTargets()
+	{
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel!.NewCategory();
+		categoryViewModel.Name = "some new category";
+
+		Assert.Single(this.DocumentViewModel.TransactionTargets);
+
+		this.DocumentViewModel.CategoriesPanel!.DeleteCategory(categoryViewModel);
+		Assert.Empty(this.DocumentViewModel.TransactionTargets);
 	}
 
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
 		{
-			this.viewModel.Dispose();
+			this.DocumentViewModel.Dispose();
 		}
 
 		base.Dispose(disposing);

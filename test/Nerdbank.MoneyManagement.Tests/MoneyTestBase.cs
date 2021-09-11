@@ -3,24 +3,29 @@
 
 using System;
 using Nerdbank.MoneyManagement;
+using Nerdbank.MoneyManagement.ViewModels;
 using Xunit.Abstractions;
 
 public class MoneyTestBase : TestBase
 {
-	private Lazy<MoneyFile> money;
+	private readonly Lazy<MoneyFile> money;
+	private readonly Lazy<DocumentViewModel> documentViewModel;
 
 	public MoneyTestBase(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.money = new Lazy<MoneyFile>(() =>
+		this.money = new Lazy<MoneyFile>(delegate
 		{
 			MoneyFile result = MoneyFile.Load(":memory:");
 			result.Logger = new TestLoggerAdapter(this.Logger);
 			return result;
 		});
+		this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money));
 	}
 
 	protected MoneyFile Money => this.money.Value;
+
+	protected DocumentViewModel DocumentViewModel => this.documentViewModel.Value;
 
 	protected override void Dispose(bool disposing)
 	{

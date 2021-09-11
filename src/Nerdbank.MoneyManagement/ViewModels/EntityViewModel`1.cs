@@ -29,15 +29,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			};
 		}
 
-		protected EntityViewModel(TEntity? model, MoneyFile? moneyFile)
+		protected EntityViewModel(MoneyFile? moneyFile)
 			: this()
 		{
-			this.Model = model;
 			this.MoneyFile = moneyFile;
-			if (model is object)
-			{
-				this.CopyFrom(model);
-			}
 		}
 
 		/// <summary>
@@ -89,7 +84,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.Id = model.Id;
 
-			this.CopyFromCore(model);
+			bool autoSave = this.AutoSave;
+			this.AutoSave = false;
+			try
+			{
+				this.CopyFromCore(model);
+			}
+			finally
+			{
+				this.AutoSave = autoSave;
+			}
 
 			this.IsDirty = false;
 			this.Model ??= model;
