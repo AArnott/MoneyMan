@@ -167,6 +167,22 @@ public class MoneyFileTests : IDisposable
 		Assert.Same(account, Assert.Single(evt.Arguments.Deleted));
 	}
 
+	[Fact]
+	public void Disposal_LeadsOtherMethodsToThrow()
+	{
+		MoneyFile money = this.Load();
+		money.Dispose();
+		Assert.Throws<ObjectDisposedException>(() => money.Insert(new Account { Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.Update(new Account { Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.InsertOrReplace(new Account { Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.Delete(new Account { Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.Categories);
+		Assert.Throws<ObjectDisposedException>(() => money.Accounts);
+		Assert.Throws<ObjectDisposedException>(() => money.SplitTransactions);
+		Assert.Throws<ObjectDisposedException>(() => money.Transactions);
+		Assert.Throws<ObjectDisposedException>(() => money.CheckIntegrity());
+	}
+
 	private MoneyFile Load()
 	{
 		var file = MoneyFile.Load(this.dbPath);
