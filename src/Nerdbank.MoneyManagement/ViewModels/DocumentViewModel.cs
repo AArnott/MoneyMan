@@ -18,7 +18,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class DocumentViewModel : BindableBase, IDisposable
 	{
-		private MoneyFile? model;
+		private readonly MoneyFile? model;
+		private decimal netWorth;
 
 		public DocumentViewModel()
 			: this(null)
@@ -43,7 +44,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					this.CategoriesPanel.Categories.Add(new CategoryViewModel(category, model));
 				}
 
-				this.NetWorth = model.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+				this.netWorth = model.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+				model.EntitiesChanged += this.Model_EntitiesChanged;
 			}
 		}
 
@@ -51,7 +53,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public string Title => this.model is { Path: string path } ? $"Nerdbank Money Management - {Path.GetFileNameWithoutExtension(path)}" : "Nerdbank Money Management";
 
-		public decimal NetWorth { get; internal set; }
+		public decimal NetWorth
+		{
+			get => this.netWorth;
+			set => this.SetProperty(ref this.netWorth, value);
+		}
 
 		public AccountsPanelViewModel? AccountsPanel { get; }
 
@@ -101,6 +107,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public void Dispose()
 		{
 			this.model?.Dispose();
+		}
+
+		private void Model_EntitiesChanged(object? sender, MoneyFile.EntitiesChangedEventArgs e)
+		{
+			Assumes.NotNull(this.model);
+			this.NetWorth = this.model.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 	}
 }

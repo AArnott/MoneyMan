@@ -50,6 +50,21 @@ public class DocumentViewModelTests : MoneyTestBase
 		Assert.Contains(this.viewModel.CategoriesPanel!.Categories, cat => cat.Name == "Groceries");
 	}
 
+	[Fact]
+	public void NetWorth()
+	{
+		Account account = new() { Name = "Checking" };
+		this.Money.Insert(account);
+		Transaction tx1 = new() { When = DateTime.Now, CreditAccountId = account.Id, Amount = 10 };
+		this.Money.Insert(tx1);
+		this.viewModel = new DocumentViewModel(this.Money);
+		Assert.Equal(10, this.viewModel.NetWorth);
+
+		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, Amount = 3 };
+		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.Money.Insert(tx2), nameof(this.viewModel.NetWorth));
+		Assert.Equal(7, this.viewModel.NetWorth);
+	}
+
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
