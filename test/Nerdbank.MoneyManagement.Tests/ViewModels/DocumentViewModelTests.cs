@@ -46,7 +46,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NewFileGetsDefaultCategories()
 	{
-		this.viewModel = DocumentViewModel.CreateNew(this.GenerateTemporaryFileName());
+		this.viewModel = DocumentViewModel.CreateNew(MoneyFile.Load(":memory:"));
 		Assert.Contains(this.viewModel.CategoriesPanel!.Categories, cat => cat.Name == "Groceries");
 	}
 

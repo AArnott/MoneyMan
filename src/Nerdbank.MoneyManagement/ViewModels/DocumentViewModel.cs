@@ -72,7 +72,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				File.Delete(moneyFilePath);
 			}
 
-			MoneyFile model = MoneyFile.Load(moneyFilePath);
+			return CreateNew(MoneyFile.Load(moneyFilePath));
+		}
+
+		public static DocumentViewModel CreateNew(MoneyFile model)
+		{
 			try
 			{
 				TemplateData.InjectTemplateData(model);
