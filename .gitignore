@@ -346,3 +346,6 @@ MigrationBackup/
 
 # dotnet tool local install directory
 .store/
+
+# Our own data files, which for interactive test purposes may end up in our directory
+*.moneyman
