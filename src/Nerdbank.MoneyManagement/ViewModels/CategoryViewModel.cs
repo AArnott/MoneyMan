@@ -4,11 +4,10 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System.Diagnostics;
-	using PCLCommandBase;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class CategoryViewModel : EntityViewModel<Category>
+	public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
 	{
 		private string name = string.Empty;
 
@@ -18,9 +17,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		public CategoryViewModel(Category? model, MoneyFile? moneyFile)
-			: base(model, moneyFile)
+			: base(moneyFile)
 		{
+			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
 			this.AutoSave = true;
+
+			if (model is object)
+			{
+				this.CopyFrom(model);
+			}
 		}
 
 		/// <inheritdoc cref="Category.Name"/>
@@ -33,6 +38,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.SetProperty(ref this.name, value);
 			}
 		}
+
+		public string TransferTargetName => this.Name;
 
 		private string DebuggerDisplay => this.Name;
 

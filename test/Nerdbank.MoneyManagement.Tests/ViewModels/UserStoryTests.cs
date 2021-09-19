@@ -55,7 +55,7 @@ public class UserStoryTests : MoneyTestBase
 		TransactionViewModel tx = this.checkingAccount.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Amount = 15;
-		tx.OtherAccount = this.savingsAccount;
+		tx.CategoryOrTransfer = this.savingsAccount;
 
 		Transaction? txModel = this.Money.Transactions.FirstOrDefault(t => t.Id == tx.Id);
 		Assert.NotNull(txModel);

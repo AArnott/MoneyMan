@@ -131,7 +131,7 @@ public class MoneyFileTests : IDisposable
 		Account account = new() { Name = "Checking" };
 		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.Insert(account));
 		Assert.Same(money, evt.Sender);
-		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		Assert.Same(account, Assert.Single(evt.Arguments.Inserted));
 		Assert.Empty(evt.Arguments.Deleted);
 	}
 
@@ -142,7 +142,7 @@ public class MoneyFileTests : IDisposable
 		Account account = new() { Name = "Checking" };
 		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.InsertAll(account));
 		Assert.Same(money, evt.Sender);
-		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		Assert.Same(account, Assert.Single(evt.Arguments.Inserted));
 		Assert.Empty(evt.Arguments.Deleted);
 	}
 
@@ -151,10 +151,15 @@ public class MoneyFileTests : IDisposable
 	{
 		using MoneyFile money = this.Load();
 		Account account = new() { Name = "Checking" };
+		money.Insert(account);
+		account.Name = "Checking 2";
 
 		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.Update(account));
 		Assert.Same(money, evt.Sender);
-		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		var changeRecord = Assert.Single(evt.Arguments.Changed);
+		Assert.Same(account, changeRecord.After);
+		Assert.Equal("Checking 2", ((Account)changeRecord.After).Name);
+		Assert.Equal("Checking", ((Account)changeRecord.Before).Name);
 		Assert.Empty(evt.Arguments.Deleted);
 	}
 
@@ -166,7 +171,7 @@ public class MoneyFileTests : IDisposable
 
 		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.InsertOrReplace(account));
 		Assert.Same(money, evt.Sender);
-		Assert.Same(account, Assert.Single(evt.Arguments.InsertedOrChanged));
+		Assert.Same(account, Assert.Single(evt.Arguments.Inserted));
 		Assert.Empty(evt.Arguments.Deleted);
 	}
 
@@ -178,7 +183,8 @@ public class MoneyFileTests : IDisposable
 
 		Assert.RaisedEvent<MoneyFile.EntitiesChangedEventArgs> evt = Assert.Raises<MoneyFile.EntitiesChangedEventArgs>(h => money.EntitiesChanged += h, h => money.EntitiesChanged -= h, () => money.Delete(account));
 		Assert.Same(money, evt.Sender);
-		Assert.Empty(evt.Arguments.InsertedOrChanged);
+		Assert.Empty(evt.Arguments.Inserted);
+		Assert.Empty(evt.Arguments.Changed);
 		Assert.Same(account, Assert.Single(evt.Arguments.Deleted));
 	}
 

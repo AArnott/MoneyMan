@@ -14,30 +14,28 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			this.PropertyChanged += (s, e) =>
 			{
-				this.IsDirty = true;
-				if (this.AutoSave && this.Model is object)
+				if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 				{
-					this.ApplyToModel();
-					if (this.MoneyFile is { IsDisposed: false })
+					this.IsDirty = true;
+					if (this.AutoSave && this.Model is object)
 					{
-						this.Model.Save(this.MoneyFile);
+						this.ApplyToModel();
+						if (this.MoneyFile is { IsDisposed: false })
+						{
+							this.Model.Save(this.MoneyFile);
 
-						// First insert of an entity assigns it an ID. Make sure the view model matches it.
-						this.Id = this.Model.Id;
+							// First insert of an entity assigns it an ID. Make sure the view model matches it.
+							this.Id = this.Model.Id;
+						}
 					}
 				}
 			};
 		}
 
-		protected EntityViewModel(TEntity? model, MoneyFile? moneyFile)
+		protected EntityViewModel(MoneyFile? moneyFile)
 			: this()
 		{
-			this.Model = model;
 			this.MoneyFile = moneyFile;
-			if (model is object)
-			{
-				this.CopyFrom(model);
-			}
 		}
 
 		/// <summary>
@@ -89,7 +87,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.Id = model.Id;
 
-			this.CopyFromCore(model);
+			bool autoSave = this.AutoSave;
+			this.AutoSave = false;
+			try
+			{
+				this.CopyFromCore(model);
+			}
+			finally
+			{
+				this.AutoSave = autoSave;
+			}
 
 			this.IsDirty = false;
 			this.Model ??= model;
@@ -98,5 +105,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		protected abstract void ApplyToCore(TEntity model);
 
 		protected abstract void CopyFromCore(TEntity model);
+
+		protected virtual bool IsPersistedProperty(string propertyName) => true;
 	}
 }

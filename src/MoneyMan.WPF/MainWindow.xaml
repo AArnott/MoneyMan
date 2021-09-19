@@ -86,7 +86,6 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" />
 								<DataGridTemplateColumn Header="Payee">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
@@ -102,17 +101,17 @@
 								<DataGridTemplateColumn Header="Category">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<TextBlock Text="{Binding Category.Name}" Margin="3pt" />
+											<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
 											<ComboBox
-												ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.CategoriesPanel.Categories}"
-												SelectedItem="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+												ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
+												SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 												<ComboBox.ItemTemplate>
 													<DataTemplate>
-														<TextBlock Text="{Binding Name}" />
+														<TextBlock Text="{Binding TransferTargetName}" />
 													</DataTemplate>
 												</ComboBox.ItemTemplate>
 											</ComboBox>
@@ -132,6 +131,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
+								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" />
 								<DataGridTemplateColumn Header="Clr">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>

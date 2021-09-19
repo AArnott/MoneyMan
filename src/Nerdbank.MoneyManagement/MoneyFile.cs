@@ -116,39 +116,50 @@ namespace Nerdbank.MoneyManagement
 			return this.connection.Get<T>(primaryKey);
 		}
 
-		public void Insert(ModelBase model)
+		public T Insert<T>(T model)
+			where T : ModelBase
 		{
 			Verify.NotDisposed(this);
 			this.connection.Insert(model);
-			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(new[] { model }, Array.Empty<ModelBase>()));
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
+			return model;
 		}
 
 		public void InsertAll(params ModelBase[] models)
 		{
 			Verify.NotDisposed(this);
 			this.connection.InsertAll(models);
-			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(models, Array.Empty<ModelBase>()));
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 		}
 
 		public void Update(ModelBase model)
 		{
 			Verify.NotDisposed(this);
+			ModelBase before = (ModelBase)this.connection.Get(model.Id, this.GetTableMapping(model));
 			this.connection.Update(model);
-			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(new[] { model }, Array.Empty<ModelBase>()));
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
 		}
 
 		public void InsertOrReplace(ModelBase model)
 		{
 			Verify.NotDisposed(this);
-			this.connection.InsertOrReplace(model);
-			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(new[] { model }, Array.Empty<ModelBase>()));
+			ModelBase before = (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model));
+			if (this.connection.Update(model) > 0)
+			{
+				this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
+			}
+			else
+			{
+				this.connection.Insert(model);
+				this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
+			}
 		}
 
 		public void Delete(ModelBase model)
 		{
 			Verify.NotDisposed(this);
 			this.connection.Delete(model);
-			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(Array.Empty<ModelBase>(), deleted: new[] { model }));
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
 		}
 
 		/// <summary>
@@ -234,6 +245,11 @@ namespace Nerdbank.MoneyManagement
 
 		private static string SqlWhere(string condition) => string.IsNullOrEmpty(condition) ? string.Empty : $" WHERE {condition}";
 
+		private TableMapping GetTableMapping(ModelBase model)
+		{
+			return this.connection.TableMappings.Single(tm => tm.TableName == model.GetType().Name);
+		}
+
 		private T ExecuteScalar<T>(string query, params object[] args)
 		{
 			this.Logger?.WriteLine(query);
@@ -271,13 +287,19 @@ namespace Nerdbank.MoneyManagement
 
 		public class EntitiesChangedEventArgs : EventArgs
 		{
-			public EntitiesChangedEventArgs(IReadOnlyCollection<ModelBase> insertedOrChanged, IReadOnlyCollection<ModelBase> deleted)
+			public EntitiesChangedEventArgs(
+				IReadOnlyCollection<ModelBase>? inserted = null,
+				IReadOnlyCollection<(ModelBase Before, ModelBase After)>? changed = null,
+				IReadOnlyCollection<ModelBase>? deleted = null)
 			{
-				this.InsertedOrChanged = insertedOrChanged;
-				this.Deleted = deleted;
+				this.Inserted = inserted ?? Array.Empty<ModelBase>();
+				this.Changed = changed ?? Array.Empty<(ModelBase, ModelBase)>();
+				this.Deleted = deleted ?? Array.Empty<ModelBase>();
 			}
 
-			public IReadOnlyCollection<ModelBase> InsertedOrChanged { get; }
+			public IReadOnlyCollection<ModelBase> Inserted { get; }
+
+			public IReadOnlyCollection<(ModelBase Before, ModelBase After)> Changed { get; }
 
 			public IReadOnlyCollection<ModelBase> Deleted { get; }
 		}

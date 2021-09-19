@@ -6,6 +6,7 @@ namespace Nerdbank.MoneyManagement.Tests
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
+	using System.Linq;
 	using System.Threading.Tasks;
 	using Microsoft;
 	using Xunit;
@@ -44,7 +45,7 @@ namespace Nerdbank.MoneyManagement.Tests
 			try
 			{
 				await trigger();
-				Assert.Equal(expectedPropertiesChanged, actualPropertiesChanged);
+				Assert.Subset(actualPropertiesChanged, expectedPropertiesChanged.ToHashSet(StringComparer.Ordinal));
 			}
 			finally
 			{

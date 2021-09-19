@@ -4,16 +4,16 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
-	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
+	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using PCLCommandBase;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class AccountViewModel : EntityViewModel<Account>
+	public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	{
 		private ObservableCollection<TransactionViewModel>? transactions;
 		private TransactionViewModel? selectedTransaction;
@@ -22,18 +22,21 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private decimal balance;
 
 		public AccountViewModel()
-			: this(null, null)
+			: this(null, null, null)
 		{
 		}
 
-		public AccountViewModel(Account? model, MoneyFile? moneyFile)
-			: base(model, moneyFile)
+		public AccountViewModel(Account? model, MoneyFile? moneyFile, DocumentViewModel? documentViewModel)
+			: base(moneyFile)
 		{
+			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
 			this.AutoSave = true;
 			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
-			if (moneyFile is object && model is object)
+
+			this.DocumentViewModel = documentViewModel;
+			if (model is object)
 			{
-				this.balance = moneyFile.GetBalance(model);
+				this.CopyFrom(model);
 			}
 		}
 
@@ -42,6 +45,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.name;
 			set => this.SetProperty(ref this.name, value);
 		}
+
+		public string? TransferTargetName => $"[{this.Name}]";
 
 		public bool IsClosed
 		{
@@ -55,6 +60,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.balance, value);
 		}
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)] // It's lazily initialized, and we don't want the debugger to trip over it.
 		public ObservableCollection<TransactionViewModel> Transactions
 		{
 			get
@@ -67,7 +73,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						SQLite.TableQuery<Transaction> transactions = this.MoneyFile.Transactions.Where(tx => tx.CreditAccountId == this.Id || tx.DebitAccountId == this.Id);
 						foreach (Transaction transaction in transactions)
 						{
-							this.transactions.Add(new TransactionViewModel(this, transaction, this.MoneyFile));
+							TransactionViewModel transactionViewModel = new(this, transaction, this.MoneyFile);
+							this.transactions.Add(transactionViewModel);
 						}
 					}
 				}
@@ -87,10 +94,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public CommandBase DeleteTransactionCommand { get; }
 
+		internal DocumentViewModel? DocumentViewModel { get; }
+
 		private string? DebuggerDisplay => this.Name;
 
 		/// <summary>
-		/// Creates a new <see cref="TransactionViewModel"/> for this account.
+		/// Creates a new <see cref="TransactionViewModel"/> for this account,
+		/// but does <em>not</em> add it to the collection.
 		/// </summary>
 		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
 		public TransactionViewModel NewTransaction()
@@ -99,6 +109,57 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			viewModel.When = DateTime.Now;
 			viewModel.Model = new();
 			return viewModel;
+		}
+
+		public void DeleteTransaction(TransactionViewModel transaction)
+		{
+			this.Transactions.Remove(transaction);
+			if (this.MoneyFile is object && transaction.Model is object)
+			{
+				this.MoneyFile.Delete(transaction.Model);
+			}
+		}
+
+		internal void NotifyTransactionDeleted(Transaction transaction)
+		{
+			if (this.transactions is null)
+			{
+				// Nothing to refresh.
+				return;
+			}
+
+			if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
+			{
+				this.Transactions.Remove(transactionViewModel);
+			}
+		}
+
+		internal void NotifyTransactionChanged(Transaction transaction)
+		{
+			if (this.transactions is null)
+			{
+				// Nothing to refresh.
+				return;
+			}
+
+			// This transaction may have added or dropped our account as a transfer
+			bool removedFromAccount = transaction.CreditAccountId != this.Id && transaction.DebitAccountId != this.Id;
+			if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
+			{
+				if (removedFromAccount)
+				{
+					this.Transactions.Remove(transactionViewModel);
+				}
+				else
+				{
+					transactionViewModel.CopyFrom(transaction);
+				}
+			}
+			else if (!removedFromAccount)
+			{
+				// This may be a new transaction we need to add.
+				this.Transactions.Add(new TransactionViewModel(this, transaction, this.MoneyFile));
+			}
 		}
 
 		protected override void ApplyToCore(Account account)
@@ -116,8 +177,28 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.Name = account.Name;
 			this.IsClosed = account.IsClosed;
 
+			if (this.MoneyFile is object && account is object)
+			{
+				this.balance = this.MoneyFile.GetBalance(account);
+			}
+
 			// Force reinitialization.
 			this.transactions = null;
+		}
+
+		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
+
+		private TransactionViewModel? FindTransaction(int id)
+		{
+			foreach (TransactionViewModel transactionViewModel in this.Transactions)
+			{
+				if (transactionViewModel.Model?.Id == id)
+				{
+					return transactionViewModel;
+				}
+			}
+
+			return null;
 		}
 
 		private class DeleteTransactionCommandImpl : CommandBase
