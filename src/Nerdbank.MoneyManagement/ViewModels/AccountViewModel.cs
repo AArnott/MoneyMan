@@ -186,6 +186,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.transactions = null;
 		}
 
+		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
+
 		private TransactionViewModel? FindTransaction(int id)
 		{
 			foreach (TransactionViewModel transactionViewModel in this.Transactions)
