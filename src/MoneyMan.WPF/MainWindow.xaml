@@ -119,7 +119,18 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Memo" Binding="{Binding Memo}" />
+								<DataGridTemplateColumn Header="Memo">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
+								</DataGridTemplateColumn>
 								<DataGridTemplateColumn Header="Amount">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
