@@ -27,7 +27,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private AccountViewModel? transferAccount;
 		private string? payee;
 		private ITransactionTarget? categoryOrTransfer;
-		private bool isSelected;
 
 		[Obsolete("Do not use this constructor.")]
 		public TransactionViewModel()
@@ -96,12 +95,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.categoryOrTransfer;
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
-		}
-
-		public bool IsSelected
-		{
-			get => this.isSelected;
-			set => this.SetProperty(ref this.isSelected, value);
 		}
 
 		/// <summary>

@@ -71,11 +71,12 @@
 							</CollectionViewSource>
 						</DockPanel.Resources>
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-						<DataGrid AlternatingRowBackground="LightBlue"
+						<DataGrid Name="TransactionDataGrid"
+								  AlternatingRowBackground="LightBlue"
 								  AlternationCount="2" 
 								  ItemsSource="{Binding Source={StaticResource transactions}}"
 								  IsSynchronizedWithCurrentItem="True"
-								  SelectedItem="{Binding SelectedTransaction, Mode=TwoWay}"
+								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay}"
 								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
@@ -151,14 +152,9 @@
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
-									<MenuItem Header="_Delete" Command="{Binding DeleteTransactionCommand}" />
+									<MenuItem Header="_Delete" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
 								</ContextMenu>
 							</DataGrid.ContextMenu>
-							<DataGrid.RowStyle>
-								<Style TargetType="{x:Type DataGridRow}">
-									<Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-								</Style>
-							</DataGrid.RowStyle>
 						</DataGrid>
 					</DockPanel>
 				</Grid>

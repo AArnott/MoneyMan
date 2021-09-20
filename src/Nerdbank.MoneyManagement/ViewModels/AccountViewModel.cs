@@ -4,8 +4,10 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections;
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
+	using System.Linq;
 	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -16,7 +18,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	{
 		private ObservableCollection<TransactionViewModel>? transactions;
-		private TransactionViewModel? selectedTransaction;
 		private string? name;
 		private bool isClosed;
 		private decimal balance;
@@ -31,7 +32,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
 			this.AutoSave = true;
-			this.DeleteTransactionCommand = new DeleteTransactionCommandImpl(this);
 
 			this.DocumentViewModel = documentViewModel;
 			if (model is object)
@@ -83,42 +83,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		public TransactionViewModel? SelectedTransaction
-		{
-			get => this.selectedTransaction;
-			set => this.SetProperty(ref this.selectedTransaction, value);
-		}
-
-		/// <summary>
-		/// Gets a command that deletes the transactions where <see cref="TransactionViewModel.IsSelected"/> is <see langword="true"/>.
-		/// </summary>
-		public CommandBase DeleteTransactionCommand { get; }
-
 		internal DocumentViewModel? DocumentViewModel { get; }
 
 		private string? DebuggerDisplay => this.Name;
-
-		/// <summary>
-		/// Creates a new <see cref="TransactionViewModel"/> for this account,
-		/// but does <em>not</em> add it to the collection.
-		/// </summary>
-		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
-		public TransactionViewModel NewTransaction()
-		{
-			TransactionViewModel viewModel = new(this, null, this.MoneyFile);
-			viewModel.When = DateTime.Now;
-			viewModel.Model = new();
-			return viewModel;
-		}
-
-		public void DeleteTransaction(TransactionViewModel transaction)
-		{
-			this.Transactions.Remove(transaction);
-			if (this.MoneyFile is object && transaction.Model is object)
-			{
-				this.MoneyFile.Delete(transaction.Model);
-			}
-		}
 
 		internal void NotifyTransactionDeleted(Transaction transaction)
 		{
@@ -199,43 +166,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 
 			return null;
-		}
-
-		private class DeleteTransactionCommandImpl : CommandBase
-		{
-			private readonly AccountViewModel viewModel;
-
-			internal DeleteTransactionCommandImpl(AccountViewModel viewModel)
-			{
-				this.viewModel = viewModel;
-				this.viewModel.PropertyChanged += (s, e) =>
-				{
-					if (e.PropertyName == nameof(AccountViewModel.SelectedTransaction))
-					{
-						this.OnCanExecuteChanged();
-					}
-				};
-			}
-
-			public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.viewModel.SelectedTransaction is object;
-
-			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
-			{
-				for (int i = this.viewModel.Transactions.Count - 1; i >= 0; i--)
-				{
-					TransactionViewModel tx = this.viewModel.Transactions[i];
-					if (tx.IsSelected)
-					{
-						this.viewModel.Transactions.RemoveAt(i);
-						if (tx.Model is object && this.viewModel.MoneyFile is object)
-						{
-							this.viewModel.MoneyFile.Delete(tx.Model);
-						}
-					}
-				}
-
-				return Task.CompletedTask;
-			}
 		}
 	}
 }

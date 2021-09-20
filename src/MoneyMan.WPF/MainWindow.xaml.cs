@@ -130,10 +130,8 @@ namespace MoneyMan
 			// BUGBUG: This doesn't trigger data-binding to reapply to the new view model.
 			this.ViewModel.Document = viewModel;
 
-			if (this.ViewModel.Document.CategoriesPanel is object)
-			{
-				this.ViewModel.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
-			}
+			this.ViewModel.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
+			this.ViewModel.Document.SelectedTransactions = this.TransactionDataGrid.SelectedItems;
 		}
 
 		private void InitializeFileDialog(FileDialog dialog)
@@ -147,7 +145,7 @@ namespace MoneyMan
 
 		private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 		{
-			e.NewItem = this.ViewModel.Document.AccountsPanel?.SelectedAccount?.NewTransaction() ?? throw new InvalidOperationException();
+			e.NewItem = this.ViewModel.Document.NewTransaction();
 		}
 	}
 }

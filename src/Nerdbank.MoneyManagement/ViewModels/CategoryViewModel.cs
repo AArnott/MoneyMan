@@ -34,7 +34,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.name;
 			set
 			{
-				Requires.NotNullOrEmpty(value, nameof(value));
+				Requires.NotNull(value, nameof(value));
 				this.SetProperty(ref this.name, value);
 			}
 		}

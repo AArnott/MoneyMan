@@ -16,15 +16,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 	public class CategoriesPanelViewModel : BindableBase
 	{
-		private readonly MoneyFile moneyFile;
+		private readonly DocumentViewModel documentViewModel;
 		private CategoryViewModel? selectedCategory;
 		private IList? selectedCategories;
 
-		public CategoriesPanelViewModel(MoneyFile moneyFile)
+		public CategoriesPanelViewModel(DocumentViewModel documentViewModel)
 		{
 			this.AddCommand = new AddCategoryCommand(this);
 			this.DeleteCommand = new DeleteCategoryCommand(this);
-			this.moneyFile = moneyFile;
+			this.documentViewModel = documentViewModel;
 		}
 
 		public CommandBase AddCommand { get; }
@@ -61,30 +61,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		internal CategoryViewModel? AddingCategory { get; set; }
 
-		public CategoryViewModel NewCategory()
-		{
-			CategoryViewModel newCategoryViewModel = new(null, this.moneyFile);
-			newCategoryViewModel.Model = new Category();
-			this.Categories.Add(newCategoryViewModel);
-			this.SelectedCategory = newCategoryViewModel;
-			this.AddingCategory = newCategoryViewModel;
-			return newCategoryViewModel;
-		}
-
-		public void DeleteCategory(CategoryViewModel categoryViewModel)
-		{
-			this.Categories.Remove(categoryViewModel);
-			if (categoryViewModel.Model is object)
-			{
-				this.moneyFile.Delete(categoryViewModel.Model);
-			}
-
-			if (this.SelectedCategory == categoryViewModel)
-			{
-				this.SelectedCategory = null;
-			}
-		}
-
 		private class AddCategoryCommand : CommandBase
 		{
 			private readonly CategoriesPanelViewModel viewModel;
@@ -103,7 +79,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 				else
 				{
-					CategoryViewModel newCategoryViewModel = this.viewModel.NewCategory();
+					CategoryViewModel newCategoryViewModel = this.viewModel.documentViewModel.NewCategory();
 					newCategoryViewModel.PropertyChanged += this.NewCategoryViewModel_PropertyChanged;
 				}
 
@@ -147,12 +123,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					foreach (CategoryViewModel category in this.viewModel.SelectedCategories.OfType<CategoryViewModel>().ToList())
 					{
-						this.viewModel.DeleteCategory(category);
+						this.viewModel.documentViewModel.DeleteCategory(category);
 					}
 				}
 				else if (this.viewModel.SelectedCategory is object)
 				{
-					this.viewModel.DeleteCategory(this.viewModel.SelectedCategory);
+					this.viewModel.documentViewModel.DeleteCategory(this.viewModel.SelectedCategory);
 				}
 
 				return Task.CompletedTask;
@@ -160,9 +136,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 			{
-				if (e.PropertyName == nameof(this.viewModel.SelectedCategories))
+				if (e.PropertyName is nameof(this.viewModel.SelectedCategories))
 				{
 					this.SubscribeToSelectionChanged();
+				}
+				else if (e.PropertyName is nameof(this.viewModel.SelectedCategory))
+				{
+					this.OnCanExecuteChanged();
 				}
 			}
 

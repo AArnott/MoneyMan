@@ -39,7 +39,8 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		this.account = this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = this.DocumentViewModel.GetAccount(otherAccountModel.Id);
-		this.viewModel = this.account.NewTransaction();
+		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.account;
+		this.viewModel = this.DocumentViewModel.NewTransaction();
 	}
 
 	[Fact]
@@ -163,8 +164,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void CopyFrom_Category()
 	{
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel!.NewCategory();
-		categoryViewModel.Name = "cat";
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("cat");
 
 		Transaction transaction = this.viewModel.Model!;
 		transaction.Payee = this.payee;
