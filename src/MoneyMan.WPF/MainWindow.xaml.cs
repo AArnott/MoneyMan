@@ -129,6 +129,11 @@ namespace MoneyMan
 
 			// BUGBUG: This doesn't trigger data-binding to reapply to the new view model.
 			this.ViewModel.Document = viewModel;
+
+			if (this.ViewModel.Document.CategoriesPanel is object)
+			{
+				this.ViewModel.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
+			}
 		}
 
 		private void InitializeFileDialog(FileDialog dialog)

@@ -4,11 +4,13 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections;
 	using System.Collections.ObjectModel;
+	using System.Collections.Specialized;
 	using System.ComponentModel;
+	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using System.Windows.Input;
 	using PCLCommandBase;
 	using Validation;
 
@@ -16,6 +18,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	{
 		private readonly MoneyFile moneyFile;
 		private CategoryViewModel? selectedCategory;
+		private IList? selectedCategories;
 
 		public CategoriesPanelViewModel(MoneyFile moneyFile)
 		{
@@ -26,14 +29,34 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CommandBase AddCommand { get; }
 
+		/// <summary>
+		/// Gets a command that deletes all categories in the <see cref="SelectedCategories"/> collection, if that property is set;
+		/// otherwise the <see cref="SelectedCategory"/> is deleted.
+		/// </summary>
 		public CommandBase DeleteCommand { get; }
 
 		public ObservableCollection<CategoryViewModel> Categories { get; } = new();
 
+		/// <summary>
+		/// Gets or sets the selected category, or one of the selected categories.
+		/// </summary>
 		public CategoryViewModel? SelectedCategory
 		{
 			get => this.selectedCategory;
 			set => this.SetProperty(ref this.selectedCategory, value);
+		}
+
+		/// <summary>
+		/// Gets or sets a collection of selected categories.
+		/// </summary>
+		/// <remarks>
+		/// This is optional. When set, the <see cref="DeleteCommand"/> will use this collection as the set of categories to delete.
+		/// When not set, the <see cref="SelectedCategory"/> will be used by the <see cref="DeleteCommand"/>.
+		/// </remarks>
+		public IList? SelectedCategories
+		{
+			get => this.selectedCategories;
+			set => this.SetProperty(ref this.selectedCategories, value);
 		}
 
 		internal CategoryViewModel? AddingCategory { get; set; }
@@ -105,27 +128,58 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private class DeleteCategoryCommand : CommandBase
 		{
 			private readonly CategoriesPanelViewModel viewModel;
+			private INotifyCollectionChanged? subscribedSelectedCategories;
 
 			public DeleteCategoryCommand(CategoriesPanelViewModel viewModel)
 			{
 				this.viewModel = viewModel;
-				viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
+				this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
+				this.SubscribeToSelectionChanged();
 			}
 
-			public override bool CanExecute(object? parameter) => base.CanExecute(parameter) && this.viewModel.SelectedCategory is object;
+			public string Caption => "_Delete";
+
+			public override bool CanExecute(object? parameter) => base.CanExecute(parameter) && (this.viewModel.SelectedCategories?.Count > 0 || this.viewModel.SelectedCategory is object);
 
 			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 			{
-				CategoryViewModel viewModel = this.viewModel.SelectedCategory ?? throw new InvalidOperationException("No category is selected.");
-				this.viewModel.DeleteCategory(viewModel);
+				if (this.viewModel.SelectedCategories is object)
+				{
+					foreach (CategoryViewModel category in this.viewModel.SelectedCategories.OfType<CategoryViewModel>().ToList())
+					{
+						this.viewModel.DeleteCategory(category);
+					}
+				}
+				else if (this.viewModel.SelectedCategory is object)
+				{
+					this.viewModel.DeleteCategory(this.viewModel.SelectedCategory);
+				}
+
 				return Task.CompletedTask;
 			}
 
 			private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 			{
-				if (e.PropertyName == nameof(CategoriesPanelViewModel.SelectedCategory))
+				if (e.PropertyName == nameof(this.viewModel.SelectedCategories))
 				{
-					this.OnCanExecuteChanged();
+					this.SubscribeToSelectionChanged();
+				}
+			}
+
+			private void SelectedCategories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => this.OnCanExecuteChanged();
+
+			private void SubscribeToSelectionChanged()
+			{
+				if (this.subscribedSelectedCategories is object)
+				{
+					this.subscribedSelectedCategories.CollectionChanged -= this.SelectedCategories_CollectionChanged;
+				}
+
+				this.subscribedSelectedCategories = this.viewModel.SelectedCategories as INotifyCollectionChanged;
+
+				if (this.subscribedSelectedCategories is object)
+				{
+					this.subscribedSelectedCategories.CollectionChanged += this.SelectedCategories_CollectionChanged;
 				}
 			}
 		}

@@ -181,25 +181,33 @@
 					</Style>
 				</TabItem.Resources>
 				<DockPanel>
-					<DockPanel DockPanel.Dock="Right" Width="150pt" >
-						<Button Content="_Delete" DockPanel.Dock="Bottom" Command="{Binding DeleteCommand}" />
-						<StackPanel Margin="5,0,5,0" DataContext="{StaticResource categories}">
-							<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
-							<TextBox Name="CategoryName"
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
+						<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
+						<TextBox Name="CategoryName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}">
-								<TextBox.Text>
-									<Binding Path="Name" UpdateSourceTrigger="LostFocus">
-										<Binding.ValidationRules>
-											<ExceptionValidationRule />
-										</Binding.ValidationRules>
-									</Binding>
-								</TextBox.Text>
-							</TextBox>
-						</StackPanel>
-					</DockPanel>
+							<TextBox.Text>
+								<Binding Path="Name" UpdateSourceTrigger="LostFocus">
+									<Binding.ValidationRules>
+										<ExceptionValidationRule />
+									</Binding.ValidationRules>
+								</Binding>
+							</TextBox.Text>
+						</TextBox>
+					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
-					<ListView ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory}">
+					<ListView Name="CategoriesListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
+						<ListView.ItemContainerStyle>
+							<Style TargetType="ListBoxItem">
+								<Setter Property="ContextMenu">
+									<Setter.Value>
+										<ContextMenu DataContext="{Binding Document.CategoriesPanel, Source={StaticResource viewModel}}">
+											<MenuItem Header="{Binding DeleteCommand.Caption}" Command="{Binding DeleteCommand}" />
+										</ContextMenu>
+									</Setter.Value>
+								</Setter>
+							</Style>
+						</ListView.ItemContainerStyle>
 						<ListView.ItemTemplate>
 							<DataTemplate>
 								<TextBlock Text="{Binding Name}" />

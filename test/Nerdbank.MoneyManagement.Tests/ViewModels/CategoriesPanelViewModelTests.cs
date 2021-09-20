@@ -54,32 +54,16 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.Money.Categories.Count());
 	}
 
-	[Fact]
-	public async Task DeleteCommand_Volatile()
+	[Theory, PairwiseData]
+	public async Task DeleteCommand(bool saveFirst)
 	{
-		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
-		this.viewModel.Categories.Add(new CategoryViewModel());
-		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
-		this.viewModel.SelectedCategory = this.viewModel.Categories[0];
-		Assert.True(this.viewModel.DeleteCommand.CanExecute(null));
+		CategoryViewModel viewModel = this.viewModel.NewCategory();
+		if (saveFirst)
+		{
+			viewModel.Name = "cat";
+		}
 
-		await this.viewModel.DeleteCommand.ExecuteAsync();
-		Assert.Empty(this.viewModel.Categories);
-		Assert.Null(this.viewModel.SelectedCategory);
-	}
-
-	[Fact]
-	public async Task DeleteCommand()
-	{
-		var category = new Category { Name = "cat" };
-		this.Money.Insert(category);
-		var viewModel = new CategoryViewModel(category, this.Money);
-		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
-		this.viewModel.Categories.Add(viewModel);
-		Assert.False(this.viewModel.DeleteCommand.CanExecute(null));
-		this.viewModel.SelectedCategory = this.viewModel.Categories[0];
-		Assert.True(this.viewModel.DeleteCommand.CanExecute(null));
-
+		Assert.True(this.viewModel.DeleteCommand.CanExecute());
 		await this.viewModel.DeleteCommand.ExecuteAsync();
 		Assert.Empty(this.viewModel.Categories);
 		Assert.Null(this.viewModel.SelectedCategory);
@@ -87,20 +71,39 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public async Task DeleteCommand_Multiple()
+	{
+		var cat1 = this.viewModel.NewCategory();
+		cat1.Name = "cat1";
+		var cat2 = this.viewModel.NewCategory();
+		cat2.Name = "cat2";
+		var cat3 = this.viewModel.NewCategory();
+		cat3.Name = "cat3";
+
+		this.viewModel.SelectedCategories = new[] { cat1, cat3 };
+		Assert.True(this.viewModel.DeleteCommand.CanExecute());
+		await this.viewModel.DeleteCommand.ExecuteAsync();
+
+		Assert.Equal("cat2", Assert.Single(this.viewModel.Categories).Name);
+		Assert.Null(this.viewModel.SelectedCategory);
+		Assert.Equal("cat2", Assert.Single(this.Money.Categories).Name);
+	}
+
+	[Fact]
 	public async Task AddTwiceRedirectsToFirstIfNotCommitted()
 	{
-		Assert.True(this.viewModel.AddCommand.CanExecute(null));
+		Assert.True(this.viewModel.AddCommand.CanExecute());
 		await this.viewModel.AddCommand.ExecuteAsync();
 		CategoryViewModel? first = this.viewModel.SelectedCategory;
 		Assert.NotNull(first);
 
-		Assert.True(this.viewModel.AddCommand.CanExecute(null));
+		Assert.True(this.viewModel.AddCommand.CanExecute());
 		await this.viewModel.AddCommand.ExecuteAsync();
 		CategoryViewModel? second = this.viewModel.SelectedCategory;
 		Assert.Same(first, second);
 
 		first!.Name = "Some category";
-		Assert.True(this.viewModel.AddCommand.CanExecute(null));
+		Assert.True(this.viewModel.AddCommand.CanExecute());
 		await this.viewModel.AddCommand.ExecuteAsync();
 		CategoryViewModel? third = this.viewModel.SelectedCategory;
 		Assert.NotNull(third);
@@ -112,7 +115,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	public async Task AddThenDelete()
 	{
 		await this.viewModel.AddCommand.ExecuteAsync();
-		Assert.True(this.viewModel.DeleteCommand.CanExecute(null));
+		Assert.True(this.viewModel.DeleteCommand.CanExecute());
 		await this.viewModel.DeleteCommand.ExecuteAsync();
 		Assert.Null(this.viewModel.SelectedCategory);
 		Assert.Empty(this.viewModel.Categories);
