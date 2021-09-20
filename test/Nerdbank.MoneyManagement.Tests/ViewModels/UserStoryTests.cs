@@ -16,29 +16,21 @@ using Xunit.Abstractions;
 /// </summary>
 public class UserStoryTests : MoneyTestBase
 {
-	private readonly DocumentViewModel document;
-	private readonly AccountsPanelViewModel accountsPanel;
 	private readonly AccountViewModel checkingAccount;
 	private readonly AccountViewModel savingsAccount;
 
 	public UserStoryTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.Money.InsertAll(new ModelBase[]
-		{
-			new Account { Name = "Checking" },
-			new Account { Name = "Savings" },
-		});
-		this.document = new DocumentViewModel(this.Money);
-		this.accountsPanel = this.document.AccountsPanel!;
-		this.checkingAccount = this.accountsPanel.Accounts.Single(a => a.Name == "Checking");
-		this.savingsAccount = this.accountsPanel.Accounts.Single(a => a.Name == "Savings");
+		this.checkingAccount = this.DocumentViewModel.NewAccount("Checking");
+		this.savingsAccount = this.DocumentViewModel.NewAccount("Savings");
+		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checkingAccount;
 	}
 
 	[Fact]
 	public void AddCreditingTransaction()
 	{
-		TransactionViewModel tx = this.checkingAccount.NewTransaction();
+		TransactionViewModel tx = this.DocumentViewModel.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Payee = "My boss";
 		tx.Amount = 15;
@@ -52,7 +44,7 @@ public class UserStoryTests : MoneyTestBase
 	[Fact]
 	public void AddTransferTransaction()
 	{
-		TransactionViewModel tx = this.checkingAccount.NewTransaction();
+		TransactionViewModel tx = this.DocumentViewModel.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Amount = 15;
 		tx.CategoryOrTransfer = this.savingsAccount;

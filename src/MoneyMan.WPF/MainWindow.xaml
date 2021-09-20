@@ -71,11 +71,12 @@
 							</CollectionViewSource>
 						</DockPanel.Resources>
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-						<DataGrid AlternatingRowBackground="LightBlue"
+						<DataGrid Name="TransactionDataGrid"
+								  AlternatingRowBackground="LightBlue"
 								  AlternationCount="2" 
 								  ItemsSource="{Binding Source={StaticResource transactions}}"
 								  IsSynchronizedWithCurrentItem="True"
-								  SelectedItem="{Binding SelectedTransaction, Mode=TwoWay}"
+								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay}"
 								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
@@ -118,7 +119,18 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Memo" Binding="{Binding Memo}" />
+								<DataGridTemplateColumn Header="Memo">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
+								</DataGridTemplateColumn>
 								<DataGridTemplateColumn Header="Amount">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
@@ -151,14 +163,9 @@
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
-									<MenuItem Header="_Delete" Command="{Binding DeleteTransactionCommand}" />
+									<MenuItem Header="_Delete" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
 								</ContextMenu>
 							</DataGrid.ContextMenu>
-							<DataGrid.RowStyle>
-								<Style TargetType="{x:Type DataGridRow}">
-									<Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-								</Style>
-							</DataGrid.RowStyle>
 						</DataGrid>
 					</DockPanel>
 				</Grid>
@@ -181,25 +188,33 @@
 					</Style>
 				</TabItem.Resources>
 				<DockPanel>
-					<DockPanel DockPanel.Dock="Right" Width="150pt" >
-						<Button Content="_Delete" DockPanel.Dock="Bottom" Command="{Binding DeleteCommand}" />
-						<StackPanel Margin="5,0,5,0" DataContext="{StaticResource categories}">
-							<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
-							<TextBox Name="CategoryName"
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
+						<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
+						<TextBox Name="CategoryName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}">
-								<TextBox.Text>
-									<Binding Path="Name" UpdateSourceTrigger="LostFocus">
-										<Binding.ValidationRules>
-											<ExceptionValidationRule />
-										</Binding.ValidationRules>
-									</Binding>
-								</TextBox.Text>
-							</TextBox>
-						</StackPanel>
-					</DockPanel>
+							<TextBox.Text>
+								<Binding Path="Name" UpdateSourceTrigger="LostFocus">
+									<Binding.ValidationRules>
+										<ExceptionValidationRule />
+									</Binding.ValidationRules>
+								</Binding>
+							</TextBox.Text>
+						</TextBox>
+					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
-					<ListView ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory}">
+					<ListView Name="CategoriesListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
+						<ListView.ItemContainerStyle>
+							<Style TargetType="ListBoxItem">
+								<Setter Property="ContextMenu">
+									<Setter.Value>
+										<ContextMenu DataContext="{Binding Document.CategoriesPanel, Source={StaticResource viewModel}}">
+											<MenuItem Header="{Binding DeleteCommand.Caption}" Command="{Binding DeleteCommand}" />
+										</ContextMenu>
+									</Setter.Value>
+								</Setter>
+							</Style>
+						</ListView.ItemContainerStyle>
 						<ListView.ItemTemplate>
 							<DataTemplate>
 								<TextBlock Text="{Binding Name}" />
