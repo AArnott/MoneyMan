@@ -6,6 +6,7 @@ namespace MoneyMan
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Linq;
 	using System.Text;
@@ -23,6 +24,7 @@ namespace MoneyMan
 	using MoneyMan.ViewModel;
 	using Nerdbank.MoneyManagement;
 	using Nerdbank.MoneyManagement.ViewModels;
+	using Squirrel;
 
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml.
@@ -35,6 +37,7 @@ namespace MoneyMan
 		{
 			this.InitializeComponent();
 			this.DataContext = this.ViewModel;
+			this.Loaded += this.MainWindow_Loaded;
 
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
@@ -146,6 +149,44 @@ namespace MoneyMan
 		private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 		{
 			e.NewItem = this.ViewModel.Document.NewTransaction();
+		}
+
+#pragma warning disable VSTHRD100 // Avoid async void methods
+		private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // Avoid async void methods
+		{
+			try
+			{
+				await this.UpdateApplicationAsync();
+			}
+			catch (Exception)
+			{
+				// Notify the user.
+			}
+		}
+
+		private async Task UpdateApplicationAsync()
+		{
+			if (Debugger.IsAttached)
+			{
+				return;
+			}
+
+			using UpdateManager updateManager = await UpdateManager.GitHubUpdateManager("https://github.com/aarnott/moneyman");
+			ReleaseEntry result = await updateManager.UpdateApp();
+			NuGet.SemanticVersion currentVersion = updateManager.CurrentlyInstalledVersion();
+			if (result is null || result.Version == currentVersion)
+			{
+				// This is the latest version.
+			}
+			else if (result.Version > currentVersion)
+			{
+				// An update was brought down. Restarting the app will launch the new version.
+			}
+			else
+			{
+				// This is newer than the latest stable version.
+			}
 		}
 	}
 }
