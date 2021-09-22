@@ -49,7 +49,7 @@
 							<TextBlock DockPanel.Dock="Right" Text="{Binding Source={StaticResource viewModel}, Path=Document.NetWorth, StringFormat=C}" FontWeight="Bold" />
 							<TextBlock Text="Net worth" FontWeight="Bold" />
 						</DockPanel>
-						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch">
+						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
 							<ListView.ItemTemplate>
 								<DataTemplate>
 									<DockPanel>
