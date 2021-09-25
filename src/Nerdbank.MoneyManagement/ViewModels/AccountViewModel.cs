@@ -6,6 +6,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System;
 	using System.Collections;
 	using System.Collections.ObjectModel;
+	using System.ComponentModel.DataAnnotations;
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Reflection;
@@ -40,6 +41,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		[Required]
 		public string Name
 		{
 			get => this.name;

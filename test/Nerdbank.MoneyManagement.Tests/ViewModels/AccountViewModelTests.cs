@@ -35,6 +35,19 @@ public class AccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Name_Validation()
+	{
+		this.checking.Name = string.Empty;
+
+		this.Logger.WriteLine(this.checking.Error);
+		Assert.NotEqual(string.Empty, this.checking[nameof(this.checking.Name)]);
+		Assert.Equal(this.checking[nameof(this.checking.Name)], this.checking.Error);
+
+		this.checking.Name = "a";
+		Assert.Equal(string.Empty, this.checking[nameof(this.checking.Name)]);
+	}
+
+	[Fact]
 	public void TransferTargetName()
 	{
 		this.checking.Name = "tt-test";
