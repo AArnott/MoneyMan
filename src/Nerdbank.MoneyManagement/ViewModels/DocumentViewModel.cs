@@ -156,37 +156,39 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		/// <param name="name">The name for the new account.</param>
 		/// <returns>The new <see cref="AccountViewModel"/>.</returns>
-		public AccountViewModel NewAccount(string? name = null)
+		public AccountViewModel NewAccount(string name = "")
 		{
-			AccountViewModel viewModel = new(null, this.moneyFile, this)
+			AccountViewModel newAccountViewModel = new(null, this.moneyFile, this)
 			{
-				Model = new Account(),
+				Model = new(),
 			};
 
 			if (this.BankingPanel is object)
 			{
-				this.BankingPanel.Accounts.Add(viewModel);
+				this.BankingPanel.Accounts.Add(newAccountViewModel);
 			}
 
 			if (name is object)
 			{
-				viewModel.Name = name;
+				newAccountViewModel.Name = name;
 			}
 
-			return viewModel;
+			return newAccountViewModel;
 		}
 
-		public void DeleteAccount(AccountViewModel account)
+		public void DeleteAccount(AccountViewModel accountViewModel)
 		{
-			this.BankingPanel?.Accounts.Remove(account);
-			if (this.BankingPanel?.SelectedAccount == account)
+			ThrowUnopenedUnless(this.moneyFile is object);
+
+			this.BankingPanel.Accounts.Remove(accountViewModel);
+			if (accountViewModel.Model is object)
 			{
-				this.BankingPanel.SelectedAccount = null;
+				this.moneyFile.Delete(accountViewModel.Model);
 			}
 
-			if (this.moneyFile is object && account.Model is object)
+			if (this.BankingPanel.SelectedAccount == accountViewModel)
 			{
-				this.moneyFile.Delete(account.Model);
+				this.BankingPanel.SelectedAccount = null;
 			}
 		}
 
@@ -223,8 +225,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CategoryViewModel NewCategory(string name = "")
 		{
-			CategoryViewModel newCategoryViewModel = new(null, this.moneyFile);
-			newCategoryViewModel.Model = new Category();
+			CategoryViewModel newCategoryViewModel = new(null, this.moneyFile)
+			{
+				Model = new(),
+			};
+
 			this.CategoriesPanel.Categories.Add(newCategoryViewModel);
 			this.CategoriesPanel.SelectedCategory = newCategoryViewModel;
 			this.CategoriesPanel.AddingCategory = newCategoryViewModel;

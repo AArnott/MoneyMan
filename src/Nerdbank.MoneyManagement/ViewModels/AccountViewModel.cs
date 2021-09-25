@@ -18,7 +18,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	{
 		private ObservableCollection<TransactionViewModel>? transactions;
-		private string? name;
+		private string name = string.Empty;
 		private bool isClosed;
 		private decimal balance;
 
@@ -40,7 +40,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		public string? Name
+		public string Name
 		{
 			get => this.name;
 			set => this.SetProperty(ref this.name, value);
