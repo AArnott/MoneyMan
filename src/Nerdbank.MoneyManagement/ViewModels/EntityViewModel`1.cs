@@ -22,7 +22,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 				{
 					this.IsDirty = true;
-					if (this.AutoSave && this.Model is object)
+					if (this.AutoSave && this.Model is object && string.IsNullOrEmpty(this.Error))
 					{
 						this.ApplyToModel();
 						if (this.MoneyFile is { IsDisposed: false })
@@ -122,6 +122,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(model, nameof(model));
 			Requires.Argument(this.Id is null || model.Id == this.Id, nameof(model), "The provided object is not the original template.");
+			Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property.");
 
 			this.ApplyToCore(model);
 

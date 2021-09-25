@@ -51,6 +51,28 @@ public class CategoryViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void AutoSaveDoesNotFunctionOnInvalidViewModel()
+	{
+		this.viewModel = this.DocumentViewModel.NewCategory();
+		this.viewModel.Name = "Hi";
+		Assert.Equal("Hi", this.viewModel.Model?.Name);
+		this.viewModel.Name = string.Empty;
+
+		// Assert that the model does *not* immediately pick up on the invalid state of the view model.
+		Assert.Equal("Hi", this.viewModel.Model?.Name);
+	}
+
+	[Fact]
+	public void ApplyTo_ThrowsFromInvalidViewModel()
+	{
+		this.viewModel = this.DocumentViewModel.NewCategory();
+		Assert.Throws<InvalidOperationException>(() => this.viewModel.ApplyToModel());
+		this.viewModel.Name = "some name";
+		this.viewModel.ApplyToModel();
+		Assert.Equal(this.viewModel.Name, this.viewModel.Model?.Name);
+	}
+
+	[Fact]
 	public void TransferTargetName()
 	{
 		this.viewModel.Name = "tt-test";
