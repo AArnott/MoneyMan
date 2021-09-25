@@ -24,7 +24,7 @@ public class UserStoryTests : MoneyTestBase
 	{
 		this.checkingAccount = this.DocumentViewModel.NewAccount("Checking");
 		this.savingsAccount = this.DocumentViewModel.NewAccount("Savings");
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checkingAccount;
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checkingAccount;
 	}
 
 	[Fact]

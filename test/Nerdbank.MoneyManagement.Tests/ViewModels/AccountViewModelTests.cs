@@ -20,7 +20,7 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		this.checking = this.DocumentViewModel.NewAccount("Checking");
 		this.savings = this.DocumentViewModel.NewAccount("Savings");
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checking;
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 	}
 
 	[Fact]
@@ -277,7 +277,7 @@ public class AccountViewModelTests : MoneyTestBase
 		Assert.Empty(this.checking.Transactions);
 		Assert.Empty(this.savings.Transactions);
 
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checking;
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
 		this.checking.Transactions.Add(tx1);
 		tx1.Amount = -10;
@@ -322,7 +322,7 @@ public class AccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransferPropertyChangesAreReflectedInOtherAccount()
 	{
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checking;
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
 		this.checking.Transactions.Add(tx1);
 		tx1.Amount = -10;

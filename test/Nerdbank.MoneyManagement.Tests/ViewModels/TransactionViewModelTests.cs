@@ -39,7 +39,7 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		this.account = this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = this.DocumentViewModel.GetAccount(otherAccountModel.Id);
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.account;
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
 		this.viewModel = this.DocumentViewModel.NewTransaction();
 	}
 

@@ -12,11 +12,11 @@ using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class AccountsPanelViewModelTests : TestBase
+public class BankingPanelViewModelTests : TestBase
 {
-	private AccountsPanelViewModel viewModel = new AccountsPanelViewModel();
+	private BankingPanelViewModel viewModel = new BankingPanelViewModel();
 
-	public AccountsPanelViewModelTests(ITestOutputHelper logger)
+	public BankingPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
 	}

@@ -35,19 +35,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			this.moneyFile = moneyFile;
 
-			this.AccountsPanel = new();
+			this.BankingPanel = new();
 			this.CategoriesPanel = new(this);
 
 			// Keep targets collection in sync with the two collections that make it up.
 			this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
-			this.AccountsPanel.Accounts.CollectionChanged += this.Accounts_CollectionChanged;
+			this.BankingPanel.Accounts.CollectionChanged += this.Accounts_CollectionChanged;
 
 			if (moneyFile is object)
 			{
 				foreach (Account account in moneyFile.Accounts)
 				{
 					AccountViewModel viewModel = new(account, moneyFile, this);
-					this.AccountsPanel.Accounts.Add(viewModel);
+					this.BankingPanel.Accounts.Add(viewModel);
 				}
 
 				foreach (Category category in moneyFile.Categories)
@@ -73,7 +73,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.netWorth, value);
 		}
 
-		public AccountsPanelViewModel AccountsPanel { get; }
+		public BankingPanelViewModel BankingPanel { get; }
 
 		public CategoriesPanelViewModel CategoriesPanel { get; }
 
@@ -163,9 +163,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				Model = new Account(),
 			};
 
-			if (this.AccountsPanel is object)
+			if (this.BankingPanel is object)
 			{
-				this.AccountsPanel.Accounts.Add(viewModel);
+				this.BankingPanel.Accounts.Add(viewModel);
 			}
 
 			if (name is object)
@@ -178,10 +178,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public void DeleteAccount(AccountViewModel account)
 		{
-			this.AccountsPanel?.Accounts.Remove(account);
-			if (this.AccountsPanel?.SelectedAccount == account)
+			this.BankingPanel?.Accounts.Remove(account);
+			if (this.BankingPanel?.SelectedAccount == account)
 			{
-				this.AccountsPanel.SelectedAccount = null;
+				this.BankingPanel.SelectedAccount = null;
 			}
 
 			if (this.moneyFile is object && account.Model is object)
@@ -190,7 +190,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		public AccountViewModel GetAccount(int accountId) => this.AccountsPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? throw new ArgumentException("No match found.");
+		public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? throw new ArgumentException("No match found.");
 
 		public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
 
@@ -201,12 +201,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
 		public TransactionViewModel NewTransaction()
 		{
-			if (this.AccountsPanel?.SelectedAccount is null)
+			if (this.BankingPanel?.SelectedAccount is null)
 			{
 				throw new InvalidOperationException("No account is selected.");
 			}
 
-			TransactionViewModel viewModel = new(this.AccountsPanel.SelectedAccount, null, this.moneyFile);
+			TransactionViewModel viewModel = new(this.BankingPanel.SelectedAccount, null, this.moneyFile);
 			viewModel.When = DateTime.Now;
 			viewModel.Model = new();
 			return viewModel;
@@ -269,13 +269,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Assumes.NotNull(this.moneyFile);
 
-			if (this.AccountsPanel is object)
+			if (this.BankingPanel is object)
 			{
 				HashSet<int> impactedAccountIds = new();
 				SearchForImpactedAccounts(e.Inserted);
 				SearchForImpactedAccounts(e.Deleted);
 				SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
-				foreach (AccountViewModel accountViewModel in this.AccountsPanel.Accounts)
+				foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 				{
 					if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
 					{

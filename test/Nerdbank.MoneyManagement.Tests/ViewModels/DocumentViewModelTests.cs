@@ -36,7 +36,7 @@ public class DocumentViewModelTests : MoneyTestBase
 			new Category { Name = "Cat1" },
 		});
 		DocumentViewModel documentViewModel = new(this.Money);
-		Assert.Contains(documentViewModel.AccountsPanel?.Accounts, acct => acct.Name == "Checking");
+		Assert.Contains(documentViewModel.BankingPanel?.Accounts, acct => acct.Name == "Checking");
 		Assert.Contains(documentViewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
 	}
 

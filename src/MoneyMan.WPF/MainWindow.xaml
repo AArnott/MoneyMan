@@ -35,7 +35,7 @@
 		</ToolBarTray>
 		<TabControl TabStripPlacement="Bottom"
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
-			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}">
+			<TabItem Header="Banking" DataContext="{Binding BankingPanel}">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" />
 				</TabItem.Resources>
