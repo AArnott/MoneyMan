@@ -197,24 +197,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
 
-		/// <summary>
-		/// Creates a new <see cref="TransactionViewModel"/> for this account,
-		/// but does <em>not</em> add it to the collection.
-		/// </summary>
-		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
-		public TransactionViewModel NewTransaction()
-		{
-			if (this.BankingPanel?.SelectedAccount is null)
-			{
-				throw new InvalidOperationException("No account is selected.");
-			}
-
-			TransactionViewModel viewModel = new(this.BankingPanel.SelectedAccount, null, this.MoneyFile);
-			viewModel.When = DateTime.Now;
-			viewModel.Model = new();
-			return viewModel;
-		}
-
 		public void DeleteTransaction(TransactionViewModel transaction)
 		{
 			transaction.ThisAccount.Transactions.Remove(transaction);

@@ -40,7 +40,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.account = this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = this.DocumentViewModel.GetAccount(otherAccountModel.Id);
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
-		this.viewModel = this.DocumentViewModel.NewTransaction();
+		this.viewModel = this.account.NewTransaction();
 	}
 
 	[Fact]
@@ -114,7 +114,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void ApplyTo()
 	{
 		Transaction transaction = new Transaction();
-		TransactionViewModel viewModel = new(this.account, null, this.Money);
+		TransactionViewModel viewModel = new(this.account, null);
 
 		viewModel.Payee = this.payee;
 		viewModel.Amount = this.amount;
@@ -230,7 +230,7 @@ public class TransactionViewModelTests : MoneyTestBase
 			Payee = "some person",
 		};
 
-		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
@@ -256,7 +256,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
@@ -280,7 +280,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction);
 		this.Money.Dispose();
 		this.viewModel.Amount = 12;
 	}

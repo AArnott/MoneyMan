@@ -75,7 +75,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						SQLite.TableQuery<Transaction> transactions = this.MoneyFile.Transactions.Where(tx => tx.CreditAccountId == this.Id || tx.DebitAccountId == this.Id);
 						foreach (Transaction transaction in transactions)
 						{
-							TransactionViewModel transactionViewModel = new(this, transaction, this.MoneyFile);
+							TransactionViewModel transactionViewModel = new(this, transaction);
 							this.transactions.Add(transactionViewModel);
 						}
 					}
@@ -88,6 +88,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		internal DocumentViewModel? DocumentViewModel { get; }
 
 		private string? DebuggerDisplay => this.Name;
+
+		/// <summary>
+		/// Creates a new <see cref="TransactionViewModel"/> for this account,
+		/// but does <em>not</em> add it to the collection.
+		/// </summary>
+		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
+		public TransactionViewModel NewTransaction()
+		{
+			TransactionViewModel viewModel = new(this, null);
+			viewModel.When = DateTime.Now;
+			viewModel.Model = new();
+			return viewModel;
+		}
 
 		internal void NotifyTransactionDeleted(Transaction transaction)
 		{
@@ -127,7 +140,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			else if (!removedFromAccount)
 			{
 				// This may be a new transaction we need to add.
-				this.Transactions.Add(new TransactionViewModel(this, transaction, this.MoneyFile));
+				this.Transactions.Add(new TransactionViewModel(this, transaction));
 			}
 		}
 

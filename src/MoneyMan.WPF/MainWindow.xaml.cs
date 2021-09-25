@@ -145,7 +145,7 @@ namespace MoneyMan
 
 		private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 		{
-			e.NewItem = this.ViewModel.Document.NewTransaction();
+			e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction() ?? throw new InvalidOperationException("No selected account.");
 		}
 	}
 }
