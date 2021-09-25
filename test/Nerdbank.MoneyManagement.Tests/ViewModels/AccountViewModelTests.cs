@@ -312,7 +312,7 @@ public class AccountViewModelTests : MoneyTestBase
 
 		TransactionViewModel tx2 = Assert.Single(this.savings.Transactions);
 
-		this.DocumentViewModel.DeleteTransaction(tx1);
+		this.checking.DeleteTransaction(tx1);
 		Assert.Empty(this.savings.Transactions);
 	}
 

@@ -102,6 +102,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			return viewModel;
 		}
 
+		public void DeleteTransaction(TransactionViewModel transaction)
+		{
+			Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
+			this.Transactions.Remove(transaction);
+			if (this.MoneyFile is object && transaction.Model is object)
+			{
+				this.MoneyFile.Delete(transaction.Model);
+			}
+		}
+
 		internal void NotifyTransactionDeleted(Transaction transaction)
 		{
 			if (this.transactions is null)
