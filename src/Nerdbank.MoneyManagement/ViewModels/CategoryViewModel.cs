@@ -3,6 +3,7 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System.ComponentModel.DataAnnotations;
 	using System.Diagnostics;
 	using Validation;
 
@@ -29,6 +30,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		/// <inheritdoc cref="Category.Name"/>
+		[Required]
 		public string Name
 		{
 			get => this.name;

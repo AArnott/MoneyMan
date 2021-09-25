@@ -37,6 +37,20 @@ public class CategoryViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Name_Validation()
+	{
+		// Assert the assumed default value.
+		Assert.Equal(string.Empty, this.viewModel.Name);
+
+		this.Logger.WriteLine(this.viewModel.Error);
+		Assert.NotEqual(string.Empty, this.viewModel[nameof(this.viewModel.Name)]);
+		Assert.Equal(this.viewModel[nameof(this.viewModel.Name)], this.viewModel.Error);
+
+		this.viewModel.Name = "a";
+		Assert.Equal(string.Empty, this.viewModel[nameof(this.viewModel.Name)]);
+	}
+
+	[Fact]
 	public void TransferTargetName()
 	{
 		this.viewModel.Name = "tt-test";

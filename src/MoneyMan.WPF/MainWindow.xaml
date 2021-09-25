@@ -192,14 +192,8 @@
 						<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
 								 MaxLength="100"
-								 Style="{StaticResource textBoxInError}">
-							<TextBox.Text>
-								<Binding Path="Name" UpdateSourceTrigger="LostFocus">
-									<Binding.ValidationRules>
-										<ExceptionValidationRule />
-									</Binding.ValidationRules>
-								</Binding>
-							</TextBox.Text>
+								 Style="{StaticResource textBoxInError}"
+								 Text="{Binding Name, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}">
 						</TextBox>
 					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
