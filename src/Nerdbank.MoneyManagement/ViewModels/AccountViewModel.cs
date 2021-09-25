@@ -23,12 +23,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private bool isClosed;
 		private decimal balance;
 
-		public AccountViewModel()
-			: this(null, null, null)
-		{
-		}
-
-		public AccountViewModel(Account? model, MoneyFile? moneyFile, DocumentViewModel? documentViewModel)
+		public AccountViewModel(Account? model, MoneyFile? moneyFile, DocumentViewModel documentViewModel)
 			: base(moneyFile)
 		{
 			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
@@ -85,7 +80,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		internal DocumentViewModel? DocumentViewModel { get; }
+		internal DocumentViewModel DocumentViewModel { get; }
 
 		private string? DebuggerDisplay => this.Name;
 
