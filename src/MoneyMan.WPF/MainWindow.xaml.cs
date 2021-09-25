@@ -40,23 +40,26 @@ namespace MoneyMan
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, this.FileClose, this.CanFileClose));
 
-			if (!string.IsNullOrEmpty(AppSettings.Default.LastOpenedFile))
-			{
-				if (File.Exists(AppSettings.Default.LastOpenedFile))
-				{
-					this.FileOpen(AppSettings.Default.LastOpenedFile);
-				}
-				else
-				{
-					AppSettings.Default.LastOpenedFile = null;
-				}
-			}
+			this.Loaded += this.MainWindow_Loaded;
 		}
+
+		public bool ReopenLastFile { get; set; } = true;
 
 		public MainPageViewModel ViewModel
 		{
 			get => (MainPageViewModel)this.Resources["viewModel"];
 			set => this.Resources["viewModel"] = value;
+		}
+
+		internal void ReplaceViewModel(DocumentViewModel viewModel)
+		{
+			this.ViewModel.Document.Dispose();
+
+			// BUGBUG: This doesn't trigger data-binding to reapply to the new view model.
+			this.ViewModel.Document = viewModel;
+
+			this.ViewModel.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
+			this.ViewModel.Document.SelectedTransactions = this.TransactionDataGrid.SelectedItems;
 		}
 
 		protected override void OnClosed(EventArgs e)
@@ -123,17 +126,6 @@ namespace MoneyMan
 			e.CanExecute = this.ViewModel.Document.IsFileOpen;
 		}
 
-		private void ReplaceViewModel(DocumentViewModel viewModel)
-		{
-			this.ViewModel.Document.Dispose();
-
-			// BUGBUG: This doesn't trigger data-binding to reapply to the new view model.
-			this.ViewModel.Document = viewModel;
-
-			this.ViewModel.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
-			this.ViewModel.Document.SelectedTransactions = this.TransactionDataGrid.SelectedItems;
-		}
-
 		private void InitializeFileDialog(FileDialog dialog)
 		{
 			dialog.AddExtension = true;
@@ -146,6 +138,21 @@ namespace MoneyMan
 		private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 		{
 			e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction() ?? throw new InvalidOperationException("No selected account.");
+		}
+
+		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+		{
+			if (this.ReopenLastFile && !string.IsNullOrEmpty(AppSettings.Default.LastOpenedFile))
+			{
+				if (File.Exists(AppSettings.Default.LastOpenedFile))
+				{
+					this.FileOpen(AppSettings.Default.LastOpenedFile);
+				}
+				else
+				{
+					AppSettings.Default.LastOpenedFile = null;
+				}
+			}
 		}
 	}
 }
