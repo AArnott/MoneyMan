@@ -53,7 +53,7 @@ public class CategoryViewModelTests : MoneyTestBase
 	[Fact]
 	public void AutoSaveDoesNotFunctionOnInvalidViewModel()
 	{
-		this.viewModel = this.DocumentViewModel.NewCategory();
+		this.viewModel = this.DocumentViewModel.CategoriesPanel.NewCategory();
 		this.viewModel.Name = "Hi";
 		Assert.Equal("Hi", this.viewModel.Model?.Name);
 		this.viewModel.Name = string.Empty;
@@ -65,7 +65,7 @@ public class CategoryViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo_ThrowsFromInvalidViewModel()
 	{
-		this.viewModel = this.DocumentViewModel.NewCategory();
+		this.viewModel = this.DocumentViewModel.CategoriesPanel.NewCategory();
 		Assert.Throws<InvalidOperationException>(() => this.viewModel.ApplyToModel());
 		this.viewModel.Name = "some name";
 		this.viewModel.ApplyToModel();

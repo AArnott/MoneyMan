@@ -61,6 +61,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		internal CategoryViewModel? AddingCategory { get; set; }
 
+		public CategoryViewModel NewCategory(string name = "")
+		{
+			CategoryViewModel newCategoryViewModel = new(null, this.documentViewModel.MoneyFile)
+			{
+				Model = new(),
+			};
+
+			this.Categories.Add(newCategoryViewModel);
+			this.SelectedCategory = newCategoryViewModel;
+			this.AddingCategory = newCategoryViewModel;
+			newCategoryViewModel.Name = name;
+			return newCategoryViewModel;
+		}
+
 		private class AddCategoryCommand : CommandBase
 		{
 			private readonly CategoriesPanelViewModel viewModel;
@@ -79,7 +93,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 				else
 				{
-					CategoryViewModel newCategoryViewModel = this.viewModel.documentViewModel.NewCategory();
+					CategoryViewModel newCategoryViewModel = this.viewModel.NewCategory();
 					newCategoryViewModel.PropertyChanged += this.NewCategoryViewModel_PropertyChanged;
 				}
 

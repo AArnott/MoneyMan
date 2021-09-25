@@ -319,7 +319,7 @@ public class AccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransferChangedToCategoryIsRemovedFromOtherAccount()
 	{
-		CategoryViewModel cat = this.DocumentViewModel.NewCategory("Household");
+		CategoryViewModel cat = this.DocumentViewModel.CategoriesPanel.NewCategory("Household");
 
 		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
 		this.checking.Transactions.Add(tx1);

@@ -164,7 +164,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void CopyFrom_Category()
 	{
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("cat");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
 
 		Transaction transaction = this.viewModel.Model!;
 		transaction.Payee = this.payee;

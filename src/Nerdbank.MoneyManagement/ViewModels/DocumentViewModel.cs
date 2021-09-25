@@ -21,7 +21,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class DocumentViewModel : BindableBase, IDisposable
 	{
-		private readonly MoneyFile? moneyFile;
 		private decimal netWorth;
 		private IList? selectedTransactions;
 		private TransactionViewModel? selectedTransaction;
@@ -33,7 +32,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public DocumentViewModel(MoneyFile? moneyFile)
 		{
-			this.moneyFile = moneyFile;
+			this.MoneyFile = moneyFile;
 
 			this.BankingPanel = new();
 			this.CategoriesPanel = new(this);
@@ -63,9 +62,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
 		}
 
-		public bool IsFileOpen => this.moneyFile is object;
+		public bool IsFileOpen => this.MoneyFile is object;
 
-		public string Title => this.moneyFile is { Path: string path } ? $"Nerdbank Money Management - {Path.GetFileNameWithoutExtension(path)}" : "Nerdbank Money Management";
+		public string Title => this.MoneyFile is { Path: string path } ? $"Nerdbank Money Management - {Path.GetFileNameWithoutExtension(path)}" : "Nerdbank Money Management";
 
 		public decimal NetWorth
 		{
@@ -104,7 +103,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public CommandBase DeleteTransactionsCommand { get; }
 
-		private string DebuggerDisplay => this.moneyFile?.Path ?? "(not backed by a file)";
+		internal MoneyFile? MoneyFile { get; }
+
+		private string DebuggerDisplay => this.MoneyFile?.Path ?? "(not backed by a file)";
 
 		public static DocumentViewModel CreateNew(string moneyFilePath)
 		{
@@ -158,7 +159,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// <returns>The new <see cref="AccountViewModel"/>.</returns>
 		public AccountViewModel NewAccount(string name = "")
 		{
-			AccountViewModel newAccountViewModel = new(null, this.moneyFile, this)
+			AccountViewModel newAccountViewModel = new(null, this.MoneyFile, this)
 			{
 				Model = new(),
 			};
@@ -178,12 +179,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public void DeleteAccount(AccountViewModel accountViewModel)
 		{
-			ThrowUnopenedUnless(this.moneyFile is object);
+			ThrowUnopenedUnless(this.MoneyFile is object);
 
 			this.BankingPanel.Accounts.Remove(accountViewModel);
 			if (accountViewModel.Model is object)
 			{
-				this.moneyFile.Delete(accountViewModel.Model);
+				this.MoneyFile.Delete(accountViewModel.Model);
 			}
 
 			if (this.BankingPanel.SelectedAccount == accountViewModel)
@@ -208,7 +209,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				throw new InvalidOperationException("No account is selected.");
 			}
 
-			TransactionViewModel viewModel = new(this.BankingPanel.SelectedAccount, null, this.moneyFile);
+			TransactionViewModel viewModel = new(this.BankingPanel.SelectedAccount, null, this.MoneyFile);
 			viewModel.When = DateTime.Now;
 			viewModel.Model = new();
 			return viewModel;
@@ -217,34 +218,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public void DeleteTransaction(TransactionViewModel transaction)
 		{
 			transaction.ThisAccount.Transactions.Remove(transaction);
-			if (this.moneyFile is object && transaction.Model is object)
+			if (this.MoneyFile is object && transaction.Model is object)
 			{
-				this.moneyFile.Delete(transaction.Model);
+				this.MoneyFile.Delete(transaction.Model);
 			}
-		}
-
-		public CategoryViewModel NewCategory(string name = "")
-		{
-			CategoryViewModel newCategoryViewModel = new(null, this.moneyFile)
-			{
-				Model = new(),
-			};
-
-			this.CategoriesPanel.Categories.Add(newCategoryViewModel);
-			this.CategoriesPanel.SelectedCategory = newCategoryViewModel;
-			this.CategoriesPanel.AddingCategory = newCategoryViewModel;
-			newCategoryViewModel.Name = name;
-			return newCategoryViewModel;
 		}
 
 		public void DeleteCategory(CategoryViewModel categoryViewModel)
 		{
-			ThrowUnopenedUnless(this.moneyFile is object);
+			ThrowUnopenedUnless(this.MoneyFile is object);
 
 			this.CategoriesPanel.Categories.Remove(categoryViewModel);
 			if (categoryViewModel.Model is object)
 			{
-				this.moneyFile.Delete(categoryViewModel.Model);
+				this.MoneyFile.Delete(categoryViewModel.Model);
 			}
 
 			if (this.CategoriesPanel.SelectedCategory == categoryViewModel)
@@ -255,10 +242,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public void Dispose()
 		{
-			if (this.moneyFile is object)
+			if (this.MoneyFile is object)
 			{
-				this.moneyFile.EntitiesChanged -= this.Model_EntitiesChanged;
-				this.moneyFile.Dispose();
+				this.MoneyFile.EntitiesChanged -= this.Model_EntitiesChanged;
+				this.MoneyFile.Dispose();
 			}
 		}
 
@@ -272,7 +259,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private void Model_EntitiesChanged(object? sender, MoneyFile.EntitiesChangedEventArgs e)
 		{
-			Assumes.NotNull(this.moneyFile);
+			Assumes.NotNull(this.MoneyFile);
 
 			if (this.BankingPanel is object)
 			{
@@ -284,7 +271,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
 					{
-						accountViewModel.Balance = this.moneyFile.GetBalance(accountViewModel.Model);
+						accountViewModel.Balance = this.MoneyFile.GetBalance(accountViewModel.Model);
 
 						foreach (ModelBase model in e.Inserted)
 						{
@@ -334,7 +321,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 			}
 
-			this.NetWorth = this.moneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+			this.NetWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 
 		private void Accounts_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

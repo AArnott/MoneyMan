@@ -99,7 +99,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public void AddedCategoryAddsToTransactionTargets()
 	{
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("some new category");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
 		Category category = Assert.Single(this.Money.Categories);
 		Assert.Equal(categoryViewModel.Name, category.Name);
 
@@ -110,7 +110,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void DeletedCategoryRemovesFromTransactionTargets()
 	{
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("some new category");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
 
 		Assert.Single(this.DocumentViewModel.TransactionTargets);
 
