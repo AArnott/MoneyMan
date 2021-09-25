@@ -197,22 +197,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
 
-		public void DeleteCategory(CategoryViewModel categoryViewModel)
-		{
-			ThrowUnopenedUnless(this.MoneyFile is object);
-
-			this.CategoriesPanel.Categories.Remove(categoryViewModel);
-			if (categoryViewModel.Model is object)
-			{
-				this.MoneyFile.Delete(categoryViewModel.Model);
-			}
-
-			if (this.CategoriesPanel.SelectedCategory == categoryViewModel)
-			{
-				this.CategoriesPanel.SelectedCategory = null;
-			}
-		}
-
 		public void Dispose()
 		{
 			if (this.MoneyFile is object)

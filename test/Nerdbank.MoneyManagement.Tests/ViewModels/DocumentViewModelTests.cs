@@ -114,7 +114,7 @@ public class DocumentViewModelTests : MoneyTestBase
 
 		Assert.Single(this.DocumentViewModel.TransactionTargets);
 
-		this.DocumentViewModel.DeleteCategory(categoryViewModel);
+		this.DocumentViewModel.CategoriesPanel.DeleteCategory(categoryViewModel);
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
 	}
 
