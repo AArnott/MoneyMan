@@ -193,7 +193,7 @@
 						<TextBox Name="CategoryName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}"
-								 Text="{Binding Name, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}">
+								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}">
 						</TextBox>
 					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
