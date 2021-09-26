@@ -21,6 +21,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class DocumentViewModel : BindableBase, IDisposable
 	{
+		private readonly bool ownsMoneyFile;
 		private decimal netWorth;
 		private IList? selectedTransactions;
 		private TransactionViewModel? selectedTransaction;
@@ -30,9 +31,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 		}
 
-		public DocumentViewModel(MoneyFile? moneyFile)
+		public DocumentViewModel(MoneyFile? moneyFile, bool ownsMoneyFile = true)
 		{
 			this.MoneyFile = moneyFile;
+			this.ownsMoneyFile = ownsMoneyFile;
 
 			this.BankingPanel = new();
 			this.CategoriesPanel = new(this);
@@ -40,15 +42,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			// Keep targets collection in sync with the two collections that make it up.
 			this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
-			this.BankingPanel.Accounts.CollectionChanged += this.Accounts_CollectionChanged;
 
 			if (moneyFile is object)
 			{
 				foreach (Account account in moneyFile.Accounts)
 				{
 					AccountViewModel viewModel = new(account, this);
-					this.BankingPanel.Accounts.Add(viewModel);
-					this.AccountsPanel.Accounts.Add(viewModel);
+					this.AccountsPanel.Add(viewModel);
+					this.BankingPanel.Add(viewModel);
 				}
 
 				foreach (Category category in moneyFile.Categories)
@@ -163,7 +164,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			if (this.MoneyFile is object)
 			{
 				this.MoneyFile.EntitiesChanged -= this.Model_EntitiesChanged;
-				this.MoneyFile.Dispose();
+				if (this.ownsMoneyFile)
+				{
+					this.MoneyFile.Dispose();
+				}
 			}
 		}
 
@@ -239,39 +243,18 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.NetWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 
-		private void Accounts_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+		private void Categories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
 		{
 			switch (e.Action)
 			{
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Add when e.NewItems is object:
-					foreach (AccountViewModel account in e.NewItems)
-					{
-						this.TransactionTargets.Add(account);
-					}
-
-					break;
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Remove when e.OldItems is object:
-					foreach (AccountViewModel account in e.OldItems)
-					{
-						this.TransactionTargets.Remove(account);
-					}
-
-					break;
-			}
-		}
-
-		private void Categories_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-		{
-			switch (e.Action)
-			{
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Add when e.NewItems is object:
+				case NotifyCollectionChangedAction.Add when e.NewItems is object:
 					foreach (CategoryViewModel category in e.NewItems)
 					{
 						this.TransactionTargets.Add(category);
 					}
 
 					break;
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Remove when e.OldItems is object:
+				case NotifyCollectionChangedAction.Remove when e.OldItems is object:
 					foreach (CategoryViewModel category in e.OldItems)
 					{
 						this.TransactionTargets.Remove(category);

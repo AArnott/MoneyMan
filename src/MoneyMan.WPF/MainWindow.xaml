@@ -193,8 +193,9 @@
 						<TextBox Name="AccountName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}"
-								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}">
-						</TextBox>
+								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+						<CheckBox IsChecked="{Binding IsClosed}" Content="Account closed" Margin="0,15,0,0" />
+						<TextBlock Text="Closed accounts do not appear in the account list and do not accrue toward your net worth." TextWrapping="Wrap" />
 					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
@@ -240,8 +241,7 @@
 						<TextBox Name="CategoryName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}"
-								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}">
-						</TextBox>
+								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="CategoriesListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">

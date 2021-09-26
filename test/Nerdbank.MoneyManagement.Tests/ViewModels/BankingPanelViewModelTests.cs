@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nerdbank.MoneyManagement;
 using Nerdbank.MoneyManagement.Tests;
 using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
@@ -29,22 +30,32 @@ public class BankingPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void AccountsPanel_RetainsAssignment()
+	public void Accounts_RemovesAccountWhenClosed()
 	{
-		var newValue = new ObservableCollection<AccountViewModel>();
-		this.ViewModel.Accounts = newValue;
-		Assert.Same(newValue, this.ViewModel.Accounts);
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		Assert.Single(this.ViewModel.Accounts);
+		checking.IsClosed = true;
+		Assert.Empty(this.ViewModel.Accounts);
+		checking.IsClosed = false;
+		Assert.Single(this.ViewModel.Accounts);
 	}
 
 	[Fact]
-	public void Accounts_PropertyChanged()
+	public void Accounts_ExcludesClosedAccounts()
 	{
-		TestUtilities.AssertPropertyChangedEvent(
-			this.ViewModel,
-			() => this.ViewModel.Accounts = new ObservableCollection<AccountViewModel>(),
-			nameof(this.ViewModel.Accounts));
-		TestUtilities.AssertPropertyChangedEvent(
-			this.ViewModel,
-			() => this.ViewModel.Accounts = this.ViewModel.Accounts);
+		this.Money.Insert(new Account { Name = "Checking", IsClosed = true });
+		this.ReloadViewModel();
+		Assert.Empty(this.ViewModel.Accounts);
+		this.DocumentViewModel.AccountsPanel.Accounts.Single().IsClosed = false;
+		Assert.Single(this.ViewModel.Accounts);
+	}
+
+	[Fact]
+	public void Accounts_NewAccountAlreadyClosed()
+	{
+		AccountViewModel newAccount = this.DocumentViewModel.AccountsPanel.NewAccount();
+		newAccount.IsClosed = true; // Set this before the name, since setting the name formally adds it to the db and the Banking panel.
+		newAccount.Name = "Checking";
+		Assert.Empty(this.ViewModel.Accounts);
 	}
 }
