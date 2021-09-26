@@ -23,8 +23,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private bool isClosed;
 		private decimal balance;
 
-		public AccountViewModel(Account? model, MoneyFile? moneyFile, DocumentViewModel documentViewModel)
-			: base(moneyFile)
+		public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
+			: base(documentViewModel.MoneyFile)
 		{
 			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
 			this.AutoSave = true;

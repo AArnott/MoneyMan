@@ -170,6 +170,54 @@
 					</DockPanel>
 				</Grid>
 			</TabItem>
+			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}" Height="20" VerticalAlignment="Top">
+				<TabItem.Resources>
+					<CollectionViewSource Source="{Binding Accounts}" x:Key="categories" IsLiveSortingRequested="True">
+						<CollectionViewSource.SortDescriptions>
+							<componentmodel:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
+					</CollectionViewSource>
+					<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
+						<Style.Triggers>
+							<Trigger Property="Validation.HasError" Value="True">
+								<Setter Property="Background" Value="Pink" />
+								<Setter Property="ToolTip"
+									Value="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=(Validation.Errors)/ErrorContent}" />
+							</Trigger>
+						</Style.Triggers>
+					</Style>
+				</TabItem.Resources>
+				<DockPanel>
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
+						<Label Content="_Name" Target="{Binding ElementName=AccountName}" />
+						<TextBox Name="AccountName"
+								 MaxLength="100"
+								 Style="{StaticResource textBoxInError}"
+								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+						<CheckBox IsChecked="{Binding IsClosed}" Content="Account closed" Margin="0,15,0,0" />
+						<TextBlock Text="Closed accounts do not appear in the account list and do not accrue toward your net worth." TextWrapping="Wrap" />
+					</StackPanel>
+					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
+					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
+						<ListView.ItemContainerStyle>
+							<Style TargetType="ListBoxItem">
+								<Setter Property="ContextMenu">
+									<Setter.Value>
+										<ContextMenu DataContext="{Binding Document.AccountsPanel, Source={StaticResource viewModel}}">
+											<MenuItem Header="{Binding DeleteCommand.Caption}" Command="{Binding DeleteCommand}" />
+										</ContextMenu>
+									</Setter.Value>
+								</Setter>
+							</Style>
+						</ListView.ItemContainerStyle>
+						<ListView.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Name}" />
+							</DataTemplate>
+						</ListView.ItemTemplate>
+					</ListView>
+				</DockPanel>
+			</TabItem>
 			<TabItem Header="Categories" DataContext="{Binding CategoriesPanel}" Height="20" VerticalAlignment="Top">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Categories}" x:Key="categories" IsLiveSortingRequested="True">
@@ -193,8 +241,7 @@
 						<TextBox Name="CategoryName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}"
-								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}">
-						</TextBox>
+								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="CategoriesListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">

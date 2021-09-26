@@ -21,6 +21,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class DocumentViewModel : BindableBase, IDisposable
 	{
+		private readonly bool ownsMoneyFile;
 		private decimal netWorth;
 		private IList? selectedTransactions;
 		private TransactionViewModel? selectedTransaction;
@@ -30,23 +31,25 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 		}
 
-		public DocumentViewModel(MoneyFile? moneyFile)
+		public DocumentViewModel(MoneyFile? moneyFile, bool ownsMoneyFile = true)
 		{
 			this.MoneyFile = moneyFile;
+			this.ownsMoneyFile = ownsMoneyFile;
 
 			this.BankingPanel = new();
 			this.CategoriesPanel = new(this);
+			this.AccountsPanel = new(this);
 
 			// Keep targets collection in sync with the two collections that make it up.
 			this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
-			this.BankingPanel.Accounts.CollectionChanged += this.Accounts_CollectionChanged;
 
 			if (moneyFile is object)
 			{
 				foreach (Account account in moneyFile.Accounts)
 				{
-					AccountViewModel viewModel = new(account, moneyFile, this);
-					this.BankingPanel.Accounts.Add(viewModel);
+					AccountViewModel viewModel = new(account, this);
+					this.AccountsPanel.Add(viewModel);
+					this.BankingPanel.Add(viewModel);
 				}
 
 				foreach (Category category in moneyFile.Categories)
@@ -73,6 +76,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		public BankingPanelViewModel BankingPanel { get; }
+
+		public AccountsPanelViewModel AccountsPanel { get; }
 
 		public CategoriesPanelViewModel CategoriesPanel { get; }
 
@@ -150,49 +155,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		/// <summary>
-		/// Creates a new <see cref="Account"/> and <see cref="AccountViewModel"/>.
-		/// The <see cref="AccountViewModel"/> is added to the view model collection,
-		/// but the <see cref="Account"/> will only be added to the database when a property on it has changed.
-		/// </summary>
-		/// <param name="name">The name for the new account.</param>
-		/// <returns>The new <see cref="AccountViewModel"/>.</returns>
-		public AccountViewModel NewAccount(string name = "")
-		{
-			AccountViewModel newAccountViewModel = new(null, this.MoneyFile, this)
-			{
-				Model = new(),
-			};
-
-			if (this.BankingPanel is object)
-			{
-				this.BankingPanel.Accounts.Add(newAccountViewModel);
-			}
-
-			if (name is object)
-			{
-				newAccountViewModel.Name = name;
-			}
-
-			return newAccountViewModel;
-		}
-
-		public void DeleteAccount(AccountViewModel accountViewModel)
-		{
-			ThrowUnopenedUnless(this.MoneyFile is object);
-
-			this.BankingPanel.Accounts.Remove(accountViewModel);
-			if (accountViewModel.Model is object)
-			{
-				this.MoneyFile.Delete(accountViewModel.Model);
-			}
-
-			if (this.BankingPanel.SelectedAccount == accountViewModel)
-			{
-				this.BankingPanel.SelectedAccount = null;
-			}
-		}
-
 		public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? throw new ArgumentException("No match found.");
 
 		public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
@@ -202,7 +164,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			if (this.MoneyFile is object)
 			{
 				this.MoneyFile.EntitiesChanged -= this.Model_EntitiesChanged;
-				this.MoneyFile.Dispose();
+				if (this.ownsMoneyFile)
+				{
+					this.MoneyFile.Dispose();
+				}
 			}
 		}
 
@@ -218,61 +183,58 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Assumes.NotNull(this.MoneyFile);
 
-			if (this.BankingPanel is object)
+			HashSet<int> impactedAccountIds = new();
+			SearchForImpactedAccounts(e.Inserted);
+			SearchForImpactedAccounts(e.Deleted);
+			SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
+			foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 			{
-				HashSet<int> impactedAccountIds = new();
-				SearchForImpactedAccounts(e.Inserted);
-				SearchForImpactedAccounts(e.Deleted);
-				SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
-				foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
+				if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
 				{
-					if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
+					accountViewModel.Balance = this.MoneyFile.GetBalance(accountViewModel.Model);
+
+					foreach (ModelBase model in e.Inserted)
 					{
-						accountViewModel.Balance = this.MoneyFile.GetBalance(accountViewModel.Model);
-
-						foreach (ModelBase model in e.Inserted)
+						if (model is Transaction tx && IsRelated(tx, accountViewModel))
 						{
-							if (model is Transaction tx && IsRelated(tx, accountViewModel))
-							{
-								accountViewModel.NotifyTransactionChanged(tx);
-							}
+							accountViewModel.NotifyTransactionChanged(tx);
 						}
+					}
 
-						foreach ((ModelBase Before, ModelBase After) models in e.Changed)
+					foreach ((ModelBase Before, ModelBase After) models in e.Changed)
+					{
+						if (models is { Before: Transaction beforeTx, After: Transaction afterTx } && (IsRelated(beforeTx, accountViewModel) || IsRelated(afterTx, accountViewModel)))
 						{
-							if (models is { Before: Transaction beforeTx, After: Transaction afterTx } && (IsRelated(beforeTx, accountViewModel) || IsRelated(afterTx, accountViewModel)))
-							{
-								accountViewModel.NotifyTransactionChanged(afterTx);
-							}
+							accountViewModel.NotifyTransactionChanged(afterTx);
 						}
+					}
 
-						foreach (ModelBase model in e.Deleted)
+					foreach (ModelBase model in e.Deleted)
+					{
+						if (model is Transaction tx && (tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id))
 						{
-							if (model is Transaction tx && (tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id))
-							{
-								accountViewModel.NotifyTransactionDeleted(tx);
-							}
+							accountViewModel.NotifyTransactionDeleted(tx);
 						}
 					}
 				}
+			}
 
-				static bool IsRelated(Transaction tx, AccountViewModel accountViewModel) => tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id;
+			static bool IsRelated(Transaction tx, AccountViewModel accountViewModel) => tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id;
 
-				void SearchForImpactedAccounts(IEnumerable<ModelBase> models)
+			void SearchForImpactedAccounts(IEnumerable<ModelBase> models)
+			{
+				foreach (ModelBase model in models)
 				{
-					foreach (ModelBase model in models)
+					if (model is Transaction tx)
 					{
-						if (model is Transaction tx)
+						if (tx.CreditAccountId is int creditId)
 						{
-							if (tx.CreditAccountId is int creditId)
-							{
-								impactedAccountIds.Add(creditId);
-							}
+							impactedAccountIds.Add(creditId);
+						}
 
-							if (tx.DebitAccountId is int debitId)
-							{
-								impactedAccountIds.Add(debitId);
-							}
+						if (tx.DebitAccountId is int debitId)
+						{
+							impactedAccountIds.Add(debitId);
 						}
 					}
 				}
@@ -281,39 +243,18 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.NetWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 
-		private void Accounts_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+		private void Categories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
 		{
 			switch (e.Action)
 			{
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Add when e.NewItems is object:
-					foreach (AccountViewModel account in e.NewItems)
-					{
-						this.TransactionTargets.Add(account);
-					}
-
-					break;
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Remove when e.OldItems is object:
-					foreach (AccountViewModel account in e.OldItems)
-					{
-						this.TransactionTargets.Remove(account);
-					}
-
-					break;
-			}
-		}
-
-		private void Categories_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-		{
-			switch (e.Action)
-			{
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Add when e.NewItems is object:
+				case NotifyCollectionChangedAction.Add when e.NewItems is object:
 					foreach (CategoryViewModel category in e.NewItems)
 					{
 						this.TransactionTargets.Add(category);
 					}
 
 					break;
-				case System.Collections.Specialized.NotifyCollectionChangedAction.Remove when e.OldItems is object:
+				case NotifyCollectionChangedAction.Remove when e.OldItems is object:
 					foreach (CategoryViewModel category in e.OldItems)
 					{
 						this.TransactionTargets.Remove(category);

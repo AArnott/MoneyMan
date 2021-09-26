@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 public class MoneyTestBase : TestBase
 {
 	private readonly Lazy<MoneyFile> money;
-	private readonly Lazy<DocumentViewModel> documentViewModel;
+	private Lazy<DocumentViewModel> documentViewModel;
 
 	public MoneyTestBase(ITestOutputHelper logger)
 		: base(logger)
@@ -20,17 +20,31 @@ public class MoneyTestBase : TestBase
 			result.Logger = new TestLoggerAdapter(this.Logger);
 			return result;
 		});
-		this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money));
+		this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money, ownsMoneyFile: false));
 	}
 
 	protected MoneyFile Money => this.money.Value;
 
 	protected DocumentViewModel DocumentViewModel => this.documentViewModel.Value;
 
+	protected void ReloadViewModel()
+	{
+		if (this.documentViewModel.IsValueCreated is true)
+		{
+			this.documentViewModel.Value.Dispose();
+			this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money, ownsMoneyFile: false));
+		}
+	}
+
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
 		{
+			if (this.documentViewModel.IsValueCreated)
+			{
+				this.documentViewModel.Value.Dispose();
+			}
+
 			if (this.money.IsValueCreated)
 			{
 				this.Money.Dispose();

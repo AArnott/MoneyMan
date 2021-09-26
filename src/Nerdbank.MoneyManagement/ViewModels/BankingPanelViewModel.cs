@@ -14,19 +14,58 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 	public class BankingPanelViewModel : BindableBase
 	{
-		private ObservableCollection<AccountViewModel> accounts = new ObservableCollection<AccountViewModel>();
+		private ObservableCollection<AccountViewModel> accounts = new();
+		private List<AccountViewModel> closedAccounts = new();
 		private AccountViewModel? selectedAccount;
 
-		public ObservableCollection<AccountViewModel> Accounts
-		{
-			get => this.accounts;
-			set => this.SetProperty(ref this.accounts, value);
-		}
+		public IReadOnlyCollection<AccountViewModel> Accounts => this.accounts;
 
 		public AccountViewModel? SelectedAccount
 		{
 			get => this.selectedAccount;
 			set => this.SetProperty(ref this.selectedAccount, value);
+		}
+
+		internal void Add(AccountViewModel account)
+		{
+			if (account.IsClosed)
+			{
+				this.closedAccounts.Add(account);
+			}
+			else
+			{
+				this.accounts.Add(account);
+			}
+
+			account.PropertyChanged += this.Account_PropertyChanged;
+		}
+
+		internal void Remove(AccountViewModel account)
+		{
+			if (!this.accounts.Remove(account))
+			{
+				this.closedAccounts.Remove(account);
+			}
+
+			account.PropertyChanged -= this.Account_PropertyChanged;
+		}
+
+		private void Account_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == nameof(AccountViewModel.IsClosed))
+			{
+				var account = (AccountViewModel)sender!;
+				if (account.IsClosed)
+				{
+					this.accounts.Remove(account);
+					this.closedAccounts.Add(account);
+				}
+				else
+				{
+					this.closedAccounts.Remove(account);
+					this.accounts.Add(account);
+				}
+			}
 		}
 	}
 }
