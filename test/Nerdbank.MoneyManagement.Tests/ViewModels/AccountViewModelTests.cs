@@ -18,8 +18,8 @@ public class AccountViewModelTests : MoneyTestBase
 	public AccountViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.checking = this.DocumentViewModel.NewAccount("Checking");
-		this.savings = this.DocumentViewModel.NewAccount("Savings");
+		this.checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		this.savings = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 	}
 
@@ -118,7 +118,7 @@ public class AccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void Ctor_From_Volatile_Entity()
 	{
-		AccountViewModel newAccount = this.DocumentViewModel.NewAccount();
+		AccountViewModel newAccount = this.DocumentViewModel.AccountsPanel.NewAccount();
 		Assert.Equal(0, newAccount.Model!.Id);
 
 		Assert.Equal(newAccount.Name, newAccount.Model.Name);
@@ -141,7 +141,7 @@ public class AccountViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(account);
 
-		var alternate = new AccountViewModel(account, this.Money, this.DocumentViewModel);
+		var alternate = new AccountViewModel(account, this.DocumentViewModel);
 
 		Assert.Equal(account.Id, alternate.Id);
 		Assert.Equal(account.Name, alternate.Name);
@@ -168,7 +168,7 @@ public class AccountViewModelTests : MoneyTestBase
 			new Transaction { CreditAccountId = account.Id },
 			new Transaction { DebitAccountId = account.Id },
 		});
-		this.checking = new AccountViewModel(account, this.Money, this.DocumentViewModel);
+		this.checking = new AccountViewModel(account, this.DocumentViewModel);
 		Assert.Equal(2, this.checking.Transactions.Count);
 	}
 
@@ -181,7 +181,7 @@ public class AccountViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(account);
 		this.Money.Insert(new Transaction { CreditAccountId = account.Id, Amount = 5 });
-		this.checking = new AccountViewModel(account, this.Money, this.DocumentViewModel);
+		this.checking = new AccountViewModel(account, this.DocumentViewModel);
 		TransactionViewModel txViewModel = Assert.Single(this.checking.Transactions);
 		this.DocumentViewModel.SelectedTransaction = txViewModel;
 		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
@@ -196,7 +196,7 @@ public class AccountViewModelTests : MoneyTestBase
 		this.Money.Insert(new Transaction { CreditAccountId = account.Id, Amount = 5 });
 		this.Money.Insert(new Transaction { CreditAccountId = account.Id, Amount = 12 });
 		this.Money.Insert(new Transaction { CreditAccountId = account.Id, Amount = 15 });
-		this.checking = new AccountViewModel(account, this.Money, this.DocumentViewModel);
+		this.checking = new AccountViewModel(account, this.DocumentViewModel);
 		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
 		this.DocumentViewModel.SelectedTransactions = this.checking.Transactions.Where(t => t.Amount != 12).ToArray();
 		Assert.True(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
@@ -212,7 +212,7 @@ public class AccountViewModelTests : MoneyTestBase
 			Name = "some account",
 		};
 		this.Money.Insert(account);
-		this.checking = new AccountViewModel(account, this.Money, this.DocumentViewModel);
+		this.checking = new AccountViewModel(account, this.DocumentViewModel);
 		Assert.Equal(0m, this.checking.Balance);
 
 		this.Money.InsertAll(new ModelBase[]
@@ -220,7 +220,7 @@ public class AccountViewModelTests : MoneyTestBase
 			new Transaction { Amount = 10, CreditAccountId = account.Id },
 			new Transaction { Amount = 2, DebitAccountId = account.Id },
 		});
-		this.checking = new AccountViewModel(account, this.Money, this.DocumentViewModel);
+		this.checking = new AccountViewModel(account, this.DocumentViewModel);
 		Assert.Equal(8m, this.checking.Balance);
 	}
 
@@ -248,7 +248,7 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		var account = new Account { Name = "some account" };
 		this.Money.Insert(account);
-		this.checking = new AccountViewModel(account, this.Money, this.DocumentViewModel);
+		this.checking = new AccountViewModel(account, this.DocumentViewModel);
 		bool eventRaised = false;
 		this.Money.EntitiesChanged += (s, e) => eventRaised = true;
 		this.checking.Balance = 10;

@@ -63,6 +63,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CategoryViewModel NewCategory(string name = "")
 		{
+			if (this.AddingCategory is object)
+			{
+				this.SelectedCategory = this.AddingCategory;
+				return this.AddingCategory;
+			}
+
 			CategoryViewModel newCategoryViewModel = new(null, this.documentViewModel.MoneyFile)
 			{
 				Model = new(),
@@ -70,8 +76,22 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.Categories.Add(newCategoryViewModel);
 			this.SelectedCategory = newCategoryViewModel;
-			this.AddingCategory = newCategoryViewModel;
-			newCategoryViewModel.Name = name;
+			if (string.IsNullOrEmpty(name))
+			{
+				this.AddingCategory = newCategoryViewModel;
+				newCategoryViewModel.NotifyWhenValid(s =>
+				{
+					if (this.AddingCategory == s)
+					{
+						this.AddingCategory = null;
+					}
+				});
+			}
+			else
+			{
+				newCategoryViewModel.Name = name;
+			}
+
 			return newCategoryViewModel;
 		}
 
@@ -87,6 +107,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.SelectedCategory = null;
 			}
+
+			if (this.AddingCategory == categoryViewModel)
+			{
+				this.AddingCategory = null;
+			}
 		}
 
 		private class AddCategoryCommand : CommandBase
@@ -100,17 +125,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 			{
-				if (this.viewModel.AddingCategory is object)
-				{
-					// We are already in the state of adding a category. Re-select it.
-					this.viewModel.SelectedCategory = this.viewModel.AddingCategory;
-				}
-				else
-				{
-					CategoryViewModel newCategoryViewModel = this.viewModel.NewCategory();
-					newCategoryViewModel.PropertyChanged += this.NewCategoryViewModel_PropertyChanged;
-				}
-
+				this.viewModel.NewCategory();
 				return Task.CompletedTask;
 			}
 

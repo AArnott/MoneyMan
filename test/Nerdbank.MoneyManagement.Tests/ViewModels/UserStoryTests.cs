@@ -22,8 +22,8 @@ public class UserStoryTests : MoneyTestBase
 	public UserStoryTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.checkingAccount = this.DocumentViewModel.NewAccount("Checking");
-		this.savingsAccount = this.DocumentViewModel.NewAccount("Savings");
+		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		this.savingsAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checkingAccount;
 	}
 

@@ -64,7 +64,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NewAccount()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
@@ -74,7 +74,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public void AddedAccountAddsToTransactionTargets()
 	{
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
-		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
@@ -86,12 +86,12 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void DeletedAccountRemovesFromTransactionTargets()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
 		accountViewModel.Name = "some new account";
 
 		Assert.Single(this.DocumentViewModel.TransactionTargets);
 
-		this.DocumentViewModel.DeleteAccount(accountViewModel);
+		this.DocumentViewModel.AccountsPanel.DeleteAccount(accountViewModel);
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
 	}
 
