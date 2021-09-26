@@ -56,7 +56,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	[Theory, PairwiseData]
 	public async Task DeleteCommand(bool saveFirst)
 	{
-		CategoryViewModel viewModel = this.DocumentViewModel.NewCategory();
+		CategoryViewModel viewModel = this.DocumentViewModel.CategoriesPanel.NewCategory();
 		if (saveFirst)
 		{
 			viewModel.Name = "cat";
@@ -72,9 +72,9 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task DeleteCommand_Multiple()
 	{
-		var cat1 = this.DocumentViewModel.NewCategory("cat1");
-		var cat2 = this.DocumentViewModel.NewCategory("cat2");
-		var cat3 = this.DocumentViewModel.NewCategory("cat3");
+		var cat1 = this.DocumentViewModel.CategoriesPanel.NewCategory("cat1");
+		var cat2 = this.DocumentViewModel.CategoriesPanel.NewCategory("cat2");
+		var cat3 = this.DocumentViewModel.CategoriesPanel.NewCategory("cat3");
 
 		this.ViewModel.SelectedCategories = new[] { cat1, cat3 };
 		Assert.True(this.ViewModel.DeleteCommand.CanExecute());

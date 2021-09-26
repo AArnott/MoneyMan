@@ -12,7 +12,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using Nerdbank.MoneyManagement.ViewModels;
 	using PCLCommandBase;
 
-	public class AccountsPanelViewModel : BindableBase
+	public class BankingPanelViewModel : BindableBase
 	{
 		private ObservableCollection<AccountViewModel> accounts = new ObservableCollection<AccountViewModel>();
 		private AccountViewModel? selectedAccount;

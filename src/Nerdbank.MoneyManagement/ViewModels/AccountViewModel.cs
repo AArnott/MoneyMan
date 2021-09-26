@@ -6,6 +6,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System;
 	using System.Collections;
 	using System.Collections.ObjectModel;
+	using System.ComponentModel.DataAnnotations;
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Reflection;
@@ -18,16 +19,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	{
 		private ObservableCollection<TransactionViewModel>? transactions;
-		private string? name;
+		private string name = string.Empty;
 		private bool isClosed;
 		private decimal balance;
 
-		public AccountViewModel()
-			: this(null, null, null)
-		{
-		}
-
-		public AccountViewModel(Account? model, MoneyFile? moneyFile, DocumentViewModel? documentViewModel)
+		public AccountViewModel(Account? model, MoneyFile? moneyFile, DocumentViewModel documentViewModel)
 			: base(moneyFile)
 		{
 			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
@@ -40,7 +36,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		public string? Name
+		[Required]
+		public string Name
 		{
 			get => this.name;
 			set => this.SetProperty(ref this.name, value);
@@ -73,7 +70,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						SQLite.TableQuery<Transaction> transactions = this.MoneyFile.Transactions.Where(tx => tx.CreditAccountId == this.Id || tx.DebitAccountId == this.Id);
 						foreach (Transaction transaction in transactions)
 						{
-							TransactionViewModel transactionViewModel = new(this, transaction, this.MoneyFile);
+							TransactionViewModel transactionViewModel = new(this, transaction);
 							this.transactions.Add(transactionViewModel);
 						}
 					}
@@ -83,9 +80,32 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		internal DocumentViewModel? DocumentViewModel { get; }
+		internal DocumentViewModel DocumentViewModel { get; }
 
 		private string? DebuggerDisplay => this.Name;
+
+		/// <summary>
+		/// Creates a new <see cref="TransactionViewModel"/> for this account,
+		/// but does <em>not</em> add it to the collection.
+		/// </summary>
+		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
+		public TransactionViewModel NewTransaction()
+		{
+			TransactionViewModel viewModel = new(this, null);
+			viewModel.When = DateTime.Now;
+			viewModel.Model = new();
+			return viewModel;
+		}
+
+		public void DeleteTransaction(TransactionViewModel transaction)
+		{
+			Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
+			this.Transactions.Remove(transaction);
+			if (this.MoneyFile is object && transaction.Model is object)
+			{
+				this.MoneyFile.Delete(transaction.Model);
+			}
+		}
 
 		internal void NotifyTransactionDeleted(Transaction transaction)
 		{
@@ -125,7 +145,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			else if (!removedFromAccount)
 			{
 				// This may be a new transaction we need to add.
-				this.Transactions.Add(new TransactionViewModel(this, transaction, this.MoneyFile));
+				this.Transactions.Add(new TransactionViewModel(this, transaction));
 			}
 		}
 

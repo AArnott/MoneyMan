@@ -20,7 +20,7 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		this.checking = this.DocumentViewModel.NewAccount("Checking");
 		this.savings = this.DocumentViewModel.NewAccount("Savings");
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checking;
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 	}
 
 	[Fact]
@@ -32,6 +32,19 @@ public class AccountViewModelTests : MoneyTestBase
 			() => this.checking.Name = "changed",
 			nameof(this.checking.Name));
 		Assert.Equal("changed", this.checking.Name);
+	}
+
+	[Fact]
+	public void Name_Validation()
+	{
+		this.checking.Name = string.Empty;
+
+		this.Logger.WriteLine(this.checking.Error);
+		Assert.NotEqual(string.Empty, this.checking[nameof(this.checking.Name)]);
+		Assert.Equal(this.checking[nameof(this.checking.Name)], this.checking.Error);
+
+		this.checking.Name = "a";
+		Assert.Equal(string.Empty, this.checking[nameof(this.checking.Name)]);
 	}
 
 	[Fact]
@@ -216,7 +229,7 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		Assert.Equal(0, this.checking.Balance);
 
-		TransactionViewModel txViewModel = this.DocumentViewModel.NewTransaction();
+		TransactionViewModel txViewModel = this.checking.NewTransaction();
 		this.checking.Transactions.Add(txViewModel);
 		txViewModel.Amount = 10;
 		Assert.Equal(10, this.checking.Balance);
@@ -245,7 +258,7 @@ public class AccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void Balance_ChangesFromTransactionChangeInOtherAccount()
 	{
-		TransactionViewModel txViewModel = this.DocumentViewModel.NewTransaction();
+		TransactionViewModel txViewModel = this.checking.NewTransaction();
 		this.checking.Transactions.Add(txViewModel);
 		txViewModel.Amount = -10;
 		txViewModel.CategoryOrTransfer = this.savings;
@@ -260,7 +273,7 @@ public class AccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransferFromDbAppearsInBothAccounts()
 	{
-		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
+		TransactionViewModel tx1 = this.checking.NewTransaction();
 		this.checking.Transactions.Add(tx1);
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;
@@ -277,8 +290,8 @@ public class AccountViewModelTests : MoneyTestBase
 		Assert.Empty(this.checking.Transactions);
 		Assert.Empty(this.savings.Transactions);
 
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checking;
-		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
+		TransactionViewModel tx1 = this.checking.NewTransaction();
 		this.checking.Transactions.Add(tx1);
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;
@@ -292,23 +305,23 @@ public class AccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void DeletedTransferIsRemovedFromBothAccounts()
 	{
-		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
+		TransactionViewModel tx1 = this.checking.NewTransaction();
 		this.checking.Transactions.Add(tx1);
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;
 
 		TransactionViewModel tx2 = Assert.Single(this.savings.Transactions);
 
-		this.DocumentViewModel.DeleteTransaction(tx1);
+		this.checking.DeleteTransaction(tx1);
 		Assert.Empty(this.savings.Transactions);
 	}
 
 	[Fact]
 	public void TransferChangedToCategoryIsRemovedFromOtherAccount()
 	{
-		CategoryViewModel cat = this.DocumentViewModel.NewCategory("Household");
+		CategoryViewModel cat = this.DocumentViewModel.CategoriesPanel.NewCategory("Household");
 
-		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
+		TransactionViewModel tx1 = this.checking.NewTransaction();
 		this.checking.Transactions.Add(tx1);
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;
@@ -322,8 +335,8 @@ public class AccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransferPropertyChangesAreReflectedInOtherAccount()
 	{
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checking;
-		TransactionViewModel tx1 = this.DocumentViewModel.NewTransaction();
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
+		TransactionViewModel tx1 = this.checking.NewTransaction();
 		this.checking.Transactions.Add(tx1);
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;

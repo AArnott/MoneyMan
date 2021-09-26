@@ -35,8 +35,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			throw new NotSupportedException();
 		}
 
-		public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction, MoneyFile? moneyFile)
-			: base(moneyFile)
+		public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction)
+			: base(thisAccount.MoneyFile)
 		{
 			this.ThisAccount = thisAccount;
 			this.AutoSave = true;

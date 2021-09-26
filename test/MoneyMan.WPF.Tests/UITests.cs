@@ -24,7 +24,7 @@ public class UITests : UITestBase
 	[WpfFact]
 	public void SelectNewRowInAccountGrid()
 	{
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.DocumentViewModel.NewAccount("Checking");
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.DocumentViewModel.NewAccount("Checking");
 		this.Window.TransactionDataGrid.SelectedItem = CollectionView.NewItemPlaceholder;
 	}
 }

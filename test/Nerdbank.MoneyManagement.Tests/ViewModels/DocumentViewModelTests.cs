@@ -36,7 +36,7 @@ public class DocumentViewModelTests : MoneyTestBase
 			new Category { Name = "Cat1" },
 		});
 		DocumentViewModel documentViewModel = new(this.Money);
-		Assert.Contains(documentViewModel.AccountsPanel?.Accounts, acct => acct.Name == "Checking");
+		Assert.Contains(documentViewModel.BankingPanel?.Accounts, acct => acct.Name == "Checking");
 		Assert.Contains(documentViewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
 	}
 
@@ -99,7 +99,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public void AddedCategoryAddsToTransactionTargets()
 	{
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("some new category");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
 		Category category = Assert.Single(this.Money.Categories);
 		Assert.Equal(categoryViewModel.Name, category.Name);
 
@@ -110,11 +110,11 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void DeletedCategoryRemovesFromTransactionTargets()
 	{
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("some new category");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
 
 		Assert.Single(this.DocumentViewModel.TransactionTargets);
 
-		this.DocumentViewModel.DeleteCategory(categoryViewModel);
+		this.DocumentViewModel.CategoriesPanel.DeleteCategory(categoryViewModel);
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
 	}
 

@@ -12,39 +12,39 @@ using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class AccountsPanelViewModelTests : TestBase
+public class BankingPanelViewModelTests : MoneyTestBase
 {
-	private AccountsPanelViewModel viewModel = new AccountsPanelViewModel();
-
-	public AccountsPanelViewModelTests(ITestOutputHelper logger)
+	public BankingPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
 	}
 
+	private BankingPanelViewModel ViewModel => this.DocumentViewModel.BankingPanel;
+
 	[Fact]
 	public void InitialState()
 	{
-		Assert.Empty(this.viewModel.Accounts);
-		Assert.Null(this.viewModel.SelectedAccount);
+		Assert.Empty(this.ViewModel.Accounts);
+		Assert.Null(this.ViewModel.SelectedAccount);
 	}
 
 	[Fact]
 	public void AccountsPanel_RetainsAssignment()
 	{
 		var newValue = new ObservableCollection<AccountViewModel>();
-		this.viewModel.Accounts = newValue;
-		Assert.Same(newValue, this.viewModel.Accounts);
+		this.ViewModel.Accounts = newValue;
+		Assert.Same(newValue, this.ViewModel.Accounts);
 	}
 
 	[Fact]
 	public void Accounts_PropertyChanged()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
-			this.viewModel,
-			() => this.viewModel.Accounts = new ObservableCollection<AccountViewModel>(),
-			nameof(this.viewModel.Accounts));
+			this.ViewModel,
+			() => this.ViewModel.Accounts = new ObservableCollection<AccountViewModel>(),
+			nameof(this.ViewModel.Accounts));
 		TestUtilities.AssertPropertyChangedEvent(
-			this.viewModel,
-			() => this.viewModel.Accounts = this.viewModel.Accounts);
+			this.ViewModel,
+			() => this.ViewModel.Accounts = this.ViewModel.Accounts);
 	}
 }
