@@ -27,7 +27,7 @@ public class MoneyTestBase : TestBase
 
 	protected DocumentViewModel DocumentViewModel => this.documentViewModel.Value;
 
-	protected void ReloadViewModel()
+	protected virtual void ReloadViewModel()
 	{
 		if (this.documentViewModel.IsValueCreated is true)
 		{

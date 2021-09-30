@@ -40,7 +40,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.account = this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = this.DocumentViewModel.GetAccount(otherAccountModel.Id);
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
-		this.viewModel = this.account.NewTransaction();
+		this.viewModel = this.account.NewTransaction(volatileOnly: true);
 	}
 
 	[Fact]
@@ -102,6 +102,68 @@ public class TransactionViewModelTests : MoneyTestBase
 			() => this.viewModel.Payee = "somebody",
 			nameof(this.viewModel.Payee));
 		Assert.Same("somebody", this.viewModel.Payee);
+	}
+
+	[Fact]
+	public void Balance_JustOneTransaction()
+	{
+		// Verify that one lone transaction's balance is based on its own amount.
+		TransactionViewModel tx = this.account.NewTransaction();
+		tx.When = new DateTime(2021, 1, 2);
+		Assert.Equal(0m, tx.Balance);
+		tx.Amount = 5m;
+		Assert.Equal(tx.Amount, tx.Balance);
+	}
+
+	[Fact]
+	public void Balance_SecondTransactionBuildsOnFirst()
+	{
+		TransactionViewModel tx1 = this.account.NewTransaction();
+		tx1.When = new DateTime(2021, 1, 2);
+		tx1.Amount = 5m;
+
+		TransactionViewModel tx2 = this.account.NewTransaction();
+		tx2.When = new DateTime(2021, 1, 3);
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+		tx2.Amount = 8m;
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+	}
+
+	[Fact]
+	public void Balance_UpdatesInResponseToTransactionInsertedAbove()
+	{
+		TransactionViewModel tx2 = this.account.NewTransaction();
+		tx2.When = new DateTime(2021, 1, 2);
+		tx2.Amount = 5m;
+
+		TransactionViewModel tx1 = this.account.NewTransaction();
+		tx1.When = new DateTime(2021, 1, 1);
+		TestUtilities.AssertPropertyChangedEvent(tx2, () => tx1.Amount = 4m, nameof(tx2.Balance));
+
+		Assert.Equal(tx1.Balance, tx1.Balance);
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+
+		// Reorder the transactions and observe their balance shifting.
+		tx1.When = tx2.When + TimeSpan.FromDays(1);
+
+		Assert.Equal(tx2.Amount, tx2.Balance);
+		Assert.Equal(tx2.Balance + tx1.Amount, tx1.Balance);
+	}
+
+	[Fact]
+	public void Balance_UpdatesWhenEarlierTransactionIsRemoved()
+	{
+		TransactionViewModel tx1 = this.account.NewTransaction();
+		tx1.When = new DateTime(2021, 1, 2);
+		tx1.Amount = 5m;
+
+		TransactionViewModel tx2 = this.account.NewTransaction();
+		tx2.When = new DateTime(2021, 1, 3);
+		tx2.Amount = 3m;
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+
+		this.account.DeleteTransaction(tx1);
+		Assert.Equal(tx2.Amount, tx2.Balance);
 	}
 
 	[Fact]
