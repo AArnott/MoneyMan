@@ -13,7 +13,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using PCLCommandBase;
 
 	public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
-		where TEntity : ModelBase
+		where TEntity : ModelBase, new()
 	{
 		protected EntityViewModel()
 		{
@@ -24,14 +24,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					this.IsDirty = true;
 					if (this.AutoSave && this.Model is object && string.IsNullOrEmpty(this.Error))
 					{
-						this.ApplyToModel();
-						if (this.MoneyFile is { IsDisposed: false })
-						{
-							this.Model.Save(this.MoneyFile);
-
-							// First insert of an entity assigns it an ID. Make sure the view model matches it.
-							this.Id = this.Model.Id;
-						}
+						this.Save();
 					}
 				}
 			};
@@ -149,6 +142,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.IsDirty = false;
 			this.Model ??= model;
+		}
+
+		public void Save()
+		{
+			this.ApplyToModel();
+			if (this.MoneyFile is { IsDisposed: false })
+			{
+				this.Model ??= new();
+				this.Model.Save(this.MoneyFile);
+
+				// First insert of an entity assigns it an ID. Make sure the view model matches it.
+				this.Id = this.Model.Id;
+			}
 		}
 
 		protected abstract void ApplyToCore(TEntity model);

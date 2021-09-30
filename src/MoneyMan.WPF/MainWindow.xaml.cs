@@ -137,7 +137,7 @@ namespace MoneyMan
 
 		private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 		{
-			e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction() ?? throw new InvalidOperationException("No selected account.");
+			e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction(volatileOnly: true) ?? throw new InvalidOperationException("No selected account.");
 		}
 
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e)

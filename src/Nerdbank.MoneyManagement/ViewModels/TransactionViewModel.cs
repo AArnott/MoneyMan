@@ -27,6 +27,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private AccountViewModel? transferAccount;
 		private string? payee;
 		private ITransactionTarget? categoryOrTransfer;
+		private decimal balance;
 
 		[Obsolete("Do not use this constructor.")]
 		public TransactionViewModel()
@@ -97,6 +98,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
+		public decimal Balance
+		{
+			get => this.balance;
+			set => this.SetProperty(ref this.balance, value);
+		}
+
 		/// <summary>
 		/// Gets the account this transaction was created to be displayed within.
 		/// </summary>
@@ -155,6 +162,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 			}
 		}
+
+		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
 
 		[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 		public class ClearedStateViewModel

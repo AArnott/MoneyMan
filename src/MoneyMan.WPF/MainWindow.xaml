@@ -64,11 +64,7 @@
 							   DataContext="{Binding SelectedAccount}" 
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
 						<DockPanel.Resources>
-							<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" IsLiveSortingRequested="True">
-								<CollectionViewSource.SortDescriptions>
-									<componentmodel:SortDescription PropertyName="When" />
-								</CollectionViewSource.SortDescriptions>
-							</CollectionViewSource>
+							<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" />
 						</DockPanel.Resources>
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 						<DataGrid Name="TransactionDataGrid"
@@ -159,7 +155,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Balance" IsReadOnly="True" />
+								<DataGridTextColumn Header="Balance" IsReadOnly="True" Binding="{Binding Balance, StringFormat=C}" />
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
