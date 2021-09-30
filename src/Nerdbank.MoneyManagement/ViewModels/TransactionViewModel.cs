@@ -24,7 +24,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private decimal amount;
 		private string? memo;
 		private ClearedStateViewModel cleared = SharedClearedStates[0];
-		private AccountViewModel? transferAccount;
 		private string? payee;
 		private ITransactionTarget? categoryOrTransfer;
 
@@ -77,12 +76,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.cleared;
 			set => this.SetProperty(ref this.cleared, value);
-		}
-
-		public AccountViewModel? Transfer
-		{
-			get => this.transferAccount;
-			set => this.SetProperty(ref this.transferAccount, value);
 		}
 
 		public string? Payee
