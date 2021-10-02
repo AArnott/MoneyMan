@@ -39,7 +39,7 @@
 		</StatusBar>
 		<TabControl TabStripPlacement="Bottom"
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
-			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}">
+			<TabItem Header="Banking" DataContext="{Binding BankingPanel}">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" />
 				</TabItem.Resources>
@@ -53,7 +53,7 @@
 							<TextBlock DockPanel.Dock="Right" Text="{Binding Source={StaticResource viewModel}, Path=Document.NetWorth, StringFormat=C}" FontWeight="Bold" />
 							<TextBlock Text="Net worth" FontWeight="Bold" />
 						</DockPanel>
-						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch">
+						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
 							<ListView.ItemTemplate>
 								<DataTemplate>
 									<DockPanel>
@@ -68,11 +68,7 @@
 							   DataContext="{Binding SelectedAccount}" 
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
 						<DockPanel.Resources>
-							<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" IsLiveSortingRequested="True">
-								<CollectionViewSource.SortDescriptions>
-									<componentmodel:SortDescription PropertyName="When" />
-								</CollectionViewSource.SortDescriptions>
-							</CollectionViewSource>
+							<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" />
 						</DockPanel.Resources>
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 						<DataGrid Name="TransactionDataGrid"
@@ -80,7 +76,7 @@
 								  AlternationCount="2" 
 								  ItemsSource="{Binding Source={StaticResource transactions}}"
 								  IsSynchronizedWithCurrentItem="True"
-								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay}"
+								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
 								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
@@ -163,7 +159,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Balance" IsReadOnly="True" />
+								<DataGridTextColumn Header="Balance" IsReadOnly="True" Binding="{Binding Balance, StringFormat=C}" />
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
@@ -173,6 +169,54 @@
 						</DataGrid>
 					</DockPanel>
 				</Grid>
+			</TabItem>
+			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}" Height="20" VerticalAlignment="Top">
+				<TabItem.Resources>
+					<CollectionViewSource Source="{Binding Accounts}" x:Key="categories" IsLiveSortingRequested="True">
+						<CollectionViewSource.SortDescriptions>
+							<componentmodel:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
+					</CollectionViewSource>
+					<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
+						<Style.Triggers>
+							<Trigger Property="Validation.HasError" Value="True">
+								<Setter Property="Background" Value="Pink" />
+								<Setter Property="ToolTip"
+									Value="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=(Validation.Errors)/ErrorContent}" />
+							</Trigger>
+						</Style.Triggers>
+					</Style>
+				</TabItem.Resources>
+				<DockPanel>
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
+						<Label Content="_Name" Target="{Binding ElementName=AccountName}" />
+						<TextBox Name="AccountName"
+								 MaxLength="100"
+								 Style="{StaticResource textBoxInError}"
+								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+						<CheckBox IsChecked="{Binding IsClosed}" Content="Account closed" Margin="0,15,0,0" />
+						<TextBlock Text="Closed accounts do not appear in the account list and do not accrue toward your net worth." TextWrapping="Wrap" />
+					</StackPanel>
+					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
+					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
+						<ListView.ItemContainerStyle>
+							<Style TargetType="ListBoxItem">
+								<Setter Property="ContextMenu">
+									<Setter.Value>
+										<ContextMenu DataContext="{Binding Document.AccountsPanel, Source={StaticResource viewModel}}">
+											<MenuItem Header="{Binding DeleteCommand.Caption}" Command="{Binding DeleteCommand}" />
+										</ContextMenu>
+									</Setter.Value>
+								</Setter>
+							</Style>
+						</ListView.ItemContainerStyle>
+						<ListView.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Name}" />
+							</DataTemplate>
+						</ListView.ItemTemplate>
+					</ListView>
+				</DockPanel>
 			</TabItem>
 			<TabItem Header="Categories" DataContext="{Binding CategoriesPanel}" Height="20" VerticalAlignment="Top">
 				<TabItem.Resources>
@@ -196,15 +240,8 @@
 						<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
 								 MaxLength="100"
-								 Style="{StaticResource textBoxInError}">
-							<TextBox.Text>
-								<Binding Path="Name" UpdateSourceTrigger="LostFocus">
-									<Binding.ValidationRules>
-										<ExceptionValidationRule />
-									</Binding.ValidationRules>
-								</Binding>
-							</TextBox.Text>
-						</TextBox>
+								 Style="{StaticResource textBoxInError}"
+								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 					</StackPanel>
 					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="CategoriesListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">

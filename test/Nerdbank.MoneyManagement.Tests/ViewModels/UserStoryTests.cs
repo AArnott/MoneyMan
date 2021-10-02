@@ -22,15 +22,15 @@ public class UserStoryTests : MoneyTestBase
 	public UserStoryTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.checkingAccount = this.DocumentViewModel.NewAccount("Checking");
-		this.savingsAccount = this.DocumentViewModel.NewAccount("Savings");
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.checkingAccount;
+		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		this.savingsAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checkingAccount;
 	}
 
 	[Fact]
 	public void AddCreditingTransaction()
 	{
-		TransactionViewModel tx = this.DocumentViewModel.NewTransaction();
+		TransactionViewModel tx = this.checkingAccount.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Payee = "My boss";
 		tx.Amount = 15;
@@ -44,7 +44,7 @@ public class UserStoryTests : MoneyTestBase
 	[Fact]
 	public void AddTransferTransaction()
 	{
-		TransactionViewModel tx = this.DocumentViewModel.NewTransaction();
+		TransactionViewModel tx = this.checkingAccount.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Amount = 15;
 		tx.CategoryOrTransfer = this.savingsAccount;

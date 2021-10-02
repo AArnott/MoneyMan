@@ -24,9 +24,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private decimal amount;
 		private string? memo;
 		private ClearedStateViewModel cleared = SharedClearedStates[0];
-		private AccountViewModel? transferAccount;
 		private string? payee;
 		private ITransactionTarget? categoryOrTransfer;
+		private decimal balance;
 
 		[Obsolete("Do not use this constructor.")]
 		public TransactionViewModel()
@@ -35,8 +35,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			throw new NotSupportedException();
 		}
 
-		public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction, MoneyFile? moneyFile)
-			: base(moneyFile)
+		public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction)
+			: base(thisAccount.MoneyFile)
 		{
 			this.ThisAccount = thisAccount;
 			this.AutoSave = true;
@@ -79,12 +79,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.cleared, value);
 		}
 
-		public AccountViewModel? Transfer
-		{
-			get => this.transferAccount;
-			set => this.SetProperty(ref this.transferAccount, value);
-		}
-
 		public string? Payee
 		{
 			get => this.payee;
@@ -95,6 +89,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			get => this.categoryOrTransfer;
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
+		}
+
+		public decimal Balance
+		{
+			get => this.balance;
+			set => this.SetProperty(ref this.balance, value);
 		}
 
 		/// <summary>
@@ -155,6 +155,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 			}
 		}
+
+		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
 
 		[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 		public class ClearedStateViewModel

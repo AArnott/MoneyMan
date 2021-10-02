@@ -36,7 +36,7 @@ public class AccountFacts : EntityTestBase
 	[Fact]
 	public void Name_CannotBeNull()
 	{
-		var acct = new Account();
+		var acct = new Account { Name = null! };
 		Assert.Throws<SQLite.NotNullConstraintViolationException>(() => this.Money.Insert(acct));
 	}
 

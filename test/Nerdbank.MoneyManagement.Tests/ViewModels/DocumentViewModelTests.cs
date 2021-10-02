@@ -36,7 +36,7 @@ public class DocumentViewModelTests : MoneyTestBase
 			new Category { Name = "Cat1" },
 		});
 		DocumentViewModel documentViewModel = new(this.Money);
-		Assert.Contains(documentViewModel.AccountsPanel?.Accounts, acct => acct.Name == "Checking");
+		Assert.Contains(documentViewModel.BankingPanel?.Accounts, acct => acct.Name == "Checking");
 		Assert.Contains(documentViewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
 	}
 
@@ -59,12 +59,15 @@ public class DocumentViewModelTests : MoneyTestBase
 		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, Amount = 3 };
 		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Insert(tx2), nameof(this.DocumentViewModel.NetWorth));
 		Assert.Equal(7, this.DocumentViewModel.NetWorth);
+
+		this.DocumentViewModel.AccountsPanel.Accounts.Single().IsClosed = true;
+		Assert.Equal(0, this.DocumentViewModel.NetWorth);
 	}
 
 	[Fact]
 	public void NewAccount()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
@@ -74,7 +77,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public void AddedAccountAddsToTransactionTargets()
 	{
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
-		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
@@ -86,12 +89,12 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void DeletedAccountRemovesFromTransactionTargets()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
 		accountViewModel.Name = "some new account";
 
 		Assert.Single(this.DocumentViewModel.TransactionTargets);
 
-		this.DocumentViewModel.DeleteAccount(accountViewModel);
+		this.DocumentViewModel.AccountsPanel.DeleteAccount(accountViewModel);
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
 	}
 
@@ -99,7 +102,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public void AddedCategoryAddsToTransactionTargets()
 	{
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("some new category");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
 		Category category = Assert.Single(this.Money.Categories);
 		Assert.Equal(categoryViewModel.Name, category.Name);
 
@@ -110,12 +113,37 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void DeletedCategoryRemovesFromTransactionTargets()
 	{
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("some new category");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
 
 		Assert.Single(this.DocumentViewModel.TransactionTargets);
 
-		this.DocumentViewModel.DeleteCategory(categoryViewModel);
+		this.DocumentViewModel.CategoriesPanel.DeleteCategory(categoryViewModel);
 		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+	}
+
+	[Fact]
+	public void TransactionTargets_DoesNotIncludeVolatileAccounts()
+	{
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+		accountViewModel.Name = "Checking";
+		Assert.Single(this.DocumentViewModel.TransactionTargets);
+	}
+
+	/// <summary>
+	/// Verifies that transaction targets includes closed accounts.
+	/// This is important because editing old transactions must be able to show that it possibly transferred to/from an account that is now closed.
+	/// </summary>
+	[Fact]
+	public void TransactionTargetsIncludesClosedAccounts()
+	{
+		AccountViewModel closed = this.DocumentViewModel.AccountsPanel.NewAccount("ToBeClosed");
+		AccountViewModel open = this.DocumentViewModel.AccountsPanel.NewAccount("ToRemainOpen");
+		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
+		closed.IsClosed = true;
+		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
+		this.ReloadViewModel();
+		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
 	}
 
 	protected override void Dispose(bool disposing)

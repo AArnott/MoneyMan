@@ -39,8 +39,8 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		this.account = this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = this.DocumentViewModel.GetAccount(otherAccountModel.Id);
-		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.account;
-		this.viewModel = this.DocumentViewModel.NewTransaction();
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
+		this.viewModel = this.account.NewTransaction(volatileOnly: true);
 	}
 
 	[Fact]
@@ -105,6 +105,68 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Balance_JustOneTransaction()
+	{
+		// Verify that one lone transaction's balance is based on its own amount.
+		TransactionViewModel tx = this.account.NewTransaction();
+		tx.When = new DateTime(2021, 1, 2);
+		Assert.Equal(0m, tx.Balance);
+		tx.Amount = 5m;
+		Assert.Equal(tx.Amount, tx.Balance);
+	}
+
+	[Fact]
+	public void Balance_SecondTransactionBuildsOnFirst()
+	{
+		TransactionViewModel tx1 = this.account.NewTransaction();
+		tx1.When = new DateTime(2021, 1, 2);
+		tx1.Amount = 5m;
+
+		TransactionViewModel tx2 = this.account.NewTransaction();
+		tx2.When = new DateTime(2021, 1, 3);
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+		tx2.Amount = 8m;
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+	}
+
+	[Fact]
+	public void Balance_UpdatesInResponseToTransactionInsertedAbove()
+	{
+		TransactionViewModel tx2 = this.account.NewTransaction();
+		tx2.When = new DateTime(2021, 1, 2);
+		tx2.Amount = 5m;
+
+		TransactionViewModel tx1 = this.account.NewTransaction();
+		tx1.When = new DateTime(2021, 1, 1);
+		TestUtilities.AssertPropertyChangedEvent(tx2, () => tx1.Amount = 4m, nameof(tx2.Balance));
+
+		Assert.Equal(tx1.Balance, tx1.Balance);
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+
+		// Reorder the transactions and observe their balance shifting.
+		tx1.When = tx2.When + TimeSpan.FromDays(1);
+
+		Assert.Equal(tx2.Amount, tx2.Balance);
+		Assert.Equal(tx2.Balance + tx1.Amount, tx1.Balance);
+	}
+
+	[Fact]
+	public void Balance_UpdatesWhenEarlierTransactionIsRemoved()
+	{
+		TransactionViewModel tx1 = this.account.NewTransaction();
+		tx1.When = new DateTime(2021, 1, 2);
+		tx1.Amount = 5m;
+
+		TransactionViewModel tx2 = this.account.NewTransaction();
+		tx2.When = new DateTime(2021, 1, 3);
+		tx2.Amount = 3m;
+		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
+
+		this.account.DeleteTransaction(tx1);
+		Assert.Equal(tx2.Amount, tx2.Balance);
+	}
+
+	[Fact]
 	public void ApplyTo_Null()
 	{
 		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
@@ -114,7 +176,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void ApplyTo()
 	{
 		Transaction transaction = new Transaction();
-		TransactionViewModel viewModel = new(this.account, null, this.Money);
+		TransactionViewModel viewModel = new(this.account, null);
 
 		viewModel.Payee = this.payee;
 		viewModel.Amount = this.amount;
@@ -164,7 +226,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void CopyFrom_Category()
 	{
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.NewCategory("cat");
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
 
 		Transaction transaction = this.viewModel.Model!;
 		transaction.Payee = this.payee;
@@ -230,7 +292,7 @@ public class TransactionViewModelTests : MoneyTestBase
 			Payee = "some person",
 		};
 
-		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
@@ -256,7 +318,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
@@ -280,7 +342,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		this.viewModel = new TransactionViewModel(this.account, transaction, this.Money);
+		this.viewModel = new TransactionViewModel(this.account, transaction);
 		this.Money.Dispose();
 		this.viewModel.Amount = 12;
 	}

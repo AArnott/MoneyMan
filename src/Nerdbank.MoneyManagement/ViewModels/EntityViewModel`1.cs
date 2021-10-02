@@ -4,11 +4,16 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections.Generic;
+	using System.ComponentModel;
+	using System.ComponentModel.DataAnnotations;
+	using System.Linq;
+	using System.Reflection;
 	using Microsoft;
 	using PCLCommandBase;
 
-	public abstract class EntityViewModel<TEntity> : BindableBase
-		where TEntity : ModelBase
+	public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
+		where TEntity : ModelBase, new()
 	{
 		protected EntityViewModel()
 		{
@@ -17,16 +22,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 				{
 					this.IsDirty = true;
-					if (this.AutoSave && this.Model is object)
+					if (this.AutoSave && this.Model is object && string.IsNullOrEmpty(this.Error))
 					{
-						this.ApplyToModel();
-						if (this.MoneyFile is { IsDisposed: false })
-						{
-							this.Model.Save(this.MoneyFile);
-
-							// First insert of an entity assigns it an ID. Make sure the view model matches it.
-							this.Id = this.Model.Id;
-						}
+						this.Save();
 					}
 				}
 			};
@@ -59,10 +57,53 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public MoneyFile? MoneyFile { get; set; }
 
+		public virtual string Error
+		{
+			get
+			{
+				PropertyInfo[] propertyInfos = this.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+
+				foreach (PropertyInfo propertyInfo in propertyInfos)
+				{
+					var errorMsg = this[propertyInfo.Name];
+					if (errorMsg is not null)
+					{
+						return errorMsg;
+					}
+				}
+
+				return string.Empty;
+			}
+		}
+
 		/// <summary>
 		/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.
 		/// </summary>
 		protected bool AutoSave { get; set; }
+
+		public virtual string this[string columnName]
+		{
+			get
+			{
+				var validationResults = new List<ValidationResult>();
+
+				PropertyInfo? property = this.GetType().GetProperty(columnName);
+				Requires.Argument(property is not null, nameof(columnName), "No property by that name.");
+
+				ValidationContext validationContext = new(this)
+				{
+					MemberName = columnName,
+				};
+
+				var isValid = Validator.TryValidateProperty(property.GetValue(this), validationContext, validationResults);
+				if (isValid)
+				{
+					return string.Empty;
+				}
+
+				return validationResults.First().ErrorMessage ?? string.Empty;
+			}
+		}
 
 		/// <summary>
 		/// Writes this view model to the underlying model.
@@ -74,6 +115,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(model, nameof(model));
 			Requires.Argument(this.Id is null || model.Id == this.Id, nameof(model), "The provided object is not the original template.");
+			Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property.");
 
 			this.ApplyToCore(model);
 
@@ -100,6 +142,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.IsDirty = false;
 			this.Model ??= model;
+		}
+
+		public void Save()
+		{
+			this.ApplyToModel();
+			if (this.MoneyFile is { IsDisposed: false })
+			{
+				this.Model ??= new();
+				this.Model.Save(this.MoneyFile);
+
+				// First insert of an entity assigns it an ID. Make sure the view model matches it.
+				this.Id = this.Model.Id;
+			}
 		}
 
 		protected abstract void ApplyToCore(TEntity model);
