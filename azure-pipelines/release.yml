@@ -25,6 +25,10 @@ stages:
           - powershell: |
               Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
             displayName: Set pipeline name
+          - download: CI
+            artifact: deployables-Windows
+            displayName: Download deployables-Windows artifact
+            patterns: 'deployables-Windows/Installers/*'
           - task: GitHubRelease@1
             displayName: GitHub release (create)
             inputs:
@@ -34,6 +38,7 @@ stages:
               tagSource: userSpecifiedTag
               tag: v$(resources.pipeline.CI.runName)
               title: v$(resources.pipeline.CI.runName)
+              assets: $(Pipeline.Workspace)/CI/deployables-Windows/Installers/**
               isDraft: true # After running this step, visit the new draft release, edit, and publish.
               changeLogCompareToRelease: lastNonDraftRelease
               changeLogType: issueBased
@@ -58,7 +63,7 @@ stages:
           - download: CI
             artifact: deployables-Windows
             displayName: Download deployables-Windows artifact
-            patterns: 'deployables-Windows/*'
+            patterns: 'deployables-Windows/NuGet/*'
           - task: NuGetToolInstaller@1
             displayName: Use NuGet 5.x
             inputs:
@@ -67,6 +72,6 @@ stages:
             displayName: NuGet push
             inputs:
               command: push
-              packagesToPush: $(Pipeline.Workspace)/CI/deployables-Windows/*.nupkg
+              packagesToPush: $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg
               nuGetFeedType: external
               publishFeedCredentials: nuget.org
