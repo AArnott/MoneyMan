@@ -2,6 +2,6 @@
 	<ItemGroup>
 		<ProjectReference Include="$(RepoRootPath)src\**\*.*proj" />
 		<ProjectReference Include="$(RepoRootPath)test\**\*.*proj" />
-		<ProjectReference Include="$(RepoRootPath)installers\**\*.*proj" />
+		<ProjectReference Include="$(RepoRootPath)installers\dirs.proj" />
 	</ItemGroup>
 </Project>
