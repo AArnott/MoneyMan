@@ -3,9 +3,6 @@ steps:
 - script: dotnet build --no-restore -t:build,pack -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
   displayName: dotnet build
 
-- script: dotnet pack installers --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build_installers.binlog"
-  displayName: dotnet pack installers
-
 - task: DotNetCoreCLI@2
   displayName: dotnet test
   inputs:
@@ -13,6 +10,9 @@ steps:
     arguments: --no-build -c $(BuildConfiguration) --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings" /bl:"$(Build.ArtifactStagingDirectory)/build_logs/test_net5.0.binlog"
     testRunTitle: $(Agent.JobName)
   condition: succeededOrFailed()
+
+- script: dotnet pack installers --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build_installers.binlog"
+  displayName: dotnet pack installers
 
 - powershell: azure-pipelines/variables/_pipelines.ps1
   failOnStderr: true
