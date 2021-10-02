@@ -1,7 +1,10 @@
 steps:
 
-- script: dotnet build --no-restore -t:build,pack -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
+- script: dotnet build --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
   displayName: dotnet build
+
+- script: dotnet pack --no-build -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/pack.binlog"
+  displayName: dotnet pack
 
 - task: DotNetCoreCLI@2
   displayName: dotnet test
@@ -11,7 +14,7 @@ steps:
     testRunTitle: $(Agent.JobName)
   condition: succeededOrFailed()
 
-- script: dotnet pack installers --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build_installers.binlog"
+- script: dotnet pack installers -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build_installers.binlog"
   displayName: dotnet pack installers
 
 - powershell: azure-pipelines/variables/_pipelines.ps1

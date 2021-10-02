@@ -76,7 +76,7 @@ try {
 
     if (!$NoRestore -and $PSCmdlet.ShouldProcess("NuGet packages", "Restore")) {
         Write-Host "Restoring NuGet packages" -ForegroundColor $HeaderColor
-        dotnet restore azure-pipelines
+        dotnet restore
         if ($lastexitcode -ne 0) {
             throw "Failure while restoring packages."
         }
