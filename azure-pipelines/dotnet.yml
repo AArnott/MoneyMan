@@ -16,6 +16,7 @@ steps:
 
 - script: dotnet pack installers -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build_installers.binlog"
   displayName: dotnet pack installers
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 - powershell: azure-pipelines/variables/_pipelines.ps1
   failOnStderr: true
