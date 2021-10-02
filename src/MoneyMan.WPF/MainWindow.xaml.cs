@@ -178,10 +178,12 @@ namespace MoneyMan
 			if (result is null || result.Version == currentVersion)
 			{
 				// This is the latest version.
+				this.ViewModel.UpdateAvailable = false;
 			}
 			else if (result.Version > currentVersion)
 			{
 				// An update was brought down. Restarting the app will launch the new version.
+				this.ViewModel.UpdateAvailable = true;
 			}
 			else
 			{

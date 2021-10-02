@@ -33,6 +33,10 @@
 				</Button>
 			</ToolBar>
 		</ToolBarTray>
+		<StatusBar DockPanel.Dock="Bottom" DataContext="{StaticResource viewModel}">
+			<StatusBarItem Content="{Binding StatusMessage}" />
+			<StatusBarItem DockPanel.Dock="Right" Content="{Binding Version}" HorizontalAlignment="Right" />
+		</StatusBar>
 		<TabControl TabStripPlacement="Bottom"
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
 			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}">

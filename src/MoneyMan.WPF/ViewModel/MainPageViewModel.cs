@@ -8,12 +8,33 @@ namespace MoneyMan.ViewModel
 
 	public class MainPageViewModel : BindableBase
 	{
+		private string statusMessage = "Ready";
+		private bool updateAvailable;
+		private string version = ThisAssembly.AssemblyInformationalVersion;
 		private DocumentViewModel document = new DocumentViewModel();
 
 		public DocumentViewModel Document
 		{
 			get => this.document;
 			set => this.SetProperty(ref this.document, value);
+		}
+
+		public string StatusMessage
+		{
+			get => this.statusMessage;
+			set => this.SetProperty(ref this.statusMessage, value);
+		}
+
+		public bool UpdateAvailable
+		{
+			get => this.updateAvailable;
+			set => this.SetProperty(ref this.updateAvailable, value);
+		}
+
+		public string Version
+		{
+			get => this.version;
+			set => this.SetProperty(ref this.version, value);
 		}
 	}
 }
