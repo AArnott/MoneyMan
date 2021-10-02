@@ -42,8 +42,6 @@ namespace MoneyMan
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, this.FileClose, this.CanFileClose));
-
-			this.Loaded += this.MainWindow_Loaded;
 		}
 
 		public bool ReopenLastFile { get; set; } = true;
@@ -143,7 +141,9 @@ namespace MoneyMan
 			e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction(volatileOnly: true) ?? throw new InvalidOperationException("No selected account.");
 		}
 
-		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+#pragma warning disable VSTHRD100 // Avoid async void methods
+		private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // Avoid async void methods
 		{
 			if (this.ReopenLastFile && !string.IsNullOrEmpty(AppSettings.Default.LastOpenedFile))
 			{
@@ -156,12 +156,7 @@ namespace MoneyMan
 					AppSettings.Default.LastOpenedFile = null;
 				}
 			}
-		}
 
-#pragma warning disable VSTHRD100 // Avoid async void methods
-		private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
-#pragma warning restore VSTHRD100 // Avoid async void methods
-		{
 			try
 			{
 				await this.UpdateApplicationAsync();
