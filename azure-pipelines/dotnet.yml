@@ -1,7 +1,10 @@
 steps:
 
-- script: dotnet build azure-pipelines/dirs.proj --no-restore -t:build,pack -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
+- script: dotnet build --no-restore -t:build,pack -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
   displayName: dotnet build
+
+- script: dotnet pack installers --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build_installers.binlog"
+  displayName: dotnet pack installers
 
 - task: DotNetCoreCLI@2
   displayName: dotnet test
