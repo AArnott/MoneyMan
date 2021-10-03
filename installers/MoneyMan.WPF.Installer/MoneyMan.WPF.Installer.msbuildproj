@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.Build.NoTargets">
 	<PropertyGroup>
 		<PackageId>Nerdbank.MoneyMan.$(RuntimeIdentifier)</PackageId>
+		<Title>MoneyMan</Title>
 		<PackageDescription>Nerdbank Money Management</PackageDescription>
 		<TargetFramework>net45</TargetFramework>
 		<IsPackable>true</IsPackable>
