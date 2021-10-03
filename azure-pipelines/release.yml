@@ -28,7 +28,7 @@ stages:
           - download: CI
             artifact: deployables-Windows
             displayName: Download deployables-Windows artifact
-            patterns: 'deployables-Windows/Installers/*'
+            patterns: 'deployables-Windows/Installers/**'
           - task: GitHubRelease@1
             displayName: GitHub release (create)
             inputs:
