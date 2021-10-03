@@ -2,15 +2,16 @@
 	<PropertyGroup>
 		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
 		<RepoRootPath>$(MSBuildThisFileDirectory)</RepoRootPath>
-		<BaseIntermediateOutputPath>$(RepoRootPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+		<BaseIntermediateOutputPath>$(RepoRootPath)obj\$([MSBuild]::MakeRelative($(RepoRootPath), $(MSBuildProjectDirectory)))\</BaseIntermediateOutputPath>
 		<BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(RepoRootPath)bin\$(MSBuildProjectName)\</BaseOutputPath>
-		<PackageOutputPath>$(RepoRootPath)bin\Packages\$(Configuration)\</PackageOutputPath>
+		<PackageOutputPath>$(RepoRootPath)bin\Packages\$(Configuration)\NuGet\</PackageOutputPath>
 		<LangVersion>9.0</LangVersion>
 		<Nullable>enable</Nullable>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+		<GitVersionBaseDirectory>$(MSBuildThisFileDirectory)</GitVersionBaseDirectory>
 
 		<!-- Local builds should embed PDBs so we never lose them when a subsequent build occurs. -->
 		<DebugType Condition=" '$(CI)' != 'true' and '$(TF_BUILD)' != 'true' ">embedded</DebugType>

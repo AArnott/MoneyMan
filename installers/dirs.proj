@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.Build.Traversal">
+	<PropertyGroup>
+		<!-- squirrel can't seem to handle running concurrently. -->
+		<BuildInParallel>false</BuildInParallel>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="**\*.msbuildproj">
+			<AdditionalProperties>RuntimeIdentifier=win-x64</AdditionalProperties>
+		</ProjectReference>
+		<ProjectReference Include="**\*.msbuildproj">
+			<AdditionalProperties>RuntimeIdentifier=win-arm64</AdditionalProperties>
+		</ProjectReference>
+	</ItemGroup>
+</Project>

@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.Build.NoTargets">
+	<PropertyGroup>
+		<PackageId>Nerdbank.MoneyMan.$(RuntimeIdentifier)</PackageId>
+		<Title>MoneyMan</Title>
+		<PackageDescription>Nerdbank Money Management</PackageDescription>
+		<TargetFramework>net45</TargetFramework>
+		<IsPackable>true</IsPackable>
+		<GenerateAssemblyVersionInfo>false</GenerateAssemblyVersionInfo>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+		<SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+		<PackageType>Squirrel</PackageType>
+		<NoWarn>$(NoWarn);NU5128</NoWarn>
+		<GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);GatherPayload</GenerateNuspecDependsOn>
+
+		<!-- Our primary output is actually just an intermediate step before we run "squirrel releasify". -->
+		<PackageOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</PackageOutputPath>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="$(RepoRootPath)src\MoneyMan.WPF\MoneyMan.WPF.csproj">
+			<Targets>Publish;PublishItemsOutputGroup</Targets>
+			<OutputItemType>WpfOutputItems</OutputItemType>
+			<AdditionalProperties>RuntimeIdentifier=$(RuntimeIdentifier)</AdditionalProperties>
+			<Private>false</Private>
+		</ProjectReference>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Squirrel.Windows" Version="2.0.2-netcore" NoWarn="NU1701" />
+	</ItemGroup>
+
+	<Target Name="GatherPayload" BeforeTargets="_GetPackageFiles" DependsOnTargets="ResolveProjectReferences">
+		<ItemGroup>
+			<None Include="@(WpfOutputItems)" Condition=" '%(MSBuildSourceTargetName)' == 'PublishItemsOutputGroup' or '%(MSBuildSourceTargetName)' == 'GetTargetFrameworks' ">
+				<Pack>true</Pack>
+				<PackagePath>lib\net45\%(RelativePath)</PackagePath>
+			</None>
+		</ItemGroup>
+	</Target>
+
+	<Target Name="Releasify" DependsOnTargets="Pack" AfterTargets="Pack">
+		<ItemGroup>
+			<IntermediatePackageOutput Include="@(NuGetPackOutput)" Condition=" %(Extension) == '.nupkg' " />
+		</ItemGroup>
+		<PropertyGroup>
+			<ReleaseDir>$(RepoRootPath)bin/Packages/$(Configuration)/Installers/$(RuntimeIdentifier)</ReleaseDir>
+		</PropertyGroup>
+		<Exec Command='"$(Pkgsquirrel_windows)\tools\Squirrel.exe" --releaseDir="$(ReleaseDir)" --no-msi --releasify "@(IntermediatePackageOutput)"' />
+		<Copy SourceFiles="$(ReleaseDir)/Setup.exe" DestinationFiles="$(ReleaseDir)/Nerdbank.MoneyMan.Setup.exe" OverwriteReadonlyFiles="true" SkipUnchangedFiles="true" />
+		<Delete Files="$(ReleaseDir)/Setup.exe" />
+	</Target>
+</Project>

@@ -6,6 +6,7 @@ namespace MoneyMan
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Linq;
 	using System.Text;
@@ -23,6 +24,7 @@ namespace MoneyMan
 	using MoneyMan.ViewModel;
 	using Nerdbank.MoneyManagement;
 	using Nerdbank.MoneyManagement.ViewModels;
+	using Squirrel;
 
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml.
@@ -35,12 +37,11 @@ namespace MoneyMan
 		{
 			this.InitializeComponent();
 			this.DataContext = this.ViewModel;
+			this.Loaded += this.MainWindow_Loaded;
 
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, this.FileClose, this.CanFileClose));
-
-			this.Loaded += this.MainWindow_Loaded;
 		}
 
 		public bool ReopenLastFile { get; set; } = true;
@@ -140,7 +141,9 @@ namespace MoneyMan
 			e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction(volatileOnly: true) ?? throw new InvalidOperationException("No selected account.");
 		}
 
-		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+#pragma warning disable VSTHRD100 // Avoid async void methods
+		private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // Avoid async void methods
 		{
 			if (this.ReopenLastFile && !string.IsNullOrEmpty(AppSettings.Default.LastOpenedFile))
 			{
@@ -152,6 +155,42 @@ namespace MoneyMan
 				{
 					AppSettings.Default.LastOpenedFile = null;
 				}
+			}
+
+			try
+			{
+				await this.UpdateApplicationAsync();
+			}
+			catch (Exception)
+			{
+				// Notify the user.
+			}
+		}
+
+		private async Task UpdateApplicationAsync()
+		{
+			if (Debugger.IsAttached)
+			{
+				return;
+			}
+
+			using UpdateManager updateManager = await UpdateManager.GitHubUpdateManager("https://github.com/aarnott/moneyman", prerelease: ThisAssembly.IsPrerelease);
+			ReleaseEntry result = await updateManager.UpdateApp();
+			NuGet.SemanticVersion currentVersion = updateManager.CurrentlyInstalledVersion();
+			if (result is null || result.Version == currentVersion)
+			{
+				// This is the latest version.
+				this.ViewModel.UpdateAvailable = false;
+			}
+			else if (result.Version > currentVersion)
+			{
+				// An update was brought down. Restarting the app will launch the new version.
+				this.ViewModel.UpdateAvailable = true;
+				this.ViewModel.StatusMessage = $"Restart to upgrade to {result.Version}";
+			}
+			else
+			{
+				// This is newer than the latest stable version.
 			}
 		}
 	}
