@@ -186,6 +186,7 @@ namespace MoneyMan
 			{
 				// An update was brought down. Restarting the app will launch the new version.
 				this.ViewModel.UpdateAvailable = true;
+				this.ViewModel.StatusMessage = $"Restart to upgrade to {result.Version}";
 			}
 			else
 			{
