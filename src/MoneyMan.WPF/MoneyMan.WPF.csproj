@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Product>MoneyMan</Product>
@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Squirrel.Windows" Version="2.0.1" />
+    <PackageReference Include="Squirrel.Windows" Version="2.0.2-netcore" />
   </ItemGroup>
   <ItemGroup>
     <!-- workaround for https://github.com/Squirrel/Squirrel.Windows/issues/1649 -->
