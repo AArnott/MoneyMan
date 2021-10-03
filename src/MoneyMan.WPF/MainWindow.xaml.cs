@@ -174,7 +174,7 @@ namespace MoneyMan
 				return;
 			}
 
-			using UpdateManager updateManager = await UpdateManager.GitHubUpdateManager("https://github.com/aarnott/moneyman");
+			using UpdateManager updateManager = await UpdateManager.GitHubUpdateManager("https://github.com/aarnott/moneyman", prerelease: ThisAssembly.IsPrerelease);
 			ReleaseEntry result = await updateManager.UpdateApp();
 			NuGet.SemanticVersion currentVersion = updateManager.CurrentlyInstalledVersion();
 			if (result is null || result.Version == currentVersion)
