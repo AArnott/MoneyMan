@@ -6,6 +6,7 @@ A financial money management library and applications that utilize it.
 [![Azure Pipelines status](https://dev.azure.com/andrewarnott/OSS/_apis/build/status/AArnott.MoneyMan?branchName=main)](https://dev.azure.com/andrewarnott/OSS/_build/latest?definitionId=29&branchName=main)
 [![codecov](https://codecov.io/gh/aarnott/moneyman/branch/main/graph/badge.svg)](https://codecov.io/gh/aarnott/moneyman)
 
+[![Install](https://img.shields.io/badge/Install-win--x64-green)](https://github.com/aarnott/moneyman/releases/latest)
 [![Join the chat at https://gitter.im/MoneyManagement/Lobby](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/MoneyManagement/Lobby?utm_source=badge&utm_medium=badge&utm_content=badge)
 
 ## Why?
