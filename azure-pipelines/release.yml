@@ -32,7 +32,7 @@ stages:
         versionSpec: 5.x
     - powershell: |
         nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel
-        $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\tools"
+        $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\squirrel.windows.$(SquirrelVersion)\tools"
         & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneyman-releases.s3.us-west-1.amazonaws.com/$(channel)/$(RID)
         $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/$(RID)/*.nupkg
         & "$SquirrelTools\Squirrel" -r "$(Build.StagingDirectory)\s3" --no-msi --releasify $input
