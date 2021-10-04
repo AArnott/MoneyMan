@@ -23,9 +23,9 @@ stages:
     - powershell: Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
       displayName: Set pipeline name
     - download: CI
-      artifact: variables-Windows
+      artifact: Variables-Windows
       displayName: Download pipeline variables
-    - powershell: $(Pipeline.Workspace)/CI/variables-Windows/_pipelines.ps1
+    - powershell: $(Pipeline.Workspace)/CI/Variables-Windows/_pipelines.ps1
       displayName: Applying pipeline variables
     - download: CI
       artifact: deployables-Windows
