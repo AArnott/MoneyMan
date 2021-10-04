@@ -12,9 +12,7 @@
 		<PackageType>Squirrel</PackageType>
 		<NoWarn>$(NoWarn);NU5128</NoWarn>
 		<GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);GatherPayload</GenerateNuspecDependsOn>
-
-		<!-- Our primary output is actually just an intermediate step before we run "squirrel releasify". -->
-		<PackageOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</PackageOutputPath>
+		<PackageOutputPath>$(RepoRootPath)bin\Packages\$(Configuration)\SquirrelInputs\</PackageOutputPath>
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="$(RepoRootPath)src\MoneyMan.WPF\MoneyMan.WPF.csproj">
@@ -35,17 +33,5 @@
 				<PackagePath>lib\net45\%(RelativePath)</PackagePath>
 			</None>
 		</ItemGroup>
-	</Target>
-
-	<Target Name="Releasify" DependsOnTargets="Pack" AfterTargets="Pack">
-		<ItemGroup>
-			<IntermediatePackageOutput Include="@(NuGetPackOutput)" Condition=" %(Extension) == '.nupkg' " />
-		</ItemGroup>
-		<PropertyGroup>
-			<ReleaseDir>$(RepoRootPath)bin/Packages/$(Configuration)/Installers/$(RuntimeIdentifier)</ReleaseDir>
-		</PropertyGroup>
-		<Exec Command='"$(Pkgsquirrel_windows)\tools\Squirrel.exe" --releaseDir="$(ReleaseDir)" --no-msi --releasify "@(IntermediatePackageOutput)"' />
-		<Copy SourceFiles="$(ReleaseDir)/Setup.exe" DestinationFiles="$(ReleaseDir)/Nerdbank.MoneyMan.Setup.exe" OverwriteReadonlyFiles="true" SkipUnchangedFiles="true" />
-		<Delete Files="$(ReleaseDir)/Setup.exe" />
 	</Target>
 </Project>

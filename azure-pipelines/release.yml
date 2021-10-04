@@ -10,6 +10,51 @@ resources:
       - auto-release
 
 stages:
+- stage: releasify
+  displayName: squirrel releasify
+  jobs:
+  - job:
+    variables:
+      platform: win-x64
+    steps:
+    - template: install-dependencies.yml
+    - powershell: Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
+      displayName: Set pipeline name
+    - download: CI
+      artifact: deployables-Windows
+      displayName: Download Squirrel input package
+      patterns: 'deployables-Windows/SquirrelInputs/$(platform)/**'
+    - task: S3Download@1
+      displayName: Download releases from S3
+      inputs:
+        awsCredentials: AWS OSS AZP user
+        regionName: us-west-1
+        bucketName: moneyman-releases
+        sourceFolder: prerelease/$(platform)
+        globExpressions: |
+          RELEASES
+          *.nupkg
+        targetFolder: $(Build.StagingDirectory)\s3
+    - powershell: |
+        $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/$(platform)/*.nupkg
+        squirrel --releaseDir="$(Build.StagingDirectory)\s3" --no-msi --releasify $input
+        ren $(Build.StagingDirectory)\s3\Setup.exe $(Build.StagingDirectory)\s3\Nerdbank.MoneyMan.Setup.exe -Force
+      displayName: squirrel --releasify
+    - publish:
+      artifact: squirrelInstaller
+    - task: S3Upload@1
+      inputs:
+        awsCredentials: AWS OSS AZP user
+        regionName: us-west-1
+        bucketName: moneyman-releases
+        sourceFolder: $(Build.StagingDirectory)\s3
+        globExpressions: |
+          RELEASES
+          *.exe
+          Nerdbank.MoneyMan.*-*.nupkg
+        targetFolder: prerelease/win-x64/
+        filesAcl: public-read
+
 - stage: GitHubRelease
   displayName: GitHub Release
   jobs:
@@ -21,14 +66,6 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: none
-          - powershell: |
-              Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
-            displayName: Set pipeline name
-          - download: CI
-            artifact: deployables-Windows
-            displayName: Download deployables-Windows artifact
-            patterns: 'deployables-Windows/Installers/win-x64/**'
           - task: GitHubRelease@1
             displayName: GitHub release (create)
             inputs:
@@ -38,7 +75,6 @@ stages:
               tagSource: userSpecifiedTag
               tag: v$(resources.pipeline.CI.runName)
               title: v$(resources.pipeline.CI.runName)
-              assets: $(Pipeline.Workspace)/CI/deployables-Windows/Installers/win-x64/** # Release assets have no folder, so we can't upload 2+ installer folders
               isDraft: true # After running this step, visit the new draft release, edit, and publish.
               changeLogCompareToRelease: lastNonDraftRelease
               changeLogType: issueBased
