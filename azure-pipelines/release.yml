@@ -18,7 +18,8 @@ stages:
     variables:
       SquirrelVersion: 2.0.2-netcore
     steps:
-    - checkout: none
+    - checkout: self # we need this for nuget.config so that `nuget install` will work
+      clean: true
     - powershell: Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
       displayName: Set pipeline name
     - download: CI
@@ -47,7 +48,7 @@ stages:
 
         "win-x64","win-arm64" |% {
           $localRidPath = "$(Build.StagingDirectory)\release_blobs\$channel\$_"
-          Write-Host "Downloading release info"
+          Write-Host "Downloading release info for $_"
           & "$SquirrelTools\SyncReleases" -r $localRidPath  -u https://moneymanreleases.blob.core.windows.net/releases/$channel/$_
           $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$_.$(NUGETPACKAGEVERSION).nupkg"
 
