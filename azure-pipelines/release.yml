@@ -31,8 +31,8 @@ stages:
       inputs:
         versionSpec: 5.x
     - powershell: |
-        nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel
-        $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\squirrel.windows.$(SquirrelVersion)\tools"
+        nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel -PackageSaveMode nuspec -ExcludeVersion -NonInteractive -Verbosity Quiet
+        $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\squirrel.windows\tools"
         Write-Host Downloading release info
         & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneyman-releases.s3.us-west-1.amazonaws.com/$(channel)/$(RID)
         $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/*.nupkg
@@ -52,7 +52,7 @@ stages:
         sourceFolder: $(Build.StagingDirectory)\s3
         globExpressions: |
           RELEASES
-          *.exe
+          Nerdbank.MoneyMan.Setup.exe
           Nerdbank.MoneyMan.*-*.nupkg
         targetFolder: $(channel)/$(RID)/
         filesAcl: public-read
