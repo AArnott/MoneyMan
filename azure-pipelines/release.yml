@@ -23,9 +23,14 @@ stages:
     - powershell: Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
       displayName: Set pipeline name
     - download: CI
+      artifact: variables-Windows
+      displayName: Download pipeline variables
+    - powershell: $(Pipeline.Workspace)/CI/variables-Windows/_pipelines.ps1
+      displayName: Applying pipeline variables
+    - download: CI
       artifact: deployables-Windows
       displayName: Download Squirrel input package
-      patterns: 'deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$(RID).*.nupkg'
+      patterns: 'deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$(RID).$(NUGETPACKAGEVERSION).nupkg'
     - task: NuGetToolInstaller@1
       displayName: Use NuGet 5.x
       inputs:
@@ -35,7 +40,7 @@ stages:
         $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\squirrel.windows\tools"
         Write-Host Downloading release info
         & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneyman-releases.s3.us-west-1.amazonaws.com/$(channel)/$(RID)
-        $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/*.nupkg
+        $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$(RID).$(NUGETPACKAGEVERSION).nupkg"
         Write-Host "Preparing $input for release"
         & "$SquirrelTools\Squirrel" -r "$(Build.StagingDirectory)\s3" --no-msi --releasify $input
         ren $(Build.StagingDirectory)\s3\Setup.exe $(Build.StagingDirectory)\s3\Nerdbank.MoneyMan.Setup.exe -Force
@@ -53,7 +58,7 @@ stages:
         globExpressions: |
           RELEASES
           Nerdbank.MoneyMan.Setup.exe
-          Nerdbank.MoneyMan.*-*.nupkg
+          Nerdbank.MoneyMan.$(RID)-$(NUGETPACKAGEVERSION)-*.nupkg
         targetFolder: $(channel)/$(RID)/
         filesAcl: public-read
 
