@@ -39,7 +39,7 @@ stages:
         nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel -PackageSaveMode nuspec -ExcludeVersion -NonInteractive -Verbosity Quiet
         $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\squirrel.windows\tools"
         Write-Host Downloading release info
-        & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneyman-releases.s3.us-west-1.amazonaws.com/$(channel)/$(RID)
+        & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneymanreleases.blob.core.windows.net/releases/$(channel)/$(RID)
         $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$(RID).$(NUGETPACKAGEVERSION).nupkg"
         Write-Host "Preparing $input for release"
         & "$SquirrelTools\Squirrel" -r "$(Build.StagingDirectory)\s3" --no-msi --releasify $input
@@ -48,19 +48,16 @@ stages:
     - publish: $(Build.StagingDirectory)/s3
       artifact: squirrelInstaller
       displayName: Publishing installer as a pipeline artifact
-    - task: S3Upload@1
-      displayName: Uploading release to S3
+    - task: AzureFileCopy@4
+      displayName: Publishing release
       inputs:
-        awsCredentials: AWS OSS AZP user
-        regionName: us-west-1
-        bucketName: moneyman-releases
-        sourceFolder: $(Build.StagingDirectory)\s3
-        globExpressions: |
-          RELEASES
-          Nerdbank.MoneyMan.Setup.exe
-          Nerdbank.MoneyMan.$(RID)-$(NUGETPACKAGEVERSION)-*.nupkg
-        targetFolder: $(channel)/$(RID)/
-        filesAcl: public-read
+        SourcePath: $(Build.StagingDirectory)\s3
+        azureSubscription: Azure Free Trial(c5eda4ed-4681-4034-8835-65d67e7d4b7c)
+        Destination: AzureBlob
+        storage: moneymanreleases
+        ContainerName: releases
+        BlobPrefix: $(channel)/$(RID)/
+        AdditionalArgumentsForBlobCopy: '--overwrite false'
 
 - stage: GitHubRelease
   displayName: GitHub Release

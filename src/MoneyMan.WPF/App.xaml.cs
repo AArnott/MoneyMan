@@ -54,7 +54,7 @@ namespace MoneyMan
 			};
 
 			return new UpdateManager(
-				  urlOrPath: $"https://moneyman-releases.s3.us-west-1.amazonaws.com/{channel}/{subchannel}/",
+				  urlOrPath: $"https://moneymanreleases.blob.core.windows.net/releases/{channel}/{subchannel}/",
 				  applicationName: "MoneyMan");
 		}
 	}

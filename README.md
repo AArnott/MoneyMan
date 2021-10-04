@@ -3,8 +3,8 @@ MoneyMan
 
 A financial money management library and applications that utilize it.
 
-[![Install](https://img.shields.io/badge/Prerelease-win--x64-green)](https://moneyman-releases.s3.us-west-1.amazonaws.com/prerelease/win-x64/Nerdbank.MoneyMan.Setup.exe)
-[![Install](https://img.shields.io/badge/Prerelease-win--arm64-green)](https://moneyman-releases.s3.us-west-1.amazonaws.com/prerelease/win-arm64/Nerdbank.MoneyMan.Setup.exe)
+[![Install](https://img.shields.io/badge/Prerelease-win--x64-green)](https://moneymanreleases.blob.core.windows.net/releases/prerelease/win-x64/Nerdbank.MoneyMan.Setup.exe)
+[![Install](https://img.shields.io/badge/Prerelease-win--arm64-green)](https://moneymanreleases.blob.core.windows.net/releases/prerelease/win-arm64/Nerdbank.MoneyMan.Setup.exe)
 
 [![Join the chat at https://gitter.im/MoneyManagement/Lobby](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/MoneyManagement/Lobby?utm_source=badge&utm_medium=badge&utm_content=badge)
 
