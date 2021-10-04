@@ -25,7 +25,7 @@ stages:
     - download: CI
       artifact: deployables-Windows
       displayName: Download Squirrel input package
-      patterns: 'deployables-Windows/SquirrelInputs/$(RID)/**'
+      patterns: 'deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$(RID).*.nupkg'
     - task: NuGetToolInstaller@1
       displayName: Use NuGet 5.x
       inputs:
@@ -33,14 +33,18 @@ stages:
     - powershell: |
         nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel
         $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\squirrel.windows.$(SquirrelVersion)\tools"
+        Write-Host Downloading release info
         & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneyman-releases.s3.us-west-1.amazonaws.com/$(channel)/$(RID)
-        $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/$(RID)/*.nupkg
+        $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/*.nupkg
+        Write-Host "Preparing $input for release"
         & "$SquirrelTools\Squirrel" -r "$(Build.StagingDirectory)\s3" --no-msi --releasify $input
         ren $(Build.StagingDirectory)\s3\Setup.exe $(Build.StagingDirectory)\s3\Nerdbank.MoneyMan.Setup.exe -Force
       displayName: squirrel --releasify
-    - publish:
+    - publish: $(Build.StagingDirectory)/s3
       artifact: squirrelInstaller
+      displayName: Publishing installer as a pipeline artifact
     - task: S3Upload@1
+      displayName: Uploading release to S3
       inputs:
         awsCredentials: AWS OSS AZP user
         regionName: us-west-1
