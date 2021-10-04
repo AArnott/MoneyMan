@@ -12,6 +12,7 @@ namespace MoneyMan.ViewModel
 		private bool updateAvailable;
 		private string version = ThisAssembly.AssemblyInformationalVersion;
 		private DocumentViewModel document = new DocumentViewModel();
+		private int? downloadingUpdatePercentage;
 
 		public DocumentViewModel Document
 		{
@@ -29,6 +30,12 @@ namespace MoneyMan.ViewModel
 		{
 			get => this.updateAvailable;
 			set => this.SetProperty(ref this.updateAvailable, value);
+		}
+
+		public int? DownloadingUpdatePercentage
+		{
+			get => this.downloadingUpdatePercentage;
+			set => this.SetProperty(ref this.downloadingUpdatePercentage, value);
 		}
 
 		public string Version
