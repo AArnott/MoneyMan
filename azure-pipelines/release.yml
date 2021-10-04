@@ -15,29 +15,26 @@ stages:
   jobs:
   - job:
     variables:
-      platform: win-x64
+      channel: prerelease
+      RID: win-x64
+      SquirrelVersion: 2.0.2-netcore
     steps:
-    - template: install-dependencies.yml
     - powershell: Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
       displayName: Set pipeline name
     - download: CI
       artifact: deployables-Windows
       displayName: Download Squirrel input package
-      patterns: 'deployables-Windows/SquirrelInputs/$(platform)/**'
-    - task: S3Download@1
-      displayName: Download releases from S3
+      patterns: 'deployables-Windows/SquirrelInputs/$(RID)/**'
+    - task: NuGetToolInstaller@1
+      displayName: Use NuGet 5.x
       inputs:
-        awsCredentials: AWS OSS AZP user
-        regionName: us-west-1
-        bucketName: moneyman-releases
-        sourceFolder: prerelease/$(platform)
-        globExpressions: |
-          RELEASES
-          *.nupkg
-        targetFolder: $(Build.StagingDirectory)\s3
+        versionSpec: 5.x
     - powershell: |
-        $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/$(platform)/*.nupkg
-        squirrel --releaseDir="$(Build.StagingDirectory)\s3" --no-msi --releasify $input
+        nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel
+        $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\tools"
+        & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneyman-releases.s3.us-west-1.amazonaws.com/$(channel)/$(RID)
+        $input = Get-ChildItem $(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/$(RID)/*.nupkg
+        & "$SquirrelTools\Squirrel" -r "$(Build.StagingDirectory)\s3" --no-msi --releasify $input
         ren $(Build.StagingDirectory)\s3\Setup.exe $(Build.StagingDirectory)\s3\Nerdbank.MoneyMan.Setup.exe -Force
       displayName: squirrel --releasify
     - publish:
@@ -52,7 +49,7 @@ stages:
           RELEASES
           *.exe
           Nerdbank.MoneyMan.*-*.nupkg
-        targetFolder: prerelease/win-x64/
+        targetFolder: $(channel)/$(RID)/
         filesAcl: public-read
 
 - stage: GitHubRelease
