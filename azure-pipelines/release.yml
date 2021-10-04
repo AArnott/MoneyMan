@@ -16,10 +16,9 @@ stages:
   - job:
     pool: Hosted Windows 2019 with VS2019
     variables:
-      channel: prerelease
-      RID: win-x64
       SquirrelVersion: 2.0.2-netcore
     steps:
+    - checkout: none
     - powershell: Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
       displayName: Set pipeline name
     - download: CI
@@ -27,37 +26,49 @@ stages:
       displayName: Download pipeline variables
     - powershell: $(Pipeline.Workspace)/CI/Variables-Windows/_pipelines.ps1
       displayName: Applying pipeline variables
-    - download: CI
-      artifact: deployables-Windows
-      displayName: Download Squirrel input package
-      patterns: 'deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$(RID).$(NUGETPACKAGEVERSION).nupkg'
     - task: NuGetToolInstaller@1
       displayName: Use NuGet 5.x
       inputs:
         versionSpec: 5.x
+    - download: CI
+      artifact: deployables-Windows
+      displayName: Download Squirrel input packages
+      patterns: 'deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.*.$(NUGETPACKAGEVERSION).nupkg'
     - powershell: |
+        Write-Host "Installing Squirrel"
         nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel -PackageSaveMode nuspec -ExcludeVersion -NonInteractive -Verbosity Quiet
         $SquirrelTools = "$(Agent.TempDirectory)\Squirrel\squirrel.windows\tools"
-        Write-Host Downloading release info
-        & "$SquirrelTools\SyncReleases" -r "$(Build.StagingDirectory)\s3"  -u https://moneymanreleases.blob.core.windows.net/releases/$(channel)/$(RID)
-        $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$(RID).$(NUGETPACKAGEVERSION).nupkg"
-        Write-Host "Preparing $input for release"
-        & "$SquirrelTools\Squirrel" -r "$(Build.StagingDirectory)\s3" --no-msi --releasify $input
-        ren $(Build.StagingDirectory)\s3\Setup.exe $(Build.StagingDirectory)\s3\Nerdbank.MoneyMan.Setup.exe -Force
+
+        if ("$(NUGETPACKAGEVERSION)".Contains('-')) {
+          $channel = "prerelease"
+        } else {
+          $channel = "release"
+        }
+
+        "win-x64","win-arm64" |% {
+          $localRidPath = "$(Build.StagingDirectory)\release_blobs\$channel\$_"
+          Write-Host "Downloading release info"
+          & "$SquirrelTools\SyncReleases" -r $localRidPath  -u https://moneymanreleases.blob.core.windows.net/releases/$channel/$_
+          $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$_.$(NUGETPACKAGEVERSION).nupkg"
+
+          Write-Host "Preparing $input for release"
+          & "$SquirrelTools\Squirrel" -r $localRidPath --no-msi --releasify $input
+          ren $localRidPath\Setup.exe $localRidPath\Nerdbank.MoneyMan.Setup.exe -Force
+        }
       displayName: squirrel --releasify
-    - publish: $(Build.StagingDirectory)/s3
+    - publish: $(Build.StagingDirectory)/release_blobs
       artifact: squirrelInstaller
       displayName: Publishing installer as a pipeline artifact
+
     - task: AzureFileCopy@4
       displayName: Publishing release
       inputs:
-        SourcePath: $(Build.StagingDirectory)\s3\*
+        SourcePath: $(Build.StagingDirectory)\release_blobs
         azureSubscription: Azure Free Trial(c5eda4ed-4681-4034-8835-65d67e7d4b7c)
         Destination: AzureBlob
         storage: moneymanreleases
         ContainerName: releases
-        BlobPrefix: $(channel)/$(RID)/
-        AdditionalArgumentsForBlobCopy: '--overwrite false'
+        AdditionalArgumentsForBlobCopy: '--overwrite false --recursive'
 
 - stage: GitHubRelease
   displayName: GitHub Release
@@ -70,6 +81,7 @@ stages:
       runOnce:
         deploy:
           steps:
+          - download: none
           - task: GitHubRelease@1
             displayName: GitHub release (create)
             inputs:
