@@ -48,11 +48,11 @@ stages:
 
         "win-x64","win-arm64" |% {
           $localRidPath = "$(Build.StagingDirectory)\release_blobs\$channel\$_"
-          Write-Host "Downloading release info for $_"
+          Write-Host "Downloading prior release for $_"
           & "$SquirrelTools\SyncReleases" -r $localRidPath  -u https://moneymanreleases.blob.core.windows.net/releases/$channel/$_
-          $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$_.$(NUGETPACKAGEVERSION).nupkg"
 
-          Write-Host "Preparing $input for release"
+          Write-Host "Building new release package for $_"
+          $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$_.$(NUGETPACKAGEVERSION).nupkg"
           & "$SquirrelTools\Squirrel" -r $localRidPath --no-msi --releasify $input
           ren $localRidPath\Setup.exe $localRidPath\Nerdbank.MoneyMan.Setup.exe -Force
         }
@@ -69,7 +69,7 @@ stages:
         Destination: AzureBlob
         storage: moneymanreleases
         ContainerName: releases
-        AdditionalArgumentsForBlobCopy: '--overwrite false --recursive'
+        AdditionalArgumentsForBlobCopy: '--overwrite true --recursive'
 
 - stage: GitHubRelease
   displayName: GitHub Release
