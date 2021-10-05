@@ -59,7 +59,7 @@ stages:
           # We only want to upload files to blob storage that were not already there or that we intend to overwrite.
           # We do this by deleting files that are not new from this pipeline.
           # Note the -Exclude list are the files we KEEP and upload.
-          del $localRidPath\* -Exclude RELEASES,Nerdbank.MoneyMan.Setup.exe,Nerdbank.MoneyMan.$_-$(NUGETPACKAGEVERSION)-*.nupkg
+          del $localRidPath\* -Exclude RELEASES,Nerdbank.MoneyMan.Setup.exe,Nerdbank_MoneyMan_$_-$(NUGETPACKAGEVERSION)-*.nupkg
         }
       displayName: Build squirrel packages
     - publish: $(Build.StagingDirectory)/release_blobs
