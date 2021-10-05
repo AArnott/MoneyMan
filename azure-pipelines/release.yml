@@ -34,7 +34,7 @@ stages:
     - download: CI
       artifact: deployables-Windows
       displayName: Download Squirrel input packages
-      patterns: 'deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.*.$(NUGETPACKAGEVERSION).nupkg'
+      patterns: 'deployables-Windows/SquirrelInputs/Nerdbank_MoneyMan_*.$(NUGETPACKAGEVERSION).nupkg'
     - powershell: |
         Write-Host "Installing Squirrel"
         nuget install Squirrel.Windows -Version $(SquirrelVersion) -OutputDirectory $(Agent.TempDirectory)\Squirrel -PackageSaveMode nuspec -ExcludeVersion -NonInteractive -Verbosity Quiet
@@ -52,7 +52,7 @@ stages:
           & "$SquirrelTools\SyncReleases" -r $localRidPath  -u https://moneymanreleases.blob.core.windows.net/releases/$channel/$_
 
           Write-Host "Building new release package for $_"
-          $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank.MoneyMan.$_.$(NUGETPACKAGEVERSION).nupkg"
+          $input = "$(Pipeline.Workspace)/CI/deployables-Windows/SquirrelInputs/Nerdbank_MoneyMan_$_.$(NUGETPACKAGEVERSION).nupkg"
           & "$SquirrelTools\Squirrel" -r $localRidPath --no-msi --releasify $input
           ren $localRidPath\Setup.exe $localRidPath\Nerdbank.MoneyMan.Setup.exe -Force
 

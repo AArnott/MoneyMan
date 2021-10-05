@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.Build.NoTargets">
 	<PropertyGroup>
-		<PackageId>Nerdbank.MoneyMan.$(RuntimeIdentifier)</PackageId>
+		<!-- Do NOT use periods in the package ID to avoid Squirrel bugs. -->
+		<PackageId>Nerdbank_MoneyMan_$(RuntimeIdentifier)</PackageId>
 		<Title>MoneyMan</Title>
 		<PackageDescription>Nerdbank Money Management</PackageDescription>
 		<TargetFramework>net45</TargetFramework>

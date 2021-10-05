@@ -53,9 +53,11 @@ namespace MoneyMan
 				_ => throw new NotSupportedException("Unrecognized process architecture."),
 			};
 
+			// The application name must exactly match the package ID.
+			string applicationName = $"Nerdbank_MoneyMan_{subchannel}";
 			return new UpdateManager(
 				  urlOrPath: $"https://moneymanreleases.blob.core.windows.net/releases/{channel}/{subchannel}/",
-				  applicationName: "MoneyMan");
+				  applicationName);
 		}
 	}
 }
