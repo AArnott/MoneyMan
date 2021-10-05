@@ -169,14 +169,16 @@ namespace MoneyMan
 
 		private async Task UpdateApplicationAsync()
 		{
-			if (Debugger.IsAttached)
+			using UpdateManager updateManager = App.CreateUpdateManager();
+			NuGet.SemanticVersion? currentVersion = updateManager.CurrentlyInstalledVersion();
+			if (currentVersion is null)
 			{
+				// This isn't a squirrel installation.
 				return;
 			}
 
-			using UpdateManager updateManager = App.CreateUpdateManager();
-			ReleaseEntry result = await updateManager.UpdateApp(p => this.ViewModel.DownloadingUpdatePercentage = p);
-			NuGet.SemanticVersion currentVersion = updateManager.CurrentlyInstalledVersion();
+			ReleaseEntry? result = await updateManager.UpdateApp(p => this.ViewModel.DownloadingUpdatePercentage = p);
+			this.ViewModel.DownloadingUpdatePercentage = 100; // Hide the progress bar, since the UpdateManager has a tendency to quit at 99%.
 			if (result is null || result.Version == currentVersion)
 			{
 				// This is the latest version.
