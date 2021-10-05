@@ -16,7 +16,7 @@ stages:
   - job:
     pool: Hosted Windows 2019 with VS2019
     variables:
-      SquirrelVersion: 2.0.2-netcore
+      SquirrelVersion: 2.0.2-netcore.3
     steps:
     - checkout: self # we need this for nuget.config so that `nuget install` will work
       clean: true

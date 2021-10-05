@@ -18,22 +18,12 @@ namespace MoneyMan
 		[STAThread]
 		public static void Main()
 		{
-			static void CreateShortcuts(UpdateManager mgr)
-			{
-				mgr.CreateShortcutsForExecutable(
-					Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly()!.Location) + ".exe",
-					ShortcutLocation.StartMenu | ShortcutLocation.Desktop,
-					updateOnly: !Environment.CommandLine.Contains("squirrel-install"),
-					programArguments: null,
-					icon: null);
-			}
-
 			// Note, in most of these scenarios, the app exits after this method completes!
 			using (UpdateManager mgr = CreateUpdateManager())
 			{
 				SquirrelAwareApp.HandleEvents(
-				  onInitialInstall: v => CreateShortcuts(mgr),
-				  onAppUpdate: v => CreateShortcuts(mgr),
+				  onInitialInstall: v => mgr.CreateShortcutForThisExe(),
+				  onAppUpdate: v => mgr.CreateShortcutForThisExe(),
 				  onAppUninstall: v => mgr.RemoveShortcutForThisExe());
 			}
 

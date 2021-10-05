@@ -11,15 +11,10 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <IncludePackageReferencesDuringMarkupCompilation>true</IncludePackageReferencesDuringMarkupCompilation>
     <!-- <PublishReadyToRunShowWarnings>true</PublishReadyToRunShowWarnings> -->
-    <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Squirrel.Windows" Version="2.0.2-netcore" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- workaround for https://github.com/Squirrel/Squirrel.Windows/issues/1649 -->
-    <Reference Include="$(PkgSquirrel_Windows)\lib\Net45\*.dll" />
+    <PackageReference Include="Squirrel.Windows" Version="2.0.2-netcore.3" />
   </ItemGroup>
 
   <ItemGroup>
