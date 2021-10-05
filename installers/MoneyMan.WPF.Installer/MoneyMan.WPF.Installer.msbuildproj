@@ -31,4 +31,23 @@
 			</None>
 		</ItemGroup>
 	</Target>
+
+	<!-- This target is not run typically because the installer is built
+	     by the release pipeline another way. But this target
+	     exists for convenience in testing installers locally. -->
+	<ItemGroup>
+		<PackageReference Include="Squirrel.Windows" Version="2.0.2-netcore" NoWarn="NU1701" />
+	</ItemGroup>
+	<Target Name="Installer" DependsOnTargets="Pack">
+		<ItemGroup>
+			<IntermediatePackageOutput Include="@(NuGetPackOutput)" Condition=" %(Extension) == '.nupkg' " />
+		</ItemGroup>
+		<PropertyGroup>
+			<ReleaseDir>$(RepoRootPath)bin/Packages/$(Configuration)/Installers/$(RuntimeIdentifier)</ReleaseDir>
+		</PropertyGroup>
+		<Exec Command='"$(Pkgsquirrel_windows)\tools\Squirrel.exe" --releaseDir="$(ReleaseDir)" --no-msi --releasify "@(IntermediatePackageOutput)"' />
+		<Copy SourceFiles="$(ReleaseDir)/Setup.exe" DestinationFiles="$(ReleaseDir)/Nerdbank.MoneyMan.Setup.exe" OverwriteReadonlyFiles="true" SkipUnchangedFiles="true" />
+		<Delete Files="$(ReleaseDir)/Setup.exe" />
+		<Message Text="Installer written to '$(ReleaseDir)/Nerdbank.MoneyMan.Setup.exe'." Importance="high" />
+	</Target>
 </Project>
