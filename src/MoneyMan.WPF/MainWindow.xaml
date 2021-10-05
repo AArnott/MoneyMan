@@ -34,8 +34,12 @@
 			</ToolBar>
 		</ToolBarTray>
 		<StatusBar DockPanel.Dock="Bottom" DataContext="{StaticResource viewModel}">
+			<StatusBarItem DockPanel.Dock="Right"  Content="{Binding Version}" />
+			<StatusBarItem DockPanel.Dock="Right" VerticalContentAlignment="Stretch" Visibility="{Binding UpdateDownloading, Converter={StaticResource boolToVisibilityConverter}}">
+				<ProgressBar Value="{Binding DownloadingUpdatePercentage}"
+				             Minimum="0" Maximum="100" Width="50pt" Margin="0,2,0,2" VerticalAlignment="Stretch" />
+			</StatusBarItem>
 			<StatusBarItem Content="{Binding StatusMessage}" />
-			<StatusBarItem DockPanel.Dock="Right" Content="{Binding Version}" HorizontalAlignment="Right" />
 		</StatusBar>
 		<TabControl TabStripPlacement="Bottom"
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">

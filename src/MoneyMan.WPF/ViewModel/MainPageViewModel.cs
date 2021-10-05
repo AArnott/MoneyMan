@@ -12,7 +12,12 @@ namespace MoneyMan.ViewModel
 		private bool updateAvailable;
 		private string version = ThisAssembly.AssemblyInformationalVersion;
 		private DocumentViewModel document = new DocumentViewModel();
-		private int? downloadingUpdatePercentage;
+		private int downloadingUpdatePercentage;
+
+		public MainPageViewModel()
+		{
+			this.RegisterDependentProperty(nameof(this.DownloadingUpdatePercentage), nameof(this.UpdateDownloading));
+		}
 
 		public DocumentViewModel Document
 		{
@@ -32,7 +37,9 @@ namespace MoneyMan.ViewModel
 			set => this.SetProperty(ref this.updateAvailable, value);
 		}
 
-		public int? DownloadingUpdatePercentage
+		public bool UpdateDownloading => this.DownloadingUpdatePercentage is > 0 and < 100;
+
+		public int DownloadingUpdatePercentage
 		{
 			get => this.downloadingUpdatePercentage;
 			set => this.SetProperty(ref this.downloadingUpdatePercentage, value);
