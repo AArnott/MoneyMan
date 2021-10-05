@@ -143,7 +143,18 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Check No." Binding="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" />
+								<DataGridTemplateColumn Header="Check No.">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Margin="3pt" Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" HorizontalAlignment="Right" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<TextBox Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" InputScope="Number" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
+								</DataGridTemplateColumn>
 								<DataGridTemplateColumn Header="Clr">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
@@ -159,7 +170,13 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Balance" IsReadOnly="True" Binding="{Binding Balance, StringFormat=C}" />
+								<DataGridTemplateColumn Header="Balance" IsReadOnly="True">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Margin="3pt" Text="{Binding Balance, StringFormat=C}" HorizontalAlignment="Right" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+								</DataGridTemplateColumn>
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
