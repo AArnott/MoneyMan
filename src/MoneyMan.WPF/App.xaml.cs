@@ -18,22 +18,12 @@ namespace MoneyMan
 		[STAThread]
 		public static void Main()
 		{
-			static void CreateShortcuts(UpdateManager mgr)
-			{
-				mgr.CreateShortcutsForExecutable(
-					Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly()!.Location) + ".exe",
-					ShortcutLocation.StartMenu | ShortcutLocation.Desktop,
-					updateOnly: !Environment.CommandLine.Contains("squirrel-install"),
-					programArguments: null,
-					icon: null);
-			}
-
 			// Note, in most of these scenarios, the app exits after this method completes!
 			using (UpdateManager mgr = CreateUpdateManager())
 			{
 				SquirrelAwareApp.HandleEvents(
-				  onInitialInstall: v => CreateShortcuts(mgr),
-				  onAppUpdate: v => CreateShortcuts(mgr),
+				  onInitialInstall: v => mgr.CreateShortcutForThisExe(),
+				  onAppUpdate: v => mgr.CreateShortcutForThisExe(),
 				  onAppUninstall: v => mgr.RemoveShortcutForThisExe());
 			}
 
@@ -53,9 +43,11 @@ namespace MoneyMan
 				_ => throw new NotSupportedException("Unrecognized process architecture."),
 			};
 
+			// The application name must exactly match the package ID.
+			string applicationName = $"Nerdbank_MoneyMan_{subchannel}";
 			return new UpdateManager(
 				  urlOrPath: $"https://moneymanreleases.blob.core.windows.net/releases/{channel}/{subchannel}/",
-				  applicationName: "MoneyMan");
+				  applicationName);
 		}
 	}
 }
