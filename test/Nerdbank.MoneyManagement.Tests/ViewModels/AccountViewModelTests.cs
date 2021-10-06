@@ -189,6 +189,15 @@ public class AccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void DeleteVolatileTransaction()
+	{
+		TransactionViewModel tx = this.checking.NewTransaction(volatileOnly: true);
+		this.checking.Add(tx);
+		this.checking.DeleteTransaction(tx);
+		Assert.Empty(this.checking.Transactions);
+	}
+
+	[Fact]
 	public async Task DeleteTransactions()
 	{
 		var account = new Account { Name = "some account" };
