@@ -195,5 +195,10 @@ namespace MoneyMan
 				// This is newer than the latest stable version.
 			}
 		}
+
+		private void TransactionDataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+		{
+			WpfHelpers.GetFirstChildByType<Control>(e.EditingElement)?.Focus();
+		}
 	}
 }

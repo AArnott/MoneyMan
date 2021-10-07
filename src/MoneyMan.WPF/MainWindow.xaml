@@ -78,6 +78,7 @@
 						<DataGrid Name="TransactionDataGrid"
 								  AlternatingRowBackground="LightBlue"
 								  AlternationCount="2" 
+								  PreparingCellForEdit="TransactionDataGrid_PreparingCellForEdit"
 								  ItemsSource="{Binding Source={StaticResource transactions}}"
 								  IsSynchronizedWithCurrentItem="True"
 								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"

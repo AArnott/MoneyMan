@@ -8,6 +8,7 @@ namespace MoneyMan
 	using System.Reflection;
 	using System.Runtime.InteropServices;
 	using System.Windows;
+	using System.Windows.Controls;
 	using Squirrel;
 
 	/// <summary>
@@ -48,6 +49,16 @@ namespace MoneyMan
 			return new UpdateManager(
 				  urlOrPath: $"https://moneymanreleases.blob.core.windows.net/releases/{channel}/{subchannel}/",
 				  applicationName);
+		}
+
+		protected override void OnStartup(StartupEventArgs e)
+		{
+			base.OnStartup(e);
+
+			EventManager.RegisterClassHandler(
+				typeof(DataGrid),
+				DataGrid.PreviewMouseLeftButtonDownEvent,
+				new RoutedEventHandler(WpfHelpers.DataGridPreviewMouseLeftButtonDownEvent));
 		}
 	}
 }
