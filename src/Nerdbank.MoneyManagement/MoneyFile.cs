@@ -155,11 +155,12 @@ namespace Nerdbank.MoneyManagement
 			}
 		}
 
-		public void Delete(ModelBase model)
+		public bool Delete(ModelBase model)
 		{
 			Verify.NotDisposed(this);
-			this.connection.Delete(model);
+			int deletedCount = this.connection.Delete(model);
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
+			return deletedCount > 0;
 		}
 
 		/// <summary>

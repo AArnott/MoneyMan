@@ -143,7 +143,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			if (this.MoneyFile is object && transaction.Model is object)
 			{
-				this.MoneyFile.Delete(transaction.Model);
+				if (!this.MoneyFile.Delete(transaction.Model))
+				{
+					// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
+					this.RemoveTransactionFromViewModel(transaction);
+				}
 			}
 			else
 			{
@@ -166,9 +170,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
 			{
-				int index = this.transactions.IndexOf(transactionViewModel);
-				this.transactions.RemoveAt(index);
-				this.UpdateBalances(index);
+				this.RemoveTransactionFromViewModel(transactionViewModel);
 			}
 		}
 
@@ -196,6 +198,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					int originalIndex = this.transactions.IndexOf(transactionViewModel);
 					int newIndex = originalIndex;
 					if ((originalIndex > 0 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[originalIndex - 1]) < 0) ||
+						(originalIndex < this.transactions.Count - 2 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[originalIndex + 1]) > 0) ||
 						(originalIndex < this.transactions.Count - 1 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[^1]) > 0))
 					{
 						// The order needs to change.
@@ -239,6 +242,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
+
+		private void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
+		{
+			if (this.transactions is null)
+			{
+				// Nothing to remove when the collection isn't initialized.
+				return;
+			}
+
+			int index = this.transactions.IndexOf(transactionViewModel);
+			this.transactions.RemoveAt(index);
+			this.UpdateBalances(index);
+		}
 
 		private TransactionViewModel? FindTransaction(int id)
 		{

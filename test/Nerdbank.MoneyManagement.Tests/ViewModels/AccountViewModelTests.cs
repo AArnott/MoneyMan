@@ -189,6 +189,15 @@ public class AccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void DeleteVolatileTransaction()
+	{
+		TransactionViewModel tx = this.checking.NewTransaction(volatileOnly: true);
+		this.checking.Add(tx);
+		this.checking.DeleteTransaction(tx);
+		Assert.Empty(this.checking.Transactions);
+	}
+
+	[Fact]
 	public async Task DeleteTransactions()
 	{
 		var account = new Account { Name = "some account" };
@@ -233,7 +242,7 @@ public class AccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void TransactionSorting()
+	public void TransactionSorting_2Transactions()
 	{
 		TransactionViewModel tx1 = this.checking.NewTransaction(volatileOnly: false);
 		tx1.When = new DateTime(2021, 1, 1);
@@ -245,6 +254,30 @@ public class AccountViewModelTests : MoneyTestBase
 
 		tx1.When = tx2.When + TimeSpan.FromDays(1);
 		Assert.Equal(new[] { tx2.Id, tx1.Id }, this.checking.Transactions.Select(tx => tx.Id));
+	}
+
+	[Fact]
+	public void TransactionSorting_3Transactions()
+	{
+		TransactionViewModel tx1 = this.checking.NewTransaction(volatileOnly: false);
+		tx1.When = new DateTime(2021, 1, 1);
+
+		TransactionViewModel tx2 = this.checking.NewTransaction(volatileOnly: false);
+		tx2.When = new DateTime(2021, 1, 3);
+
+		TransactionViewModel tx3 = this.checking.NewTransaction(volatileOnly: false);
+		tx3.When = new DateTime(2021, 1, 5);
+
+		Assert.Equal(new[] { tx1.Id, tx2.Id, tx3.Id }, this.checking.Transactions.Select(tx => tx.Id));
+
+		tx1.When = tx2.When + TimeSpan.FromDays(1);
+		Assert.Equal(new[] { tx2.Id, tx1.Id, tx3.Id }, this.checking.Transactions.Select(tx => tx.Id));
+
+		tx1.When = tx3.When + TimeSpan.FromDays(1);
+		Assert.Equal(new[] { tx2.Id, tx3.Id, tx1.Id }, this.checking.Transactions.Select(tx => tx.Id));
+
+		tx1.When += TimeSpan.FromDays(1);
+		Assert.Equal(new[] { tx2.Id, tx3.Id, tx1.Id }, this.checking.Transactions.Select(tx => tx.Id));
 	}
 
 	[Fact]

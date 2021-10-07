@@ -87,9 +87,14 @@
 								<DataGridTemplateColumn Header="Date">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+											<TextBlock Text="{Binding When, Mode=OneWay, StringFormat=d}" Margin="3pt" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
+									<DataGridTemplateColumn.CellEditingTemplate>
+										<DataTemplate>
+											<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+										</DataTemplate>
+									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
 								<DataGridTemplateColumn Header="Payee">
 									<DataGridTemplateColumn.CellTemplate>
