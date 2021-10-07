@@ -198,6 +198,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					int originalIndex = this.transactions.IndexOf(transactionViewModel);
 					int newIndex = originalIndex;
 					if ((originalIndex > 0 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[originalIndex - 1]) < 0) ||
+						(originalIndex < this.transactions.Count - 2 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[originalIndex + 1]) > 0) ||
 						(originalIndex < this.transactions.Count - 1 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[^1]) > 0))
 					{
 						// The order needs to change.
