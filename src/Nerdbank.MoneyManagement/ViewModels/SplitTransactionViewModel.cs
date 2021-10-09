@@ -12,7 +12,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	{
 		private decimal amount;
 		private string? memo;
-		private CategoryViewModel? category;
+		private ITransactionTarget? categoryOrTransfer;
+
+		public SplitTransactionViewModel(TransactionViewModel parent, SplitTransaction? splitTransaction)
+		{
+			this.ParentTransaction = parent;
+			this.AutoSave = true;
+
+			if (splitTransaction is object)
+			{
+				this.CopyFrom(splitTransaction);
+			}
+		}
+
+		public TransactionViewModel ParentTransaction { get; }
 
 		public decimal Amount
 		{
@@ -26,16 +39,35 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.memo, value);
 		}
 
-		public CategoryViewModel? Category
+		public ITransactionTarget? CategoryOrTransfer
 		{
-			get => this.category;
-			set => this.SetProperty(ref this.category, value);
+			get => this.categoryOrTransfer;
+			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
-		public void CopyFrom(SplitTransaction transaction, IReadOnlyDictionary<int, CategoryViewModel> categories)
+		protected override void ApplyToCore(SplitTransaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
-			Requires.NotNull(categories, nameof(categories));
+
+			transaction.Amount = this.Amount;
+			transaction.Memo = this.Memo;
+			transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
+
+			if (this.Amount < 0)
+			{
+				transaction.DebitAccountId = this.ParentTransaction.ThisAccount.Id;
+				transaction.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+			}
+			else
+			{
+				transaction.CreditAccountId = this.ParentTransaction.ThisAccount.Id;
+				transaction.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+			}
+		}
+
+		protected override void CopyFromCore(SplitTransaction transaction)
+		{
+			Requires.NotNull(transaction, nameof(transaction));
 
 			this.Amount = transaction.Amount;
 			this.Memo = transaction.Memo;
@@ -49,20 +81,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.Category = null;
 			}
-
-			this.IsDirty = false;
-			this.Model ??= transaction;
 		}
-
-		protected override void ApplyToCore(SplitTransaction transaction)
-		{
-			Requires.NotNull(transaction, nameof(transaction));
-
-			transaction.Amount = this.Amount;
-			transaction.Memo = this.Memo;
-			transaction.CategoryId = this.Category?.Id;
-		}
-
-		protected override void CopyFromCore(SplitTransaction category) => throw new NotSupportedException("Use the other overload instead.");
 	}
 }

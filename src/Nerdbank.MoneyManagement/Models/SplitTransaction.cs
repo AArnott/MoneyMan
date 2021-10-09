@@ -19,7 +19,20 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Category"/> assigned to this line of the split transaction.
 		/// </summary>
+		[Indexed]
 		public int? CategoryId { get; set; }
+
+		/// <summary>
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+		/// </summary>
+		[Indexed]
+		public int? CreditAccountId { get; set; }
+
+		/// <summary>
+		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be debited the <see cref="Amount"/> of this <see cref="Transaction"/>.
+		/// </summary>
+		[Indexed]
+		public int? DebitAccountId { get; set; }
 
 		/// <summary>
 		/// Gets or sets a memo to go with this line of the split transaction.
