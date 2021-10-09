@@ -251,6 +251,10 @@ public class TransactionViewModelTests : MoneyTestBase
 		// Test auto-save behavior.
 		this.viewModel.Memo = "another memo";
 		Assert.Equal(this.viewModel.Memo, transaction.Memo);
+
+		transaction.CategoryId = null;
+		this.viewModel.CopyFrom(transaction);
+		Assert.Null(this.viewModel.CategoryOrTransfer);
 	}
 
 	[Fact]

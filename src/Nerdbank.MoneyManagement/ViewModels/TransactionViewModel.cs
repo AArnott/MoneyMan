@@ -91,6 +91,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
+		public ObservableCollection<SplitTransactionViewModel> Splits { get; set; } = new();
+
 		public decimal Balance
 		{
 			get => this.balance;
@@ -103,6 +105,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public AccountViewModel ThisAccount { get; }
 
 		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
+
+		public SplitTransactionViewModel NewSplit() => new(this, null);
 
 		protected override void ApplyToCore(Transaction transaction)
 		{
@@ -143,16 +147,17 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
 			}
+			else if (transaction.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
+			{
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
+			}
+			else if (transaction.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
+			{
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
+			}
 			else
 			{
-				if (transaction.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
-				{
-					this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
-				}
-				else if (transaction.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
-				{
-					this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
-				}
+				this.CategoryOrTransfer = null;
 			}
 		}
 

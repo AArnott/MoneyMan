@@ -12,11 +12,12 @@ using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
-public class SplitTransactionViewModelTests : TestBase
+public class SplitTransactionViewModelTests : MoneyTestBase
 {
-	private SplitTransactionViewModel viewModel = new();
-
-	private CategoryViewModel category = new();
+	private AccountViewModel checkingAccount;
+	private CategoryViewModel spendingCategory;
+	private TransactionViewModel transaction;
+	private SplitTransactionViewModel viewModel;
 
 	private decimal amount = 5.5m;
 
@@ -25,6 +26,10 @@ public class SplitTransactionViewModelTests : TestBase
 	public SplitTransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		this.spendingCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("Spending");
+		this.transaction = this.checkingAccount.NewTransaction();
+		this.transaction.Splits.Add(this.viewModel = this.transaction.NewSplit());
 	}
 
 	[Fact]
@@ -42,9 +47,9 @@ public class SplitTransactionViewModelTests : TestBase
 	{
 		TestUtilities.AssertPropertyChangedEvent(
 			this.viewModel,
-			() => this.viewModel.Category = this.category,
-			nameof(this.viewModel.Category));
-		Assert.Equal(this.category, this.viewModel.Category);
+			() => this.viewModel.CategoryOrTransfer = this.spendingCategory,
+			nameof(this.viewModel.CategoryOrTransfer));
+		Assert.Equal(this.spendingCategory, this.viewModel.CategoryOrTransfer);
 	}
 
 	[Fact]
@@ -75,28 +80,23 @@ public class SplitTransactionViewModelTests : TestBase
 	[Fact]
 	public void CopyFrom()
 	{
-		Assert.Throws<ArgumentNullException>("transaction", () => this.viewModel.CopyFrom(null!, new Dictionary<int, CategoryViewModel>()));
-		Assert.Throws<ArgumentNullException>("categories", () => this.viewModel.CopyFrom(new(), null!));
+		Assert.Throws<ArgumentNullException>("model", () => this.viewModel.CopyFrom(null!));
 
 		SplitTransaction splitTransaction = new SplitTransaction
 		{
 			Amount = this.amount,
 			Memo = this.memo,
-			CategoryId = 3,
-		};
-		var categories = new Dictionary<int, CategoryViewModel>
-		{
-			{ 3, new CategoryViewModel() },
+			CategoryId = this.spendingCategory.Id,
 		};
 
-		this.viewModel.CopyFrom(splitTransaction, categories);
+		this.viewModel.CopyFrom(splitTransaction);
 
 		Assert.Equal(splitTransaction.Amount, this.viewModel.Amount);
 		Assert.Equal(splitTransaction.Memo, this.viewModel.Memo);
-		Assert.Same(categories[3], this.viewModel.Category);
+		Assert.Equal(this.spendingCategory.Id, ((CategoryViewModel?)this.viewModel.CategoryOrTransfer)?.Id);
 
 		splitTransaction.CategoryId = null;
-		this.viewModel.CopyFrom(splitTransaction, categories);
-		Assert.Null(this.viewModel.Category);
+		this.viewModel.CopyFrom(splitTransaction);
+		Assert.Null(this.viewModel.CategoryOrTransfer);
 	}
 }

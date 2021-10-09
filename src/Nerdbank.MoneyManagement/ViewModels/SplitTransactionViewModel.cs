@@ -4,8 +4,6 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
-	using System.Collections.Generic;
-	using PCLCommandBase;
 	using Validation;
 
 	public class SplitTransactionViewModel : EntityViewModel<SplitTransaction>
@@ -45,41 +43,48 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
-		protected override void ApplyToCore(SplitTransaction transaction)
+		protected override void ApplyToCore(SplitTransaction split)
 		{
-			Requires.NotNull(transaction, nameof(transaction));
+			Requires.NotNull(split, nameof(split));
 
-			transaction.Amount = this.Amount;
-			transaction.Memo = this.Memo;
-			transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
+			split.Amount = this.Amount;
+			split.Memo = this.Memo;
+			split.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
 			if (this.Amount < 0)
 			{
-				transaction.DebitAccountId = this.ParentTransaction.ThisAccount.Id;
-				transaction.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				split.DebitAccountId = this.ParentTransaction.ThisAccount.Id;
+				split.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
 			else
 			{
-				transaction.CreditAccountId = this.ParentTransaction.ThisAccount.Id;
-				transaction.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				split.CreditAccountId = this.ParentTransaction.ThisAccount.Id;
+				split.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
 		}
 
-		protected override void CopyFromCore(SplitTransaction transaction)
+		protected override void CopyFromCore(SplitTransaction split)
 		{
-			Requires.NotNull(transaction, nameof(transaction));
+			Requires.NotNull(split, nameof(split));
 
-			this.Amount = transaction.Amount;
-			this.Memo = transaction.Memo;
+			this.Amount = split.Amount;
+			this.Memo = split.Memo;
 
-			if (transaction.CategoryId is int categoryId)
+			if (split.CategoryId is int categoryId)
 			{
-				Requires.Argument(categories.TryGetValue(categoryId, out CategoryViewModel? categoryViewModel), nameof(categories), "No category with required ID found.");
-				this.Category = categoryViewModel;
+				this.CategoryOrTransfer = this.ParentTransaction.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
+			}
+			else if (split.CreditAccountId is int creditId && this.ParentTransaction.ThisAccount.Id != creditId)
+			{
+				this.CategoryOrTransfer = this.ParentTransaction.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
+			}
+			else if (split.DebitAccountId is int debitId && this.ParentTransaction.ThisAccount.Id != debitId)
+			{
+				this.CategoryOrTransfer = this.ParentTransaction.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
 			}
 			else
 			{
-				this.Category = null;
+				this.CategoryOrTransfer = null;
 			}
 		}
 	}
