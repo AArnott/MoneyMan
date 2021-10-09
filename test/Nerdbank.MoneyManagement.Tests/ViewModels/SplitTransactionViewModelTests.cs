@@ -2,10 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Nerdbank.MoneyManagement;
 using Nerdbank.MoneyManagement.Tests;
 using Nerdbank.MoneyManagement.ViewModels;
@@ -29,7 +25,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
 		this.spendingCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("Spending");
 		this.transaction = this.checkingAccount.NewTransaction();
-		this.transaction.Splits.Add(this.viewModel = this.transaction.NewSplit());
+		this.viewModel = this.transaction.NewSplit();
 	}
 
 	[Fact]

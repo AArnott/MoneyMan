@@ -4,6 +4,7 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
 	using System.Linq;
@@ -19,6 +20,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			new ClearedStateViewModel(ClearedState.Reconciled, "Reconciled", "R"),
 		});
 
+		private ObservableCollection<SplitTransactionViewModel>? splits;
 		private DateTime when;
 		private int? checkNumber;
 		private decimal amount;
@@ -88,10 +90,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public ITransactionTarget? CategoryOrTransfer
 		{
 			get => this.categoryOrTransfer;
-			set => this.SetProperty(ref this.categoryOrTransfer, value);
+			set
+			{
+				Verify.Operation(this.Splits.Count == 0 || value is null, "Cannot set category or transfer on a transaction containing splits.");
+				this.SetProperty(ref this.categoryOrTransfer, value);
+			}
 		}
 
-		public ObservableCollection<SplitTransactionViewModel> Splits { get; set; } = new();
+		[SplitSumMatchesTransactionAmount]
+		public IReadOnlyCollection<SplitTransactionViewModel> Splits => (IReadOnlyCollection<SplitTransactionViewModel>?)this.splits ?? Array.Empty<SplitTransactionViewModel>();
 
 		public decimal Balance
 		{
@@ -106,7 +113,35 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
 
-		public SplitTransactionViewModel NewSplit() => new(this, null);
+		public SplitTransactionViewModel NewSplit()
+		{
+			SplitTransactionViewModel split = new(this, null);
+			split.CategoryOrTransfer = this.CategoryOrTransfer;
+			this.CategoryOrTransfer = null;
+
+			if (this.splits is null)
+			{
+				this.splits = new();
+				this.OnPropertyChanged(nameof(this.Splits));
+			}
+
+			this.splits.Add(split);
+			return split;
+		}
+
+		public void DeleteSplit(SplitTransactionViewModel split)
+		{
+			if (this.splits is null)
+			{
+				throw new InvalidOperationException("Splits haven't been initialized.");
+			}
+
+			this.splits.Remove(split);
+			if (split.Model is object)
+			{
+				this.ThisAccount.MoneyFile?.Delete(split.Model);
+			}
+		}
 
 		protected override void ApplyToCore(Transaction transaction)
 		{

@@ -18,6 +18,8 @@ public class SplitTransactionFacts : EntityTestBase
 	{
 		DateTime when = DateTime.Now;
 		const int transactionId = 5;
+		const int creditAccountId = 5;
+		const int debitAccountId = 6;
 		const decimal amount = 5.2398345m;
 		const int categoryId = 8;
 		const string memo = "Some memo";
@@ -25,12 +27,16 @@ public class SplitTransactionFacts : EntityTestBase
 		var t = new SplitTransaction
 		{
 			TransactionId = transactionId,
+			CreditAccountId = creditAccountId,
+			DebitAccountId = debitAccountId,
 			Amount = amount,
 			CategoryId = categoryId,
 			Memo = memo,
 		};
 
 		Assert.Equal(transactionId, t.TransactionId);
+		Assert.Equal(creditAccountId, t.CreditAccountId);
+		Assert.Equal(debitAccountId, t.DebitAccountId);
 		Assert.Equal(amount, t.Amount);
 		Assert.Equal(categoryId, t.CategoryId);
 		Assert.Equal(memo, t.Memo);
@@ -40,6 +46,8 @@ public class SplitTransactionFacts : EntityTestBase
 		Assert.NotEqual(0, t.Id);
 		Assert.Equal(t.Id, t2.Id);
 		Assert.Equal(transactionId, t2.TransactionId);
+		Assert.Equal(creditAccountId, t2.CreditAccountId);
+		Assert.Equal(debitAccountId, t2.DebitAccountId);
 		Assert.Equal(amount, t2.Amount);
 		Assert.Equal(categoryId, t2.CategoryId);
 		Assert.Equal(memo, t2.Memo);

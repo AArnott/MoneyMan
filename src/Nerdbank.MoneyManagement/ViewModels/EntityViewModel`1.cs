@@ -66,7 +66,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				foreach (PropertyInfo propertyInfo in propertyInfos)
 				{
 					var errorMsg = this[propertyInfo.Name];
-					if (errorMsg is not null)
+					if (errorMsg?.Length > 0)
 					{
 						return errorMsg;
 					}
