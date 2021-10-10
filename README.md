@@ -5,6 +5,9 @@ A financial money management library and applications that utilize it.
 [![Install](https://img.shields.io/badge/prerelease-win--x64-green)](https://moneymanreleases.blob.core.windows.net/releases/prerelease/win-x64/Nerdbank.MoneyMan.Setup.exe)
 [![Install](https://img.shields.io/badge/prerelease-win--arm64-green)](https://moneymanreleases.blob.core.windows.net/releases/prerelease/win-arm64/Nerdbank.MoneyMan.Setup.exe)
 
+[![Install](https://img.shields.io/badge/CI-win--x64-green)](https://moneymanreleases.blob.core.windows.net/releases/main-CI/win-x64/Nerdbank.MoneyMan.Setup.exe)
+[![Install](https://img.shields.io/badge/CI-win--arm64-green)](https://moneymanreleases.blob.core.windows.net/releases/main-CI/win-arm64/Nerdbank.MoneyMan.Setup.exe)
+
 [![Join the chat at https://gitter.im/MoneyManagement/Lobby](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/MoneyManagement/Lobby?utm_source=badge&utm_medium=badge&utm_content=badge)
 
 [![Azure Pipelines status](https://dev.azure.com/andrewarnott/OSS/_apis/build/status/AArnott.MoneyMan?branchName=main)](https://dev.azure.com/andrewarnott/OSS/_build/latest?definitionId=29&branchName=main)
