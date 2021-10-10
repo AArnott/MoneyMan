@@ -30,7 +30,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 			else
 			{
-				this.AddAccountInSortOrder(account);
+				this.accounts.AddInSortOrder(account, AccountSort.Instance);
 			}
 
 			account.PropertyChanged += this.Account_PropertyChanged;
@@ -48,31 +48,26 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private void Account_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
 		{
-			if (e.PropertyName == nameof(AccountViewModel.IsClosed))
+			var account = (AccountViewModel)sender!;
+			switch (e.PropertyName)
 			{
-				var account = (AccountViewModel)sender!;
-				if (account.IsClosed)
-				{
-					this.accounts.Remove(account);
-					this.closedAccounts.Add(account);
-				}
-				else
-				{
-					this.closedAccounts.Remove(account);
-					this.AddAccountInSortOrder(account);
-				}
-			}
-		}
+				case nameof(AccountViewModel.IsClosed):
+					if (account.IsClosed)
+					{
+						this.accounts.Remove(account);
+						this.closedAccounts.Add(account);
+					}
+					else
+					{
+						this.closedAccounts.Remove(account);
+						this.accounts.AddInSortOrder(account, AccountSort.Instance);
+					}
 
-		private void AddAccountInSortOrder(AccountViewModel account)
-		{
-			int index = this.accounts.BinarySearch(account, AccountSort.Instance);
-			if (index < 0)
-			{
-				index = ~index;
+					break;
 			}
 
-			this.accounts.Insert(index, account);
+			// Confirm the account is still in the proper sort order.
+			this.accounts.UpdateSortPosition(account, AccountSort.Instance);
 		}
 	}
 }

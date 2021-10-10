@@ -79,5 +79,11 @@ public class BankingPanelViewModelTests : MoneyTestBase
 		Assert.Same(anotherChecking, this.DocumentViewModel.BankingPanel.Accounts[0]);
 		Assert.Same(checking, this.DocumentViewModel.BankingPanel.Accounts[1]);
 		Assert.Same(savings, this.DocumentViewModel.BankingPanel.Accounts[2]);
+
+		// Rename an account and confirm it is re-sorted.
+		checking.Name = "The last checking";
+		Assert.Same(anotherChecking, this.DocumentViewModel.BankingPanel.Accounts[0]);
+		Assert.Same(savings, this.DocumentViewModel.BankingPanel.Accounts[1]);
+		Assert.Same(checking, this.DocumentViewModel.BankingPanel.Accounts[2]);
 	}
 }
