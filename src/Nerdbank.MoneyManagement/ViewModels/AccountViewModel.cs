@@ -72,7 +72,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						foreach (Transaction transaction in transactions)
 						{
 							TransactionViewModel transactionViewModel = new(this, transaction);
-							this.transactions.Add(transactionViewModel);
+							int index = this.transactions.BinarySearch(transactionViewModel, TransactionSort.Instance);
+							this.transactions.Insert(index < 0 ? ~index : index, transactionViewModel);
 						}
 
 						this.UpdateBalances(0);
