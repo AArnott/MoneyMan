@@ -1,0 +1,16 @@
+trigger: none # We only want to trigger manually or based on resources
+pr: none
+
+resources:
+  pipelines:
+  - pipeline: CI
+    source: MoneyMan
+    trigger:
+      branches:
+        include:
+        - main
+
+stages:
+- template: release_squirrel.yml
+  parameters:
+    cibranch: $(resources.pipeline.CI.sourceBranch)
