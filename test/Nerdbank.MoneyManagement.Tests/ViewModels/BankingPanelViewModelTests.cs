@@ -58,4 +58,26 @@ public class BankingPanelViewModelTests : MoneyTestBase
 		newAccount.Name = "Checking";
 		Assert.Empty(this.ViewModel.Accounts);
 	}
+
+	[Fact]
+	public void AccountListIsSorted()
+	{
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		AccountViewModel savings = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
+		Assert.Same(checking, this.DocumentViewModel.BankingPanel.Accounts[0]);
+		Assert.Same(savings, this.DocumentViewModel.BankingPanel.Accounts[1]);
+
+		// Close and reopen the checking account to see if it is reinserted at the top.
+		checking.IsClosed = true;
+		Assert.Same(savings, this.DocumentViewModel.BankingPanel.Accounts.Single());
+		checking.IsClosed = false;
+		Assert.Same(checking, this.DocumentViewModel.BankingPanel.Accounts[0]);
+		Assert.Same(savings, this.DocumentViewModel.BankingPanel.Accounts[1]);
+
+		// Insert one new account that should sort to the top.
+		AccountViewModel anotherChecking = this.DocumentViewModel.AccountsPanel.NewAccount("Another checking");
+		Assert.Same(anotherChecking, this.DocumentViewModel.BankingPanel.Accounts[0]);
+		Assert.Same(checking, this.DocumentViewModel.BankingPanel.Accounts[1]);
+		Assert.Same(savings, this.DocumentViewModel.BankingPanel.Accounts[2]);
+	}
 }

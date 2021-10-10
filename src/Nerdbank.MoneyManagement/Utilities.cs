@@ -91,7 +91,7 @@ namespace Nerdbank.MoneyManagement
 		/// This implementation heavily inspired by <see href="https://github.com/dotnet/runtime/blob/72d643d05ab23888f30a57d447154e36f979f3d1/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/ArraySortHelper.cs#L77-L95">the
 		/// copy in the .NET runtime</see>.
 		/// </devremarks>
-		internal static int BinarySearch<T>(this IReadOnlyList<T> sortedList, int start, int count, T item, IComparer<T>? comparer = null)
+		private static int BinarySearch<T>(this IReadOnlyList<T> sortedList, int start, int count, T item, IComparer<T>? comparer = null)
 		{
 			Requires.Range(start >= 0, nameof(start));
 			Requires.Range(count >= 0, nameof(count));

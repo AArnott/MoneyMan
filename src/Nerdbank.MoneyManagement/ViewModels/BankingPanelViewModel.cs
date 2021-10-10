@@ -6,10 +6,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
-	using System.Linq;
-	using System.Text;
-	using System.Threading.Tasks;
-	using Nerdbank.MoneyManagement.ViewModels;
 	using PCLCommandBase;
 
 	public class BankingPanelViewModel : BindableBase
@@ -18,7 +14,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private List<AccountViewModel> closedAccounts = new();
 		private AccountViewModel? selectedAccount;
 
-		public IReadOnlyCollection<AccountViewModel> Accounts => this.accounts;
+		public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
 
 		public AccountViewModel? SelectedAccount
 		{
@@ -34,7 +30,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 			else
 			{
-				this.accounts.Add(account);
+				this.AddAccountInSortOrder(account);
 			}
 
 			account.PropertyChanged += this.Account_PropertyChanged;
@@ -63,9 +59,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				else
 				{
 					this.closedAccounts.Remove(account);
-					this.accounts.Add(account);
+					this.AddAccountInSortOrder(account);
 				}
 			}
+		}
+
+		private void AddAccountInSortOrder(AccountViewModel account)
+		{
+			int index = this.accounts.BinarySearch(account, AccountSort.Instance);
+			if (index < 0)
+			{
+				index = ~index;
+			}
+
+			this.accounts.Insert(index, account);
 		}
 	}
 }
