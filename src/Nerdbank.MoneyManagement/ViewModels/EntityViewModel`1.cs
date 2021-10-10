@@ -115,7 +115,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(model, nameof(model));
 			Requires.Argument(this.Id is null || model.Id == this.Id, nameof(model), "The provided object is not the original template.");
-			Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property.");
+			Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
 
 			this.ApplyToCore(model);
 
