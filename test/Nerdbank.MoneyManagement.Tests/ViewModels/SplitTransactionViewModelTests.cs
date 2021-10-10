@@ -63,14 +63,12 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	{
 		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
 
-		SplitTransaction splitTransaction = new();
-
 		this.viewModel.Amount = this.amount;
 		this.viewModel.Memo = this.memo;
-		this.viewModel.ApplyTo(splitTransaction);
+		this.viewModel.ApplyToModel();
 
-		Assert.Equal(this.amount, splitTransaction.Amount);
-		Assert.Equal(this.memo, splitTransaction.Memo);
+		Assert.Equal(this.amount, this.viewModel.Model!.Amount);
+		Assert.Equal(this.memo, this.viewModel.Model.Memo);
 	}
 
 	[Fact]

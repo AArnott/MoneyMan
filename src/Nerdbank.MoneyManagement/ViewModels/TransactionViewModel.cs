@@ -115,7 +115,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public SplitTransactionViewModel NewSplit()
 		{
-			SplitTransactionViewModel split = new(this, null);
+			SplitTransactionViewModel split = new(this, null)
+			{
+				MoneyFile = this.MoneyFile,
+			};
 			split.CategoryOrTransfer = this.CategoryOrTransfer;
 			this.CategoryOrTransfer = null;
 
@@ -125,6 +128,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.OnPropertyChanged(nameof(this.Splits));
 			}
 
+			split.Model = new();
 			this.splits.Add(split);
 			return split;
 		}
@@ -153,7 +157,18 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			transaction.Memo = this.Memo;
 			transaction.CheckNumber = this.CheckNumber;
 			transaction.Cleared = this.Cleared.Value;
-			transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
+			if (this.Splits.Count > 0)
+			{
+				transaction.CategoryId = Category.Split;
+				foreach (SplitTransactionViewModel split in this.Splits)
+				{
+					split.Save();
+				}
+			}
+			else
+			{
+				transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
+			}
 
 			if (this.Amount < 0)
 			{
@@ -180,7 +195,22 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			if (transaction.CategoryId is int categoryId)
 			{
-				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
+				if (categoryId == Category.Split)
+				{
+					if (this.splits is null)
+					{
+						this.splits = new();
+						this.OnPropertyChanged(nameof(this.Splits));
+					}
+
+					// Deserialize splits
+				}
+				else
+				{
+					this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
+					this.splits = null;
+					this.OnPropertyChanged(nameof(this.Splits));
+				}
 			}
 			else if (transaction.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
 			{
