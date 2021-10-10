@@ -98,7 +98,28 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		[SplitSumMatchesTransactionAmount]
-		public IReadOnlyCollection<SplitTransactionViewModel> Splits => (IReadOnlyCollection<SplitTransactionViewModel>?)this.splits ?? Array.Empty<SplitTransactionViewModel>();
+		public IReadOnlyCollection<SplitTransactionViewModel> Splits
+		{
+			get
+			{
+				if (this.splits is null)
+				{
+					this.splits = new();
+					if (this.MoneyFile is object)
+					{
+						SQLite.TableQuery<SplitTransaction> splits = this.MoneyFile.SplitTransactions
+							.Where(tx => tx.TransactionId == this.Id);
+						foreach (SplitTransaction split in splits)
+						{
+							SplitTransactionViewModel splitViewModel = new(this, split);
+							this.splits.Add(splitViewModel);
+						}
+					}
+				}
+
+				return this.splits;
+			}
+		}
 
 		public decimal Balance
 		{
@@ -115,6 +136,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public SplitTransactionViewModel NewSplit()
 		{
+			if (this.Id is null)
+			{
+				// Persist this transaction so the splits can refer to it.
+				this.Save();
+			}
+
 			SplitTransactionViewModel split = new(this, null)
 			{
 				MoneyFile = this.MoneyFile,
@@ -122,14 +149,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			split.CategoryOrTransfer = this.CategoryOrTransfer;
 			this.CategoryOrTransfer = null;
 
-			if (this.splits is null)
-			{
-				this.splits = new();
-				this.OnPropertyChanged(nameof(this.Splits));
-			}
-
 			split.Model = new();
-			this.splits.Add(split);
+			_ = this.Splits; // ensure initialized
+			this.splits!.Add(split);
 			return split;
 		}
 
@@ -197,18 +219,16 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				if (categoryId == Category.Split)
 				{
-					if (this.splits is null)
-					{
-						this.splits = new();
-						this.OnPropertyChanged(nameof(this.Splits));
-					}
-
-					// Deserialize splits
+					// These are lazily initialized.
 				}
 				else
 				{
 					this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
-					this.splits = null;
+					if (this.splits is object)
+					{
+						this.splits.Clear();
+					}
+
 					this.OnPropertyChanged(nameof(this.Splits));
 				}
 			}

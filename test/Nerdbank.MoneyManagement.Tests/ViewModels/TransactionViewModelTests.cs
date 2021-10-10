@@ -113,12 +113,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void NewSplit_EmptyTransaction()
 	{
-		SplitTransactionViewModel split = null!;
-
-		// Since the initial Splits collection is a readonly one, when it is substituted for a real mutable collection,
-		// the property had better raise its own Changed event so data binders know to check again for the observable interfaces.
-		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => split = this.viewModel.NewSplit(), nameof(this.viewModel.Splits));
-
+		SplitTransactionViewModel split = this.viewModel.NewSplit();
 		Assert.Same(this.viewModel, split.ParentTransaction);
 		Assert.Same(split, Assert.Single(this.viewModel.Splits));
 	}
@@ -388,9 +383,9 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		SplitTransaction split1 = new() { Amount = 3, CreditAccountId = transaction.Id };
+		SplitTransaction split1 = new() { Amount = 3, CreditAccountId = this.account.Id, TransactionId = transaction.Id };
 		this.Money.Insert(split1);
-		SplitTransaction split2 = new() { Amount = 7, CreditAccountId = transaction.Id };
+		SplitTransaction split2 = new() { Amount = 7, CreditAccountId = this.account.Id, TransactionId = transaction.Id };
 		this.Money.Insert(split2);
 
 		this.ReloadViewModel();
