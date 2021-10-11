@@ -290,7 +290,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		private class TransactionSort : IComparer<TransactionViewModel>
+		private class TransactionSort : IOptimizedComparer<TransactionViewModel>
 		{
 			internal static readonly TransactionSort Instance = new();
 
@@ -331,6 +331,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 				return x.Payee?.CompareTo(y.Payee) ?? 0;
 			}
+
+			public bool IsPropertySignificant(string propertyName) => propertyName is nameof(TransactionViewModel.When) or nameof(TransactionViewModel.Amount) or nameof(TransactionViewModel.Id) or nameof(TransactionViewModel.Payee);
 		}
 	}
 }

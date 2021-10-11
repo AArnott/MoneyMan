@@ -3,12 +3,10 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
-	using System.Collections.Generic;
-
 	/// <summary>
 	/// Sorts <see cref="AccountViewModel"/> objects by <see cref="AccountViewModel.Name"/>.
 	/// </summary>
-	internal class AccountSort : IComparer<AccountViewModel>
+	internal class AccountSort : IOptimizedComparer<AccountViewModel>
 	{
 		internal static readonly AccountSort Instance = new AccountSort();
 
@@ -43,5 +41,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			return 0;
 		}
+
+		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(AccountViewModel.Name) or nameof(AccountViewModel.Id);
 	}
 }

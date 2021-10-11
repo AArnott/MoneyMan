@@ -36,7 +36,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SortedObservableCollection{T}"/> class.
 		/// </summary>
-		/// <param name="comparer">The comparer to use. When <see langword="null"/> the <see cref="Comparer{T}.Default"/> comparer is used.</param>
+		/// <param name="comparer">
+		/// The comparer to use. When <see langword="null"/> the <see cref="Comparer{T}.Default"/> comparer is used.
+		/// If this comparer implements <see cref="IOptimizedComparer{T}"/>, automated re-sorts may be skipped when possible.
+		/// </param>
 		public SortedObservableCollection(IComparer<T>? comparer = null)
 		{
 			this.comparer = comparer ?? Comparer<T>.Default;
@@ -232,7 +235,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
-			if (sender is T item)
+			if (sender is T item && (e.PropertyName is null || this.comparer is not IOptimizedComparer<T> optimized || optimized.IsPropertySignificant(e.PropertyName)))
 			{
 				// Consider whether this item should be repositioned in the list.
 				(int OldIndex, int NewIndex) positions = this.list.UpdateSortPosition(item, this.comparer);

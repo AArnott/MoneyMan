@@ -275,6 +275,21 @@ public class SortedObservableCollectionTests : TestBase
 	}
 
 	[Fact]
+	public void ItemChangesToUnimportantPropertiesDoNotTriggerResort()
+	{
+		MutableClassComparer comparer = new MutableClassComparer();
+		SortedObservableCollection<ObservableMutableClass> collection = new(comparer);
+		ObservableMutableClass a = new(1);
+		ObservableMutableClass b = new(2);
+		collection.Add(a);
+		collection.Add(b);
+
+		int oldCount = comparer.InvocationCount;
+		a.OtherProperty = 3;
+		Assert.Equal(oldCount, comparer.InvocationCount);
+	}
+
+	[Fact]
 	public void Remove_ReleasesHandlerReference()
 	{
 		SortedObservableCollection<ObservableMutableClass> collection = new(new MutableClassComparer());
@@ -347,6 +362,7 @@ public class SortedObservableCollectionTests : TestBase
 	private class ObservableMutableClass : INotifyPropertyChanged
 	{
 		private int value;
+		private int otherProperty;
 
 		internal ObservableMutableClass(int value)
 		{
@@ -361,19 +377,36 @@ public class SortedObservableCollectionTests : TestBase
 			set
 			{
 				this.value = value;
-				this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(this.Value)));
+				this.OnPropertyChanged();
+			}
+		}
+
+		public int OtherProperty
+		{
+			get => this.otherProperty;
+			set
+			{
+				this.otherProperty = value;
+				this.OnPropertyChanged();
 			}
 		}
 
 		internal int HandlersCount => this.PropertyChanged?.GetInvocationList().Length ?? 0;
+
+		protected void OnPropertyChanged([CallerMemberName] string propertyName = "") => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 	}
 
-	private class MutableClassComparer : IComparer<ObservableMutableClass>
+	private class MutableClassComparer : IOptimizedComparer<ObservableMutableClass>
 	{
+		internal int InvocationCount { get; private set; }
+
 		public int Compare(ObservableMutableClass? x, ObservableMutableClass? y)
 		{
 			Assumes.False(x is null || y is null);
+			this.InvocationCount++;
 			return x.Value.CompareTo(y.Value);
 		}
+
+		public bool IsPropertySignificant(string propertyName) => propertyName == nameof(ObservableMutableClass.Value);
 	}
 }
