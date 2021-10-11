@@ -2,7 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Threading.Tasks;
-using Nerdbank.MoneyManagement;
 using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
@@ -115,5 +114,26 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.Null(this.ViewModel.SelectedAccount);
 		Assert.Empty(this.ViewModel.Accounts);
+	}
+
+	[Fact]
+	public void AccountListIsSorted()
+	{
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		AccountViewModel savings = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
+		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
+		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[1]);
+
+		// Insert one new account that should sort to the top.
+		AccountViewModel anotherChecking = this.DocumentViewModel.AccountsPanel.NewAccount("Another checking");
+		Assert.Same(anotherChecking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
+		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[1]);
+		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[2]);
+
+		// Rename an account and confirm it is re-sorted.
+		checking.Name = "The last checking";
+		Assert.Same(anotherChecking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
+		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[1]);
+		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[2]);
 	}
 }
