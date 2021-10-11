@@ -4,22 +4,15 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
-	using System.Collections;
 	using System.Collections.Generic;
-	using System.Collections.ObjectModel;
 	using System.ComponentModel.DataAnnotations;
 	using System.Diagnostics;
-	using System.Linq;
-	using System.Reflection;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using PCLCommandBase;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	{
-		private ObservableCollection<TransactionViewModel>? transactions;
+		private SortedObservableCollection<TransactionViewModel>? transactions;
 		private string name = string.Empty;
 		private bool isClosed;
 		private decimal balance;
@@ -65,19 +58,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				if (this.transactions is null)
 				{
-					this.transactions = new();
+					this.transactions = new(TransactionSort.Instance);
 					if (this.MoneyFile is object)
 					{
 						SQLite.TableQuery<Transaction> transactions = this.MoneyFile.Transactions.Where(tx => tx.CreditAccountId == this.Id || tx.DebitAccountId == this.Id);
 						foreach (Transaction transaction in transactions)
 						{
 							TransactionViewModel transactionViewModel = new(this, transaction);
-							int index = this.transactions.BinarySearch(transactionViewModel, TransactionSort.Instance);
-							this.transactions.Insert(index < 0 ? ~index : index, transactionViewModel);
+							this.transactions.Add(transactionViewModel);
 						}
 
 						this.UpdateBalances(0);
 					}
+
+					this.transactions.CollectionChanged += this.Transactions_CollectionChanged;
 				}
 
 				return this.transactions;
@@ -116,25 +110,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public int Add(TransactionViewModel transaction)
 		{
 			_ = this.Transactions;
-
-			// Take care to sort into the right place.
-			// As an optimization, see if it goes at the end first.
-			if (this.transactions!.Count == 0 || TransactionSort.Instance.Compare(transaction, this.transactions[^1]) > 0)
-			{
-				this.transactions.Add(transaction);
-				return 0;
-			}
-			else
-			{
-				int index = this.transactions.BinarySearch(transaction, TransactionSort.Instance);
-				if (index < 0)
-				{
-					index = ~index;
-				}
-
-				this.transactions.Insert(index, transaction);
-				return index;
-			}
+			return this.transactions!.Add(transaction);
 		}
 
 		public void DeleteTransaction(TransactionViewModel transaction)
@@ -152,10 +128,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 			else
 			{
-				int index = this.transactions.IndexOf(transaction);
+				int index = this.transactions.Remove(transaction);
 				if (index >= 0)
 				{
-					this.transactions.RemoveAt(index);
 					this.UpdateBalances(index);
 				}
 			}
@@ -194,27 +169,17 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				else
 				{
 					transactionViewModel.CopyFrom(transaction);
-
-					// Confirm the transaction is still in the proper sort order.
-					int originalIndex = this.transactions.IndexOf(transactionViewModel);
-					int newIndex = originalIndex;
-					if ((originalIndex > 0 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[originalIndex - 1]) < 0) ||
-						(originalIndex < this.transactions.Count - 2 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[originalIndex + 1]) > 0) ||
-						(originalIndex < this.transactions.Count - 1 && TransactionSort.Instance.Compare(transactionViewModel, this.transactions[^1]) > 0))
+					int index = this.transactions.IndexOf(transactionViewModel);
+					if (index >= 0)
 					{
-						// The order needs to change.
-						this.transactions.RemoveAt(originalIndex);
-						newIndex = this.Add(transactionViewModel);
+						this.UpdateBalances(index);
 					}
-
-					this.UpdateBalances(Math.Min(originalIndex, newIndex));
 				}
 			}
 			else if (!removedFromAccount)
 			{
 				// This may be a new transaction we need to add.
-				int index = this.Add(new TransactionViewModel(this, transaction));
-				this.UpdateBalances(index);
+				this.transactions.Add(new TransactionViewModel(this, transaction));
 			}
 		}
 
@@ -243,6 +208,25 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
+
+		private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+		{
+			if (e.NewStartingIndex >= 0)
+			{
+				if (e.OldStartingIndex >= 0)
+				{
+					this.UpdateBalances(e.NewStartingIndex, e.OldStartingIndex);
+				}
+				else
+				{
+					this.UpdateBalances(e.NewStartingIndex);
+				}
+			}
+			else if (e.OldStartingIndex >= 0)
+			{
+				this.UpdateBalances(e.OldStartingIndex);
+			}
+		}
 
 		private void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
 		{
