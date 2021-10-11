@@ -3,14 +3,12 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
-	using System;
 	using System.Collections.Generic;
-	using System.Collections.ObjectModel;
 	using PCLCommandBase;
 
 	public class BankingPanelViewModel : BindableBase
 	{
-		private ObservableCollection<AccountViewModel> accounts = new();
+		private SortedObservableCollection<AccountViewModel> accounts = new(AccountSort.Instance);
 		private List<AccountViewModel> closedAccounts = new();
 		private AccountViewModel? selectedAccount;
 
@@ -30,7 +28,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 			else
 			{
-				this.accounts.AddInSortOrder(account, AccountSort.Instance);
+				this.accounts.Add(account);
 			}
 
 			account.PropertyChanged += this.Account_PropertyChanged;
@@ -38,7 +36,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		internal void Remove(AccountViewModel account)
 		{
-			if (!this.accounts.Remove(account))
+			if (this.accounts.Remove(account) < 0)
 			{
 				this.closedAccounts.Remove(account);
 			}
@@ -60,14 +58,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					else
 					{
 						this.closedAccounts.Remove(account);
-						this.accounts.AddInSortOrder(account, AccountSort.Instance);
+						this.accounts.Add(account);
 					}
 
 					break;
 			}
-
-			// Confirm the account is still in the proper sort order.
-			this.accounts.UpdateSortPosition(account, AccountSort.Instance);
 		}
 	}
 }

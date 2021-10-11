@@ -270,18 +270,27 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			return null;
 		}
 
-		private void UpdateBalances(int startingIndex)
+		private void UpdateBalances(int changedIndex1, int changedIndex2 = -1)
 		{
+			int startingIndex = changedIndex2 == -1 ? changedIndex1 : Math.Min(changedIndex1, changedIndex2);
 			decimal balance = startingIndex == 0 ? 0m : this.transactions![startingIndex - 1].Balance;
 			for (int i = startingIndex; i < this.transactions!.Count; i++)
 			{
 				TransactionViewModel transaction = this.transactions[i];
 				balance += transaction.Amount;
+				if (transaction.Balance == balance && i >= changedIndex2)
+				{
+					// The balance is already what it needs to be,
+					// and we've already reached the last of the one or two positions where transactions may have changed.
+					// Short circuit as a perf win.
+					return;
+				}
+
 				transaction.Balance = balance;
 			}
 		}
 
-		private class TransactionSort : IComparer<TransactionViewModel>
+		private class TransactionSort : IOptimizedComparer<TransactionViewModel>
 		{
 			internal static readonly TransactionSort Instance = new();
 
@@ -322,6 +331,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 				return x.Payee?.CompareTo(y.Payee) ?? 0;
 			}
+
+			public bool IsPropertySignificant(string propertyName) => propertyName is nameof(TransactionViewModel.When) or nameof(TransactionViewModel.Amount) or nameof(TransactionViewModel.Id) or nameof(TransactionViewModel.Payee);
 		}
 	}
 }

@@ -5,6 +5,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
 	using System.Collections;
+	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
 	using System.Collections.Specialized;
 	using System.ComponentModel;
@@ -17,6 +18,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class CategoriesPanelViewModel : BindableBase
 	{
 		private readonly DocumentViewModel documentViewModel;
+		private readonly SortedObservableCollection<CategoryViewModel> categories = new(CategorySort.Instance);
 		private CategoryViewModel? selectedCategory;
 		private IList? selectedCategories;
 
@@ -35,7 +37,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public CommandBase DeleteCommand { get; }
 
-		public ObservableCollection<CategoryViewModel> Categories { get; } = new();
+		public SortedObservableCollection<CategoryViewModel> Categories => this.categories;
 
 		/// <summary>
 		/// Gets or sets the selected category, or one of the selected categories.
@@ -74,7 +76,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				Model = new(),
 			};
 
-			this.Categories.Add(newCategoryViewModel);
+			this.categories.Add(newCategoryViewModel);
 			this.SelectedCategory = newCategoryViewModel;
 			if (string.IsNullOrEmpty(name))
 			{
@@ -97,7 +99,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public void DeleteCategory(CategoryViewModel categoryViewModel)
 		{
-			this.Categories.Remove(categoryViewModel);
+			this.categories.Remove(categoryViewModel);
 			if (categoryViewModel.Model is object)
 			{
 				this.documentViewModel.MoneyFile?.Delete(categoryViewModel.Model);
@@ -205,6 +207,37 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					this.subscribedSelectedCategories.CollectionChanged += this.SelectedCategories_CollectionChanged;
 				}
 			}
+		}
+
+		private class CategorySort : IOptimizedComparer<CategoryViewModel>
+		{
+			internal static readonly CategorySort Instance = new();
+
+			private CategorySort()
+			{
+			}
+
+			public int Compare(CategoryViewModel? x, CategoryViewModel? y)
+			{
+				if (x is null)
+				{
+					return y is null ? 0 : -1;
+				}
+				else if (y is null)
+				{
+					return 1;
+				}
+
+				int order = x.Name.CompareTo(y.Name);
+				if (order != 0)
+				{
+					return order;
+				}
+
+				return 0;
+			}
+
+			public bool IsPropertySignificant(string propertyName) => propertyName is nameof(CategoryViewModel.Name);
 		}
 	}
 }

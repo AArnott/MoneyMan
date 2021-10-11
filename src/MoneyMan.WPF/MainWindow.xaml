@@ -199,11 +199,7 @@
 			</TabItem>
 			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}" Height="20" VerticalAlignment="Top">
 				<TabItem.Resources>
-					<CollectionViewSource Source="{Binding Accounts}" x:Key="categories" IsLiveSortingRequested="True">
-						<CollectionViewSource.SortDescriptions>
-							<componentmodel:SortDescription PropertyName="Name" />
-						</CollectionViewSource.SortDescriptions>
-					</CollectionViewSource>
+					<CollectionViewSource Source="{Binding Accounts}" x:Key="categories" />
 					<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
 						<Style.Triggers>
 							<Trigger Property="Validation.HasError" Value="True">
@@ -247,11 +243,7 @@
 			</TabItem>
 			<TabItem Header="Categories" DataContext="{Binding CategoriesPanel}" Height="20" VerticalAlignment="Top">
 				<TabItem.Resources>
-					<CollectionViewSource Source="{Binding Categories}" x:Key="categories" IsLiveSortingRequested="True">
-						<CollectionViewSource.SortDescriptions>
-							<componentmodel:SortDescription PropertyName="Name" />
-						</CollectionViewSource.SortDescriptions>
-					</CollectionViewSource>
+					<CollectionViewSource Source="{Binding Categories}" x:Key="categories" />
 					<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
 						<Style.Triggers>
 							<Trigger Property="Validation.HasError" Value="True">
