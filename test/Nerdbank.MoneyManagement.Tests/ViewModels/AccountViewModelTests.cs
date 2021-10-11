@@ -281,6 +281,22 @@ public class AccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void TransactionsSortedOnLoad()
+	{
+		TransactionViewModel tx1 = this.checking.NewTransaction(volatileOnly: false);
+		tx1.When = new DateTime(2021, 1, 3);
+
+		TransactionViewModel tx2 = this.checking.NewTransaction(volatileOnly: false);
+		tx2.When = new DateTime(2021, 1, 2);
+
+		// Confirm that a reload does not mess up transaction order.
+		Assert.Equal(new[] { tx2.Id, tx1.Id }, this.checking.Transactions.Select(tx => tx.Id));
+		this.ReloadViewModel();
+		AccountViewModel newChecking = this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Id == this.checking.Id);
+		Assert.Equal(new[] { tx2.Id, tx1.Id }, newChecking.Transactions.Select(tx => tx.Id));
+	}
+
+	[Fact]
 	public async Task Balance_Updates()
 	{
 		Assert.Equal(0, this.checking.Balance);

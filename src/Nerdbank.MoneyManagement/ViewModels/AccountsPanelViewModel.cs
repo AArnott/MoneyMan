@@ -3,22 +3,19 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
-	using System;
 	using System.Collections;
 	using System.Collections.Generic;
-	using System.Collections.ObjectModel;
 	using System.Collections.Specialized;
 	using System.ComponentModel;
 	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using PCLCommandBase;
-	using Validation;
 
 	public class AccountsPanelViewModel : BindableBase
 	{
 		private readonly DocumentViewModel documentViewModel;
-		private readonly ObservableCollection<AccountViewModel> accounts = new();
+		private readonly SortedObservableCollection<AccountViewModel> accounts = new(AccountSort.Instance);
 		private AccountViewModel? selectedAccount;
 		private IList? selectedAccounts;
 
@@ -37,7 +34,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public CommandBase DeleteCommand { get; }
 
-		public IReadOnlyCollection<AccountViewModel> Accounts => this.accounts;
+		public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
 
 		/// <summary>
 		/// Gets or sets the selected account, or one of the selected accounts.

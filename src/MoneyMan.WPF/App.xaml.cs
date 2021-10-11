@@ -36,6 +36,12 @@ namespace MoneyMan
 		internal static UpdateManager CreateUpdateManager()
 		{
 			string channel = ThisAssembly.IsPrerelease ? "prerelease" : "release";
+			string channelOverrideFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, "channelname.txt");
+			if (File.Exists(channelOverrideFilePath))
+			{
+				channel = File.ReadAllText(channelOverrideFilePath).Trim();
+			}
+
 			string subchannel = RuntimeInformation.ProcessArchitecture switch
 			{
 				Architecture.Arm64 => "win-arm64",
