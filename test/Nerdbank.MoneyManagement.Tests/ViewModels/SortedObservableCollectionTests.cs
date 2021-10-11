@@ -24,7 +24,13 @@ public class SortedObservableCollectionTests : TestBase
 	}
 
 	[Fact]
-	public void IsReadOnly() => Assert.False(((ICollection<int>)this.collection).IsReadOnly);
+	public void IsReadOnly_ICollectionOfT() => Assert.False(((ICollection<int>)this.collection).IsReadOnly);
+
+	[Fact]
+	public void IsReadOnly_IList() => Assert.False(((IList)this.collection).IsReadOnly);
+
+	[Fact]
+	public void IsFixedSize() => Assert.False(((IList)this.collection).IsFixedSize);
 
 	[Fact]
 	public void IsSynchronized() => Assert.False(((ICollection)this.collection).IsSynchronized);
@@ -43,11 +49,33 @@ public class SortedObservableCollectionTests : TestBase
 	}
 
 	[Fact]
-	public void Add_CollectionInterface()
+	public void Add_ICollectionOfT()
 	{
 		ICollection<int> collection = this.collection;
 		collection.Add(5);
 		Assert.Equal(5, Assert.Single(collection));
+	}
+
+	[Fact]
+	public void Add_IList()
+	{
+		IList collection = this.collection;
+		collection.Add(5);
+		Assert.Equal(5, Assert.Single(collection));
+	}
+
+	[Fact]
+	public void Insert_IListOfT()
+	{
+		IList<int> collection = this.collection;
+		Assert.Throws<NotSupportedException>(() => collection.Insert(0, 5));
+	}
+
+	[Fact]
+	public void Insert_IList()
+	{
+		IList collection = this.collection;
+		Assert.Throws<NotSupportedException>(() => collection.Insert(0, 5));
 	}
 
 	[Fact]
@@ -58,6 +86,24 @@ public class SortedObservableCollectionTests : TestBase
 		this.collection.Add(5);
 		Assert.Equal(5, this.collection[0]);
 		Assert.Equal(3, this.collection[1]);
+	}
+
+	[Fact]
+	public void Indexer_IList()
+	{
+		IList collection = this.collection;
+		collection.Add(5);
+		Assert.Equal(5, collection[0]);
+		Assert.Throws<NotSupportedException>(() => collection[0] = 3);
+	}
+
+	[Fact]
+	public void Indexer_IListOfT()
+	{
+		IList<int> collection = this.collection;
+		collection.Add(5);
+		Assert.Equal(5, collection[0]);
+		Assert.Throws<NotSupportedException>(() => collection[0] = 3);
 	}
 
 	[Fact]
@@ -93,6 +139,15 @@ public class SortedObservableCollectionTests : TestBase
 		this.collection.Add(1);
 		Assert.True(this.collection.Contains(1));
 #pragma warning restore xUnit2017 // Do not use Contains() to check if a value exists in a collection
+	}
+
+	[Fact]
+	public void Contains_IList()
+	{
+		IList collection = this.collection;
+		Assert.False(collection.Contains(1));
+		this.collection.Add(1);
+		Assert.True(collection.Contains(1));
 	}
 
 	[Fact]
@@ -144,7 +199,7 @@ public class SortedObservableCollectionTests : TestBase
 	}
 
 	[Fact]
-	public void Remove_CollectionInterface()
+	public void Remove_ICollectionOfT()
 	{
 		ICollection<int> collection = this.collection;
 		Assert.False(collection.Remove(1));
@@ -153,6 +208,17 @@ public class SortedObservableCollectionTests : TestBase
 		Assert.True(collection.Remove(3));
 		Assert.True(collection.Remove(5));
 		Assert.False(collection.Remove(5));
+	}
+
+	[Fact]
+	public void Remove_IList()
+	{
+		IList collection = this.collection;
+		collection.Remove(1);
+		collection.Add(3);
+		collection.Add(5);
+		collection.Remove(3);
+		collection.Remove(5);
 	}
 
 	[Fact]
@@ -176,6 +242,18 @@ public class SortedObservableCollectionTests : TestBase
 		Assert.Equal(~0, this.collection.IndexOf(15));
 		Assert.Equal(~1, this.collection.IndexOf(7));
 		Assert.Equal(~2, this.collection.IndexOf(3));
+	}
+
+	[Fact]
+	public void IndexOf_IList()
+	{
+		IList collection = this.collection;
+		Assert.Equal(~0, collection.IndexOf(3));
+		this.collection.Add(5);
+		this.collection.Add(10);
+		Assert.Equal(~0, collection.IndexOf(15));
+		Assert.Equal(~1, collection.IndexOf(7));
+		Assert.Equal(~2, collection.IndexOf(3));
 	}
 
 	[Fact]
@@ -290,6 +368,53 @@ public class SortedObservableCollectionTests : TestBase
 	}
 
 	[Fact]
+	public void ItemChangesWithNullPropertyName()
+	{
+		MutableClassComparer comparer = new MutableClassComparer();
+		SortedObservableCollection<ObservableMutableClass> collection = new(comparer);
+		ObservableMutableClass a = new(1);
+		ObservableMutableClass b = new(2);
+		collection.Add(a);
+		collection.Add(b);
+
+		int oldCount = comparer.InvocationCount;
+		a.RaisePropertyChanged(a, null);
+		Assert.NotEqual(oldCount, comparer.InvocationCount);
+	}
+
+	[Fact]
+	public void ItemChangesWithNullSender()
+	{
+		MutableClassComparer comparer = new MutableClassComparer();
+		SortedObservableCollection<ObservableMutableClass> collection = new(comparer);
+		ObservableMutableClass a = new(1);
+		ObservableMutableClass b = new(2);
+		collection.Add(a);
+		collection.Add(b);
+
+		int oldCount = comparer.InvocationCount;
+		ArgumentNullException ex = Assert.Throws<ArgumentNullException>("sender", () => a.RaisePropertyChanged(null, nameof(a.Value)));
+		this.Logger.WriteLine(ex.ToString());
+		Assert.Equal(oldCount, comparer.InvocationCount);
+	}
+
+	[Fact]
+	public void ItemChangesWithNonMemberSender()
+	{
+		MutableClassComparer comparer = new MutableClassComparer();
+		SortedObservableCollection<ObservableMutableClass> collection = new(comparer);
+		ObservableMutableClass a = new(1);
+		ObservableMutableClass b = new(2);
+		collection.Add(a);
+		collection.Add(b);
+
+		int oldCount = comparer.InvocationCount;
+		ArgumentException ex = Assert.Throws<ArgumentException>("sender", () => a.RaisePropertyChanged(new ObservableMutableClass(1), nameof(ObservableMutableClass.Value)));
+		this.Logger.WriteLine(ex.ToString());
+		Assert.Equal(oldCount, comparer.InvocationCount);
+	}
+
+	[Fact]
 	public void Remove_ReleasesHandlerReference()
 	{
 		SortedObservableCollection<ObservableMutableClass> collection = new(new MutableClassComparer());
@@ -392,6 +517,8 @@ public class SortedObservableCollectionTests : TestBase
 		}
 
 		internal int HandlersCount => this.PropertyChanged?.GetInvocationList().Length ?? 0;
+
+		internal void RaisePropertyChanged(object? sender, string? propertyName) => this.PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs(propertyName));
 
 		protected void OnPropertyChanged([CallerMemberName] string propertyName = "") => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 	}
