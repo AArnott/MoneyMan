@@ -61,11 +61,13 @@ namespace Nerdbank.MoneyManagement
 		/// Adds an item to a sorted list.
 		/// </summary>
 		/// <typeparam name="T">The type of items kept in the list.</typeparam>
+		/// <typeparam name="TCollection">The type of collection to update.</typeparam>
 		/// <param name="list">The sorted list.</param>
 		/// <param name="item">The item to be added.</param>
 		/// <param name="comparer">The sorting rules used for <paramref name="list"/>.</param>
 		/// <returns>The index of the item in its new position.</returns>
-		internal static int AddInSortOrder<T>(this Collection<T> list, T item, IComparer<T> comparer)
+		internal static int AddInSortOrder<T, TCollection>(this TCollection list, T item, IComparer<T> comparer)
+			where TCollection : IReadOnlyList<T>, IList<T>
 		{
 			int index = list.BinarySearch(item, comparer);
 			if (index < 0)
@@ -81,6 +83,7 @@ namespace Nerdbank.MoneyManagement
 		/// Adjusts the position of some item in a sorted list if it does not belong where it currently is.
 		/// </summary>
 		/// <typeparam name="T">The type of item being sorted.</typeparam>
+		/// <typeparam name="TCollection">The type of collection to update.</typeparam>
 		/// <param name="list">The list. This must be perfectly sorted according to <paramref name="comparer"/> except possibly for the <paramref name="changedItem"/>.</param>
 		/// <param name="changedItem">The item that may not be in the right place.</param>
 		/// <param name="comparer">The sorting rules used for <paramref name="list"/>.</param>
@@ -88,8 +91,10 @@ namespace Nerdbank.MoneyManagement
 		/// <remarks>
 		/// When <paramref name="changedItem"/> cannot by found in the <paramref name="list"/>, (-1, -1) is returned.
 		/// </remarks>
-		internal static (int OldIndex, int NewIndex) UpdateSortPosition<T>(this Collection<T> list, T changedItem, IComparer<T> comparer)
+		internal static (int OldIndex, int NewIndex) UpdateSortPosition<T, TCollection>(this TCollection list, T changedItem, IComparer<T> comparer)
+			where TCollection : IReadOnlyList<T>, IList<T>
 		{
+			IReadOnlyList<T> readOnlyList = list;
 			int originalIndex = list.IndexOf(changedItem);
 			if (originalIndex < 0)
 			{
@@ -97,9 +102,9 @@ namespace Nerdbank.MoneyManagement
 			}
 
 			int newIndex = originalIndex;
-			if ((originalIndex > 0 && comparer.Compare(changedItem, list[originalIndex - 1]) < 0) ||
-				(originalIndex < list.Count - 2 && comparer.Compare(changedItem, list[originalIndex + 1]) > 0) ||
-				(originalIndex < list.Count - 1 && comparer.Compare(changedItem, list[^1]) > 0))
+			if ((originalIndex > 0 && comparer.Compare(changedItem, readOnlyList[originalIndex - 1]) < 0) ||
+				(originalIndex < readOnlyList.Count - 2 && comparer.Compare(changedItem, readOnlyList[originalIndex + 1]) > 0) ||
+				(originalIndex < readOnlyList.Count - 1 && comparer.Compare(changedItem, readOnlyList[^1]) > 0))
 			{
 				// The order needs to change.
 				list.RemoveAt(originalIndex);
