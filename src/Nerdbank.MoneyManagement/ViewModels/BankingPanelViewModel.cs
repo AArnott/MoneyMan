@@ -36,7 +36,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		internal void Remove(AccountViewModel account)
 		{
-			if (!this.accounts.Remove(account))
+			if (this.accounts.Remove(account) < 0)
 			{
 				this.closedAccounts.Remove(account);
 			}

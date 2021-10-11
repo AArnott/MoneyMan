@@ -9,6 +9,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System.Collections.Specialized;
 	using System.ComponentModel;
 	using System.Diagnostics;
+	using System.Reflection;
 
 	/// <summary>
 	/// A sorted, observable collection.
@@ -18,6 +19,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	/// <typeparamref name="T"/> should be immutable such that the sort result will never change,
 	/// <em>or</em> it should implement <see cref="INotifyPropertyChanged"/> and raise <see cref="INotifyPropertyChanged.PropertyChanged"/>
 	/// whenever a property that may impact sort order has changed.
+	/// The <c>sender</c> argument on the <see cref="NotifyCollectionChangedEventHandler"/> must be set to the item in the collection.
 	/// The collection will automatically resort a changed item within the collection anytime this property has changed.
 	/// </remarks>
 	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
@@ -72,9 +74,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public void CopyTo(T[] array, int arrayIndex) => this.list.CopyTo(array, arrayIndex);
 
 		/// <inheritdoc/>
-		public void Add(T item)
+		void ICollection<T>.Add(T item) => this.Add(item);
+
+		/// <inheritdoc cref="List{T}.Add(T)"/>
+		/// <returns>The index of the item's position in the list.</returns>
+		public int Add(T item)
 		{
-			int index = this.list.BinarySearch(item, this.comparer);
+			// Before we resort to a binary search, see if it goes at the end of the list in case our input is already sorted.
+			int index = (this.Count == 0 || this.comparer.Compare(item, this.list[^1]) > 0) ? this.Count : this.list.BinarySearch(item, this.comparer);
 			if (index < 0)
 			{
 				index = ~index;
@@ -91,33 +98,47 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
 			}
+
+			return index;
 		}
 
 		/// <inheritdoc/>
 		public bool Contains(T item) => this.IndexOf(item) >= 0;
 
 		/// <inheritdoc/>
-		public bool Remove(T item)
+		bool ICollection<T>.Remove(T item) => this.Remove(item) >= 0;
+
+		/// <inheritdoc cref="List{T}.Remove(T)"/>
+		/// <returns>An index where the removed item had been; if the item was not found, a negative number is returned that is the bitwise complement of the index where it would have been.</returns>
+		public int Remove(T item)
 		{
 			int index = this.IndexOf(item);
 			if (index >= 0)
 			{
-				if (item is INotifyPropertyChanged observableItem)
-				{
-					observableItem.PropertyChanged -= this.Item_PropertyChanged;
-				}
-
-				this.list.RemoveAt(index);
-				this.OnPropertyChanged(nameof(this.Count));
-				if (this.CollectionChanged is object)
-				{
-					this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
-				}
-
-				return true;
+				this.RemoveAt(index);
 			}
 
-			return false;
+			return index;
+		}
+
+		/// <summary>
+		/// Removes the item at a given index.
+		/// </summary>
+		/// <param name="index">The index of the item to be removed.</param>
+		public void RemoveAt(int index)
+		{
+			T item = this.list[index];
+			if (item is INotifyPropertyChanged observableItem)
+			{
+				observableItem.PropertyChanged -= this.Item_PropertyChanged;
+			}
+
+			this.list.RemoveAt(index);
+			this.OnPropertyChanged(nameof(this.Count));
+			if (this.CollectionChanged is object)
+			{
+				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+			}
 		}
 
 		/// <inheritdoc/>
@@ -137,6 +158,52 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.OnPropertyChanged(nameof(this.Count));
 				this.OnCollectionChanged(ResetCollectionChanged);
 			}
+		}
+
+		/// <summary>
+		/// Returns the index at which a given item was found in the collection.
+		/// </summary>
+		/// <param name="item">The item to search for.</param>
+		/// <returns>The non-negative index within the list if the item was found; a negative number if it was not found, which is the bitwise complement of the index where it would have been.</returns>
+		public int IndexOf(T item)
+		{
+			int index = this.list.BinarySearch(item, this.comparer);
+
+			if (index >= 0)
+			{
+				// The binary search found one sort-equivalent match, but it may not be the same object.
+				// Several similar objects may be sorted nearby.
+				// Make sure we find an exact match.
+				T foundItem = this[index];
+				bool isClass = typeof(T).GetTypeInfo().IsClass;
+				if (!Matches(foundItem))
+				{
+					// Look earlier in the list for an exact match.
+					for (int i = index - 1; i >= 0 && this.comparer.Compare(item, this[i]) == 0; i--)
+					{
+						if (Matches(this[i]))
+						{
+							return i;
+						}
+					}
+
+					// Look later in the list for an exact match.
+					for (int i = index + 1; i < this.Count; i++)
+					{
+						if (Matches(this[i]))
+						{
+							return i;
+						}
+					}
+
+					// No match.
+					return ~index;
+				}
+
+				bool Matches(T candidate) => isClass ? ReferenceEquals(item, candidate) : EqualityComparer<T>.Default.Equals(item, candidate);
+			}
+
+			return index;
 		}
 
 		/// <summary>
@@ -174,12 +241,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, item, positions.NewIndex, positions.OldIndex));
 				}
 			}
-		}
-
-		private int IndexOf(T item)
-		{
-			// PERF: we could use binary search to find this more quickly, but be aware it may find any one of several in a row that sort as equal.
-			return this.list.IndexOf(item);
 		}
 	}
 }

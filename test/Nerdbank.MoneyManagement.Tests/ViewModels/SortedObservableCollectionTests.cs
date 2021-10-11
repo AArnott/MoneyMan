@@ -35,8 +35,19 @@ public class SortedObservableCollectionTests : TestBase
 	[Fact]
 	public void Add()
 	{
-		this.collection.Add(5);
+		Assert.Equal(0, this.collection.Add(5));
 		Assert.Equal(5, Assert.Single(this.collection));
+
+		Assert.Equal(1, this.collection.Add(3));
+		Assert.Equal(0, this.collection.Add(7));
+	}
+
+	[Fact]
+	public void Add_CollectionInterface()
+	{
+		ICollection<int> collection = this.collection;
+		collection.Add(5);
+		Assert.Equal(5, Assert.Single(collection));
 	}
 
 	[Fact]
@@ -87,12 +98,84 @@ public class SortedObservableCollectionTests : TestBase
 	[Fact]
 	public void Remove()
 	{
-		Assert.False(this.collection.Remove(1));
+		Assert.Equal(~0, this.collection.Remove(1));
 		this.collection.Add(3);
 		this.collection.Add(5);
-		Assert.True(this.collection.Remove(3));
-		Assert.True(this.collection.Remove(5));
-		Assert.False(this.collection.Remove(5));
+		Assert.Equal(1, this.collection.Remove(3));
+		Assert.Equal(0, this.collection.Remove(5));
+		Assert.Equal(~0, this.collection.Remove(5));
+	}
+
+	[Theory]
+	[InlineData(0)]
+	[InlineData(1)]
+	[InlineData(2)]
+	[InlineData(3)]
+	public void RemoveWhereMultipleIdentialRefTypesExist(int indexToRemove)
+	{
+		SortedObservableCollection<ObservableMutableClass> collection = new(new MutableClassComparer());
+		ObservableMutableClass[] items = new[]
+		{
+			new ObservableMutableClass(1),
+			new ObservableMutableClass(1),
+			new ObservableMutableClass(1),
+			new ObservableMutableClass(1),
+		};
+		foreach (ObservableMutableClass item in items)
+		{
+			collection.Add(item);
+		}
+
+		collection.Remove(items[indexToRemove]);
+		for (int i = 0; i < items.Length; i++)
+		{
+			if (i == indexToRemove)
+			{
+				Assert.DoesNotContain(items[i], collection);
+			}
+			else
+			{
+				Assert.Contains(items[i], collection);
+			}
+		}
+
+		// Attempt to remove an equivalent value that is not actually in the collection.
+		Assert.True(collection.Remove(new ObservableMutableClass(1)) < 0);
+	}
+
+	[Fact]
+	public void Remove_CollectionInterface()
+	{
+		ICollection<int> collection = this.collection;
+		Assert.False(collection.Remove(1));
+		collection.Add(3);
+		collection.Add(5);
+		Assert.True(collection.Remove(3));
+		Assert.True(collection.Remove(5));
+		Assert.False(collection.Remove(5));
+	}
+
+	[Fact]
+	public void RemoveAt()
+	{
+		Assert.Throws<ArgumentOutOfRangeException>(() => this.collection.RemoveAt(0));
+		this.collection.Add(3);
+		this.collection.Add(5);
+		this.collection.RemoveAt(1);
+		Assert.Single(this.collection);
+		this.collection.RemoveAt(0);
+		Assert.Empty(this.collection);
+	}
+
+	[Fact]
+	public void IndexOf()
+	{
+		Assert.Equal(~0, this.collection.IndexOf(3));
+		this.collection.Add(5);
+		this.collection.Add(10);
+		Assert.Equal(~0, this.collection.IndexOf(15));
+		Assert.Equal(~1, this.collection.IndexOf(7));
+		Assert.Equal(~2, this.collection.IndexOf(3));
 	}
 
 	[Fact]
@@ -114,8 +197,8 @@ public class SortedObservableCollectionTests : TestBase
 	public void Remove_RaisesPropertyChanged()
 	{
 		this.collection.Add(3);
-		TestUtilities.AssertPropertyChangedEvent(this.collection, () => Assert.True(this.collection.Remove(3)), nameof(this.collection.Count));
-		TestUtilities.AssertPropertyChangedEvent(this.collection, () => Assert.False(this.collection.Remove(3)), invertExpectation: true, nameof(this.collection.Count));
+		TestUtilities.AssertPropertyChangedEvent(this.collection, () => Assert.Equal(0, this.collection.Remove(3)), nameof(this.collection.Count));
+		TestUtilities.AssertPropertyChangedEvent(this.collection, () => Assert.Equal(~0, this.collection.Remove(3)), invertExpectation: true, nameof(this.collection.Count));
 	}
 
 	[Fact]
