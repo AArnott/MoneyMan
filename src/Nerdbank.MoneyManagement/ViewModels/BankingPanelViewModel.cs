@@ -6,10 +6,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
-	using System.Linq;
-	using System.Text;
-	using System.Threading.Tasks;
-	using Nerdbank.MoneyManagement.ViewModels;
 	using PCLCommandBase;
 
 	public class BankingPanelViewModel : BindableBase
@@ -18,7 +14,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private List<AccountViewModel> closedAccounts = new();
 		private AccountViewModel? selectedAccount;
 
-		public IReadOnlyCollection<AccountViewModel> Accounts => this.accounts;
+		public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
 
 		public AccountViewModel? SelectedAccount
 		{
@@ -34,7 +30,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 			else
 			{
-				this.accounts.Add(account);
+				this.accounts.AddInSortOrder(account, AccountSort.Instance);
 			}
 
 			account.PropertyChanged += this.Account_PropertyChanged;
@@ -52,20 +48,26 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private void Account_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
 		{
-			if (e.PropertyName == nameof(AccountViewModel.IsClosed))
+			var account = (AccountViewModel)sender!;
+			switch (e.PropertyName)
 			{
-				var account = (AccountViewModel)sender!;
-				if (account.IsClosed)
-				{
-					this.accounts.Remove(account);
-					this.closedAccounts.Add(account);
-				}
-				else
-				{
-					this.closedAccounts.Remove(account);
-					this.accounts.Add(account);
-				}
+				case nameof(AccountViewModel.IsClosed):
+					if (account.IsClosed)
+					{
+						this.accounts.Remove(account);
+						this.closedAccounts.Add(account);
+					}
+					else
+					{
+						this.closedAccounts.Remove(account);
+						this.accounts.AddInSortOrder(account, AccountSort.Instance);
+					}
+
+					break;
 			}
+
+			// Confirm the account is still in the proper sort order.
+			this.accounts.UpdateSortPosition(account, AccountSort.Instance);
 		}
 	}
 }

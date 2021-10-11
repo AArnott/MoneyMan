@@ -5,6 +5,7 @@ namespace Nerdbank.MoneyManagement
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Collections.ObjectModel;
 	using System.ComponentModel;
 	using Microsoft;
 
@@ -57,6 +58,64 @@ namespace Nerdbank.MoneyManagement
 		internal static int BinarySearch<T>(this IReadOnlyList<T> sortedList, T item, IComparer<T>? comparer = null) => BinarySearch(sortedList, 0, sortedList.Count, item, comparer);
 
 		/// <summary>
+		/// Adds an item to a sorted list.
+		/// </summary>
+		/// <typeparam name="T">The type of items kept in the list.</typeparam>
+		/// <param name="list">The sorted list.</param>
+		/// <param name="item">The item to be added.</param>
+		/// <param name="comparer">The sorting rules used for <paramref name="list"/>.</param>
+		/// <returns>The index of the item in its new position.</returns>
+		internal static int AddInSortOrder<T>(this Collection<T> list, T item, IComparer<T> comparer)
+		{
+			int index = list.BinarySearch(item, comparer);
+			if (index < 0)
+			{
+				index = ~index;
+			}
+
+			list.Insert(index, item);
+			return index;
+		}
+
+		/// <summary>
+		/// Adjusts the position of some item in a sorted list if it does not belong where it currently is.
+		/// </summary>
+		/// <typeparam name="T">The type of item being sorted.</typeparam>
+		/// <param name="list">The list. This must be perfectly sorted according to <paramref name="comparer"/> except possibly for the <paramref name="changedItem"/>.</param>
+		/// <param name="changedItem">The item that may not be in the right place.</param>
+		/// <param name="comparer">The sorting rules used for <paramref name="list"/>.</param>
+		/// <returns>The old and new index for the <paramref name="changedItem"/>.</returns>
+		/// <remarks>
+		/// When <paramref name="changedItem"/> cannot by found in the <paramref name="list"/>, (-1, -1) is returned.
+		/// </remarks>
+		internal static (int OldIndex, int NewIndex) UpdateSortPosition<T>(this Collection<T> list, T changedItem, IComparer<T> comparer)
+		{
+			int originalIndex = list.IndexOf(changedItem);
+			if (originalIndex < 0)
+			{
+				return (-1, -1);
+			}
+
+			int newIndex = originalIndex;
+			if ((originalIndex > 0 && comparer.Compare(changedItem, list[originalIndex - 1]) < 0) ||
+				(originalIndex < list.Count - 2 && comparer.Compare(changedItem, list[originalIndex + 1]) > 0) ||
+				(originalIndex < list.Count - 1 && comparer.Compare(changedItem, list[^1]) > 0))
+			{
+				// The order needs to change.
+				list.RemoveAt(originalIndex);
+				newIndex = BinarySearch(list, changedItem, comparer);
+				if (newIndex < 0)
+				{
+					newIndex = ~newIndex;
+				}
+
+				list.Insert(newIndex, changedItem);
+			}
+
+			return (originalIndex, newIndex);
+		}
+
+		/// <summary>
 		/// Searches a range of elements in the sorted <see cref="IReadOnlyList{T}"/>
 		/// for an element using the specified comparer and returns the zero-based index
 		/// of the element.
@@ -91,7 +150,7 @@ namespace Nerdbank.MoneyManagement
 		/// This implementation heavily inspired by <see href="https://github.com/dotnet/runtime/blob/72d643d05ab23888f30a57d447154e36f979f3d1/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/ArraySortHelper.cs#L77-L95">the
 		/// copy in the .NET runtime</see>.
 		/// </devremarks>
-		internal static int BinarySearch<T>(this IReadOnlyList<T> sortedList, int start, int count, T item, IComparer<T>? comparer = null)
+		private static int BinarySearch<T>(this IReadOnlyList<T> sortedList, int start, int count, T item, IComparer<T>? comparer = null)
 		{
 			Requires.Range(start >= 0, nameof(start));
 			Requires.Range(count >= 0, nameof(count));
