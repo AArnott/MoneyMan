@@ -10,6 +10,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System.ComponentModel;
 	using System.Diagnostics;
 	using System.Reflection;
+	using Microsoft;
 
 	/// <summary>
 	/// A sorted, observable collection.
@@ -23,7 +24,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	/// The collection will automatically resort a changed item within the collection anytime this property has changed.
 	/// </remarks>
 	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-	public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEnumerable, IReadOnlyCollection<T>, IReadOnlyList<T>, ICollection, INotifyCollectionChanged, INotifyPropertyChanged
+	public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEnumerable, IReadOnlyCollection<T>, IReadOnlyList<T>, ICollection, INotifyCollectionChanged, INotifyPropertyChanged, IList<T>, IList
 	{
 		private static readonly NotifyCollectionChangedEventArgs ResetCollectionChanged = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
 		private static readonly PropertyChangedEventArgs CountPropertyChangedArgs = new(nameof(Count));
@@ -61,6 +62,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		/// <inheritdoc/>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		bool IList.IsReadOnly => false;
+
+		/// <inheritdoc/>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		bool ICollection.IsSynchronized => false;
 
 		/// <inheritdoc/>
@@ -68,16 +73,25 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		object ICollection.SyncRoot => this;
 
 		/// <inheritdoc/>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		bool IList.IsFixedSize => false;
+
+		/// <inheritdoc/>
 		public T this[int index] => this.list[index];
 
 		/// <inheritdoc/>
-		void ICollection.CopyTo(Array array, int index) => ((ICollection)this.list).CopyTo(array, index);
+		T IList<T>.this[int index]
+		{
+			get => this[index];
+			set => throw new NotSupportedException();
+		}
 
 		/// <inheritdoc/>
-		public void CopyTo(T[] array, int arrayIndex) => this.list.CopyTo(array, arrayIndex);
-
-		/// <inheritdoc/>
-		void ICollection<T>.Add(T item) => this.Add(item);
+		object? IList.this[int index]
+		{
+			get => this[index];
+			set => throw new NotSupportedException();
+		}
 
 		/// <inheritdoc cref="List{T}.Add(T)"/>
 		/// <returns>The index of the item's position in the list.</returns>
@@ -106,62 +120,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		/// <inheritdoc/>
-		public bool Contains(T item) => this.IndexOf(item) >= 0;
+		void ICollection<T>.Add(T item) => this.Add(item);
 
 		/// <inheritdoc/>
-		bool ICollection<T>.Remove(T item) => this.Remove(item) >= 0;
+		int IList.Add(object? value) => this.Add((T)value!);
 
-		/// <inheritdoc cref="List{T}.Remove(T)"/>
-		/// <returns>An index where the removed item had been; if the item was not found, a negative number is returned that is the bitwise complement of the index where it would have been.</returns>
-		public int Remove(T item)
-		{
-			int index = this.IndexOf(item);
-			if (index >= 0)
-			{
-				this.RemoveAt(index);
-			}
-
-			return index;
-		}
-
-		/// <summary>
-		/// Removes the item at a given index.
-		/// </summary>
-		/// <param name="index">The index of the item to be removed.</param>
-		public void RemoveAt(int index)
-		{
-			T item = this.list[index];
-			if (item is INotifyPropertyChanged observableItem)
-			{
-				observableItem.PropertyChanged -= this.Item_PropertyChanged;
-			}
-
-			this.list.RemoveAt(index);
-			this.OnPropertyChanged(nameof(this.Count));
-			if (this.CollectionChanged is object)
-			{
-				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
-			}
-		}
+		void IList<T>.Insert(int index, T item) => throw new NotSupportedException();
 
 		/// <inheritdoc/>
-		public void Clear()
-		{
-			if (this.list.Count > 0)
-			{
-				foreach (T item in this.list)
-				{
-					if (item is INotifyPropertyChanged observableItem)
-					{
-						observableItem.PropertyChanged -= this.Item_PropertyChanged;
-					}
-				}
-
-				this.list.Clear();
-				this.OnPropertyChanged(nameof(this.Count));
-				this.OnCollectionChanged(ResetCollectionChanged);
-			}
-		}
+		void IList.Insert(int index, object? value) => throw new NotSupportedException();
 
 		/// <summary>
 		/// Returns the index at which a given item was found in the collection.
@@ -209,6 +176,79 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			return index;
 		}
 
+		/// <inheritdoc/>
+		int IList.IndexOf(object? value) => this.IndexOf((T)value!);
+
+		/// <inheritdoc/>
+		public bool Contains(T item) => this.IndexOf(item) >= 0;
+
+		/// <inheritdoc/>
+		bool IList.Contains(object? value) => this.Contains((T)value!);
+
+		/// <inheritdoc/>
+		bool ICollection<T>.Remove(T item) => this.Remove(item) >= 0;
+
+		/// <inheritdoc cref="List{T}.Remove(T)"/>
+		/// <returns>An index where the removed item had been; if the item was not found, a negative number is returned that is the bitwise complement of the index where it would have been.</returns>
+		public int Remove(T item)
+		{
+			int index = this.IndexOf(item);
+			if (index >= 0)
+			{
+				this.RemoveAt(index);
+			}
+
+			return index;
+		}
+
+		/// <inheritdoc/>
+		void IList.Remove(object? value) => this.Remove((T)value!);
+
+		/// <summary>
+		/// Removes the item at a given index.
+		/// </summary>
+		/// <param name="index">The index of the item to be removed.</param>
+		public void RemoveAt(int index)
+		{
+			T item = this.list[index];
+			if (item is INotifyPropertyChanged observableItem)
+			{
+				observableItem.PropertyChanged -= this.Item_PropertyChanged;
+			}
+
+			this.list.RemoveAt(index);
+			this.OnPropertyChanged(nameof(this.Count));
+			if (this.CollectionChanged is object)
+			{
+				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+			}
+		}
+
+		/// <inheritdoc/>
+		public void Clear()
+		{
+			if (this.list.Count > 0)
+			{
+				foreach (T item in this.list)
+				{
+					if (item is INotifyPropertyChanged observableItem)
+					{
+						observableItem.PropertyChanged -= this.Item_PropertyChanged;
+					}
+				}
+
+				this.list.Clear();
+				this.OnPropertyChanged(nameof(this.Count));
+				this.OnCollectionChanged(ResetCollectionChanged);
+			}
+		}
+
+		/// <inheritdoc/>
+		public void CopyTo(T[] array, int arrayIndex) => this.list.CopyTo(array, arrayIndex);
+
+		/// <inheritdoc/>
+		void ICollection.CopyTo(Array array, int index) => ((ICollection)this.list).CopyTo(array, index);
+
 		/// <summary>
 		/// Returns an enumerator that enumerates through the list.
 		/// </summary>
@@ -225,7 +265,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// Raises the <see cref="PropertyChanged"/> event.
 		/// </summary>
 		/// <param name="propertyName">The name of the property that changed.</param>
-		protected void OnPropertyChanged(string propertyName) => this.PropertyChanged?.Invoke(this, propertyName == nameof(this.Count) ? CountPropertyChangedArgs : new PropertyChangedEventArgs(propertyName));
+		protected void OnPropertyChanged(string propertyName)
+		{
+			Assumes.True(propertyName == nameof(this.Count));
+			this.PropertyChanged?.Invoke(this, CountPropertyChangedArgs);
+		}
 
 		/// <summary>
 		/// Raises the <see cref="CollectionChanged"/> event.
@@ -235,10 +279,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
-			if (sender is T item && (e.PropertyName is null || this.comparer is not IOptimizedComparer<T> optimized || optimized.IsPropertySignificant(e.PropertyName)))
+			T? item = (T?)sender;
+			Requires.NotNullAllowStructs(item, nameof(sender));
+
+			if (e.PropertyName is null || this.comparer is not IOptimizedComparer<T> optimized || optimized.IsPropertySignificant(e.PropertyName))
 			{
 				// Consider whether this item should be repositioned in the list.
 				(int OldIndex, int NewIndex) positions = this.list.UpdateSortPosition(item, this.comparer);
+				Requires.Argument(positions.OldIndex >= 0, nameof(sender), "Must belong to this collection.");
 				if (positions.OldIndex != positions.NewIndex && this.CollectionChanged is object)
 				{
 					this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, item, positions.NewIndex, positions.OldIndex));
