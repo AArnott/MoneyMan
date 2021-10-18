@@ -32,6 +32,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public string AddCommandCaption => "_Add new";
 
+		public string NameLabel => "_Name";
+
+		public string IsClosedLabel => "Account closed";
+
+		public string IsClosedExplanation => "Closed accounts do not appear in the account list and do not accrue toward your net worth.";
+
 		/// <summary>
 		/// Gets a command that deletes all accounts in the <see cref="SelectedAccounts"/> collection, if that property is set;
 		/// otherwise the <see cref="SelectedAccount"/> is deleted.

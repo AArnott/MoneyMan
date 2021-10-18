@@ -37,8 +37,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.name, value);
 		}
 
-		public string NameLabel => "_Name";
-
 		public string? TransferTargetName => $"[{this.Name}]";
 
 		public bool IsClosed
@@ -46,10 +44,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.isClosed;
 			set => this.SetProperty(ref this.isClosed, value);
 		}
-
-		public string IsClosedLabel => "Account closed";
-
-		public string IsClosedExplanation => "Closed accounts do not appear in the account list and do not accrue toward your net worth.";
 
 		public decimal Balance
 		{

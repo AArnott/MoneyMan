@@ -32,6 +32,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public string AddCommandCaption => "_Add new";
 
+		public string NameLabel => "_Name";
+
+		public int NameMaxLength => 100;
+
 		/// <summary>
 		/// Gets a command that deletes all categories in the <see cref="SelectedCategories"/> collection, if that property is set;
 		/// otherwise the <see cref="SelectedCategory"/> is deleted.
