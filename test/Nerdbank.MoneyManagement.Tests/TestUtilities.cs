@@ -9,6 +9,7 @@ namespace Nerdbank.MoneyManagement.Tests
 	using System.ComponentModel;
 	using System.Linq;
 	using System.Threading.Tasks;
+	using System.Windows.Input;
 	using Microsoft;
 	using Xunit;
 
@@ -57,6 +58,27 @@ namespace Nerdbank.MoneyManagement.Tests
 			{
 				Assert.Same(sender, eventSender);
 				args = e;
+			}
+		}
+
+		internal static void AssertCommandCanExecuteChanged(ICommand command, Action trigger)
+		{
+			bool raised = false;
+			command.CanExecuteChanged += Handler;
+			try
+			{
+				trigger();
+				Assert.True(raised);
+			}
+			finally
+			{
+				command.CanExecuteChanged -= Handler;
+			}
+
+			void Handler(object? sender, EventArgs args)
+			{
+				Assert.Same(command, sender);
+				raised = true;
 			}
 		}
 

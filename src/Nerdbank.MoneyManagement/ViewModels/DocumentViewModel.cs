@@ -108,6 +108,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public CommandBase DeleteTransactionsCommand { get; }
 
+		public string DeleteCommandCaption => "_Delete";
+
 		internal MoneyFile? MoneyFile { get; }
 
 		private string DebuggerDisplay => this.MoneyFile?.Path ?? "(not backed by a file)";
