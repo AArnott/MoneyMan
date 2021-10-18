@@ -4,51 +4,17 @@
 namespace MoneyMan.ViewModel
 {
 	using Nerdbank.MoneyManagement.ViewModels;
-	using PCLCommandBase;
 
-	public class MainPageViewModel : BindableBase
+	public class MainPageViewModel : MainPageViewModelBase
 	{
-		private string statusMessage = "Ready";
-		private bool updateAvailable;
-		private string version = ThisAssembly.AssemblyInformationalVersion;
-		private DocumentViewModel document = new DocumentViewModel();
-		private int downloadingUpdatePercentage;
+		internal MainWindow MainWindow { get; set; } = null!;
 
-		public MainPageViewModel()
+		public override void ReplaceViewModel(DocumentViewModel documentViewModel)
 		{
-			this.RegisterDependentProperty(nameof(this.DownloadingUpdatePercentage), nameof(this.UpdateDownloading));
-		}
+			base.ReplaceViewModel(documentViewModel);
 
-		public DocumentViewModel Document
-		{
-			get => this.document;
-			set => this.SetProperty(ref this.document, value);
-		}
-
-		public string StatusMessage
-		{
-			get => this.statusMessage;
-			set => this.SetProperty(ref this.statusMessage, value);
-		}
-
-		public bool UpdateAvailable
-		{
-			get => this.updateAvailable;
-			set => this.SetProperty(ref this.updateAvailable, value);
-		}
-
-		public bool UpdateDownloading => this.DownloadingUpdatePercentage is > 0 and < 100;
-
-		public int DownloadingUpdatePercentage
-		{
-			get => this.downloadingUpdatePercentage;
-			set => this.SetProperty(ref this.downloadingUpdatePercentage, value);
-		}
-
-		public string Version
-		{
-			get => this.version;
-			set => this.SetProperty(ref this.version, value);
+			this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.CategoriesListView.SelectedItems;
+			this.Document.SelectedTransactions = this.MainWindow.TransactionDataGrid.SelectedItems;
 		}
 	}
 }

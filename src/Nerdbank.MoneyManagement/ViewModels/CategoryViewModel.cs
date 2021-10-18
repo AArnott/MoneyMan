@@ -41,6 +41,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		public string NameLabel => "_Name";
+
+		public int NameMaxLength => 100;
+
 		public string TransferTargetName => this.Name;
 
 		private string DebuggerDisplay => this.Name;

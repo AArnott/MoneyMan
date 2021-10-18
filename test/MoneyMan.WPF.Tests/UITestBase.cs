@@ -27,7 +27,7 @@ public abstract class UITestBase : MoneyTestBase
 		PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Warning;
 		PresentationTraceSources.DataBindingSource.Listeners.Add(this.TraceListener);
 
-		this.Window.ReplaceViewModel(this.DocumentViewModel);
+		this.Window.ViewModel.ReplaceViewModel(this.DocumentViewModel);
 		if (VisibleWindow)
 		{
 			this.Window.Show();

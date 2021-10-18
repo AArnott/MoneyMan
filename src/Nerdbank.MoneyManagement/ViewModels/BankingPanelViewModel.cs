@@ -12,6 +12,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private List<AccountViewModel> closedAccounts = new();
 		private AccountViewModel? selectedAccount;
 
+		public string Title => "Banking";
+
+		public string NetWorthCaption => "Net worth";
+
 		public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
 
 		public AccountViewModel? SelectedAccount
@@ -19,6 +23,22 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.selectedAccount;
 			set => this.SetProperty(ref this.selectedAccount, value);
 		}
+
+		public string WhenHeader => "Date";
+
+		public string PayeeHeader => "Payee";
+
+		public string CategoryHeader => "Category";
+
+		public string MemoHeader => "Memo";
+
+		public string AmountHeader => "Amount";
+
+		public string CheckNumberHeader => "Check No.";
+
+		public string ClearedHeader => "Clr";
+
+		public string BalanceHeader => "Balance";
 
 		internal void Add(AccountViewModel account)
 		{

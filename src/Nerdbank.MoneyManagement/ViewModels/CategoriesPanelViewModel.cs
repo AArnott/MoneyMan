@@ -3,10 +3,7 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
-	using System;
 	using System.Collections;
-	using System.Collections.Generic;
-	using System.Collections.ObjectModel;
 	using System.Collections.Specialized;
 	using System.ComponentModel;
 	using System.Linq;
@@ -29,7 +26,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.documentViewModel = documentViewModel;
 		}
 
+		public string Title => "Categories";
+
 		public CommandBase AddCommand { get; }
+
+		public string AddCommandCaption => "_Add new";
 
 		/// <summary>
 		/// Gets a command that deletes all categories in the <see cref="SelectedCategories"/> collection, if that property is set;

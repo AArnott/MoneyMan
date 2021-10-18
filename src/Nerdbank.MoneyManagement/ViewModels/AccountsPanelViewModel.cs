@@ -26,7 +26,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.documentViewModel = documentViewModel;
 		}
 
+		public string Title => "Accounts";
+
 		public CommandBase AddCommand { get; }
+
+		public string AddCommandCaption => "_Add new";
 
 		/// <summary>
 		/// Gets a command that deletes all accounts in the <see cref="SelectedAccounts"/> collection, if that property is set;
