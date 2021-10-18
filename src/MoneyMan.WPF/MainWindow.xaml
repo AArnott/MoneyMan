@@ -211,13 +211,13 @@
 				</TabItem.Resources>
 				<DockPanel>
 					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
-						<Label Content="{Binding NameLabel}" Target="{Binding ElementName=AccountName}" />
+						<Label Content="{Binding Document.AccountsPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountName}" />
 						<TextBox Name="AccountName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
-						<CheckBox IsChecked="{Binding IsClosed}" Content="{Binding IsClosedLabel}" Margin="0,15,0,0" />
-						<TextBlock Text="{Binding IsClosedExplanation}" TextWrapping="Wrap" />
+						<CheckBox IsChecked="{Binding IsClosed}" Content="{Binding Document.AccountsPanel.IsClosedLabel, Source={StaticResource viewModel}}" Margin="0,15,0,0" />
+						<TextBlock Text="{Binding Document.AccountsPanel.IsClosedExplanation, Source={StaticResource viewModel}}" TextWrapping="Wrap" />
 					</StackPanel>
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
@@ -255,9 +255,9 @@
 				</TabItem.Resources>
 				<DockPanel>
 					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
-						<Label Content="{Binding NameLabel}" Target="{Binding ElementName=CategoryName}" />
+						<Label Content="{Binding Document.CategoriesPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
-								 MaxLength="{Binding NameMaxLength}"
+								 MaxLength="{Binding Document.CategoriesPanel.NameMaxLength, Source={StaticResource viewModel}}"
 								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 					</StackPanel>
