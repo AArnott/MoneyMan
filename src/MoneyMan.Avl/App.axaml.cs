@@ -20,10 +20,7 @@ namespace MoneyMan.Avl
 		{
 			if (this.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
 			{
-				desktop.MainWindow = new MainWindow
-				{
-					DataContext = new MainWindowViewModel(),
-				};
+				desktop.MainWindow = new MainWindow();
 			}
 
 			base.OnFrameworkInitializationCompleted();

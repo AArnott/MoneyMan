@@ -1,17 +1,52 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:MoneyMan.Avl.ViewModels"
+        xmlns:local="using:MoneyMan.Avl.ViewModels"
+        xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MoneyMan.Avl.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="MoneyMan.Avl">
+        Title="{Binding Document.Title}">
 
-    <Design.DataContext>
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
+	<Design.DataContext>
+		<local:MainPageViewModel/>
+	</Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+	<Window.Resources>
+		<local:MainPageViewModel x:Key="viewModel" />
+	</Window.Resources>
+
+	<DockPanel>
+		<Menu DockPanel.Dock="Top">
+			<MenuItem Header="_File">
+				<MenuItem Header="_New" Command="{Binding FileNewCommand}" />
+				<MenuItem Header="_Open" Command="{Binding FileOpenCommand}" />
+				<MenuItem Header="_Close" Command="{Binding FileCloseCommand}" />
+			</MenuItem>
+		</Menu>
+
+		<TabControl TabStripPlacement="Bottom" DataContext="{Binding Document, Source={StaticResource viewModel}}">
+			<TabItem Header="{Binding Title}" DataContext="{Binding BankingPanel}">
+
+			</TabItem>
+			<TabItem Header="{Binding Title}" DataContext="{Binding AccountsPanel}">
+
+			</TabItem>
+			<TabItem Header="{Binding Title}" DataContext="{Binding CategoriesPanel}">
+				<DockPanel>
+					<StackPanel Margin="5,0,5,0" Width="150" DockPanel.Dock="Right" DataContext="{Binding SelectedItem, Source={Binding ElementName=CategoriesListView}">
+						<Label Content="{Binding NameLabel}" Target="{Binding ElementName=CategoryName}" />
+						<TextBox Name="CategoryName"
+								 Text="{Binding Name}"
+								 MaxLength="{Binding NameMaxLength}" />
+					</StackPanel>
+					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
+					<ListBox Name="CategoriesListView" Items="{Binding Categories}">
+					</ListBox>
+				</DockPanel>
+			</TabItem>
+		</TabControl>
+	</DockPanel>
 
 </Window>
