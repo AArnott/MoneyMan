@@ -36,12 +36,13 @@ namespace MoneyMan
 		public MainWindow()
 		{
 			this.InitializeComponent();
+			this.ViewModel.MainWindow = this;
 			this.DataContext = this.ViewModel;
 			this.Loaded += this.MainWindow_Loaded;
+			this.ViewModel.FileClosed += this.ViewModel_FileClosed;
 
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
-			this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, this.FileClose, this.CanFileClose));
 		}
 
 		public bool ReopenLastFile { get; set; } = true;
@@ -50,17 +51,6 @@ namespace MoneyMan
 		{
 			get => (MainPageViewModel)this.Resources["viewModel"];
 			set => this.Resources["viewModel"] = value;
-		}
-
-		internal void ReplaceViewModel(DocumentViewModel viewModel)
-		{
-			this.ViewModel.Document.Dispose();
-
-			// BUGBUG: This doesn't trigger data-binding to reapply to the new view model.
-			this.ViewModel.Document = viewModel;
-
-			this.ViewModel.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
-			this.ViewModel.Document.SelectedTransactions = this.TransactionDataGrid.SelectedItems;
 		}
 
 		protected override void OnClosed(EventArgs e)
@@ -74,18 +64,13 @@ namespace MoneyMan
 		{
 			SaveFileDialog dialog = new()
 			{
-				Title = "Create new MoneyMan file",
+				Title = this.ViewModel.FileOpenDialogTitle,
 				OverwritePrompt = true,
 			};
 			this.InitializeFileDialog(dialog);
 			if (dialog.ShowDialog() is true)
 			{
-				// Create the new file in a temporary location so we don't conflict with the currently open document.
-				string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-				DocumentViewModel.CreateNew(tempFile).Dispose();
-				this.ViewModel.Document.Dispose();
-				File.Move(tempFile, dialog.FileName, overwrite: true);
-				this.ReplaceViewModel(DocumentViewModel.Open(dialog.FileName));
+				this.ViewModel.OpenNewFile(dialog.FileName);
 			}
 		}
 
@@ -94,7 +79,7 @@ namespace MoneyMan
 			OpenFileDialog dialog = new()
 			{
 				CheckFileExists = true,
-				Title = "Open MoneyMan file",
+				Title = this.ViewModel.FileOpenDialogTitle,
 			};
 			this.InitializeFileDialog(dialog);
 			if (dialog.ShowDialog() is true)
@@ -107,7 +92,7 @@ namespace MoneyMan
 		{
 			try
 			{
-				this.ReplaceViewModel(DocumentViewModel.Open(path));
+				this.ViewModel.OpenExistingFile(path);
 				AppSettings.Default.LastOpenedFile = path;
 			}
 			catch (Exception ex)
@@ -116,15 +101,9 @@ namespace MoneyMan
 			}
 		}
 
-		private void FileClose(object sender, ExecutedRoutedEventArgs e)
+		private void ViewModel_FileClosed(object? sender, EventArgs e)
 		{
-			this.ReplaceViewModel(new DocumentViewModel(null));
 			AppSettings.Default.LastOpenedFile = null;
-		}
-
-		private void CanFileClose(object sender, CanExecuteRoutedEventArgs e)
-		{
-			e.CanExecute = this.ViewModel.Document.IsFileOpen;
 		}
 
 		private void InitializeFileDialog(FileDialog dialog)

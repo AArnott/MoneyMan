@@ -5,7 +5,6 @@
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"	
 		xmlns:local="clr-namespace:MoneyMan.ViewModel"
 		xmlns:vm="clr-namespace:Nerdbank.MoneyManagement.ViewModels;assembly=Nerdbank.MoneyManagement"
-		xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
 		xmlns:converters="clr-namespace:MoneyMan.Converters"
 		mc:Ignorable="d"
 		Title="{Binding Document.Title}" Height="456" Width="762">
@@ -20,7 +19,7 @@
 			<MenuItem Header="_File">
 				<MenuItem Header="_New" Command="ApplicationCommands.New" />
 				<MenuItem Header="_Open" Command="ApplicationCommands.Open" />
-				<MenuItem Header="_Close" Command="ApplicationCommands.Close" />
+				<MenuItem Header="_Close" Command="{Binding FileCloseCommand, Source={StaticResource viewModel}}" />
 			</MenuItem>
 		</Menu>
 		<ToolBarTray DockPanel.Dock="Top" Visibility="Collapsed">
@@ -43,7 +42,7 @@
 		</StatusBar>
 		<TabControl TabStripPlacement="Bottom"
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
-			<TabItem Header="Banking" DataContext="{Binding BankingPanel}">
+			<TabItem Header="{Binding Title}" DataContext="{Binding BankingPanel}">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" />
 				</TabItem.Resources>
@@ -55,7 +54,7 @@
 					<DockPanel Grid.Column="0">
 						<DockPanel DockPanel.Dock="Bottom" Margin="5">
 							<TextBlock DockPanel.Dock="Right" Text="{Binding Source={StaticResource viewModel}, Path=Document.NetWorth, StringFormat=C}" FontWeight="Bold" />
-							<TextBlock Text="Net worth" FontWeight="Bold" />
+							<TextBlock Text="{Binding NetWorthCaption}" FontWeight="Bold" />
 						</DockPanel>
 						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
 							<ListView.ItemTemplate>
@@ -85,7 +84,7 @@
 								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
-								<DataGridTemplateColumn Header="Date">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Text="{Binding When, Mode=OneWay, StringFormat=d}" Margin="3pt" />
@@ -97,7 +96,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTemplateColumn Header="Payee">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.PayeeHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Text="{Binding Payee, Mode=OneWay}" Margin="3pt" />
@@ -109,7 +108,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTemplateColumn Header="Category">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt" />
@@ -129,7 +128,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTemplateColumn Header="Memo">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
@@ -141,7 +140,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTemplateColumn Header="Amount">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Margin="3pt" Text="{Binding Amount, StringFormat=C}" HorizontalAlignment="Right" />
@@ -153,7 +152,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTemplateColumn Header="Check No.">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CheckNumberHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Margin="3pt" Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" HorizontalAlignment="Right" />
@@ -165,7 +164,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTemplateColumn Header="Clr">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.ClearedHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Margin="3pt" Text="{Binding Cleared.ShortCaption}" />
@@ -180,7 +179,7 @@
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTemplateColumn Header="Balance" IsReadOnly="True">
+								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.BalanceHeader, Source={StaticResource viewModel}}" IsReadOnly="True">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
 											<TextBlock Margin="3pt" Text="{Binding Balance, StringFormat=C}" HorizontalAlignment="Right" />
@@ -190,14 +189,14 @@
 							</DataGrid.Columns>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
-									<MenuItem Header="_Delete" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
+									<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
 								</ContextMenu>
 							</DataGrid.ContextMenu>
 						</DataGrid>
 					</DockPanel>
 				</Grid>
 			</TabItem>
-			<TabItem Header="Accounts" DataContext="{Binding AccountsPanel}" Height="20" VerticalAlignment="Top">
+			<TabItem Header="{Binding Title}" DataContext="{Binding AccountsPanel}" Height="20" VerticalAlignment="Top">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Accounts}" x:Key="categories" />
 					<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
@@ -212,15 +211,15 @@
 				</TabItem.Resources>
 				<DockPanel>
 					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
-						<Label Content="_Name" Target="{Binding ElementName=AccountName}" />
+						<Label Content="{Binding Document.AccountsPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountName}" />
 						<TextBox Name="AccountName"
 								 MaxLength="100"
 								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
-						<CheckBox IsChecked="{Binding IsClosed}" Content="Account closed" Margin="0,15,0,0" />
-						<TextBlock Text="Closed accounts do not appear in the account list and do not accrue toward your net worth." TextWrapping="Wrap" />
+						<CheckBox IsChecked="{Binding IsClosed}" Content="{Binding Document.AccountsPanel.IsClosedLabel, Source={StaticResource viewModel}}" Margin="0,15,0,0" />
+						<TextBlock Text="{Binding Document.AccountsPanel.IsClosedExplanation, Source={StaticResource viewModel}}" TextWrapping="Wrap" />
 					</StackPanel>
-					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
+					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
 						<ListView.ItemContainerStyle>
 							<Style TargetType="ListBoxItem">
@@ -241,7 +240,7 @@
 					</ListView>
 				</DockPanel>
 			</TabItem>
-			<TabItem Header="Categories" DataContext="{Binding CategoriesPanel}" Height="20" VerticalAlignment="Top">
+			<TabItem Header="{Binding Title}" DataContext="{Binding CategoriesPanel}" Height="20" VerticalAlignment="Top">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Categories}" x:Key="categories" />
 					<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
@@ -256,13 +255,13 @@
 				</TabItem.Resources>
 				<DockPanel>
 					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
-						<Label Content="_Name" Target="{Binding ElementName=CategoryName}" />
+						<Label Content="{Binding Document.CategoriesPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
-								 MaxLength="100"
+								 MaxLength="{Binding Document.CategoriesPanel.NameMaxLength, Source={StaticResource viewModel}}"
 								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 					</StackPanel>
-					<Button Content="_Add new" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
+					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="CategoriesListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
 						<ListView.ItemContainerStyle>
 							<Style TargetType="ListBoxItem">
