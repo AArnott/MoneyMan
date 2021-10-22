@@ -42,7 +42,7 @@
 						         MaxLength="{Binding NameMaxLength}" />
 					</StackPanel>
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
-					<ListBox Name="CategoriesListView" Items="{Binding Categories}">
+					<ListBox Name="CategoriesListView" Items="{Binding Categories}" SelectedItem="{Binding SelectedCategory}">
 						<ListBox.DataTemplates>
 							<DataTemplate DataType="{x:Type vm:CategoryViewModel}">
 								<TextBlock Text="{Binding Name}" />
