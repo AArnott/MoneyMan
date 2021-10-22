@@ -36,10 +36,10 @@
 			<TabItem Header="{Binding Title}" DataContext="{Binding CategoriesPanel}">
 				<DockPanel DataContext="{Binding CategoriesPanel}">
 					<StackPanel Margin="5,0,5,0" Width="150" DockPanel.Dock="Right">
-						<Label Content="{Binding NameLabel}" Target="#CategoryName" />
+						<Label Content="{Binding NameLabel}" Target="{Binding #CategoryName}" />
 						<TextBox Name="CategoryName"
-						         Text="{Binding Name, Source=#CategoriesListView.SelectedItem}"
-						         MaxLength="{Binding CategoriesPanel.NameMaxLength, Source={StaticResource viewModel}}" />
+						         Text="{Binding #CategoriesListView.SelectedItem.Name}"
+						         MaxLength="{Binding NameMaxLength}" />
 					</StackPanel>
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListBox Name="CategoriesListView" Items="{Binding Categories}">
