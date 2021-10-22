@@ -3,6 +3,7 @@
 
 using System.Threading.Tasks;
 using Nerdbank.MoneyManagement;
+using Nerdbank.MoneyManagement.Tests;
 using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,11 +25,31 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void NewCategory()
+	{
+		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
+
+		TestUtilities.AssertRaises(
+			h => this.ViewModel.AddingNewCategory += h,
+			h => this.ViewModel.AddingNewCategory -= h,
+			() => this.ViewModel.NewCategory());
+		CategoryViewModel newCategory = Assert.Single(this.ViewModel.Categories);
+		Assert.Same(newCategory, this.ViewModel.SelectedCategory);
+		Assert.Equal(string.Empty, newCategory.Name);
+
+		newCategory.Name = "cat";
+		Assert.Equal("cat", Assert.Single(this.Money.Categories).Name);
+	}
+
+	[Fact]
 	public async Task AddCommand()
 	{
 		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
 
-		await this.ViewModel.AddCommand.ExecuteAsync();
+		await TestUtilities.AssertRaisesAsync(
+			h => this.ViewModel.AddingNewCategory += h,
+			h => this.ViewModel.AddingNewCategory -= h,
+			() => this.ViewModel.AddCommand.ExecuteAsync());
 		CategoryViewModel newCategory = Assert.Single(this.ViewModel.Categories);
 		Assert.Same(newCategory, this.ViewModel.SelectedCategory);
 		Assert.Equal(string.Empty, newCategory.Name);
