@@ -36,8 +36,8 @@ namespace MoneyMan.Avl.ViewModels
 			base.ReplaceViewModel(viewModel);
 
 			this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
+			this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.Find<ListBox>("CategoriesListView").SelectedItems;
 
-			//this.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
 			//this.Document.SelectedTransactions = this.TransactionDataGrid.SelectedItems;
 		}
 
