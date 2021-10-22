@@ -31,10 +31,19 @@ namespace MoneyMan.Avl.ViewModels
 
 		public override void ReplaceViewModel(DocumentViewModel viewModel)
 		{
+			this.Document.CategoriesPanel.AddingNewCategory -= this.CategoriesPanel_AddingNewCategory;
+
 			base.ReplaceViewModel(viewModel);
+
+			this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
 
 			//this.Document.CategoriesPanel.SelectedCategories = this.CategoriesListView.SelectedItems;
 			//this.Document.SelectedTransactions = this.TransactionDataGrid.SelectedItems;
+		}
+
+		private void CategoriesPanel_AddingNewCategory(object? sender, EventArgs e)
+		{
+			this.MainWindow.Find<TextBox>("CategoryName").Focus();
 		}
 
 		private async Task FileNewAsync()
