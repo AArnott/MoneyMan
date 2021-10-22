@@ -3,6 +3,7 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System;
 	using System.Collections;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
@@ -25,6 +26,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.DeleteCommand = new DeleteAccountCommand(this);
 			this.documentViewModel = documentViewModel;
 		}
+
+		/// <summary>
+		/// Occurs when <see cref="NewAccount(string)"/> is called or the <see cref="AddCommand" /> command is invoked.
+		/// </summary>
+		/// <remarks>
+		/// Views are expected to set focus on the Name text field in response to this event.
+		/// </remarks>
+		public event EventHandler? AddingNewAccount;
 
 		public string Title => "Accounts";
 
@@ -85,6 +94,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// <returns>The new <see cref="AccountViewModel"/>.</returns>
 		public AccountViewModel NewAccount(string name = "")
 		{
+			this.AddingNewAccount?.Invoke(this, EventArgs.Empty);
 			if (this.AddingAccount is object)
 			{
 				this.SelectedAccount = this.AddingAccount;

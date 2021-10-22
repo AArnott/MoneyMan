@@ -139,5 +139,36 @@ namespace Nerdbank.MoneyManagement.Tests
 				sender.PropertyChanged -= handler;
 			}
 		}
+
+		internal static void AssertRaises(Action<EventHandler> addHandler, Action<EventHandler> removeHandler, Action trigger)
+		{
+			AssertRaisesAsync(addHandler, removeHandler, () =>
+			{
+				trigger();
+				return Task.CompletedTask;
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+			}).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+		}
+
+		internal static async Task AssertRaisesAsync(Action<EventHandler> addHandler, Action<EventHandler> removeHandler, Func<Task> trigger)
+		{
+			bool raised = false;
+			addHandler(Handler);
+			try
+			{
+				await trigger();
+				Assert.True(raised, "Expected event not raised.");
+			}
+			finally
+			{
+				removeHandler(Handler);
+			}
+
+			void Handler(object? sender, EventArgs args)
+			{
+				raised = true;
+			}
+		}
 	}
 }
