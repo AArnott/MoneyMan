@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Threading.Tasks;
+using Nerdbank.MoneyManagement.Tests;
 using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
@@ -23,11 +24,31 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void NewAccount()
+	{
+		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
+
+		TestUtilities.AssertRaises(
+			h => this.ViewModel.AddingNewAccount += h,
+			h => this.ViewModel.AddingNewAccount -= h,
+			() => this.ViewModel.NewAccount());
+		AccountViewModel newAccount = Assert.Single(this.ViewModel.Accounts);
+		Assert.Same(newAccount, this.ViewModel.SelectedAccount);
+		Assert.Equal(string.Empty, newAccount.Name);
+
+		newAccount.Name = "cat";
+		Assert.Equal("cat", Assert.Single(this.Money.Accounts).Name);
+	}
+
+	[Fact]
 	public async Task AddCommand()
 	{
 		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
 
-		await this.ViewModel.AddCommand.ExecuteAsync();
+		await TestUtilities.AssertRaisesAsync(
+			h => this.ViewModel.AddingNewAccount += h,
+			h => this.ViewModel.AddingNewAccount -= h,
+			() => this.ViewModel.AddCommand.ExecuteAsync());
 		AccountViewModel newAccount = Assert.Single(this.ViewModel.Accounts);
 		Assert.Same(newAccount, this.ViewModel.SelectedAccount);
 		Assert.Equal(string.Empty, newAccount.Name);
