@@ -40,6 +40,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.CategoriesPanel = new(this);
 			this.AccountsPanel = new(this);
 
+			this.TransactionTargets.Add(SplitCategoryPlaceholder.Singleton);
+
 			// Keep targets collection in sync with the two collections that make it up.
 			this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
 

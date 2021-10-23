@@ -137,6 +137,12 @@ public class DocumentViewModelTests : MoneyTestBase
 		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == closed.Name);
 	}
 
+	[Fact]
+	public void TransactionTargets_IncludesSplitSingleton()
+	{
+		Assert.Contains(SplitCategoryPlaceholder.Singleton, this.DocumentViewModel.TransactionTargets);
+	}
+
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
