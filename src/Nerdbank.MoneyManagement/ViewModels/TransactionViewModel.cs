@@ -121,6 +121,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		public bool IsSplit => this.Splits.Count > 0;
+
 		public decimal Balance
 		{
 			get => this.balance;
@@ -151,7 +153,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			split.Model = new();
 			_ = this.Splits; // ensure initialized
+			bool wasSplit = this.IsSplit;
 			this.splits!.Add(split);
+			if (!wasSplit)
+			{
+				this.OnPropertyChanged(nameof(this.IsSplit));
+			}
+
 			return split;
 		}
 
@@ -166,6 +174,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			if (split.Model is object)
 			{
 				this.ThisAccount.MoneyFile?.Delete(split.Model);
+			}
+
+			if (!this.IsSplit)
+			{
+				this.OnPropertyChanged(nameof(this.IsSplit));
 			}
 		}
 

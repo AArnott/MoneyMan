@@ -167,6 +167,20 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void IsSplit()
+	{
+		Assert.False(this.viewModel.IsSplit);
+
+		// Transition to split state.
+		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.NewSplit(), nameof(this.viewModel.IsSplit));
+		Assert.True(this.viewModel.IsSplit);
+
+		// Transition back to non-split.
+		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.DeleteSplit(this.viewModel.Splits.Single()), nameof(this.viewModel.IsSplit));
+		Assert.False(this.viewModel.IsSplit);
+	}
+
+	[Fact]
 	public void Balance_JustOneTransaction()
 	{
 		// Verify that one lone transaction's balance is based on its own amount.
