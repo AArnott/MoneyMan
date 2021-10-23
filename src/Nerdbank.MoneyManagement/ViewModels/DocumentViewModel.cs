@@ -22,6 +22,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class DocumentViewModel : BindableBase, IDisposable
 	{
 		private readonly bool ownsMoneyFile;
+		private readonly SortedObservableCollection<ITransactionTarget> transactionTargets = new(TransactionTargetSort.Instance);
 		private decimal netWorth;
 		private IList? selectedTransactions;
 		private TransactionViewModel? selectedTransaction;
@@ -40,7 +41,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.CategoriesPanel = new(this);
 			this.AccountsPanel = new(this);
 
-			this.TransactionTargets.Add(SplitCategoryPlaceholder.Singleton);
+			this.transactionTargets.Add(SplitCategoryPlaceholder.Singleton);
 
 			// Keep targets collection in sync with the two collections that make it up.
 			this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
@@ -83,7 +84,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CategoriesPanelViewModel CategoriesPanel { get; }
 
-		public ObservableCollection<ITransactionTarget> TransactionTargets { get; } = new();
+		public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
 
 		public TransactionViewModel? SelectedTransaction
 		{
@@ -175,6 +176,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		internal void AddTransactionTarget(ITransactionTarget target) => this.transactionTargets.Add(target);
+
+		internal void RemoveTransactionTarget(ITransactionTarget target) => this.transactionTargets.Remove(target);
+
 		private static void ThrowUnopenedUnless([DoesNotReturnIf(false)] bool condition)
 		{
 			if (!condition)
@@ -254,14 +259,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				case NotifyCollectionChangedAction.Add when e.NewItems is object:
 					foreach (CategoryViewModel category in e.NewItems)
 					{
-						this.TransactionTargets.Add(category);
+						this.AddTransactionTarget(category);
 					}
 
 					break;
 				case NotifyCollectionChangedAction.Remove when e.OldItems is object:
 					foreach (CategoryViewModel category in e.OldItems)
 					{
-						this.TransactionTargets.Remove(category);
+						this.RemoveTransactionTarget(category);
 					}
 
 					break;
@@ -326,6 +331,52 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					this.subscribedSelectedTransactions.CollectionChanged += this.SelectedTransactions_CollectionChanged;
 				}
+			}
+		}
+
+		private class TransactionTargetSort : IComparer<ITransactionTarget>
+		{
+			internal static readonly TransactionTargetSort Instance = new();
+
+			private TransactionTargetSort()
+			{
+			}
+
+			public int Compare(ITransactionTarget? x, ITransactionTarget? y)
+			{
+				if (x is null)
+				{
+					return y is null ? 0 : -1;
+				}
+				else if (y is null)
+				{
+					return 1;
+				}
+
+				if (x.GetType() != y.GetType())
+				{
+					// First list categories.
+					int index =
+						x is CategoryViewModel && y is not CategoryViewModel ? -1 :
+						y is CategoryViewModel && x is not CategoryViewModel ? 1 :
+						0;
+					if (index != 0)
+					{
+						return index;
+					}
+
+					// Then list the special split target.
+					index =
+						x is SplitCategoryPlaceholder ? -1 :
+						y is SplitCategoryPlaceholder ? 1 :
+						0;
+					if (index != 0)
+					{
+						return index;
+					}
+				}
+
+				return StringComparer.CurrentCultureIgnoreCase.Compare(x.Name, y.Name);
 			}
 		}
 	}

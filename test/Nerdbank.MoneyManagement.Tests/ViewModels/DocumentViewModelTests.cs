@@ -143,6 +143,18 @@ public class DocumentViewModelTests : MoneyTestBase
 		Assert.Contains(SplitCategoryPlaceholder.Singleton, this.DocumentViewModel.TransactionTargets);
 	}
 
+	[Fact]
+	public void TransactionTargets_IsSorted()
+	{
+		AccountViewModel accountG = this.DocumentViewModel.AccountsPanel.NewAccount("g");
+		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewAccount("a");
+		CategoryViewModel categoryA = this.DocumentViewModel.CategoriesPanel.NewCategory("a");
+		CategoryViewModel categoryG = this.DocumentViewModel.CategoriesPanel.NewCategory("g");
+		Assert.Equal<ITransactionTarget>(
+			new ITransactionTarget[] { categoryA, categoryG, SplitCategoryPlaceholder.Singleton, accountA, accountG },
+			this.DocumentViewModel.TransactionTargets);
+	}
+
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
