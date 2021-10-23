@@ -236,6 +236,7 @@ public class SortedObservableCollectionTests : TestBase
 	[Fact]
 	public void IndexOf()
 	{
+		// The concrete public method returns the bitwise complement of the sorted location of where an item *would* be when not found.
 		Assert.Equal(~0, this.collection.IndexOf(3));
 		this.collection.Add(5);
 		this.collection.Add(10);
@@ -247,13 +248,27 @@ public class SortedObservableCollectionTests : TestBase
 	[Fact]
 	public void IndexOf_IList()
 	{
+		// This interface is documented as returning exactly -1 when items are not found.
 		IList collection = this.collection;
 		Assert.Equal(~0, collection.IndexOf(3));
 		this.collection.Add(5);
 		this.collection.Add(10);
-		Assert.Equal(~0, collection.IndexOf(15));
-		Assert.Equal(~1, collection.IndexOf(7));
-		Assert.Equal(~2, collection.IndexOf(3));
+		Assert.Equal(-1, collection.IndexOf(15));
+		Assert.Equal(-1, collection.IndexOf(7));
+		Assert.Equal(-1, collection.IndexOf(3));
+	}
+
+	[Fact]
+	public void IndexOf_IListOfT()
+	{
+		// This interface is documented as returning exactly -1 when items are not found.
+		IList<int> collection = this.collection;
+		Assert.Equal(~0, collection.IndexOf(3));
+		this.collection.Add(5);
+		this.collection.Add(10);
+		Assert.Equal(-1, collection.IndexOf(15));
+		Assert.Equal(-1, collection.IndexOf(7));
+		Assert.Equal(-1, collection.IndexOf(3));
 	}
 
 	[Fact]

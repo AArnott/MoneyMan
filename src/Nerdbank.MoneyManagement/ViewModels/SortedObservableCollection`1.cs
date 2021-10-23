@@ -177,7 +177,17 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		/// <inheritdoc/>
-		int IList.IndexOf(object? value) => this.IndexOf((T)value!);
+		int IList.IndexOf(object? value)
+		{
+			var index = this.IndexOf((T)value!);
+			return index < 0 ? -1 : index;
+		}
+
+		int IList<T>.IndexOf(T item)
+		{
+			var index = this.IndexOf((T)item!);
+			return index < 0 ? -1 : index;
+		}
 
 		/// <inheritdoc/>
 		public bool Contains(T item) => this.IndexOf(item) >= 0;
