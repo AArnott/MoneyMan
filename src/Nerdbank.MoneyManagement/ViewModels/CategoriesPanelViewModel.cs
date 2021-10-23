@@ -3,6 +3,7 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System;
 	using System.Collections;
 	using System.Collections.Specialized;
 	using System.ComponentModel;
@@ -25,6 +26,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.DeleteCommand = new DeleteCategoryCommand(this);
 			this.documentViewModel = documentViewModel;
 		}
+
+		/// <summary>
+		/// Occurs when <see cref="NewCategory(string)"/> is called or the <see cref="AddCommand" /> command is invoked.
+		/// </summary>
+		/// <remarks>
+		/// Views are expected to set focus on the Name text field in response to this event.
+		/// </remarks>
+		public event EventHandler? AddingNewCategory;
 
 		public string Title => "Categories";
 
@@ -70,6 +79,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CategoryViewModel NewCategory(string name = "")
 		{
+			this.AddingNewCategory?.Invoke(this, EventArgs.Empty);
 			if (this.AddingCategory is object)
 			{
 				this.SelectedCategory = this.AddingCategory;
