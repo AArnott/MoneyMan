@@ -435,6 +435,50 @@ public class AccountViewModelTests : MoneyTestBase
 		Assert.Equal(-tx1.Amount, tx2.Amount);
 	}
 
+	/// <summary>
+	/// Verifies that a split transaction where a split line item represents a transfer to another account also appears
+	/// in the other account, and that whatever the split item amount is appears and impacts the account balance.
+	/// </summary>
+	[Fact(Skip = "Not yet implemented.")]
+	public void SplitTransferTransactionAppearsInOtherAccount()
+	{
+	}
+
+	/// <summary>
+	/// Verifies that a split transaction where <em>multiple</em> split line items represent a transfer to another account also appears
+	/// in the other account (as one transaction), and that whatever the split item amount is appears and impacts the account balance.
+	/// </summary>
+	[Fact(Skip = "Not yet implemented.")]
+	public void MultipleSplitTransfersTransactionAppearsInOtherAccount()
+	{
+	}
+
+	/// <summary>
+	/// Verifies that an attempt to delete a transaction that is actually just a split that transfers with another account
+	/// cannot be deleted from the view of the other account.
+	/// This is important because it would quietly upset the sum of the splits that (presumably) match the total of the overall transaction.
+	/// </summary>
+	[Fact(Skip = "Not yet implemented.")]
+	public void SplitTransferTransactionCannotBeDeletedFromOtherAccount()
+	{
+	}
+
+	[Fact(Skip = "Not yet implemented.")]
+	public void SplitTransferTransactionAllowLimitedChangesFromOtherAccount()
+	{
+		// Disallow changes to amount.
+	}
+
+	[Fact(Skip = "Not yet implemented.")]
+	public void SplitTransferTransactionOffersJumpToPrimaryAccountFromOtherAccount()
+	{
+	}
+
+	[Fact(Skip = "Not yet implemented.")]
+	public void DeletingSplitTransactionWithTransfersAlsoRemovesTransactionsFromOtherAccounts()
+	{
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();
