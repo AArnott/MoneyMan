@@ -13,11 +13,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class TransactionViewModel : EntityViewModel<Transaction>
 	{
+		public static readonly ClearedStateViewModel NotCleared = new ClearedStateViewModel(ClearedState.None, "None", string.Empty);
+		public static readonly ClearedStateViewModel Matched = new ClearedStateViewModel(ClearedState.Cleared, "Cleared", "C");
+		public static readonly ClearedStateViewModel Reconciled = new ClearedStateViewModel(ClearedState.Reconciled, "Reconciled", "R");
+
 		public static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new[]
 		{
-			new ClearedStateViewModel(ClearedState.None, "None", string.Empty),
-			new ClearedStateViewModel(ClearedState.Cleared, "Cleared", "C"),
-			new ClearedStateViewModel(ClearedState.Reconciled, "Reconciled", "R"),
+			NotCleared,
+			Matched,
+			Reconciled,
 		});
 
 		private ObservableCollection<SplitTransactionViewModel>? splits;
@@ -121,7 +125,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		public bool IsSplit => this.Splits.Count > 0;
+		public bool ContainsSplits => this.Splits.Count > 0;
+
+		/// <summary>
+		/// Gets a value indicating whether this "transaction" is really just synthesized to represent the split line item(s)
+		/// of a transaction in another account that transfer to/from this account.
+		/// </summary>
+		public bool IsSynthesizedFromSplit => false;
+
+		public TransactionViewModel? SplitParent => null;
 
 		public decimal Balance
 		{
@@ -153,11 +165,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			split.Model = new();
 			_ = this.Splits; // ensure initialized
-			bool wasSplit = this.IsSplit;
+			bool wasSplit = this.ContainsSplits;
 			this.splits!.Add(split);
 			if (!wasSplit)
 			{
-				this.OnPropertyChanged(nameof(this.IsSplit));
+				this.OnPropertyChanged(nameof(this.ContainsSplits));
 			}
 
 			return split;
@@ -176,10 +188,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.ThisAccount.MoneyFile?.Delete(split.Model);
 			}
 
-			if (!this.IsSplit)
+			if (!this.ContainsSplits)
 			{
-				this.OnPropertyChanged(nameof(this.IsSplit));
+				this.OnPropertyChanged(nameof(this.ContainsSplits));
 			}
+		}
+
+		public void JumpToSplitParent()
+		{
 		}
 
 		protected override void ApplyToCore(Transaction transaction)

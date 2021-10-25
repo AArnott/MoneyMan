@@ -167,17 +167,17 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void IsSplit()
+	public void ContainsSplits()
 	{
-		Assert.False(this.viewModel.IsSplit);
+		Assert.False(this.viewModel.ContainsSplits);
 
 		// Transition to split state.
-		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.NewSplit(), nameof(this.viewModel.IsSplit));
-		Assert.True(this.viewModel.IsSplit);
+		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.NewSplit(), nameof(this.viewModel.ContainsSplits));
+		Assert.True(this.viewModel.ContainsSplits);
 
 		// Transition back to non-split.
-		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.DeleteSplit(this.viewModel.Splits.Single()), nameof(this.viewModel.IsSplit));
-		Assert.False(this.viewModel.IsSplit);
+		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.DeleteSplit(this.viewModel.Splits.Single()), nameof(this.viewModel.ContainsSplits));
+		Assert.False(this.viewModel.ContainsSplits);
 	}
 
 	[Fact]
