@@ -444,10 +444,13 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 
-		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-		Assert.Equal(-50, txSavings.Amount);
-		Assert.Equal(-50, this.savings.Balance);
-		Assert.True(txSavings.IsSynthesizedFromSplit);
+		this.AssertNowAndAfterReload(delegate
+		{
+			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+			Assert.Equal(-50, txSavings.Amount);
+			Assert.Equal(-50, this.savings.Balance);
+			Assert.True(txSavings.IsSynthesizedFromSplit);
+		});
 	}
 
 	[Fact]
@@ -476,10 +479,13 @@ public class AccountViewModelTests : MoneyTestBase
 		tx.Amount += split3.Amount;
 		Assert.Equal(tx.Amount, this.checking.Balance);
 
-		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-		Assert.Equal(-45, txSavings.Amount);
-		Assert.Equal(-45, this.savings.Balance);
-		Assert.True(txSavings.IsSynthesizedFromSplit);
+		this.AssertNowAndAfterReload(delegate
+		{
+			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+			Assert.Equal(-45, txSavings.Amount);
+			Assert.Equal(-45, this.savings.Balance);
+			Assert.True(txSavings.IsSynthesizedFromSplit);
+		});
 	}
 
 	/// <summary>
@@ -534,8 +540,12 @@ public class AccountViewModelTests : MoneyTestBase
 	public void SplitParent_SplitChild()
 	{
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
-		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-		Assert.Same(tx, txSavings.SplitParent);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+			Assert.Same(this.checking.Transactions.Single(t => t.Id == tx.Id), txSavings.SplitParent);
+		});
 	}
 
 	[Fact]
@@ -561,7 +571,11 @@ public class AccountViewModelTests : MoneyTestBase
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 		Assert.NotEmpty(this.savings.Transactions);
 		tx.DeleteSplit(tx.Splits.Single(s => s.CategoryOrTransfer is AccountViewModel));
-		Assert.Empty(this.savings.Transactions);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Empty(this.savings.Transactions);
+		});
 	}
 
 	[Fact]
@@ -570,7 +584,11 @@ public class AccountViewModelTests : MoneyTestBase
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 		Assert.NotEmpty(this.savings.Transactions);
 		this.checking.DeleteTransaction(tx);
-		Assert.Empty(this.savings.Transactions);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Empty(this.savings.Transactions);
+		});
 	}
 
 	protected override void ReloadViewModel()
@@ -595,5 +613,12 @@ public class AccountViewModelTests : MoneyTestBase
 		tx.Amount = split1.Amount + split2.Amount;
 
 		return tx;
+	}
+
+	private void AssertNowAndAfterReload(Action assertions)
+	{
+		assertions();
+		this.ReloadViewModel();
+		assertions();
 	}
 }
