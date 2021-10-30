@@ -181,6 +181,24 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Splits_Reload()
+	{
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		split1.CategoryOrTransfer = categoryViewModel;
+		split1.Amount = this.amount;
+		split1.Memo = this.memo;
+
+		this.ReloadViewModel();
+
+		categoryViewModel = this.DocumentViewModel.CategoriesPanel.Categories.Single();
+		split1 = Assert.Single(this.viewModel.Splits);
+		Assert.Equal(this.amount, split1.Amount);
+		Assert.Equal(this.memo, split1.Memo);
+		Assert.Same(categoryViewModel, split1.CategoryOrTransfer);
+	}
+
+	[Fact]
 	public void Balance_JustOneTransaction()
 	{
 		// Verify that one lone transaction's balance is based on its own amount.
@@ -474,5 +492,18 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.viewModel = new TransactionViewModel(this.account, transaction);
 		this.Money.Dispose();
 		this.viewModel.Amount = 12;
+	}
+
+	protected override void ReloadViewModel()
+	{
+		base.ReloadViewModel();
+
+		this.account = this.DocumentViewModel.GetAccount(this.account.Id!.Value);
+		this.otherAccount = this.DocumentViewModel.GetAccount(this.otherAccount.Id!.Value);
+
+		if (this.viewModel.Id.HasValue)
+		{
+			this.viewModel = this.account.Transactions.Single(t => t.Id == this.viewModel.Id.Value);
+		}
 	}
 }
