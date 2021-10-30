@@ -8,6 +8,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System.Collections.ObjectModel;
 	using System.Diagnostics;
 	using System.Linq;
+	using System.Threading;
+	using System.Threading.Tasks;
+	using System.Windows.Input;
+	using PCLCommandBase;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
@@ -51,7 +55,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.CopyFrom(transaction);
 			}
+
+			this.SplitCommand = new SplitCommandImpl(this);
 		}
+
+		public ICommand SplitCommand { get; }
 
 		public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
 
@@ -294,6 +302,33 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			public string ShortCaption { get; }
 
 			private string DebuggerDisplay => this.Caption;
+		}
+
+		private class SplitCommandImpl : CommandBase
+		{
+			private TransactionViewModel transactionViewModel;
+
+			public SplitCommandImpl(TransactionViewModel transactionViewModel)
+			{
+				this.transactionViewModel = transactionViewModel;
+				transactionViewModel.PropertyChanged += this.TransactionViewModel_PropertyChanged;
+			}
+
+			public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && !this.transactionViewModel.ContainsSplits;
+
+			protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+			{
+				this.transactionViewModel.NewSplit();
+				return Task.CompletedTask;
+			}
+
+			private void TransactionViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+			{
+				if (e.PropertyName == nameof(this.transactionViewModel.ContainsSplits))
+				{
+					this.OnCanExecuteChanged();
+				}
+			}
 		}
 	}
 }

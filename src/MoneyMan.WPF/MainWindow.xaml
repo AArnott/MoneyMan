@@ -116,15 +116,18 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<ComboBox
+											<StackPanel Orientation="Horizontal">
+												<ComboBox
 												ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
 												SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-												<ComboBox.ItemTemplate>
-													<DataTemplate>
-														<TextBlock Text="{Binding TransferTargetName}" />
-													</DataTemplate>
-												</ComboBox.ItemTemplate>
-											</ComboBox>
+													<ComboBox.ItemTemplate>
+														<DataTemplate>
+															<TextBlock Text="{Binding TransferTargetName}" />
+														</DataTemplate>
+													</ComboBox.ItemTemplate>
+												</ComboBox>
+												<ToggleButton Content="📃" Command="{Binding SplitCommand}" />
+											</StackPanel>
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
@@ -187,6 +190,62 @@
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
 							</DataGrid.Columns>
+							<DataGrid.RowDetailsTemplate>
+								<DataTemplate>
+									<DataGrid AlternatingRowBackground="LightGreen"
+									          AlternationCount="2"
+									          Margin="5,0,0,0"
+									          ItemsSource="{Binding Splits}"
+									          Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
+									          AutoGenerateColumns="False">
+										<DataGrid.Columns>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<ComboBox ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
+														          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+															<ComboBox.ItemTemplate>
+																<DataTemplate>
+																	<TextBlock Text="{Binding TransferTargetName}" />
+																</DataTemplate>
+															</ComboBox.ItemTemplate>
+														</ComboBox>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Margin="3pt" Text="{Binding Amount, StringFormat=C}" HorizontalAlignment="Right" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+										</DataGrid.Columns>
+									</DataGrid>
+								</DataTemplate>
+							</DataGrid.RowDetailsTemplate>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
 									<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
