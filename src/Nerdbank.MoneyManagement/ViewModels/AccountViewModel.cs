@@ -150,6 +150,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		internal void NotifyTransactionDeleted(SplitTransaction splitTransaction)
+		{
+		}
+
 		internal void NotifyTransactionChanged(Transaction transaction)
 		{
 			if (this.transactions is null)
@@ -181,6 +185,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				// This may be a new transaction we need to add.
 				this.transactions.Add(new TransactionViewModel(this, transaction));
 			}
+		}
+
+		internal void NotifyTransactionChanged(SplitTransaction splitTransaction)
+		{
 		}
 
 		protected override void ApplyToCore(Account account)

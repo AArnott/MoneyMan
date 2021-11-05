@@ -12,6 +12,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private string? memo;
 		private ITransactionTarget? categoryOrTransfer;
 
+		[Obsolete("Do not use this constructor.")]
+		public SplitTransactionViewModel()
+		{
+			// This constructor exists only to get WPF to allow the user to add transaction rows.
+			throw new NotSupportedException();
+		}
+
 		public SplitTransactionViewModel(TransactionViewModel parent, SplitTransaction? splitTransaction)
 		{
 			this.ParentTransaction = parent;
