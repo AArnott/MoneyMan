@@ -38,21 +38,17 @@ namespace Nerdbank.MoneyManagement
 		}
 
 		/// <summary>
-		/// A <see cref="Transaction"/> is split but its collection of <see cref="SplitTransaction"/> items
-		/// do not sum to match the <see cref="Transaction.Amount"/> of the <see cref="Transaction"/>.
+		/// A <see cref="Transaction"/> is split into child transactions but its <see cref="Transaction.Amount"/> is not 0.
 		/// </summary>
 		public class SplitTransactionTotalMismatch : Issue
 		{
-			public SplitTransactionTotalMismatch(Transaction transaction, decimal splitTotal)
-				: base($"The sum of all split line items for transaction {transaction.Id} is {splitTotal} instead of the expected {transaction.Amount}.")
+			public SplitTransactionTotalMismatch(Transaction transaction)
+				: base($"The {nameof(transaction.Amount)} for transaction {transaction.Id} is expected to be 0 because it contains child transactions, but is {transaction.Amount}.")
 			{
 				this.Transaction = transaction;
-				this.SplitTotal = splitTotal;
 			}
 
 			public Transaction Transaction { get; }
-
-			public decimal SplitTotal { get; }
 		}
 	}
 }

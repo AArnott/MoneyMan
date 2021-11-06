@@ -208,11 +208,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						{
 							accountViewModel.NotifyTransactionChanged(tx);
 						}
-
-						if (model is SplitTransaction split && IsRelatedSplit(split, accountViewModel))
-						{
-							accountViewModel.NotifyTransactionChanged(split);
-						}
 					}
 
 					foreach ((ModelBase Before, ModelBase After) models in e.Changed)
@@ -220,11 +215,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						if (models is { Before: Transaction beforeTx, After: Transaction afterTx } && (IsRelated(beforeTx, accountViewModel) || IsRelated(afterTx, accountViewModel)))
 						{
 							accountViewModel.NotifyTransactionChanged(afterTx);
-						}
-
-						if (models is { Before: SplitTransaction beforeSplitTx, After: SplitTransaction afterSplitTx } && (IsRelatedSplit(beforeSplitTx, accountViewModel) || IsRelatedSplit(afterSplitTx, accountViewModel)))
-						{
-							accountViewModel.NotifyTransactionChanged(afterSplitTx);
 						}
 					}
 
@@ -234,17 +224,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						{
 							accountViewModel.NotifyTransactionDeleted(tx);
 						}
-
-						if (model is SplitTransaction split && (split.CreditAccountId == accountViewModel.Id || split.DebitAccountId == accountViewModel.Id))
-						{
-							accountViewModel.NotifyTransactionDeleted(split);
-						}
 					}
 				}
 			}
 
 			static bool IsRelated(Transaction tx, AccountViewModel accountViewModel) => tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id;
-			static bool IsRelatedSplit(SplitTransaction tx, AccountViewModel accountViewModel) => tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id;
 
 			void SearchForImpactedAccounts(IEnumerable<ModelBase> models)
 			{
@@ -258,18 +242,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						}
 
 						if (tx.DebitAccountId is int debitId)
-						{
-							impactedAccountIds.Add(debitId);
-						}
-					}
-					else if (model is SplitTransaction splitTransaction)
-					{
-						if (splitTransaction.CreditAccountId is int creditId)
-						{
-							impactedAccountIds.Add(creditId);
-						}
-
-						if (splitTransaction.DebitAccountId is int debitId)
 						{
 							impactedAccountIds.Add(debitId);
 						}

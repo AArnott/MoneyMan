@@ -76,7 +76,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	{
 		Assert.Throws<ArgumentNullException>("model", () => this.viewModel.CopyFrom(null!));
 
-		SplitTransaction splitTransaction = new SplitTransaction
+		Transaction splitTransaction = new Transaction
 		{
 			Amount = this.amount,
 			Memo = this.memo,

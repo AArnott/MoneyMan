@@ -6,7 +6,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System;
 	using Validation;
 
-	public class SplitTransactionViewModel : EntityViewModel<SplitTransaction>
+	/// <summary>
+	/// Represents a <see cref="Transaction"/> that is a member of a split transaction,
+	/// as it is represented in its "home" account, such that it only appears nested under the parent transaction.
+	/// </summary>
+	public class SplitTransactionViewModel : EntityViewModel<Transaction>
 	{
 		private decimal amount;
 		private string? memo;
@@ -19,7 +23,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			throw new NotSupportedException();
 		}
 
-		public SplitTransactionViewModel(TransactionViewModel parent, SplitTransaction? splitTransaction)
+		public SplitTransactionViewModel(TransactionViewModel parent, Transaction? splitTransaction)
 		{
 			this.ParentTransaction = parent;
 			this.AutoSave = true;
@@ -50,11 +54,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
-		protected override void ApplyToCore(SplitTransaction split)
+		protected override void ApplyToCore(Transaction split)
 		{
 			Requires.NotNull(split, nameof(split));
 
-			split.TransactionId = this.ParentTransaction.Id ?? throw new InvalidOperationException("Cannot save a split before its parent transaction.");
+			split.ParentTransactionId = this.ParentTransaction.Id ?? throw new InvalidOperationException("Cannot save a split before its parent transaction.");
 			split.Amount = this.Amount;
 			split.Memo = this.Memo;
 			split.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
@@ -71,7 +75,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		protected override void CopyFromCore(SplitTransaction split)
+		protected override void CopyFromCore(Transaction split)
 		{
 			Requires.NotNull(split, nameof(split));
 

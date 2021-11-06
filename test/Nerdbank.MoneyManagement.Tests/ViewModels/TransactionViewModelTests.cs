@@ -307,6 +307,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo_WithSplits()
 	{
+		this.viewModel.Amount = 6;
 		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
 		split1.Amount = 2;
 		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
@@ -316,13 +317,13 @@ public class TransactionViewModelTests : MoneyTestBase
 		Assert.Equal(6, this.viewModel.Model!.Amount);
 		Assert.Equal(Category.Split, this.viewModel.Model.CategoryId);
 
-		SplitTransaction splitModel1 = this.Money.SplitTransactions.First(s => s.Id == split1.Id);
+		Transaction splitModel1 = this.Money.Transactions.First(s => s.Id == split1.Id);
 		Assert.Equal(split1.Amount, splitModel1.Amount);
-		Assert.Equal(this.viewModel.Id, splitModel1.TransactionId);
+		Assert.Equal(this.viewModel.Id, splitModel1.ParentTransactionId);
 		Assert.Equal(this.viewModel.ThisAccount.Id, splitModel1.CreditAccountId);
 		Assert.Null(splitModel1.DebitAccountId);
 
-		SplitTransaction splitModel2 = this.Money.SplitTransactions.First(s => s.Id == split2.Id);
+		Transaction splitModel2 = this.Money.Transactions.First(s => s.Id == split2.Id);
 		Assert.Equal(split2.Amount, splitModel2.Amount);
 	}
 
@@ -409,22 +410,21 @@ public class TransactionViewModelTests : MoneyTestBase
 	{
 		Transaction transaction = new()
 		{
-			Amount = 10,
 			CategoryId = Category.Split,
 			CreditAccountId = this.account.Id,
 		};
 		this.Money.Insert(transaction);
 
-		SplitTransaction split1 = new() { Amount = 3, CreditAccountId = this.account.Id, TransactionId = transaction.Id };
+		Transaction split1 = new() { Amount = 3, CreditAccountId = this.account.Id, ParentTransactionId = transaction.Id };
 		this.Money.Insert(split1);
-		SplitTransaction split2 = new() { Amount = 7, CreditAccountId = this.account.Id, TransactionId = transaction.Id };
+		Transaction split2 = new() { Amount = 7, CreditAccountId = this.account.Id, ParentTransactionId = transaction.Id };
 		this.Money.Insert(split2);
 
 		this.ReloadViewModel();
 
 		this.account = Assert.Single(this.DocumentViewModel.BankingPanel.Accounts, a => a.Id == this.account.Id);
-		this.viewModel = Assert.Single(this.account.Transactions);
-		Assert.Equal(10, this.viewModel.Amount);
+		this.viewModel = Assert.Single(this.account.Transactions, t => t.Id == transaction.Id);
+		Assert.Equal(0, this.viewModel.Amount);
 		Assert.Null(this.viewModel.CategoryOrTransfer);
 		Assert.Equal(2, this.viewModel.Splits.Count);
 		Assert.Single(this.viewModel.Splits, s => s.Amount == split1.Amount);

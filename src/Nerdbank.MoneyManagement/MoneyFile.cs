@@ -61,15 +61,6 @@ namespace Nerdbank.MoneyManagement
 			}
 		}
 
-		public TableQuery<SplitTransaction> SplitTransactions
-		{
-			get
-			{
-				Verify.NotDisposed(this);
-				return this.connection.Table<SplitTransaction>();
-			}
-		}
-
 		public TableQuery<Category> Categories
 		{
 			get
@@ -98,7 +89,6 @@ namespace Nerdbank.MoneyManagement
 				// Define all the tables (in case this is a new file).
 				db.CreateTable<Account>();
 				db.CreateTable<Transaction>();
-				db.CreateTable<SplitTransaction>();
 				db.CreateTable<Category>();
 
 				return new MoneyFile(db);
@@ -229,13 +219,12 @@ namespace Nerdbank.MoneyManagement
 		internal IEnumerable<IntegrityChecks.SplitTransactionTotalMismatch> FindBadSplitTransactions(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			string sql = $@"SELECT t.*, (SELECT SUM(""{nameof(SplitTransaction.Amount)}"") FROM [{nameof(SplitTransaction)}] s WHERE s.[{nameof(SplitTransaction.TransactionId)}] == t.[{nameof(Transaction.Id)}]) AS ""{nameof(TransactionAndSplitTotal.SplitTotal)}"""
-				+ $@" FROM ""{nameof(Transaction)}"" t"
-				+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND t.[{nameof(Transaction.Amount)}] != [{nameof(TransactionAndSplitTotal.SplitTotal)}]";
+			string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
+				+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND t.[{nameof(Transaction.Amount)}] != 0";
 
-			foreach (TransactionAndSplitTotal badSplit in this.connection.Query<TransactionAndSplitTotal>(sql))
+			foreach (Transaction badSplit in this.connection.Query<Transaction>(sql))
 			{
-				yield return new IntegrityChecks.SplitTransactionTotalMismatch(badSplit, badSplit.SplitTotal);
+				yield return new IntegrityChecks.SplitTransactionTotalMismatch(badSplit);
 				cancellationToken.ThrowIfCancellationRequested();
 			}
 		}
@@ -303,11 +292,6 @@ namespace Nerdbank.MoneyManagement
 			public IReadOnlyCollection<(ModelBase Before, ModelBase After)> Changed { get; }
 
 			public IReadOnlyCollection<ModelBase> Deleted { get; }
-		}
-
-		private class TransactionAndSplitTotal : Transaction
-		{
-			public decimal SplitTotal { get; set; }
 		}
 	}
 }

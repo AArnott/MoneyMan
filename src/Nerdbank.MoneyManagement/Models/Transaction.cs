@@ -34,6 +34,9 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the amount of the transaction. Always non-negative.
 		/// </summary>
+		/// <remarks>
+		/// This value should be 0 for split transactions, allowing their split members to have non-zero Amounts that contribute to the account balance.
+		/// </remarks>
 		[NotNull]
 		public decimal Amount
 		{
@@ -75,6 +78,13 @@ namespace Nerdbank.MoneyManagement
 		/// </summary>
 		[Indexed]
 		public int? DebitAccountId { get; set; }
+
+		/// <summary>
+		/// Gets or sets the <see cref="ModelBase.Id"/> of a <em>split</em> <see cref="Transaction"/>
+		/// that this transaction is a member of.
+		/// </summary>
+		[Indexed]
+		public int? ParentTransactionId { get; set; }
 
 		/// <summary>
 		/// Gets or sets the cleared or reconciled state of the transaction.

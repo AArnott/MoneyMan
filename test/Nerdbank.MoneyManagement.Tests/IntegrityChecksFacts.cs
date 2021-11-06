@@ -36,10 +36,10 @@ public class IntegrityChecksFacts : MoneyTestBase
 			Amount = 10,
 		};
 		this.Money.Insert(transaction);
-		var splits = new SplitTransaction[]
+		var splits = new Transaction[]
 		{
-			new() { TransactionId = transaction.Id, Amount = 2 },
-			new() { TransactionId = transaction.Id, Amount = 8 },
+			new() { ParentTransactionId = transaction.Id, Amount = 2 },
+			new() { ParentTransactionId = transaction.Id, Amount = 8 },
 		};
 		this.Money.InsertAll(splits);
 
@@ -52,20 +52,19 @@ public class IntegrityChecksFacts : MoneyTestBase
 		var transaction = new Transaction
 		{
 			CategoryId = Category.Split,
-			Amount = 10,
+			Amount = 6, // The right sum, but it's supposed to be 0.
 		};
 		this.Money.Insert(transaction);
-		var splits = new SplitTransaction[]
+		var splits = new Transaction[]
 		{
-			new() { TransactionId = transaction.Id, Amount = 2 },
-			new() { TransactionId = transaction.Id, Amount = 4 },
+			new() { ParentTransactionId = transaction.Id, Amount = 2 },
+			new() { ParentTransactionId = transaction.Id, Amount = 4 },
 		};
 		this.Money.InsertAll(splits);
 
 		IReadOnlyList<IntegrityChecks.Issue> issues = IntegrityChecks.CheckIntegrity(this.Money);
 		Assert.Single(issues);
 		var issue = Assert.IsType<IntegrityChecks.SplitTransactionTotalMismatch>(issues[0]);
-		Assert.Equal(splits.Sum(s => s.Amount), issue.SplitTotal);
 		Assert.Equal(transaction.Id, issue.Transaction.Id);
 	}
 }

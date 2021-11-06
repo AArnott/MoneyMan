@@ -117,11 +117,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (this.splits is null)
 				{
 					this.splits = new();
-					if (this.MoneyFile is object)
+					if (this.MoneyFile is object && this.Id.HasValue)
 					{
-						SQLite.TableQuery<SplitTransaction> splits = this.MoneyFile.SplitTransactions
-							.Where(tx => tx.TransactionId == this.Id);
-						foreach (SplitTransaction split in splits)
+						SQLite.TableQuery<Transaction> splits = this.MoneyFile.Transactions
+							.Where(tx => tx.ParentTransactionId == this.Id);
+						foreach (Transaction split in splits)
 						{
 							SplitTransactionViewModel splitViewModel = new(this, split);
 							this.splits.Add(splitViewModel);
@@ -212,7 +212,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			transaction.Payee = this.Payee;
 			transaction.When = this.When;
-			transaction.Amount = Math.Abs(this.Amount);
+			transaction.Amount = this.Splits.Count > 0 ? 0 : Math.Abs(this.Amount);
 			transaction.Memo = this.Memo;
 			transaction.CheckNumber = this.CheckNumber;
 			transaction.Cleared = this.Cleared.Value;
