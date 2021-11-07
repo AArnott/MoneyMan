@@ -449,7 +449,7 @@ public class AccountViewModelTests : MoneyTestBase
 			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
 			Assert.Equal(-50, txSavings.Amount);
 			Assert.Equal(-50, this.savings.Balance);
-			Assert.True(txSavings.IsSynthesizedFromSplit);
+			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		});
 	}
 
@@ -459,7 +459,7 @@ public class AccountViewModelTests : MoneyTestBase
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 
 		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-		Assert.True(txSavings.IsSynthesizedFromSplit);
+		Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		Assert.False(txSavings.ContainsSplits);
 		Assert.Throws<InvalidOperationException>(() => txSavings.NewSplit());
 	}
@@ -484,7 +484,7 @@ public class AccountViewModelTests : MoneyTestBase
 			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
 			Assert.Equal(-45, txSavings.Amount);
 			Assert.Equal(-45, this.savings.Balance);
-			Assert.True(txSavings.IsSynthesizedFromSplit);
+			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		});
 	}
 
@@ -533,7 +533,7 @@ public class AccountViewModelTests : MoneyTestBase
 	public void SplitParent_NonSplitChild()
 	{
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
-		Assert.Null(tx.SplitParent);
+		Assert.Null(tx.GetSplitParent());
 	}
 
 	[Fact]
@@ -544,7 +544,7 @@ public class AccountViewModelTests : MoneyTestBase
 		this.AssertNowAndAfterReload(delegate
 		{
 			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-			Assert.Same(this.checking.Transactions.Single(t => t.Id == tx.Id), txSavings.SplitParent);
+			Assert.Same(this.checking.Transactions.Single(t => t.Id == tx.Id), txSavings.GetSplitParent());
 		});
 	}
 

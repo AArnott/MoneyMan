@@ -4,12 +4,14 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Diagnostics;
 	using Validation;
 
 	/// <summary>
 	/// Represents a <see cref="Transaction"/> that is a member of a split transaction,
 	/// as it is represented in its "home" account, such that it only appears nested under the parent transaction.
 	/// </summary>
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class SplitTransactionViewModel : EntityViewModel<Transaction>
 	{
 		private decimal amount;
@@ -53,6 +55,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.categoryOrTransfer;
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
+
+		private string DebuggerDisplay => $"Split: {this.Memo} {this.CategoryOrTransfer} {this.Amount}";
 
 		protected override void ApplyToCore(Transaction split)
 		{

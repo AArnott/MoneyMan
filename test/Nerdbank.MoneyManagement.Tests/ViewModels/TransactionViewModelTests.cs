@@ -129,29 +129,6 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void TransactionAmountMustEqualSumOfSplitAmounts()
-	{
-		this.viewModel.Amount = 10;
-		Assert.Equal(string.Empty, this.viewModel.Error);
-
-		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
-		Assert.NotEqual(string.Empty, this.viewModel.Error);
-		this.Logger.WriteLine(this.viewModel.Error);
-		Assert.Contains("10.00", this.viewModel.Error);
-		Assert.Contains("0.00", this.viewModel.Error);
-
-		split1.Amount = 8;
-		Assert.NotEqual(string.Empty, this.viewModel.Error);
-		this.Logger.WriteLine(this.viewModel.Error);
-		Assert.Contains("10.00", this.viewModel.Error);
-		Assert.Contains("8.00", this.viewModel.Error);
-
-		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
-		split2.Amount = 2;
-		Assert.Equal(string.Empty, this.viewModel.Error);
-	}
-
-	[Fact]
 	public void CategoryOrTransfer_ThrowsWhenSplit()
 	{
 		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
@@ -312,9 +289,9 @@ public class TransactionViewModelTests : MoneyTestBase
 		split1.Amount = 2;
 		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
 		split2.Amount = 4;
-		this.viewModel.Amount = 6;
 
-		Assert.Equal(6, this.viewModel.Model!.Amount);
+		Assert.Equal(6, this.viewModel.Amount);
+		Assert.Equal(0, this.viewModel.Model!.Amount);
 		Assert.Equal(Category.Split, this.viewModel.Model.CategoryId);
 
 		Transaction splitModel1 = this.Money.Transactions.First(s => s.Id == split1.Id);

@@ -109,7 +109,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		[SplitSumMatchesTransactionAmount]
+		////[SplitSumMatchesTransactionAmount]
 		public IReadOnlyCollection<SplitTransactionViewModel> Splits
 		{
 			get
@@ -139,9 +139,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// Gets a value indicating whether this "transaction" is really just synthesized to represent the split line item(s)
 		/// of a transaction in another account that transfer to/from this account.
 		/// </summary>
-		public bool IsSynthesizedFromSplit => false;
-
-		public TransactionViewModel? SplitParent => null;
+		public bool IsSplitMemberOfParentTransaction => this.Model?.ParentTransactionId.HasValue is true;
 
 		public decimal Balance
 		{
@@ -158,6 +156,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public SplitTransactionViewModel NewSplit()
 		{
+			Verify.Operation(!this.IsSplitMemberOfParentTransaction, "Cannot split a transaction that is already a member of a split transaction.");
+
 			if (this.Id is null)
 			{
 				// Persist this transaction so the splits can refer to it.
@@ -202,8 +202,33 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		public TransactionViewModel? GetSplitParent()
+		{
+			int? splitParentId = this.Model?.ParentTransactionId;
+			if (splitParentId is null || this.MoneyFile is null)
+			{
+				return null;
+			}
+
+			Transaction parentTransaction = this.MoneyFile.Transactions.First(t => t.Id == splitParentId);
+
+			// TODO: How to determine which account is preferable when a split transaction exists in two accounts?
+			int? accountId = parentTransaction.CreditAccountId ?? parentTransaction.DebitAccountId;
+			if (accountId is null)
+			{
+				return null;
+			}
+
+			AccountViewModel parentAccount = this.ThisAccount.DocumentViewModel.GetAccount(accountId.Value);
+			return parentAccount.Transactions.First(tx => tx.Id == parentTransaction.Id);
+		}
+
 		public void JumpToSplitParent()
 		{
+			TransactionViewModel? splitParent = this.GetSplitParent();
+			Verify.Operation(splitParent is object, "Cannot jump to split parent from a transaction that is not a member of a split transaction.");
+			this.ThisAccount.DocumentViewModel.BankingPanel.SelectedAccount = splitParent.ThisAccount;
+			this.ThisAccount.DocumentViewModel.SelectedTransaction = splitParent;
 		}
 
 		protected override void ApplyToCore(Transaction transaction)
