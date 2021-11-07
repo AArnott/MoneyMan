@@ -122,6 +122,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			if (this.MoneyFile is object && transaction.Model is object)
 			{
+				foreach (SplitTransactionViewModel split in transaction.Splits)
+				{
+					if (split.Model is object)
+					{
+						this.MoneyFile.Delete(split.Model);
+					}
+				}
+
 				if (!this.MoneyFile.Delete(transaction.Model))
 				{
 					// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.

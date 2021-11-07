@@ -447,8 +447,8 @@ public class AccountViewModelTests : MoneyTestBase
 		this.AssertNowAndAfterReload(delegate
 		{
 			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-			Assert.Equal(-50, txSavings.Amount);
-			Assert.Equal(-50, this.savings.Balance);
+			Assert.Equal(-40, txSavings.Amount);
+			Assert.Equal(-40, this.savings.Balance);
 			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		});
 	}
@@ -466,7 +466,7 @@ public class AccountViewModelTests : MoneyTestBase
 
 	/// <summary>
 	/// Verifies that a split transaction where <em>multiple</em> split line items represent a transfer to another account also appears
-	/// in the other account (as one transaction), and that whatever the split item amount is appears and impacts the account balance.
+	/// in the other account (as individual transactions), and that whatever the split item amount is appears and impacts the account balance.
 	/// </summary>
 	[Fact]
 	public void MultipleSplitTransfersTransactionAppearsInOtherAccount()
@@ -477,14 +477,17 @@ public class AccountViewModelTests : MoneyTestBase
 		split3.Amount = -5;
 		split3.CategoryOrTransfer = this.savings;
 		tx.Amount += split3.Amount;
-		Assert.Equal(tx.Amount, this.checking.Balance);
+		Assert.Equal(tx.GetSplitTotal(), this.checking.Balance);
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-			Assert.Equal(-45, txSavings.Amount);
+			TransactionViewModel txSavings5 = Assert.Single(this.savings.Transactions, t => t.Amount == 5);
+			TransactionViewModel txSavings40 = Assert.Single(this.savings.Transactions, t => t.Amount == 40);
+			Assert.Equal(-40, txSavings40.Amount);
+			Assert.Equal(5, txSavings5.Amount);
 			Assert.Equal(-45, this.savings.Balance);
-			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
+			Assert.True(txSavings5.IsSplitMemberOfParentTransaction);
+			Assert.True(txSavings40.IsSplitMemberOfParentTransaction);
 		});
 	}
 
@@ -617,10 +620,10 @@ public class AccountViewModelTests : MoneyTestBase
 
 		TransactionViewModel tx = this.checking.NewTransaction();
 		SplitTransactionViewModel split1 = tx.NewSplit();
-		split1.Amount = 100;
+		split1.Amount = 100; // gross
 		split1.CategoryOrTransfer = cat1;
 		SplitTransactionViewModel split2 = tx.NewSplit();
-		split2.Amount = 50;
+		split2.Amount = -40; // send $40 of the $100 to savings
 		split2.CategoryOrTransfer = this.savings;
 		tx.Amount = split1.Amount + split2.Amount;
 

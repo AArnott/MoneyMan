@@ -63,7 +63,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			Requires.NotNull(split, nameof(split));
 
 			split.ParentTransactionId = this.ParentTransaction.Id ?? throw new InvalidOperationException("Cannot save a split before its parent transaction.");
-			split.Amount = this.Amount;
+			split.Amount = Math.Abs(this.Amount);
 			split.Memo = this.Memo;
 			split.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
