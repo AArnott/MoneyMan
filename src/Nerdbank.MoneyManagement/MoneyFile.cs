@@ -229,6 +229,15 @@ namespace Nerdbank.MoneyManagement
 			}
 		}
 
+		internal List<Transaction> GetTopLevelTransactionsFor(int accountId)
+		{
+			// List all transactions that credit/debit to this account so long as they either are not split members or are splits of a transaction native to another account.
+			string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
+				+ $@" WHERE (t.[{nameof(Transaction.CreditAccountId)}] == ? OR t.[{nameof(Transaction.DebitAccountId)}] == ?)"
+				+ $@" AND (t.[{nameof(Transaction.ParentTransactionId)}] IS NULL OR (SELECT [{nameof(Transaction.CreditAccountId)}] FROM ""{nameof(Transaction)}"" WHERE [{nameof(Transaction.Id)}] == t.[{nameof(Transaction.ParentTransactionId)}]) != ?)";
+			return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
+		}
+
 		private static string SqlJoinConditionWithOperator(string op, IEnumerable<string> constraints) => string.Join($" {op} ", constraints.Select(c => $"({c})"));
 
 		private static string SqlAnd(IEnumerable<string> constraints) => SqlJoinConditionWithOperator("AND", constraints);
