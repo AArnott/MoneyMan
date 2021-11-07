@@ -530,6 +530,18 @@ public class AccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void SplitTransactionMembersDoNotAppearAsTopLevelTransactionsInHomeAccount()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		int idOfASplit = tx.Splits.First().Id!.Value;
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.DoesNotContain(this.checking.Transactions, t => t.Id == idOfASplit);
+		});
+	}
+
+	[Fact]
 	public void SplitParent_NonSplitChild()
 	{
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
