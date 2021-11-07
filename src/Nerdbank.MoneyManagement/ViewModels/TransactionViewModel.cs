@@ -78,7 +78,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public decimal Amount
 		{
 			get => this.amount;
-			set => this.SetProperty(ref this.amount, value);
+			set
+			{
+				this.ThrowIfSplitInForeignAccount();
+				this.SetProperty(ref this.amount, value);
+			}
 		}
 
 		public string? Memo
@@ -105,6 +109,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set
 			{
 				Verify.Operation(this.Splits.Count == 0 || value is null, "Cannot set category or transfer on a transaction containing splits.");
+				this.ThrowIfSplitInForeignAccount();
 				this.SetProperty(ref this.categoryOrTransfer, value);
 			}
 		}
@@ -140,6 +145,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// of a transaction in another account that transfer to/from this account.
 		/// </summary>
 		public bool IsSplitMemberOfParentTransaction => this.Model?.ParentTransactionId.HasValue is true;
+
+		/// <summary>
+		/// Gets a value indicating whether this is a member of a split transaction that appears (as its own top-level transaction) in another account (as a transfer).
+		/// </summary>
+		public bool IsSplitInForeignAccount => this.Model?.ParentTransactionId is int parentTransactionId && this.ThisAccount.FindTransaction(parentTransactionId) is null;
 
 		public decimal Balance
 		{
@@ -231,6 +241,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.ThisAccount.DocumentViewModel.SelectedTransaction = splitParent;
 		}
 
+		public decimal GetSplitTotal()
+		{
+			Verify.Operation(this.ContainsSplits, "Not a split transaction.");
+			return this.Splits.Sum(s => s.Amount);
+		}
+
+		internal void ThrowIfSplitInForeignAccount() => Verify.Operation(!this.IsSplitInForeignAccount, "This operation is not allowed when applied to a split transaction in the context of a transfer account. Retry on the split in the account of the top-level account.");
+
 		protected override void ApplyToCore(Transaction transaction)
 		{
 			Requires.NotNull(transaction, nameof(transaction));
@@ -272,7 +290,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.payee = transaction.Payee; // add test for property changed.
 			this.When = transaction.When;
-			this.Amount = transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount;
+			this.SetProperty(ref this.amount, transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount, nameof(this.Amount));
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
 			this.Cleared = SharedClearedStates.Single(cs => cs.Value == transaction.Cleared);
@@ -285,7 +303,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 				else
 				{
-					this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
+					this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException(), nameof(this.CategoryOrTransfer));
 					if (this.splits is object)
 					{
 						this.splits.Clear();
@@ -296,15 +314,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 			else if (transaction.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
 			{
-				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
+				this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException(), nameof(this.CategoryOrTransfer));
 			}
 			else if (transaction.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
 			{
-				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
+				this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException(), nameof(this.CategoryOrTransfer));
 			}
 			else
 			{
-				this.CategoryOrTransfer = null;
+				this.SetProperty(ref this.categoryOrTransfer, null, nameof(this.CategoryOrTransfer));
 			}
 		}
 

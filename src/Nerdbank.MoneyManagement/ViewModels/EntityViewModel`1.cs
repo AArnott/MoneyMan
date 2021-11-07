@@ -22,7 +22,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 				{
 					this.IsDirty = true;
-					if (this.AutoSave && this.Model is object && string.IsNullOrEmpty(this.Error))
+					if (this.MoneyFile?.IsDisposed is not true && this.AutoSave && this.Model is object && string.IsNullOrEmpty(this.Error))
 					{
 						this.Save();
 					}

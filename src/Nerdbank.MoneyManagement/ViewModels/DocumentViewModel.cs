@@ -285,7 +285,27 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.SubscribeToSelectionChanged();
 			}
 
-			public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && (this.viewModel.SelectedTransactions?.Count > 0 || this.viewModel.SelectedTransaction is object);
+			public override bool CanExecute(object? parameter = null)
+			{
+				if (!base.CanExecute(parameter))
+				{
+					return false;
+				}
+
+				if (this.viewModel.SelectedTransactions is object)
+				{
+					// When multiple transaction selection is supported, enable the command if *any* of the selected commands are not splits in foreign accounts.
+					foreach (object item in this.viewModel.SelectedTransactions)
+					{
+						if (item is TransactionViewModel { IsSplitInForeignAccount: false })
+						{
+							return true;
+						}
+					}
+				}
+
+				return this.viewModel.SelectedTransaction is { IsSplitInForeignAccount: false };
+			}
 
 			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 			{

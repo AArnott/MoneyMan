@@ -117,6 +117,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
 			Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
+			transaction.ThrowIfSplitInForeignAccount();
 
 			if (this.MoneyFile is object && transaction.Model is object)
 			{
@@ -183,6 +184,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		internal TransactionViewModel? FindTransaction(int id)
+		{
+			foreach (TransactionViewModel transactionViewModel in this.Transactions)
+			{
+				if (transactionViewModel.Model?.Id == id)
+				{
+					return transactionViewModel;
+				}
+			}
+
+			return null;
+		}
+
 		protected override void ApplyToCore(Account account)
 		{
 			Requires.NotNull(account, nameof(account));
@@ -239,19 +253,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			int index = this.transactions.IndexOf(transactionViewModel);
 			this.transactions.RemoveAt(index);
 			this.UpdateBalances(index);
-		}
-
-		private TransactionViewModel? FindTransaction(int id)
-		{
-			foreach (TransactionViewModel transactionViewModel in this.Transactions)
-			{
-				if (transactionViewModel.Model?.Id == id)
-				{
-					return transactionViewModel;
-				}
-			}
-
-			return null;
 		}
 
 		private void UpdateBalances(int changedIndex1, int changedIndex2 = -1)

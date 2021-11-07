@@ -497,7 +497,7 @@ public class AccountViewModelTests : MoneyTestBase
 	public void SplitTransferTransactionCannotBeDeletedFromOtherAccount()
 	{
 		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
-		Assert.Equal(tx.Amount, this.checking.Balance);
+		Assert.Equal(tx.GetSplitTotal(), this.checking.Balance);
 
 		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
 		Assert.Throws<InvalidOperationException>(() => this.savings.DeleteTransaction(txSavings));
