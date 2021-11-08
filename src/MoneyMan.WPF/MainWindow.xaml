@@ -11,6 +11,7 @@
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
 		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
+		<converters:BoolInvertingConverter x:Key="boolInvertingConverter" />
 		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
 		<BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 	</Window.Resources>
@@ -118,8 +119,9 @@
 										<DataTemplate>
 											<StackPanel Orientation="Horizontal">
 												<ComboBox
-												ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
-												SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+												          IsEnabled="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolInvertingConverter}}"
+												          ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
+												          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 													<ComboBox.ItemTemplate>
 														<DataTemplate>
 															<TextBlock Text="{Binding TransferTargetName}" />

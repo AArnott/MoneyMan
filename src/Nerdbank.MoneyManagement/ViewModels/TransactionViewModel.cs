@@ -119,6 +119,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		/// <summary>
+		/// Gets a value indicating whether the <see cref="CategoryOrTransfer"/> property should be considered readonly.
+		/// </summary>
+		public bool CategoryOrTransferIsReadOnly => this.ContainsSplits || this.IsSplitInForeignAccount;
+
 		////[SplitSumMatchesTransactionAmount]
 		public IReadOnlyCollection<SplitTransactionViewModel> Splits
 		{

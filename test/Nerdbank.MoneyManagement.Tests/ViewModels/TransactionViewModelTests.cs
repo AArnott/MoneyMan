@@ -152,6 +152,17 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void CategoryOrTransferIsReadOnly()
+	{
+		Assert.False(this.viewModel.CategoryOrTransferIsReadOnly);
+		SplitTransactionViewModel split = this.viewModel.NewSplit();
+		Assert.True(this.viewModel.CategoryOrTransferIsReadOnly);
+		split.CategoryOrTransfer = this.otherAccount;
+		TransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single();
+		Assert.True(foreignSplitTransaction.CategoryOrTransferIsReadOnly);
+	}
+
+	[Fact]
 	public void ContainsSplits()
 	{
 		Assert.False(this.viewModel.ContainsSplits);
