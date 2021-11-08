@@ -108,7 +108,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.categoryOrTransfer;
 			set
 			{
-				Verify.Operation(this.Splits.Count == 0 || value is null, "Cannot set category or transfer on a transaction containing splits.");
+				if (value == this.categoryOrTransfer)
+				{
+					return;
+				}
+
+				Verify.Operation(this.Splits.Count == 0 || value == SplitCategoryPlaceholder.Singleton, "Cannot set category or transfer on a transaction containing splits.");
 				this.ThrowIfSplitInForeignAccount();
 				this.SetProperty(ref this.categoryOrTransfer, value);
 			}
@@ -178,13 +183,18 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				MoneyFile = this.MoneyFile,
 			};
-			split.CategoryOrTransfer = this.CategoryOrTransfer;
-			this.CategoryOrTransfer = null;
+			bool wasSplit;
+			using (this.SuspendAutoSave())
+			{
+				split.CategoryOrTransfer = this.CategoryOrTransfer;
+				this.CategoryOrTransfer = SplitCategoryPlaceholder.Singleton;
 
-			split.Model = new();
-			_ = this.Splits; // ensure initialized
-			bool wasSplit = this.ContainsSplits;
-			this.splits!.Add(split);
+				split.Model = new();
+				_ = this.Splits; // ensure initialized
+				wasSplit = this.ContainsSplits;
+				this.splits!.Add(split);
+			}
+
 			if (!wasSplit)
 			{
 				this.OnPropertyChanged(nameof(this.ContainsSplits));

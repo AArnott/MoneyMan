@@ -3,6 +3,9 @@
 
 namespace Nerdbank.MoneyManagement.ViewModels
 {
+	using System.Diagnostics;
+
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 	public class SplitCategoryPlaceholder : ITransactionTarget
 	{
 		public static readonly SplitCategoryPlaceholder Singleton = new();
@@ -14,5 +17,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public string Name => "--split--";
 
 		public string TransferTargetName => this.Name;
+
+		private string DebuggerDisplay => this.TransferTargetName;
 	}
 }

@@ -125,7 +125,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.viewModel.CategoryOrTransfer = categoryViewModel;
 		SplitTransactionViewModel split = this.viewModel.NewSplit();
 		Assert.Same(categoryViewModel, split.CategoryOrTransfer);
-		Assert.Null(this.viewModel.CategoryOrTransfer);
+		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
 	}
 
 	[Fact]
@@ -136,7 +136,10 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		// Setting a category should throw when a transaction is split.
 		Assert.Throws<InvalidOperationException>(() => this.viewModel.CategoryOrTransfer = categoryViewModel);
-		this.viewModel.CategoryOrTransfer = null;
+		Assert.Throws<InvalidOperationException>(() => this.viewModel.CategoryOrTransfer = null);
+
+		// Setting to the singleton split value should be allowed.
+		this.viewModel.CategoryOrTransfer = SplitCategoryPlaceholder.Singleton;
 
 		this.viewModel.DeleteSplit(split);
 		this.viewModel.CategoryOrTransfer = categoryViewModel;
