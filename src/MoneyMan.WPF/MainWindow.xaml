@@ -105,7 +105,8 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+											<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+											         IsReadOnly="{Binding PayeeIsReadOnly}"/>
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>

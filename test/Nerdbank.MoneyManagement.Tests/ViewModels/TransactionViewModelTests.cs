@@ -102,6 +102,17 @@ public class TransactionViewModelTests : MoneyTestBase
 			() => this.viewModel.Payee = "somebody",
 			nameof(this.viewModel.Payee));
 		Assert.Same("somebody", this.viewModel.Payee);
+
+		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		Assert.Throws<InvalidOperationException>(() => foreignSplitTransaction.Payee = "me");
+	}
+
+	[Fact]
+	public void PayeeIsReadOnly()
+	{
+		Assert.False(this.viewModel.PayeeIsReadOnly);
+		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		Assert.True(foreignSplitTransaction.PayeeIsReadOnly);
 	}
 
 	[Fact]
@@ -155,10 +166,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void CategoryOrTransferIsReadOnly()
 	{
 		Assert.False(this.viewModel.CategoryOrTransferIsReadOnly);
-		SplitTransactionViewModel split = this.viewModel.NewSplit();
-		Assert.True(this.viewModel.CategoryOrTransferIsReadOnly);
-		split.CategoryOrTransfer = this.otherAccount;
-		TransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single();
+		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.True(foreignSplitTransaction.CategoryOrTransferIsReadOnly);
 	}
 
@@ -501,5 +509,14 @@ public class TransactionViewModelTests : MoneyTestBase
 		{
 			this.viewModel = this.account.Transactions.Single(t => t.Id == this.viewModel.Id.Value);
 		}
+	}
+
+	private TransactionViewModel SplitAndFetchForeignTransactionViewModel()
+	{
+		SplitTransactionViewModel split = this.viewModel.NewSplit();
+		Assert.True(this.viewModel.CategoryOrTransferIsReadOnly);
+		split.CategoryOrTransfer = this.otherAccount;
+		TransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single(t => t.Id == split.Id);
+		return foreignSplitTransaction;
 	}
 }

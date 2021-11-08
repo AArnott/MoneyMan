@@ -100,8 +100,17 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public string? Payee
 		{
 			get => this.payee;
-			set => this.SetProperty(ref this.payee, value);
+			set
+			{
+				this.ThrowIfSplitInForeignAccount();
+				this.SetProperty(ref this.payee, value);
+			}
 		}
+
+		/// <summary>
+		/// Gets a value indicating whether the <see cref="Payee"/> property should be considered readonly.
+		/// </summary>
+		public bool PayeeIsReadOnly => this.IsSplitInForeignAccount;
 
 		public ITransactionTarget? CategoryOrTransfer
 		{
@@ -309,7 +318,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(transaction, nameof(transaction));
 
-			this.payee = transaction.Payee; // add test for property changed.
+			this.SetProperty(ref this.payee, transaction.Payee, nameof(this.Payee));
 			this.When = transaction.When;
 			this.SetProperty(ref this.amount, transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount, nameof(this.Amount));
 			this.Memo = transaction.Memo;
