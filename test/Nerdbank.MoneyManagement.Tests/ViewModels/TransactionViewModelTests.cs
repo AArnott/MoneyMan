@@ -51,6 +51,17 @@ public class TransactionViewModelTests : MoneyTestBase
 			() => this.viewModel.When = this.when,
 			nameof(this.viewModel.When));
 		Assert.Equal(this.when, this.viewModel.When);
+
+		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		Assert.Throws<InvalidOperationException>(() => foreignSplitTransaction.When = DateTime.Now);
+	}
+
+	[Fact]
+	public void WhenIsReadOnly()
+	{
+		Assert.False(this.viewModel.WhenIsReadOnly);
+		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		Assert.True(foreignSplitTransaction.WhenIsReadOnly);
 	}
 
 	[Fact]

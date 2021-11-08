@@ -66,8 +66,17 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public DateTime When
 		{
 			get => this.when;
-			set => this.SetProperty(ref this.when, value);
+			set
+			{
+				this.ThrowIfSplitInForeignAccount();
+				this.SetProperty(ref this.when, value);
+			}
 		}
+
+		/// <summary>
+		/// Gets a value indicating whether the <see cref="When"/> property should be considered readonly.
+		/// </summary>
+		public bool WhenIsReadOnly => this.IsSplitInForeignAccount;
 
 		public int? CheckNumber
 		{
@@ -324,7 +333,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			Requires.NotNull(transaction, nameof(transaction));
 
 			this.SetProperty(ref this.payee, transaction.Payee, nameof(this.Payee));
-			this.When = transaction.When;
+			this.SetProperty(ref this.when, transaction.When, nameof(this.When));
 			this.SetProperty(ref this.amount, transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount, nameof(this.Amount));
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
