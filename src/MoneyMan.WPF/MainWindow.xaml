@@ -197,6 +197,7 @@
 									          Margin="5,0,0,0"
 									          ItemsSource="{Binding Splits}"
 									          Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
+									          AddingNewItem="SplitGrid_AddingNewItem"
 									          AutoGenerateColumns="False">
 										<DataGrid.Columns>
 											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
