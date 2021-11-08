@@ -154,7 +154,8 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+											<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number"
+											         IsReadOnly="{Binding AmountIsReadOnly}"/>
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>

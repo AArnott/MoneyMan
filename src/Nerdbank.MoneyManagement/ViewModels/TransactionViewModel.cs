@@ -85,6 +85,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		/// <summary>
+		/// Gets a value indicating whether the <see cref="Amount"/> property should be considered readonly.
+		/// </summary>
+		public bool AmountIsReadOnly => this.IsSplitInForeignAccount;
+
 		public string? Memo
 		{
 			get => this.memo;

@@ -74,6 +74,14 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void AmountIsReadOnly()
+	{
+		Assert.False(this.viewModel.AmountIsReadOnly);
+		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		Assert.True(foreignSplitTransaction.AmountIsReadOnly);
+	}
+
+	[Fact]
 	public void Memo()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
