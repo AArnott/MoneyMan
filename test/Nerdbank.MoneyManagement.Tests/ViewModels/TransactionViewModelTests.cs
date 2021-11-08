@@ -124,8 +124,13 @@ public class TransactionViewModelTests : MoneyTestBase
 		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
 		this.viewModel.CategoryOrTransfer = categoryViewModel;
 		SplitTransactionViewModel split = this.viewModel.NewSplit();
-		Assert.Same(categoryViewModel, split.CategoryOrTransfer);
-		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
+			split = this.viewModel.Splits.Single();
+			Assert.Equal(categoryViewModel.Id, split.CategoryOrTransfer?.Id);
+		});
 	}
 
 	[Fact]
@@ -405,7 +410,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.account = Assert.Single(this.DocumentViewModel.BankingPanel.Accounts, a => a.Id == this.account.Id);
 		this.viewModel = Assert.Single(this.account.Transactions, t => t.Id == transaction.Id);
 		Assert.Equal(0, this.viewModel.Amount);
-		Assert.Null(this.viewModel.CategoryOrTransfer);
+		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
 		Assert.Equal(2, this.viewModel.Splits.Count);
 		Assert.Single(this.viewModel.Splits, s => s.Amount == split1.Amount);
 		Assert.Single(this.viewModel.Splits, s => s.Amount == split2.Amount);

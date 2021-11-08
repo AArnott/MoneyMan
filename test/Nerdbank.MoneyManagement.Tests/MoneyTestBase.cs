@@ -36,6 +36,13 @@ public class MoneyTestBase : TestBase
 		}
 	}
 
+	protected void AssertNowAndAfterReload(Action assertions)
+	{
+		assertions();
+		this.ReloadViewModel();
+		assertions();
+	}
+
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)

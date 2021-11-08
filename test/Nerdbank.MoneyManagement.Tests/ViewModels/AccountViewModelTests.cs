@@ -629,11 +629,4 @@ public class AccountViewModelTests : MoneyTestBase
 
 		return tx;
 	}
-
-	private void AssertNowAndAfterReload(Action assertions)
-	{
-		assertions();
-		this.ReloadViewModel();
-		assertions();
-	}
 }

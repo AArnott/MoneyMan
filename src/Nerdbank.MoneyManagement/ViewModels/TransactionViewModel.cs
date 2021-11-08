@@ -315,7 +315,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				if (categoryId == Category.Split)
 				{
-					// These are lazily initialized.
+					// The split entities themselves are lazily initialized.
+					this.categoryOrTransfer = SplitCategoryPlaceholder.Singleton;
 				}
 				else
 				{

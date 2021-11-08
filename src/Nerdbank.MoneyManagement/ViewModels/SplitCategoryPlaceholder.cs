@@ -14,6 +14,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 		}
 
+		public int? Id => Category.Split;
+
 		public string Name => "--split--";
 
 		public string TransferTargetName => this.Name;
