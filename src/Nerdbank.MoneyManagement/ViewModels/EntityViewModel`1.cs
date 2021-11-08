@@ -129,15 +129,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.Id = model.Id;
 
-			bool autoSave = this.AutoSave;
-			this.AutoSave = false;
-			try
+			using (this.SuspendAutoSave(saveOnDisposal: false))
 			{
 				this.CopyFromCore(model);
-			}
-			finally
-			{
-				this.AutoSave = autoSave;
 			}
 
 			this.IsDirty = false;
@@ -162,5 +156,31 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		protected abstract void CopyFromCore(TEntity model);
 
 		protected virtual bool IsPersistedProperty(string propertyName) => true;
+
+		protected AutoSaveSuspension SuspendAutoSave(bool saveOnDisposal = true) => new(this, saveOnDisposal);
+
+		protected struct AutoSaveSuspension : IDisposable
+		{
+			private readonly EntityViewModel<TEntity> entity;
+			private readonly bool saveOnDisposal;
+			private readonly bool oldAutoSave;
+
+			internal AutoSaveSuspension(EntityViewModel<TEntity> entity, bool saveOnDisposal)
+			{
+				this.entity = entity;
+				this.saveOnDisposal = saveOnDisposal;
+				this.oldAutoSave = entity.AutoSave;
+				entity.AutoSave = false;
+			}
+
+			public void Dispose()
+			{
+				this.entity.AutoSave = this.oldAutoSave;
+				if (this.saveOnDisposal && this.entity.IsDirty)
+				{
+					this.entity.Save();
+				}
+			}
+		}
 	}
 }
