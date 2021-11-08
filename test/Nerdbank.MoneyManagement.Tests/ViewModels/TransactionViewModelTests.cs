@@ -54,6 +54,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.Throws<InvalidOperationException>(() => foreignSplitTransaction.When = DateTime.Now);
+
+		// When linked across split transfers
+		Assert.Equal(this.viewModel.When, foreignSplitTransaction.When);
+		this.viewModel.When = DateTime.Now;
+		Assert.Equal(this.viewModel.When, foreignSplitTransaction.When);
 	}
 
 	[Fact]
@@ -124,6 +129,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.Throws<InvalidOperationException>(() => foreignSplitTransaction.Payee = "me");
+
+		// Payee linked across split transfers
+		Assert.Equal(this.viewModel.Payee, foreignSplitTransaction.Payee);
+		this.viewModel.Payee = "somebody else";
+		Assert.Equal(this.viewModel.Payee, foreignSplitTransaction.Payee);
 	}
 
 	[Fact]

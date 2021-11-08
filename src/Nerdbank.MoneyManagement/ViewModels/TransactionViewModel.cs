@@ -70,6 +70,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.ThrowIfSplitInForeignAccount();
 				this.SetProperty(ref this.when, value);
+
+				foreach (SplitTransactionViewModel split in this.Splits)
+				{
+					if (split.Model is object)
+					{
+						split.Model.When = value;
+						split.Save();
+					}
+				}
 			}
 		}
 
@@ -118,6 +127,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.ThrowIfSplitInForeignAccount();
 				this.SetProperty(ref this.payee, value);
+
+				foreach (SplitTransactionViewModel split in this.Splits)
+				{
+					if (split.Model is object)
+					{
+						split.Model.Payee = value;
+						split.Save();
+					}
+				}
 			}
 		}
 
@@ -217,7 +235,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				split.CategoryOrTransfer = this.CategoryOrTransfer;
 				this.CategoryOrTransfer = SplitCategoryPlaceholder.Singleton;
 
-				split.Model = new();
+				split.Model = new()
+				{
+					When = this.When,
+					Payee = this.Payee,
+				};
 				_ = this.Splits; // ensure initialized
 				wasSplit = this.ContainsSplits;
 				this.splits!.Add(split);
