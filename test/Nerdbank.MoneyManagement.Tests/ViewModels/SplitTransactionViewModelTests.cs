@@ -81,6 +81,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 			Amount = this.amount,
 			Memo = this.memo,
 			CategoryId = this.spendingCategory.Id,
+			CreditAccountId = this.checkingAccount.Id,
 		};
 
 		this.viewModel.CopyFrom(splitTransaction);

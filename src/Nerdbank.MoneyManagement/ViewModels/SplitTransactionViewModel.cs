@@ -36,6 +36,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
+		/// <summary>
+		/// Gets the account this transaction was created to be displayed within.
+		/// </summary>
+		public AccountViewModel ThisAccount => this.ParentTransaction.ThisAccount;
+
 		public TransactionViewModel ParentTransaction { get; }
 
 		public decimal Amount
@@ -69,12 +74,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			if (this.Amount < 0)
 			{
-				split.DebitAccountId = this.ParentTransaction.ThisAccount.Id;
+				split.DebitAccountId = this.ThisAccount.Id;
 				split.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
 			else
 			{
-				split.CreditAccountId = this.ParentTransaction.ThisAccount.Id;
+				split.CreditAccountId = this.ThisAccount.Id;
 				split.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
 		}
@@ -83,20 +88,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(split, nameof(split));
 
-			this.Amount = split.Amount;
+			this.Amount = split.CreditAccountId == this.ThisAccount.Id ? split.Amount : -split.Amount;
 			this.Memo = split.Memo;
 
 			if (split.CategoryId is int categoryId)
 			{
-				this.CategoryOrTransfer = this.ParentTransaction.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
 			}
-			else if (split.CreditAccountId is int creditId && this.ParentTransaction.ThisAccount.Id != creditId)
+			else if (split.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
 			{
-				this.CategoryOrTransfer = this.ParentTransaction.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
 			}
-			else if (split.DebitAccountId is int debitId && this.ParentTransaction.ThisAccount.Id != debitId)
+			else if (split.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
 			{
-				this.CategoryOrTransfer = this.ParentTransaction.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
 			}
 			else
 			{

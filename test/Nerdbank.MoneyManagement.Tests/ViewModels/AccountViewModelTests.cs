@@ -447,8 +447,8 @@ public class AccountViewModelTests : MoneyTestBase
 		this.AssertNowAndAfterReload(delegate
 		{
 			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
-			Assert.Equal(-40, txSavings.Amount);
-			Assert.Equal(-40, this.savings.Balance);
+			Assert.Equal(40, txSavings.Amount);
+			Assert.Equal(40, this.savings.Balance);
 			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		});
 	}
@@ -483,9 +483,9 @@ public class AccountViewModelTests : MoneyTestBase
 		{
 			TransactionViewModel txSavings5 = Assert.Single(this.savings.Transactions, t => t.Amount == 5);
 			TransactionViewModel txSavings40 = Assert.Single(this.savings.Transactions, t => t.Amount == 40);
-			Assert.Equal(-40, txSavings40.Amount);
+			Assert.Equal(40, txSavings40.Amount);
 			Assert.Equal(5, txSavings5.Amount);
-			Assert.Equal(-45, this.savings.Balance);
+			Assert.Equal(45, this.savings.Balance);
 			Assert.True(txSavings5.IsSplitMemberOfParentTransaction);
 			Assert.True(txSavings40.IsSplitMemberOfParentTransaction);
 		});

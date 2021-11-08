@@ -255,7 +255,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			transaction.Payee = this.Payee;
 			transaction.When = this.When;
-			transaction.Amount = this.Splits.Count > 0 ? 0 : Math.Abs(this.Amount);
 			transaction.Memo = this.Memo;
 			transaction.CheckNumber = this.CheckNumber;
 			transaction.Cleared = this.Cleared.Value;
@@ -266,21 +265,28 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					split.Save();
 				}
-			}
-			else
-			{
-				transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
-			}
 
-			if (this.Amount < 0)
-			{
+				// Split transactions always record the same account for credit and debit,
+				// and always have their own Amount set to 0.
+				transaction.CreditAccountId = this.ThisAccount.Id;
 				transaction.DebitAccountId = this.ThisAccount.Id;
-				transaction.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				transaction.Amount = 0;
 			}
 			else
 			{
-				transaction.CreditAccountId = this.ThisAccount.Id;
-				transaction.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				transaction.Amount = Math.Abs(this.Amount);
+				transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
+
+				if (this.Amount < 0)
+				{
+					transaction.DebitAccountId = this.ThisAccount.Id;
+					transaction.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				}
+				else
+				{
+					transaction.CreditAccountId = this.ThisAccount.Id;
+					transaction.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				}
 			}
 		}
 
