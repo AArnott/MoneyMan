@@ -66,6 +66,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 
 			this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
+			this.JumpToSplitTransactionParentCommand = new JumpToSplitTransactionParentCommandImpl(this);
 		}
 
 		public bool IsFileOpen => this.MoneyFile is object;
@@ -111,7 +112,14 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public CommandBase DeleteTransactionsCommand { get; }
 
+		/// <summary>
+		/// Gets a command that jumps from a split member to its parent transaction in another account.
+		/// </summary>
+		public CommandBase JumpToSplitTransactionParentCommand { get; }
+
 		public string DeleteCommandCaption => "_Delete";
+
+		public string JumpToSplitTransactionParentCommandCaption => "_Jump to split parent";
 
 		internal MoneyFile? MoneyFile { get; }
 
@@ -273,19 +281,22 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 		}
 
-		private class DeleteTransactionCommandImpl : CommandBase
+		private abstract class SelectedTransactionCommandBase : CommandBase
 		{
 			private readonly DocumentViewModel viewModel;
 			private INotifyCollectionChanged? subscribedSelectedTransactions;
 
-			internal DeleteTransactionCommandImpl(DocumentViewModel viewModel)
+			internal SelectedTransactionCommandBase(DocumentViewModel viewModel)
 			{
 				this.viewModel = viewModel;
 				this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
 				this.SubscribeToSelectionChanged();
+				this.CanExecuteChanged += (s, e) => this.OnPropertyChanged(nameof(this.IsEnabled));
 			}
 
-			public override bool CanExecute(object? parameter = null)
+			public bool IsEnabled => this.CanExecute();
+
+			public sealed override bool CanExecute(object? parameter = null)
 			{
 				if (!base.CanExecute(parameter))
 				{
@@ -295,34 +306,35 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (this.viewModel.SelectedTransactions is object)
 				{
 					// When multiple transaction selection is supported, enable the command if *any* of the selected commands are not splits in foreign accounts.
-					foreach (object item in this.viewModel.SelectedTransactions)
-					{
-						if (item is TransactionViewModel { IsSplitInForeignAccount: false })
-						{
-							return true;
-						}
-					}
+					return this.CanExecute(this.viewModel.SelectedTransactions);
 				}
 
-				return this.viewModel.SelectedTransaction is { IsSplitInForeignAccount: false };
+				if (this.viewModel.SelectedTransaction is object)
+				{
+					return this.CanExecute(new TransactionViewModel[] { this.viewModel.SelectedTransaction });
+				}
+
+				return false;
 			}
 
-			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
+			protected abstract bool CanExecute(IList transactionViewModels);
+
+			protected sealed override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 			{
 				if (this.viewModel.SelectedTransactions is object)
 				{
-					foreach (TransactionViewModel transaction in this.viewModel.SelectedTransactions.OfType<TransactionViewModel>().ToList())
-					{
-						transaction.ThisAccount.DeleteTransaction(transaction);
-					}
+					return this.ExecuteCoreAsync(this.viewModel.SelectedTransactions, cancellationToken);
 				}
-				else if (this.viewModel.SelectedTransaction is { } transaction)
+
+				if (this.viewModel.SelectedTransaction is object)
 				{
-					transaction.ThisAccount.DeleteTransaction(this.viewModel.SelectedTransaction);
+					return this.ExecuteCoreAsync(new TransactionViewModel[] { this.viewModel.SelectedTransaction }, cancellationToken);
 				}
 
 				return Task.CompletedTask;
 			}
+
+			protected abstract Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken);
 
 			private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 			{
@@ -351,6 +363,60 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					this.subscribedSelectedTransactions.CollectionChanged += this.SelectedTransactions_CollectionChanged;
 				}
+			}
+		}
+
+		private class DeleteTransactionCommandImpl : SelectedTransactionCommandBase
+		{
+			internal DeleteTransactionCommandImpl(DocumentViewModel viewModel)
+				: base(viewModel)
+			{
+			}
+
+			protected override bool CanExecute(IList transactionViewModels)
+			{
+				foreach (object item in transactionViewModels)
+				{
+					if (item is TransactionViewModel { IsSplitInForeignAccount: false })
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
+			{
+				foreach (TransactionViewModel transaction in transactionViewModels.OfType<TransactionViewModel>().ToList())
+				{
+					transaction.ThisAccount.DeleteTransaction(transaction);
+				}
+
+				return Task.CompletedTask;
+			}
+		}
+
+		private class JumpToSplitTransactionParentCommandImpl : SelectedTransactionCommandBase
+		{
+			internal JumpToSplitTransactionParentCommandImpl(DocumentViewModel viewModel)
+				: base(viewModel)
+			{
+			}
+
+			protected override bool CanExecute(IList transactionViewModels)
+			{
+				return transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true };
+			}
+
+			protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
+			{
+				if (transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true } tx)
+				{
+					tx.JumpToSplitParent();
+				}
+
+				return Task.CompletedTask;
 			}
 		}
 

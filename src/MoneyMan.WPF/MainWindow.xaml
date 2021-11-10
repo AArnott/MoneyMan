@@ -255,6 +255,9 @@
 							<DataGrid.ContextMenu>
 								<ContextMenu>
 									<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
+									<MenuItem Header="{Binding Document.JumpToSplitTransactionParentCommandCaption, Source={StaticResource viewModel}}"
+									          Command="{Binding Document.JumpToSplitTransactionParentCommand, Source={StaticResource viewModel}}"
+									          Visibility="{Binding Document.JumpToSplitTransactionParentCommand.IsEnabled, Source={StaticResource viewModel}, Converter={StaticResource boolToVisibilityConverter}}"/>
 								</ContextMenu>
 							</DataGrid.ContextMenu>
 						</DataGrid>
