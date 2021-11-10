@@ -92,9 +92,58 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void AmountIsReadOnly()
 	{
+		this.account.Add(this.viewModel);
+		this.viewModel.Save();
 		Assert.False(this.viewModel.AmountIsReadOnly);
 		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.True(foreignSplitTransaction.AmountIsReadOnly);
+		Assert.True(foreignSplitTransaction.GetSplitParent()!.AmountIsReadOnly);
+	}
+
+	[Fact]
+	public void Amount_OnSplitTransactions_ViewModelOnly()
+	{
+		this.viewModel.Amount = -50;
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		Assert.Equal(-50, this.viewModel.Amount);
+		Assert.Equal(-50, split1.Amount);
+		Assert.Equal(0, this.viewModel.Model!.Amount);
+
+		split1.Amount = -40;
+		Assert.Equal(-40, this.viewModel.Amount);
+		Assert.Equal(-40, split1.Amount);
+		Assert.Equal(0, this.viewModel.Model!.Amount);
+
+		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		Assert.Equal(-40, this.viewModel.Amount);
+		Assert.Equal(-40, split1.Amount);
+		split2.Amount = -30;
+		Assert.Equal(-70, this.viewModel.Amount);
+		Assert.Equal(0, this.viewModel.Model!.Amount);
+
+		this.ReloadViewModel();
+		Assert.Equal(-70, this.viewModel.Amount);
+	}
+
+	[Fact]
+	public void Balance_OnSplitTransactions()
+	{
+		this.account.Add(this.viewModel);
+		this.viewModel.Save();
+		this.viewModel.Amount = -50;
+		Assert.Equal(-50, this.viewModel.Balance);
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		Assert.Equal(-50, this.viewModel.Balance);
+
+		split1.Amount = -40;
+		Assert.Equal(-40, this.viewModel.Balance);
+
+		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		split2.Amount = -30;
+		Assert.Equal(-70, this.viewModel.Balance);
+
+		this.ReloadViewModel();
+		Assert.Equal(-70, this.viewModel.Balance);
 	}
 
 	[Fact]
@@ -457,7 +506,7 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		this.account = Assert.Single(this.DocumentViewModel.BankingPanel.Accounts, a => a.Id == this.account.Id);
 		this.viewModel = Assert.Single(this.account.Transactions, t => t.Id == transaction.Id);
-		Assert.Equal(0, this.viewModel.Amount);
+		Assert.Equal(10, this.viewModel.Amount);
 		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
 		Assert.Equal(2, this.viewModel.Splits.Count);
 		Assert.Single(this.viewModel.Splits, s => s.Amount == split1.Amount);

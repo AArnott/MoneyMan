@@ -222,6 +222,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			return null;
 		}
 
+		internal void NotifyAmountChangedOnSplitTransaction(TransactionViewModel transaction)
+		{
+			Requires.Argument(transaction.ContainsSplits, nameof(transaction), "Only split transactions should be raising this.");
+			if (this.transactions is object)
+			{
+				var index = this.transactions.IndexOf(transaction);
+				if (index >= 0)
+				{
+					this.UpdateBalances(index);
+				}
+			}
+		}
+
 		protected override void ApplyToCore(Account account)
 		{
 			Requires.NotNull(account, nameof(account));

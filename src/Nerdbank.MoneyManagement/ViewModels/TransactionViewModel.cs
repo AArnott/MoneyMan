@@ -6,6 +6,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.ObjectModel;
+	using System.ComponentModel;
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Threading;
@@ -106,7 +107,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// <summary>
 		/// Gets a value indicating whether the <see cref="Amount"/> property should be considered readonly.
 		/// </summary>
-		public bool AmountIsReadOnly => this.IsSplitInForeignAccount;
+		public bool AmountIsReadOnly => this.IsSplitInForeignAccount || this.ContainsSplits;
 
 		public string? Memo
 		{
@@ -181,6 +182,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 						{
 							SplitTransactionViewModel splitViewModel = new(this, split);
 							this.splits.Add(splitViewModel);
+							splitViewModel.PropertyChanged += this.Splits_PropertyChanged;
 						}
 					}
 				}
@@ -225,11 +227,13 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				this.Save();
 			}
 
+			_ = this.Splits; // ensure initialized
+			bool wasSplit = this.ContainsSplits;
 			SplitTransactionViewModel split = new(this, null)
 			{
 				MoneyFile = this.MoneyFile,
+				Amount = wasSplit ? 0 : this.Amount,
 			};
-			bool wasSplit;
 			using (this.SuspendAutoSave())
 			{
 				split.CategoryOrTransfer = this.CategoryOrTransfer;
@@ -240,11 +244,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					When = this.When,
 					Payee = this.Payee,
 				};
-				_ = this.Splits; // ensure initialized
-				wasSplit = this.ContainsSplits;
 				this.splits!.Add(split);
 			}
 
+			split.PropertyChanged += this.Splits_PropertyChanged;
 			if (!wasSplit)
 			{
 				this.OnPropertyChanged(nameof(this.ContainsSplits));
@@ -356,7 +359,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.SetProperty(ref this.payee, transaction.Payee, nameof(this.Payee));
 			this.SetProperty(ref this.when, transaction.When, nameof(this.When));
-			this.SetProperty(ref this.amount, transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount, nameof(this.Amount));
 			this.Memo = transaction.Memo;
 			this.CheckNumber = transaction.CheckNumber;
 			this.Cleared = SharedClearedStates.Single(cs => cs.Value == transaction.Cleared);
@@ -391,9 +393,46 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			{
 				this.SetProperty(ref this.categoryOrTransfer, null, nameof(this.CategoryOrTransfer));
 			}
+
+			// Split transactions' amounts are always calculated to be the sum of the splits.
+			if (this.ContainsSplits)
+			{
+				this.SetAmountBasedOnSplits();
+			}
+			else
+			{
+				this.SetProperty(ref this.amount, transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount, nameof(this.Amount));
+			}
 		}
 
-		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
+		protected override bool IsPersistedProperty(string propertyName)
+		{
+			if (propertyName == nameof(this.Balance))
+			{
+				return false;
+			}
+
+			if (this.ContainsSplits && propertyName == nameof(this.Amount))
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		private void Splits_PropertyChanged(object? sender, PropertyChangedEventArgs args)
+		{
+			if (this.ContainsSplits)
+			{
+				this.SetAmountBasedOnSplits();
+			}
+		}
+
+		private void SetAmountBasedOnSplits()
+		{
+			this.Amount = this.Splits.Sum(s => s.Amount);
+			this.ThisAccount.NotifyAmountChangedOnSplitTransaction(this);
+		}
 
 		[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 		public class ClearedStateViewModel
