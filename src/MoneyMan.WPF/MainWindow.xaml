@@ -13,7 +13,7 @@
 		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
 		<converters:BoolInvertingConverter x:Key="boolInvertingConverter" />
 		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
-		<BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
+		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 	</Window.Resources>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
@@ -120,9 +120,11 @@
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
 											<StackPanel Orientation="Horizontal">
+												<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt"
+												           Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter}}" />
 												<ComboBox
-												          IsEnabled="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolInvertingConverter}}"
-												          ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
+												          Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter},ConverterParameter=true}"
+												          ItemsSource="{Binding AvailableTransactionTargets}"
 												          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 													<ComboBox.ItemTemplate>
 														<DataTemplate>

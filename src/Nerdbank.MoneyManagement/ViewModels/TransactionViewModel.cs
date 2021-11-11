@@ -60,6 +60,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.SplitCommand = new SplitCommandImpl(this);
 			this.DeleteSplitCommand = new DeleteSplitCommandImpl(this);
+
+			this.RegisterDependentProperty(nameof(this.AmountIsReadOnly), nameof(this.CategoryOrTransferIsReadOnly));
+			this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.CategoryOrTransferIsReadOnly));
 		}
 
 		public ICommand SplitCommand { get; }
@@ -177,6 +180,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// Gets a value indicating whether the <see cref="CategoryOrTransfer"/> property should be considered readonly.
 		/// </summary>
 		public bool CategoryOrTransferIsReadOnly => this.ContainsSplits || this.IsSplitInForeignAccount;
+
+		public IEnumerable<ITransactionTarget> AvailableTransactionTargets
+			=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != SplitCategoryPlaceholder.Singleton);
 
 		////[SplitSumMatchesTransactionAmount]
 		public IReadOnlyCollection<SplitTransactionViewModel> Splits
