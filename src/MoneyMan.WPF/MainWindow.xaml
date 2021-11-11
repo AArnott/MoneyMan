@@ -201,9 +201,18 @@
 									          AlternationCount="2"
 									          Margin="5,0,0,0"
 									          ItemsSource="{Binding Splits}"
+									          IsSynchronizedWithCurrentItem="True"
+									          SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
+									          SelectionMode="Single"
 									          Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
 									          AddingNewItem="SplitGrid_AddingNewItem"
 									          AutoGenerateColumns="False">
+										<DataGrid.ContextMenu>
+											<ContextMenu>
+												<MenuItem Header="{Binding DeleteSplitCommandCaption}" 
+												          Command="{Binding DeleteSplitCommand}" />
+											</ContextMenu>
+										</DataGrid.ContextMenu>
 										<DataGrid.Columns>
 											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
 												<DataGridTemplateColumn.CellTemplate>

@@ -38,6 +38,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		private string? payee;
 		private ITransactionTarget? categoryOrTransfer;
 		private decimal balance;
+		private SplitTransactionViewModel? selectedSplit;
 
 		[Obsolete("Do not use this constructor.")]
 		public TransactionViewModel()
@@ -58,9 +59,20 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 
 			this.SplitCommand = new SplitCommandImpl(this);
+			this.DeleteSplitCommand = new DeleteSplitCommandImpl(this);
 		}
 
 		public ICommand SplitCommand { get; }
+
+		/// <summary>
+		/// Gets a command which deletes the <see cref="SelectedSplit"/> when executed.
+		/// </summary>
+		public ICommand DeleteSplitCommand { get; }
+
+		/// <summary>
+		/// Gets the caption for the <see cref="DeleteSplitCommand"/> command.
+		/// </summary>
+		public string DeleteSplitCommandCaption => "_Delete split";
 
 		public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
 
@@ -192,6 +204,12 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		}
 
 		public bool ContainsSplits => this.Splits.Count > 0;
+
+		public SplitTransactionViewModel? SelectedSplit
+		{
+			get => this.selectedSplit;
+			set => this.SetProperty(ref this.selectedSplit, value);
+		}
 
 		/// <summary>
 		/// Gets a value indicating whether this "transaction" is really just synthesized to represent the split line item(s)
@@ -474,6 +492,40 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			private void TransactionViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
 			{
 				if (e.PropertyName == nameof(this.transactionViewModel.ContainsSplits))
+				{
+					this.OnCanExecuteChanged();
+				}
+			}
+		}
+
+		private class DeleteSplitCommandImpl : CommandBase
+		{
+			private TransactionViewModel transactionViewModel;
+
+			public DeleteSplitCommandImpl(TransactionViewModel transactionViewModel)
+			{
+				this.transactionViewModel = transactionViewModel;
+				this.transactionViewModel.PropertyChanged += this.TransactionViewModel_PropertyChanged;
+			}
+
+			public override bool CanExecute(object? parameter = null)
+			{
+				return base.CanExecute(parameter) && this.transactionViewModel.SelectedSplit is object;
+			}
+
+			protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+			{
+				if (this.transactionViewModel.SelectedSplit is { } split)
+				{
+					this.transactionViewModel.DeleteSplit(split);
+				}
+
+				return Task.CompletedTask;
+			}
+
+			private void TransactionViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+			{
+				if (e.PropertyName == nameof(this.transactionViewModel.SelectedSplit))
 				{
 					this.OnCanExecuteChanged();
 				}
