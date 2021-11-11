@@ -61,7 +61,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
-		private string DebuggerDisplay => $"Split: {this.Memo} {this.CategoryOrTransfer} {this.Amount}";
+		private string DebuggerDisplay => $"Split: {this.Memo} {this.CategoryOrTransfer?.Name} {this.Amount}";
 
 		protected override void ApplyToCore(Transaction split)
 		{
