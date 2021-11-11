@@ -20,12 +20,14 @@ public class MoneyTestBase : TestBase
 			result.Logger = new TestLoggerAdapter(this.Logger);
 			return result;
 		});
-		this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money, ownsMoneyFile: false));
+		this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money, ownsMoneyFile: false) { UserNotification = this.UserNotification });
 	}
 
 	protected MoneyFile Money => this.money.Value;
 
 	protected DocumentViewModel DocumentViewModel => this.documentViewModel.Value;
+
+	private protected UserNotificationMock UserNotification { get; } = new();
 
 	protected virtual void ReloadViewModel()
 	{

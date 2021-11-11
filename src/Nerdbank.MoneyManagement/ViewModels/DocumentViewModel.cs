@@ -121,6 +121,11 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public string JumpToSplitTransactionParentCommandCaption => "_Jump to split parent";
 
+		/// <summary>
+		/// Gets or sets a view-supplied mechanism to prompt or notify the user.
+		/// </summary>
+		public IUserNotification? UserNotification { get; set; }
+
 		internal MoneyFile? MoneyFile { get; }
 
 		private string DebuggerDisplay => this.MoneyFile?.Path ?? "(not backed by a file)";
