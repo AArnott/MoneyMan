@@ -4,6 +4,7 @@
 namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Diagnostics;
 	using Validation;
 
@@ -60,6 +61,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			get => this.categoryOrTransfer;
 			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
+
+		public IEnumerable<ITransactionTarget> AvailableTransactionTargets => this.ParentTransaction.AvailableTransactionTargets;
 
 		private string DebuggerDisplay => $"Split: {this.Memo} {this.CategoryOrTransfer?.Name} {this.Amount}";
 

@@ -224,7 +224,7 @@
 												</DataGridTemplateColumn.CellTemplate>
 												<DataGridTemplateColumn.CellEditingTemplate>
 													<DataTemplate>
-														<ComboBox ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
+														<ComboBox ItemsSource="{Binding AvailableTransactionTargets}"
 														          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 															<ComboBox.ItemTemplate>
 																<DataTemplate>
