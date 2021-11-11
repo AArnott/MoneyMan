@@ -49,6 +49,14 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void AvailableTransactionTargets()
+	{
+		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == SplitCategoryPlaceholder.Singleton);
+		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.viewModel.ThisAccount);
+		Assert.NotEmpty(this.viewModel.AvailableTransactionTargets);
+	}
+
+	[Fact]
 	public void Memo()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
