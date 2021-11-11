@@ -63,12 +63,15 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.RegisterDependentProperty(nameof(this.AmountIsReadOnly), nameof(this.CategoryOrTransferIsReadOnly));
 			this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.CategoryOrTransferIsReadOnly));
+			this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.SplitCommandToolTip));
 		}
 
 		/// <summary>
 		/// Gets a command that toggles between a split transaction and a simple one.
 		/// </summary>
 		public CommandBase SplitCommand { get; }
+
+		public string SplitCommandToolTip => this.ContainsSplits ? "Delete all splits" : "Split transaction to allow assignment to multiple categories";
 
 		/// <summary>
 		/// Gets a command which deletes the <see cref="SelectedSplit"/> when executed.
