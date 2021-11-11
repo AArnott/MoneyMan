@@ -122,7 +122,7 @@ namespace MoneyMan
 
 		private void SplitGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 		{
-			e.NewItem = this.ViewModel.Document.SelectedTransaction?.NewSplit() ?? throw new InvalidOperationException("No selected transaction.");
+			e.NewItem = this.ViewModel.Document.SelectedTransaction?.NewSplit(volatileOnly: true) ?? throw new InvalidOperationException("No selected transaction.");
 		}
 
 #pragma warning disable VSTHRD100 // Avoid async void methods

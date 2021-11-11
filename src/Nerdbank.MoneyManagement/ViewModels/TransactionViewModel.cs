@@ -235,7 +235,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
 
-		public SplitTransactionViewModel NewSplit()
+		public SplitTransactionViewModel NewSplit(bool volatileOnly = false)
 		{
 			Verify.Operation(!this.IsSplitMemberOfParentTransaction, "Cannot split a transaction that is already a member of a split transaction.");
 
@@ -262,7 +262,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					When = this.When,
 					Payee = this.Payee,
 				};
-				this.splits!.Add(split);
+				if (!volatileOnly)
+				{
+					this.splits!.Add(split);
+				}
 			}
 
 			split.PropertyChanged += this.Splits_PropertyChanged;
