@@ -65,7 +65,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.CategoryOrTransferIsReadOnly));
 		}
 
-		public ICommand SplitCommand { get; }
+		/// <summary>
+		/// Gets a command that toggles between a split transaction and a simple one.
+		/// </summary>
+		public CommandBase SplitCommand { get; }
 
 		/// <summary>
 		/// Gets a command which deletes the <see cref="SelectedSplit"/> when executed.
@@ -290,15 +293,56 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				throw new InvalidOperationException("Splits haven't been initialized.");
 			}
 
-			this.splits.Remove(split);
+			if (!this.splits.Remove(split))
+			{
+				return;
+			}
+
 			if (split.Model is object)
 			{
 				this.ThisAccount.MoneyFile?.Delete(split.Model);
 			}
 
-			if (!this.ContainsSplits)
+			if (this.ContainsSplits)
+			{
+				this.SetAmountBasedOnSplits();
+			}
+			else
 			{
 				this.OnPropertyChanged(nameof(this.ContainsSplits));
+
+				// Salvage some data from the last split.
+				if (string.IsNullOrEmpty(this.Memo))
+				{
+					this.Memo = split.Memo;
+				}
+
+				this.CategoryOrTransfer = split.CategoryOrTransfer;
+			}
+		}
+
+		public void DeleteAllSplits()
+		{
+			_ = this.Splits;
+
+			if (this.Splits.Count > 0)
+			{
+				int originalSplitCount = this.Splits.Count;
+				decimal amount = this.Amount;
+				foreach (SplitTransactionViewModel split in this.Splits.ToList())
+				{
+					this.DeleteSplit(split);
+				}
+
+				// If there was more than one split item, we don't know which category to apply to the original transaction,
+				// so clear it explicitly since otherwise the DeleteSplit call above would cause us to inherit the last split's category.
+				if (originalSplitCount > 1)
+				{
+					this.CategoryOrTransfer = null;
+
+					// Also restore the Amount to the original multi-split value.
+					this.Amount = amount;
+				}
 			}
 		}
 
@@ -490,12 +534,26 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				transactionViewModel.PropertyChanged += this.TransactionViewModel_PropertyChanged;
 			}
 
-			public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && !this.transactionViewModel.ContainsSplits;
+			public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter);
 
-			protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+			protected override async Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 			{
-				this.transactionViewModel.NewSplit();
-				return Task.CompletedTask;
+				if (!this.transactionViewModel.ContainsSplits)
+				{
+					this.transactionViewModel.NewSplit();
+				}
+				else
+				{
+					if (this.transactionViewModel.ThisAccount.DocumentViewModel.UserNotification is { } userNotification && this.transactionViewModel.Splits.Count > 1)
+					{
+						if (!await userNotification.ConfirmAsync("This operation will delete all splits.", defaultConfirm: false))
+						{
+							return;
+						}
+					}
+
+					this.transactionViewModel.DeleteAllSplits();
+				}
 			}
 
 			private void TransactionViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

@@ -223,6 +223,91 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void DeleteSplit_LastSplitMergesIntoParent()
+	{
+		CategoryViewModel cat1 = this.DocumentViewModel.CategoriesPanel.NewCategory("cat1");
+		CategoryViewModel cat2 = this.DocumentViewModel.CategoriesPanel.NewCategory("cat2");
+
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		split1.Amount = 10;
+		split1.CategoryOrTransfer = cat1;
+		split1.Memo = "memo1";
+		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		split2.Amount = 5;
+		split2.CategoryOrTransfer = cat2;
+		split2.Memo = "memo2";
+
+		this.viewModel.DeleteSplit(split1);
+		Assert.Equal(5, this.viewModel.Amount);
+		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
+		Assert.Null(this.viewModel.Memo);
+
+		this.viewModel.DeleteSplit(split2);
+		Assert.Equal(5, this.viewModel.Amount);
+		Assert.Same(cat2, this.viewModel.CategoryOrTransfer);
+		Assert.Equal("memo2", this.viewModel.Memo);
+	}
+
+	[Fact]
+	public async Task SplitCommand_OneSplit_ThenDelete()
+	{
+		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
+
+		Assert.True(this.viewModel.SplitCommand.CanExecute(null));
+		await TestUtilities.AssertPropertyChangedEventAsync(this.viewModel, () => this.viewModel.SplitCommand.ExecuteAsync(), nameof(this.viewModel.ContainsSplits));
+		Assert.True(this.viewModel.ContainsSplits);
+
+		SplitTransactionViewModel split = Assert.Single(this.viewModel.Splits);
+		split.Amount = 10;
+		split.CategoryOrTransfer = categoryViewModel;
+
+		Assert.True(this.viewModel.SplitCommand.CanExecute(null));
+		await TestUtilities.AssertPropertyChangedEventAsync(this.viewModel, () => this.viewModel.SplitCommand.ExecuteAsync(), nameof(this.viewModel.ContainsSplits));
+
+		// We expect no prompts because one split can collapse to a simple transaction with little or no data loss.
+		Assert.Equal(0, this.UserNotification.ConfirmCounter);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.False(this.viewModel.ContainsSplits);
+			Assert.Equal(10, this.viewModel.Amount);
+			Assert.Equal(categoryViewModel.Name, this.viewModel.CategoryOrTransfer?.Name);
+		});
+
+		// Confirm the split was deleted from the database.
+		Assert.Empty(this.Money.Transactions.Where(tx => tx.Id == split.Id));
+	}
+
+	[Theory, PairwiseData]
+	public async Task SplitCommand_DeleteTwoSplits_IncludesPrompt(bool confirmed)
+	{
+		this.UserNotification.ChosenAction = confirmed ? IUserNotification.UserAction.Yes : IUserNotification.UserAction.No;
+
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		split1.Amount = 10;
+		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		split2.Amount = 5;
+
+		Assert.True(this.viewModel.SplitCommand.CanExecute(null));
+		await this.viewModel.SplitCommand.ExecuteAsync();
+		Assert.Equal(1, this.UserNotification.ConfirmCounter);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			if (confirmed)
+			{
+				Assert.False(this.viewModel.ContainsSplits);
+				Assert.Equal(15, this.viewModel.Amount);
+				Assert.Null(this.viewModel.CategoryOrTransfer);
+			}
+			else
+			{
+				Assert.Equal(2, this.viewModel.Splits.Count);
+			}
+		});
+	}
+
+	[Fact]
 	public void CategoryOrTransfer_ThrowsWhenSplit()
 	{
 		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
