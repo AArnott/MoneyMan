@@ -70,7 +70,14 @@ namespace MoneyMan
 			this.InitializeFileDialog(dialog);
 			if (dialog.ShowDialog() is true)
 			{
-				this.ViewModel.OpenNewFile(dialog.FileName);
+				try
+				{
+					this.ViewModel.OpenNewFile(dialog.FileName);
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(this, "Unable to create this database: " + ex.Message, "MoneyMan", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
 			}
 		}
 
