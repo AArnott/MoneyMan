@@ -17,6 +17,7 @@ namespace MoneyMan.ViewModel
 
 			base.ReplaceViewModel(documentViewModel);
 
+			this.Document.UserNotification = new UserNotification(this.MainWindow);
 			this.Document.AccountsPanel.AddingNewAccount += this.AccountsPanel_AddingNewAccount;
 			this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
 			this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.CategoriesListView.SelectedItems;

@@ -22,7 +22,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 				{
 					this.IsDirty = true;
-					if (this.AutoSave && this.Model is object && string.IsNullOrEmpty(this.Error))
+					if (this.MoneyFile?.IsDisposed is not true && this.AutoSave && this.Model is object && string.IsNullOrEmpty(this.Error))
 					{
 						this.Save();
 					}
@@ -66,7 +66,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				foreach (PropertyInfo propertyInfo in propertyInfos)
 				{
 					var errorMsg = this[propertyInfo.Name];
-					if (errorMsg is not null)
+					if (errorMsg?.Length > 0)
 					{
 						return errorMsg;
 					}
@@ -115,7 +115,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.NotNull(model, nameof(model));
 			Requires.Argument(this.Id is null || model.Id == this.Id, nameof(model), "The provided object is not the original template.");
-			Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property.");
+			Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
 
 			this.ApplyToCore(model);
 
@@ -129,15 +129,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 			this.Id = model.Id;
 
-			bool autoSave = this.AutoSave;
-			this.AutoSave = false;
-			try
+			using (this.SuspendAutoSave(saveOnDisposal: false))
 			{
 				this.CopyFromCore(model);
-			}
-			finally
-			{
-				this.AutoSave = autoSave;
 			}
 
 			this.IsDirty = false;
@@ -162,5 +156,31 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		protected abstract void CopyFromCore(TEntity model);
 
 		protected virtual bool IsPersistedProperty(string propertyName) => true;
+
+		protected AutoSaveSuspension SuspendAutoSave(bool saveOnDisposal = true) => new(this, saveOnDisposal);
+
+		protected struct AutoSaveSuspension : IDisposable
+		{
+			private readonly EntityViewModel<TEntity> entity;
+			private readonly bool saveOnDisposal;
+			private readonly bool oldAutoSave;
+
+			internal AutoSaveSuspension(EntityViewModel<TEntity> entity, bool saveOnDisposal)
+			{
+				this.entity = entity;
+				this.saveOnDisposal = saveOnDisposal;
+				this.oldAutoSave = entity.AutoSave;
+				entity.AutoSave = false;
+			}
+
+			public void Dispose()
+			{
+				this.entity.AutoSave = this.oldAutoSave;
+				if (this.saveOnDisposal && this.entity.IsDirty)
+				{
+					this.entity.Save();
+				}
+			}
+		}
 	}
 }

@@ -5,14 +5,44 @@ namespace Nerdbank.MoneyManagement.ViewModels
 {
 	using System;
 	using System.Collections.Generic;
-	using PCLCommandBase;
+	using System.Diagnostics;
 	using Validation;
 
-	public class SplitTransactionViewModel : EntityViewModel<SplitTransaction>
+	/// <summary>
+	/// Represents a <see cref="Transaction"/> that is a member of a split transaction,
+	/// as it is represented in its "home" account, such that it only appears nested under the parent transaction.
+	/// </summary>
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+	public class SplitTransactionViewModel : EntityViewModel<Transaction>
 	{
 		private decimal amount;
 		private string? memo;
-		private CategoryViewModel? category;
+		private ITransactionTarget? categoryOrTransfer;
+
+		[Obsolete("Do not use this constructor.")]
+		public SplitTransactionViewModel()
+		{
+			// This constructor exists only to get WPF to allow the user to add transaction rows.
+			throw new NotSupportedException();
+		}
+
+		public SplitTransactionViewModel(TransactionViewModel parent, Transaction? splitTransaction)
+		{
+			this.ParentTransaction = parent;
+			this.AutoSave = true;
+
+			if (splitTransaction is object)
+			{
+				this.CopyFrom(splitTransaction);
+			}
+		}
+
+		/// <summary>
+		/// Gets the account this transaction was created to be displayed within.
+		/// </summary>
+		public AccountViewModel ThisAccount => this.ParentTransaction.ThisAccount;
+
+		public TransactionViewModel ParentTransaction { get; }
 
 		public decimal Amount
 		{
@@ -26,43 +56,60 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			set => this.SetProperty(ref this.memo, value);
 		}
 
-		public CategoryViewModel? Category
+		public ITransactionTarget? CategoryOrTransfer
 		{
-			get => this.category;
-			set => this.SetProperty(ref this.category, value);
+			get => this.categoryOrTransfer;
+			set => this.SetProperty(ref this.categoryOrTransfer, value);
 		}
 
-		public void CopyFrom(SplitTransaction transaction, IReadOnlyDictionary<int, CategoryViewModel> categories)
+		public IEnumerable<ITransactionTarget> AvailableTransactionTargets => this.ParentTransaction.AvailableTransactionTargets;
+
+		private string DebuggerDisplay => $"Split: {this.Memo} {this.CategoryOrTransfer?.Name} {this.Amount}";
+
+		protected override void ApplyToCore(Transaction split)
 		{
-			Requires.NotNull(transaction, nameof(transaction));
-			Requires.NotNull(categories, nameof(categories));
+			Requires.NotNull(split, nameof(split));
 
-			this.Amount = transaction.Amount;
-			this.Memo = transaction.Memo;
+			split.ParentTransactionId = this.ParentTransaction.Id ?? throw new InvalidOperationException("Cannot save a split before its parent transaction.");
+			split.Amount = Math.Abs(this.Amount);
+			split.Memo = this.Memo;
+			split.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
-			if (transaction.CategoryId is int categoryId)
+			if (this.Amount < 0)
 			{
-				Requires.Argument(categories.TryGetValue(categoryId, out CategoryViewModel? categoryViewModel), nameof(categories), "No category with required ID found.");
-				this.Category = categoryViewModel;
+				split.DebitAccountId = this.ThisAccount.Id;
+				split.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
 			else
 			{
-				this.Category = null;
+				split.CreditAccountId = this.ThisAccount.Id;
+				split.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
 			}
-
-			this.IsDirty = false;
-			this.Model ??= transaction;
 		}
 
-		protected override void ApplyToCore(SplitTransaction transaction)
+		protected override void CopyFromCore(Transaction split)
 		{
-			Requires.NotNull(transaction, nameof(transaction));
+			Requires.NotNull(split, nameof(split));
 
-			transaction.Amount = this.Amount;
-			transaction.Memo = this.Memo;
-			transaction.CategoryId = this.Category?.Id;
+			this.Amount = split.CreditAccountId == this.ThisAccount.Id ? split.Amount : -split.Amount;
+			this.Memo = split.Memo;
+
+			if (split.CategoryId is int categoryId)
+			{
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
+			}
+			else if (split.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
+			{
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
+			}
+			else if (split.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
+			{
+				this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
+			}
+			else
+			{
+				this.CategoryOrTransfer = null;
+			}
 		}
-
-		protected override void CopyFromCore(SplitTransaction category) => throw new NotSupportedException("Use the other overload instead.");
 	}
 }

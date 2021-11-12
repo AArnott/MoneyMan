@@ -202,7 +202,6 @@ public class MoneyFileTests : IDisposable
 		Assert.Throws<ObjectDisposedException>(() => money.GetBalance(new Account { Id = 3, Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Categories);
 		Assert.Throws<ObjectDisposedException>(() => money.Accounts);
-		Assert.Throws<ObjectDisposedException>(() => money.SplitTransactions);
 		Assert.Throws<ObjectDisposedException>(() => money.Transactions);
 		Assert.Throws<ObjectDisposedException>(() => money.CheckIntegrity());
 	}

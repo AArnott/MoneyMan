@@ -11,8 +11,9 @@
 	<Window.Resources>
 		<local:MainPageViewModel x:Key="viewModel" />
 		<converters:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
+		<converters:BoolInvertingConverter x:Key="boolInvertingConverter" />
 		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
-		<BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
+		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 	</Window.Resources>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
@@ -92,7 +93,8 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+											<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+											            IsEnabled="{Binding WhenIsReadOnly, Converter={StaticResource boolInvertingConverter}}"/>
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
@@ -104,7 +106,8 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+											<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+											         IsReadOnly="{Binding PayeeIsReadOnly}"/>
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
@@ -116,15 +119,21 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<ComboBox
-												ItemsSource="{Binding Source={StaticResource viewModel}, Path=Document.TransactionTargets}"
-												SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-												<ComboBox.ItemTemplate>
-													<DataTemplate>
-														<TextBlock Text="{Binding TransferTargetName}" />
-													</DataTemplate>
-												</ComboBox.ItemTemplate>
-											</ComboBox>
+											<StackPanel Orientation="Horizontal">
+												<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt"
+												           Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter}}" />
+												<ComboBox
+												          Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter},ConverterParameter=true}"
+												          ItemsSource="{Binding AvailableTransactionTargets}"
+												          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+													<ComboBox.ItemTemplate>
+														<DataTemplate>
+															<TextBlock Text="{Binding TransferTargetName}" />
+														</DataTemplate>
+													</ComboBox.ItemTemplate>
+												</ComboBox>
+												<ToggleButton Content="📃" Command="{Binding SplitCommand}" IsChecked="{Binding ContainsSplits, Mode=OneWay}" ToolTip="{Binding SplitCommandToolTip}" />
+											</StackPanel>
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
@@ -148,7 +157,8 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+											<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number"
+											         IsReadOnly="{Binding AmountIsReadOnly}"/>
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
@@ -187,9 +197,78 @@
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
 							</DataGrid.Columns>
+							<DataGrid.RowDetailsTemplate>
+								<DataTemplate>
+									<DataGrid AlternatingRowBackground="LightGreen"
+									          AlternationCount="2"
+									          Margin="5,0,0,0"
+									          ItemsSource="{Binding Splits}"
+									          IsSynchronizedWithCurrentItem="True"
+									          SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
+									          SelectionMode="Single"
+									          Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
+									          AddingNewItem="SplitGrid_AddingNewItem"
+									          AutoGenerateColumns="False">
+										<DataGrid.ContextMenu>
+											<ContextMenu>
+												<MenuItem Header="{Binding DeleteSplitCommandCaption}" 
+												          Command="{Binding DeleteSplitCommand}" />
+											</ContextMenu>
+										</DataGrid.ContextMenu>
+										<DataGrid.Columns>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<ComboBox ItemsSource="{Binding AvailableTransactionTargets}"
+														          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+															<ComboBox.ItemTemplate>
+																<DataTemplate>
+																	<TextBlock Text="{Binding TransferTargetName}" />
+																</DataTemplate>
+															</ComboBox.ItemTemplate>
+														</ComboBox>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Margin="3pt" Text="{Binding Amount, StringFormat=C}" HorizontalAlignment="Right" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+										</DataGrid.Columns>
+									</DataGrid>
+								</DataTemplate>
+							</DataGrid.RowDetailsTemplate>
 							<DataGrid.ContextMenu>
 								<ContextMenu>
 									<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
+									<MenuItem Header="{Binding Document.JumpToSplitTransactionParentCommandCaption, Source={StaticResource viewModel}}"
+									          Command="{Binding Document.JumpToSplitTransactionParentCommand, Source={StaticResource viewModel}}"
+									          Visibility="{Binding Document.JumpToSplitTransactionParentCommand.IsEnabled, Source={StaticResource viewModel}, Converter={StaticResource boolToVisibilityConverter}}"/>
 								</ContextMenu>
 							</DataGrid.ContextMenu>
 						</DataGrid>

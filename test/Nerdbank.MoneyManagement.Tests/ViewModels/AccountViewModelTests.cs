@@ -435,11 +435,198 @@ public class AccountViewModelTests : MoneyTestBase
 		Assert.Equal(-tx1.Amount, tx2.Amount);
 	}
 
+	/// <summary>
+	/// Verifies that a split transaction where a split line item represents a transfer to another account also appears
+	/// in the other account, and that whatever the split item amount is appears and impacts the account balance.
+	/// </summary>
+	[Fact]
+	public void SplitTransferTransactionAppearsInOtherAccount()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+			Assert.Equal(40, txSavings.Amount);
+			Assert.Equal(40, this.savings.Balance);
+			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
+		});
+	}
+
+	[Fact]
+	public void SplitTransferTransactionCannotBeFurtherSplit()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+
+		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+		Assert.True(txSavings.IsSplitMemberOfParentTransaction);
+		Assert.False(txSavings.ContainsSplits);
+		Assert.Throws<InvalidOperationException>(() => txSavings.NewSplit());
+	}
+
+	/// <summary>
+	/// Verifies that a split transaction where <em>multiple</em> split line items represent a transfer to another account also appears
+	/// in the other account (as individual transactions), and that whatever the split item amount is appears and impacts the account balance.
+	/// </summary>
+	[Fact]
+	public void MultipleSplitTransfersTransactionAppearsInOtherAccount()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+
+		SplitTransactionViewModel split3 = tx.NewSplit();
+		split3.Amount = -5;
+		split3.CategoryOrTransfer = this.savings;
+		tx.Amount += split3.Amount;
+		Assert.Equal(tx.GetSplitTotal(), this.checking.Balance);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			TransactionViewModel txSavings5 = Assert.Single(this.savings.Transactions, t => t.Amount == 5);
+			TransactionViewModel txSavings40 = Assert.Single(this.savings.Transactions, t => t.Amount == 40);
+			Assert.Equal(40, txSavings40.Amount);
+			Assert.Equal(5, txSavings5.Amount);
+			Assert.Equal(45, this.savings.Balance);
+			Assert.True(txSavings5.IsSplitMemberOfParentTransaction);
+			Assert.True(txSavings40.IsSplitMemberOfParentTransaction);
+		});
+	}
+
+	/// <summary>
+	/// Verifies that an attempt to delete a transaction that is actually just a split that transfers with another account
+	/// cannot be deleted from the view of the other account.
+	/// This is important because it would quietly upset the sum of the splits that (presumably) match the total of the overall transaction.
+	/// </summary>
+	[Fact]
+	public void SplitTransferTransactionCannotBeDeletedFromOtherAccount()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		Assert.Equal(tx.GetSplitTotal(), this.checking.Balance);
+
+		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+		Assert.Throws<InvalidOperationException>(() => this.savings.DeleteTransaction(txSavings));
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.savings;
+		this.DocumentViewModel.SelectedTransaction = txSavings;
+		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
+	}
+
+	[Fact]
+	public void SplitTransferTransactionAllowLimitedChangesFromOtherAccount()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+
+		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+
+		// Disallow changes to amount, since that can upset the balance on the overall transaction.
+		Assert.Throws<InvalidOperationException>(() => txSavings.Amount += 1);
+
+		// Disallow changes to category, since that is set in the original transaction to this foreign account.
+		Assert.Throws<InvalidOperationException>(() => txSavings.CategoryOrTransfer = this.DocumentViewModel.CategoriesPanel.Categories.First());
+
+		// Allow updating the memo field.
+		txSavings.Memo = "some memo";
+		SplitTransactionViewModel splitTransfer = Assert.Single(tx.Splits, s => s.CategoryOrTransfer == this.savings);
+		Assert.Equal(txSavings.Memo, splitTransfer.Memo);
+
+		// Allow updating the cleared flag, independently of the parent transaction.
+		txSavings.Cleared = TransactionViewModel.Matched;
+		Assert.Equal(TransactionViewModel.NotCleared, tx.Cleared);
+	}
+
+	[Fact]
+	public void SplitTransactionMembersDoNotAppearAsTopLevelTransactionsInHomeAccount()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		int idOfASplit = tx.Splits.First().Id!.Value;
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.DoesNotContain(this.checking.Transactions, t => t.Id == idOfASplit);
+		});
+	}
+
+	[Fact]
+	public void SplitParent_NonSplitChild()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		Assert.Null(tx.GetSplitParent());
+	}
+
+	[Fact]
+	public void SplitParent_SplitChild()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+			Assert.Same(this.checking.Transactions.Single(t => t.Id == tx.Id), txSavings.GetSplitParent());
+		});
+	}
+
+	[Fact]
+	public void JumpToSplitParent_OnNonSynthesizedTransaction()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		Assert.Throws<InvalidOperationException>(() => tx.JumpToSplitParent());
+	}
+
+	[Fact]
+	public void JumpToSplitParent_FromTransactionSynthesizedFromSplit()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		TransactionViewModel txSavings = Assert.Single(this.savings.Transactions);
+		txSavings.JumpToSplitParent();
+		Assert.Same(this.checking, this.DocumentViewModel.BankingPanel.SelectedAccount);
+		Assert.Same(tx, this.DocumentViewModel.SelectedTransaction);
+	}
+
+	[Fact]
+	public void DeletingSplitTransferAlsoRemovesTransactionsFromOtherAccounts()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		Assert.NotEmpty(this.savings.Transactions);
+		tx.DeleteSplit(tx.Splits.Single(s => s.CategoryOrTransfer is AccountViewModel));
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Empty(this.savings.Transactions);
+		});
+	}
+
+	[Fact]
+	public void DeletingSplitTransactionWithTransfersAlsoRemovesTransactionsFromOtherAccounts()
+	{
+		TransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
+		Assert.NotEmpty(this.savings.Transactions);
+		this.checking.DeleteTransaction(tx);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Empty(this.savings.Transactions);
+		});
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();
 		this.checking = this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Checking");
 		this.savings = this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Savings");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
+	}
+
+	private TransactionViewModel CreateSplitWithCategoryAndTransfer()
+	{
+		CategoryViewModel cat1 = this.DocumentViewModel.CategoriesPanel.NewCategory("Salary");
+
+		TransactionViewModel tx = this.checking.NewTransaction();
+		SplitTransactionViewModel split1 = tx.NewSplit();
+		split1.Amount = 100; // gross
+		split1.CategoryOrTransfer = cat1;
+		SplitTransactionViewModel split2 = tx.NewSplit();
+		split2.Amount = -40; // send $40 of the $100 to savings
+		split2.CategoryOrTransfer = this.savings;
+		tx.Amount = split1.Amount + split2.Amount;
+
+		return tx;
 	}
 }

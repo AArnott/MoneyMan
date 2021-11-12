@@ -7,6 +7,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	using System.Collections.Generic;
 	using System.ComponentModel.DataAnnotations;
 	using System.Diagnostics;
+	using System.Linq;
 	using Validation;
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
@@ -59,9 +60,9 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				if (this.transactions is null)
 				{
 					this.transactions = new(TransactionSort.Instance);
-					if (this.MoneyFile is object)
+					if (this.MoneyFile is object && this.Id.HasValue)
 					{
-						SQLite.TableQuery<Transaction> transactions = this.MoneyFile.Transactions.Where(tx => tx.CreditAccountId == this.Id || tx.DebitAccountId == this.Id);
+						List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id.Value);
 						foreach (Transaction transaction in transactions)
 						{
 							TransactionViewModel transactionViewModel = new(this, transaction);
@@ -117,9 +118,18 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
 			Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
+			transaction.ThrowIfSplitInForeignAccount();
 
 			if (this.MoneyFile is object && transaction.Model is object)
 			{
+				foreach (SplitTransactionViewModel split in transaction.Splits)
+				{
+					if (split.Model is object)
+					{
+						this.MoneyFile.Delete(split.Model);
+					}
+				}
+
 				if (!this.MoneyFile.Delete(transaction.Model))
 				{
 					// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
@@ -176,10 +186,52 @@ namespace Nerdbank.MoneyManagement.ViewModels
 					}
 				}
 			}
+			else if (transaction.ParentTransactionId.HasValue && this.FindTransaction(transaction.ParentTransactionId.Value) is { } parentTransactionViewModel)
+			{
+				SplitTransactionViewModel? splitViewModel = parentTransactionViewModel.Splits.FirstOrDefault(s => s.Id == transaction.Id);
+				if (splitViewModel is object)
+				{
+					splitViewModel.CopyFrom(transaction);
+					int index = this.transactions.IndexOf(parentTransactionViewModel);
+					if (index >= 0)
+					{
+						this.UpdateBalances(index);
+					}
+				}
+			}
 			else if (!removedFromAccount)
 			{
-				// This may be a new transaction we need to add.
-				this.transactions.Add(new TransactionViewModel(this, transaction));
+				// This may be a new transaction we need to add. Only add top-level transactions or foreign splits.
+				if (transaction.ParentTransactionId is null || this.FindTransaction(transaction.ParentTransactionId.Value) is null)
+				{
+					this.transactions.Add(new TransactionViewModel(this, transaction));
+				}
+			}
+		}
+
+		internal TransactionViewModel? FindTransaction(int id)
+		{
+			foreach (TransactionViewModel transactionViewModel in this.Transactions)
+			{
+				if (transactionViewModel.Model?.Id == id)
+				{
+					return transactionViewModel;
+				}
+			}
+
+			return null;
+		}
+
+		internal void NotifyAmountChangedOnSplitTransaction(TransactionViewModel transaction)
+		{
+			Requires.Argument(transaction.ContainsSplits, nameof(transaction), "Only split transactions should be raising this.");
+			if (this.transactions is object)
+			{
+				var index = this.transactions.IndexOf(transaction);
+				if (index >= 0)
+				{
+					this.UpdateBalances(index);
+				}
 			}
 		}
 
@@ -239,19 +291,6 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			int index = this.transactions.IndexOf(transactionViewModel);
 			this.transactions.RemoveAt(index);
 			this.UpdateBalances(index);
-		}
-
-		private TransactionViewModel? FindTransaction(int id)
-		{
-			foreach (TransactionViewModel transactionViewModel in this.Transactions)
-			{
-				if (transactionViewModel.Model?.Id == id)
-				{
-					return transactionViewModel;
-				}
-			}
-
-			return null;
 		}
 
 		private void UpdateBalances(int changedIndex1, int changedIndex2 = -1)

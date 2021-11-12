@@ -82,7 +82,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		public void Add(AccountViewModel accountViewModel)
 		{
 			this.accounts.Add(accountViewModel);
-			this.documentViewModel.TransactionTargets.Add(accountViewModel);
+			this.documentViewModel.AddTransactionTarget(accountViewModel);
 		}
 
 		/// <summary>
@@ -115,7 +115,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					if (this.AddingAccount == s)
 					{
-						this.documentViewModel.TransactionTargets.Add(s);
+						this.documentViewModel.AddTransactionTarget(s);
 						if (!s.IsClosed)
 						{
 							this.documentViewModel.BankingPanel.Add(s);
@@ -128,7 +128,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			else
 			{
 				newAccountViewModel.Name = name;
-				this.documentViewModel.TransactionTargets.Add(newAccountViewModel);
+				this.documentViewModel.AddTransactionTarget(newAccountViewModel);
 				this.documentViewModel.BankingPanel.Add(newAccountViewModel);
 			}
 
@@ -139,7 +139,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		{
 			this.accounts.Remove(accountViewModel);
 			this.documentViewModel.BankingPanel.Remove(accountViewModel);
-			this.documentViewModel.TransactionTargets.Remove(accountViewModel);
+			this.documentViewModel.RemoveTransactionTarget(accountViewModel);
 
 			if (accountViewModel.Model is object)
 			{

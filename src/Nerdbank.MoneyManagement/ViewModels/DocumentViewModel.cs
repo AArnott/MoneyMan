@@ -22,6 +22,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 	public class DocumentViewModel : BindableBase, IDisposable
 	{
 		private readonly bool ownsMoneyFile;
+		private readonly SortedObservableCollection<ITransactionTarget> transactionTargets = new(TransactionTargetSort.Instance);
 		private decimal netWorth;
 		private IList? selectedTransactions;
 		private TransactionViewModel? selectedTransaction;
@@ -39,6 +40,8 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			this.BankingPanel = new();
 			this.CategoriesPanel = new(this);
 			this.AccountsPanel = new(this);
+
+			this.transactionTargets.Add(SplitCategoryPlaceholder.Singleton);
 
 			// Keep targets collection in sync with the two collections that make it up.
 			this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
@@ -63,6 +66,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 			}
 
 			this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
+			this.JumpToSplitTransactionParentCommand = new JumpToSplitTransactionParentCommandImpl(this);
 		}
 
 		public bool IsFileOpen => this.MoneyFile is object;
@@ -81,7 +85,7 @@ namespace Nerdbank.MoneyManagement.ViewModels
 
 		public CategoriesPanelViewModel CategoriesPanel { get; }
 
-		public ObservableCollection<ITransactionTarget> TransactionTargets { get; } = new();
+		public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
 
 		public TransactionViewModel? SelectedTransaction
 		{
@@ -108,7 +112,19 @@ namespace Nerdbank.MoneyManagement.ViewModels
 		/// </summary>
 		public CommandBase DeleteTransactionsCommand { get; }
 
+		/// <summary>
+		/// Gets a command that jumps from a split member to its parent transaction in another account.
+		/// </summary>
+		public CommandBase JumpToSplitTransactionParentCommand { get; }
+
 		public string DeleteCommandCaption => "_Delete";
+
+		public string JumpToSplitTransactionParentCommandCaption => "_Jump to split parent";
+
+		/// <summary>
+		/// Gets or sets a view-supplied mechanism to prompt or notify the user.
+		/// </summary>
+		public IUserNotification? UserNotification { get; set; }
 
 		internal MoneyFile? MoneyFile { get; }
 
@@ -172,6 +188,10 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				}
 			}
 		}
+
+		internal void AddTransactionTarget(ITransactionTarget target) => this.transactionTargets.Add(target);
+
+		internal void RemoveTransactionTarget(ITransactionTarget target) => this.transactionTargets.Remove(target);
 
 		private static void ThrowUnopenedUnless([DoesNotReturnIf(false)] bool condition)
 		{
@@ -252,50 +272,74 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				case NotifyCollectionChangedAction.Add when e.NewItems is object:
 					foreach (CategoryViewModel category in e.NewItems)
 					{
-						this.TransactionTargets.Add(category);
+						this.AddTransactionTarget(category);
 					}
 
 					break;
 				case NotifyCollectionChangedAction.Remove when e.OldItems is object:
 					foreach (CategoryViewModel category in e.OldItems)
 					{
-						this.TransactionTargets.Remove(category);
+						this.RemoveTransactionTarget(category);
 					}
 
 					break;
 			}
 		}
 
-		private class DeleteTransactionCommandImpl : CommandBase
+		private abstract class SelectedTransactionCommandBase : CommandBase
 		{
 			private readonly DocumentViewModel viewModel;
 			private INotifyCollectionChanged? subscribedSelectedTransactions;
 
-			internal DeleteTransactionCommandImpl(DocumentViewModel viewModel)
+			internal SelectedTransactionCommandBase(DocumentViewModel viewModel)
 			{
 				this.viewModel = viewModel;
 				this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
 				this.SubscribeToSelectionChanged();
+				this.CanExecuteChanged += (s, e) => this.OnPropertyChanged(nameof(this.IsEnabled));
 			}
 
-			public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && (this.viewModel.SelectedTransactions?.Count > 0 || this.viewModel.SelectedTransaction is object);
+			public bool IsEnabled => this.CanExecute();
 
-			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
+			public sealed override bool CanExecute(object? parameter = null)
+			{
+				if (!base.CanExecute(parameter))
+				{
+					return false;
+				}
+
+				if (this.viewModel.SelectedTransactions is object)
+				{
+					// When multiple transaction selection is supported, enable the command if *any* of the selected commands are not splits in foreign accounts.
+					return this.CanExecute(this.viewModel.SelectedTransactions);
+				}
+
+				if (this.viewModel.SelectedTransaction is object)
+				{
+					return this.CanExecute(new TransactionViewModel[] { this.viewModel.SelectedTransaction });
+				}
+
+				return false;
+			}
+
+			protected abstract bool CanExecute(IList transactionViewModels);
+
+			protected sealed override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 			{
 				if (this.viewModel.SelectedTransactions is object)
 				{
-					foreach (TransactionViewModel transaction in this.viewModel.SelectedTransactions.OfType<TransactionViewModel>().ToList())
-					{
-						transaction.ThisAccount.DeleteTransaction(transaction);
-					}
+					return this.ExecuteCoreAsync(this.viewModel.SelectedTransactions, cancellationToken);
 				}
-				else if (this.viewModel.SelectedTransaction is { } transaction)
+
+				if (this.viewModel.SelectedTransaction is object)
 				{
-					transaction.ThisAccount.DeleteTransaction(this.viewModel.SelectedTransaction);
+					return this.ExecuteCoreAsync(new TransactionViewModel[] { this.viewModel.SelectedTransaction }, cancellationToken);
 				}
 
 				return Task.CompletedTask;
 			}
+
+			protected abstract Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken);
 
 			private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 			{
@@ -324,6 +368,106 @@ namespace Nerdbank.MoneyManagement.ViewModels
 				{
 					this.subscribedSelectedTransactions.CollectionChanged += this.SelectedTransactions_CollectionChanged;
 				}
+			}
+		}
+
+		private class DeleteTransactionCommandImpl : SelectedTransactionCommandBase
+		{
+			internal DeleteTransactionCommandImpl(DocumentViewModel viewModel)
+				: base(viewModel)
+			{
+			}
+
+			protected override bool CanExecute(IList transactionViewModels)
+			{
+				foreach (object item in transactionViewModels)
+				{
+					if (item is TransactionViewModel { IsSplitInForeignAccount: false })
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
+			{
+				foreach (TransactionViewModel transaction in transactionViewModels.OfType<TransactionViewModel>().ToList())
+				{
+					transaction.ThisAccount.DeleteTransaction(transaction);
+				}
+
+				return Task.CompletedTask;
+			}
+		}
+
+		private class JumpToSplitTransactionParentCommandImpl : SelectedTransactionCommandBase
+		{
+			internal JumpToSplitTransactionParentCommandImpl(DocumentViewModel viewModel)
+				: base(viewModel)
+			{
+			}
+
+			protected override bool CanExecute(IList transactionViewModels)
+			{
+				return transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true };
+			}
+
+			protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
+			{
+				if (transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true } tx)
+				{
+					tx.JumpToSplitParent();
+				}
+
+				return Task.CompletedTask;
+			}
+		}
+
+		private class TransactionTargetSort : IComparer<ITransactionTarget>
+		{
+			internal static readonly TransactionTargetSort Instance = new();
+
+			private TransactionTargetSort()
+			{
+			}
+
+			public int Compare(ITransactionTarget? x, ITransactionTarget? y)
+			{
+				if (x is null)
+				{
+					return y is null ? 0 : -1;
+				}
+				else if (y is null)
+				{
+					return 1;
+				}
+
+				if (x.GetType() != y.GetType())
+				{
+					// First list categories.
+					int index =
+						x is CategoryViewModel && y is not CategoryViewModel ? -1 :
+						y is CategoryViewModel && x is not CategoryViewModel ? 1 :
+						0;
+					if (index != 0)
+					{
+						return index;
+					}
+
+					// Then list the special split target.
+					index =
+						x is SplitCategoryPlaceholder ? -1 :
+						y is SplitCategoryPlaceholder ? 1 :
+						0;
+					if (index != 0)
+					{
+						return index;
+					}
+				}
+
+				return StringComparer.CurrentCultureIgnoreCase.Compare(x.Name, y.Name);
 			}
 		}
 	}
