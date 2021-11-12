@@ -41,7 +41,7 @@ CREATE INDEX "Transaction_CreditAccountId" on "Transaction"("CreditAccountId");
 CREATE INDEX "Transaction_DebitAccountId" on "Transaction"("DebitAccountId");
 
 CREATE TABLE "SchemaHistory" (
-	"SchemaVersion" integer primary key NOT NULL,
-	"AppliedDateUtc" varchar NOT NULL,
-	"AppVersion" integer NOT NULL
+	"SchemaVersion" INTEGER PRIMARY KEY NOT NULL,
+	"AppliedDateUtc" TEXT NOT NULL,
+	"AppVersion" INTEGER NOT NULL
 );

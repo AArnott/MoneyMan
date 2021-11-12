@@ -23,7 +23,6 @@ namespace Nerdbank.MoneyManagement
 		/// The time component and timezone components are to be ignored.
 		/// We don't want a change in the user's timezone to change the date that is displayed for a transaction.
 		/// </remarks>
-		[NotNull]
 		public DateTime When { get; set; }
 
 		/// <summary>
@@ -37,7 +36,6 @@ namespace Nerdbank.MoneyManagement
 		/// <remarks>
 		/// This value should be 0 for split transactions, allowing their split members to have non-zero Amounts that contribute to the account balance.
 		/// </remarks>
-		[NotNull]
 		public decimal Amount
 		{
 			get => this.amount;
@@ -64,19 +62,16 @@ namespace Nerdbank.MoneyManagement
 		/// <remarks>
 		/// Use <see cref="Category.Split"/> for the value where the transaction is split across multiple categories.
 		/// </remarks>
-		[Indexed]
 		public int? CategoryId { get; set; }
 
 		/// <summary>
 		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be credited the <see cref="Amount"/> of this <see cref="Transaction"/>.
 		/// </summary>
-		[Indexed]
 		public int? CreditAccountId { get; set; }
 
 		/// <summary>
 		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be debited the <see cref="Amount"/> of this <see cref="Transaction"/>.
 		/// </summary>
-		[Indexed]
 		public int? DebitAccountId { get; set; }
 
 		/// <summary>
@@ -89,7 +84,6 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the cleared or reconciled state of the transaction.
 		/// </summary>
-		[NotNull]
 		public ClearedState Cleared { get; set; }
 
 		private string DebuggerDisplay => $"{this.When} {this.Payee} {this.Amount}";
