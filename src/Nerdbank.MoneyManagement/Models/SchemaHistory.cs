@@ -15,11 +15,6 @@ namespace Nerdbank.MoneyManagement
 	internal class SchemaHistory
 	{
 		/// <summary>
-		/// The current version of the schema for this version of the app.
-		/// </summary>
-		internal const int LatestVersion = 1;
-
-		/// <summary>
 		/// Gets or sets the schema version of the database as of the time represented by this row.
 		/// </summary>
 		[PrimaryKey]

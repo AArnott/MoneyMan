@@ -4,6 +4,7 @@
 namespace Nerdbank.MoneyManagement
 {
 	using System;
+	using System.Globalization;
 	using System.IO;
 	using System.Linq;
 	using System.Reflection;
@@ -12,6 +13,8 @@ namespace Nerdbank.MoneyManagement
 
 	internal static class DatabaseSchemaUpgradeManager
 	{
+		private static int latestVersion = GetLatestVersion();
+
 		internal static int GetCurrentSchema(SQLiteConnection db)
 		{
 			if (db.GetTableInfo(nameof(SchemaHistory)).Count == 0)
@@ -28,7 +31,7 @@ namespace Nerdbank.MoneyManagement
 			return table.Max(s => s.SchemaVersion);
 		}
 
-		internal static bool IsSchemaCurrent(SQLiteConnection db) => GetCurrentSchema(db) == SchemaHistory.LatestVersion;
+		internal static bool IsSchemaCurrent(SQLiteConnection db) => GetCurrentSchema(db) == latestVersion;
 
 		internal static void Upgrade(SQLiteConnection db)
 		{
@@ -38,7 +41,7 @@ namespace Nerdbank.MoneyManagement
 			// The upgrade process is one version at a time.
 			// Every version from the past is represented in a case statement below with the required steps
 			// to upgrade it to the subsequent version. We loop over each version till we reach the current schema.
-			for (int targetVersion = initialFileVersion + 1; targetVersion <= SchemaHistory.LatestVersion; targetVersion++)
+			for (int targetVersion = initialFileVersion + 1; targetVersion <= latestVersion; targetVersion++)
 			{
 				// Complete each upgrade step within the context of a transaction.
 				db.BeginTransaction();
@@ -82,6 +85,17 @@ namespace Nerdbank.MoneyManagement
 			using StreamReader sqlScriptStreamReader = new(sqlScriptStream);
 			string sql = sqlScriptStreamReader.ReadToEnd();
 			return sql;
+		}
+
+		private static int GetLatestVersion()
+		{
+			string startsWith = $"{ThisAssembly.RootNamespace}.SchemaUpgradeScripts.";
+			string endsWith = ".sql";
+			int latestVersion = (from name in Assembly.GetExecutingAssembly().GetManifestResourceNames()
+								 where name.StartsWith(startsWith, StringComparison.Ordinal) && name.EndsWith(endsWith, StringComparison.Ordinal)
+								 let version = int.Parse(name.Substring(startsWith.Length, name.Length - startsWith.Length - endsWith.Length), CultureInfo.InvariantCulture)
+								 select version).Max();
+			return latestVersion;
 		}
 	}
 }
