@@ -95,11 +95,7 @@ namespace Nerdbank.MoneyManagement
 			var db = new SQLiteConnection(path);
 			try
 			{
-				// Define all the tables (in case this is a new file).
-				db.CreateTable<Account>();
-				db.CreateTable<Transaction>();
-				db.CreateTable<SplitTransaction>();
-				db.CreateTable<Category>();
+				DatabaseSchemaUpgradeManager.Upgrade(db);
 
 				return new MoneyFile(db);
 			}
