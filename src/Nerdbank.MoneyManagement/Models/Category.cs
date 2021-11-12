@@ -20,7 +20,6 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the name of this category.
 		/// </summary>
-		[NotNull]
 		public string Name { get; set; } = string.Empty;
 
 		/// <summary>
