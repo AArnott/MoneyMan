@@ -12,6 +12,9 @@
 		},
 		"indentation": {
 			"useTabs": true
+		},
+		"orderingRules": {
+			"usingDirectivesPlacement": "outsideNamespace"
 		}
   }
 }

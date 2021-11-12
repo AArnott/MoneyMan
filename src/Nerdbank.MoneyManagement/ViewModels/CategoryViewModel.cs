@@ -1,58 +1,57 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace Nerdbank.MoneyManagement.ViewModels
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using Validation;
+
+namespace Nerdbank.MoneyManagement.ViewModels;
+
+[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
 {
-	using System.ComponentModel.DataAnnotations;
-	using System.Diagnostics;
-	using Validation;
+	private string name = string.Empty;
 
-	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
+	public CategoryViewModel()
+		: this(null, null)
 	{
-		private string name = string.Empty;
+	}
 
-		public CategoryViewModel()
-			: this(null, null)
+	public CategoryViewModel(Category? model, MoneyFile? moneyFile)
+		: base(moneyFile)
+	{
+		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
+		this.AutoSave = true;
+
+		if (model is object)
 		{
+			this.CopyFrom(model);
 		}
+	}
 
-		public CategoryViewModel(Category? model, MoneyFile? moneyFile)
-			: base(moneyFile)
+	/// <inheritdoc cref="Category.Name"/>
+	[Required]
+	public string Name
+	{
+		get => this.name;
+		set
 		{
-			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
-			this.AutoSave = true;
-
-			if (model is object)
-			{
-				this.CopyFrom(model);
-			}
+			Requires.NotNull(value, nameof(value));
+			this.SetProperty(ref this.name, value);
 		}
+	}
 
-		/// <inheritdoc cref="Category.Name"/>
-		[Required]
-		public string Name
-		{
-			get => this.name;
-			set
-			{
-				Requires.NotNull(value, nameof(value));
-				this.SetProperty(ref this.name, value);
-			}
-		}
+	public string TransferTargetName => this.Name;
 
-		public string TransferTargetName => this.Name;
+	private string DebuggerDisplay => this.Name;
 
-		private string DebuggerDisplay => this.Name;
+	protected override void ApplyToCore(Category category)
+	{
+		category.Name = this.name;
+	}
 
-		protected override void ApplyToCore(Category category)
-		{
-			category.Name = this.name;
-		}
-
-		protected override void CopyFromCore(Category category)
-		{
-			this.Name = category.Name;
-		}
+	protected override void CopyFromCore(Category category)
+	{
+		this.Name = category.Name;
 	}
 }

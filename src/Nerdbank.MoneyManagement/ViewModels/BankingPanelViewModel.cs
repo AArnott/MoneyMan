@@ -1,88 +1,86 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace Nerdbank.MoneyManagement.ViewModels
+using PCLCommandBase;
+
+namespace Nerdbank.MoneyManagement.ViewModels;
+
+public class BankingPanelViewModel : BindableBase
 {
-	using System.Collections.Generic;
-	using PCLCommandBase;
+	private SortedObservableCollection<AccountViewModel> accounts = new(AccountSort.Instance);
+	private List<AccountViewModel> closedAccounts = new();
+	private AccountViewModel? selectedAccount;
 
-	public class BankingPanelViewModel : BindableBase
+	public string Title => "Banking";
+
+	public string NetWorthCaption => "Net worth";
+
+	public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
+
+	public AccountViewModel? SelectedAccount
 	{
-		private SortedObservableCollection<AccountViewModel> accounts = new(AccountSort.Instance);
-		private List<AccountViewModel> closedAccounts = new();
-		private AccountViewModel? selectedAccount;
+		get => this.selectedAccount;
+		set => this.SetProperty(ref this.selectedAccount, value);
+	}
 
-		public string Title => "Banking";
+	public string WhenHeader => "Date";
 
-		public string NetWorthCaption => "Net worth";
+	public string PayeeHeader => "Payee";
 
-		public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
+	public string CategoryHeader => "Category";
 
-		public AccountViewModel? SelectedAccount
+	public string MemoHeader => "Memo";
+
+	public string AmountHeader => "Amount";
+
+	public string CheckNumberHeader => "Check No.";
+
+	public string ClearedHeader => "Clr";
+
+	public string BalanceHeader => "Balance";
+
+	internal void Add(AccountViewModel account)
+	{
+		if (account.IsClosed)
 		{
-			get => this.selectedAccount;
-			set => this.SetProperty(ref this.selectedAccount, value);
+			this.closedAccounts.Add(account);
+		}
+		else
+		{
+			this.accounts.Add(account);
 		}
 
-		public string WhenHeader => "Date";
+		account.PropertyChanged += this.Account_PropertyChanged;
+	}
 
-		public string PayeeHeader => "Payee";
-
-		public string CategoryHeader => "Category";
-
-		public string MemoHeader => "Memo";
-
-		public string AmountHeader => "Amount";
-
-		public string CheckNumberHeader => "Check No.";
-
-		public string ClearedHeader => "Clr";
-
-		public string BalanceHeader => "Balance";
-
-		internal void Add(AccountViewModel account)
+	internal void Remove(AccountViewModel account)
+	{
+		if (this.accounts.Remove(account) < 0)
 		{
-			if (account.IsClosed)
-			{
-				this.closedAccounts.Add(account);
-			}
-			else
-			{
-				this.accounts.Add(account);
-			}
-
-			account.PropertyChanged += this.Account_PropertyChanged;
+			this.closedAccounts.Remove(account);
 		}
 
-		internal void Remove(AccountViewModel account)
+		account.PropertyChanged -= this.Account_PropertyChanged;
+	}
+
+	private void Account_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+	{
+		var account = (AccountViewModel)sender!;
+		switch (e.PropertyName)
 		{
-			if (this.accounts.Remove(account) < 0)
-			{
-				this.closedAccounts.Remove(account);
-			}
+			case nameof(AccountViewModel.IsClosed):
+				if (account.IsClosed)
+				{
+					this.accounts.Remove(account);
+					this.closedAccounts.Add(account);
+				}
+				else
+				{
+					this.closedAccounts.Remove(account);
+					this.accounts.Add(account);
+				}
 
-			account.PropertyChanged -= this.Account_PropertyChanged;
-		}
-
-		private void Account_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-		{
-			var account = (AccountViewModel)sender!;
-			switch (e.PropertyName)
-			{
-				case nameof(AccountViewModel.IsClosed):
-					if (account.IsClosed)
-					{
-						this.accounts.Remove(account);
-						this.closedAccounts.Add(account);
-					}
-					else
-					{
-						this.closedAccounts.Remove(account);
-						this.accounts.Add(account);
-					}
-
-					break;
-			}
+				break;
 		}
 	}
 }
