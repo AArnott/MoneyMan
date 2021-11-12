@@ -4,6 +4,9 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="SchemaUpgradeScripts\*.sql" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.0.63" />
     <PackageReference Include="PCLCommandBase" Version="0.4.9-alpha" />
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />

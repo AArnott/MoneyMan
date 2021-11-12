@@ -17,7 +17,6 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the name of this account.
 		/// </summary>
-		[NotNull]
 		public string Name { get; set; } = string.Empty;
 
 		/// <summary>
@@ -26,7 +25,6 @@ namespace Nerdbank.MoneyManagement
 		/// <remarks>
 		/// Closed accounts are excluded from most queries by default.
 		/// </remarks>
-		[NotNull]
 		public bool IsClosed { get; set; }
 
 		private string? DebuggerDisplay => this.Name;

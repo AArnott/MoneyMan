@@ -13,7 +13,6 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Transaction"/> to which this split belongs.
 		/// </summary>
-		[NotNull, Indexed]
 		public int TransactionId { get; set; }
 
 		/// <summary>
@@ -29,7 +28,6 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// Gets or sets the amount of this line of the split transaction. Always non-negative.
 		/// </summary>
-		[NotNull]
 		public decimal Amount { get; set; }
 	}
 }
