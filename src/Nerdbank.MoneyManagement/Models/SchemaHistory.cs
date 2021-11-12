@@ -17,7 +17,7 @@ namespace Nerdbank.MoneyManagement
 		/// <summary>
 		/// The current version of the schema for this version of the app.
 		/// </summary>
-		internal const int LatestVersion = 1;
+		internal const int LatestVersion = 2;
 
 		/// <summary>
 		/// Gets or sets the schema version of the database as of the time represented by this row.
