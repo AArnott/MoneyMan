@@ -5,8 +5,9 @@
 		<BaseIntermediateOutputPath>$(RepoRootPath)obj\$([MSBuild]::MakeRelative($(RepoRootPath), $(MSBuildProjectDirectory)))\</BaseIntermediateOutputPath>
 		<BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(RepoRootPath)bin\$(MSBuildProjectName)\</BaseOutputPath>
 		<PackageOutputPath>$(RepoRootPath)bin\Packages\$(Configuration)\NuGet\</PackageOutputPath>
-		<LangVersion>9.0</LangVersion>
+		<LangVersion>10.0</LangVersion>
 		<Nullable>enable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -30,8 +31,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="3.11.0" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="all" />
 		<PackageReference Include="Nerdbank.GitVersioning" Version="3.4.244" PrivateAssets="all" />

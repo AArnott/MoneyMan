@@ -33,7 +33,7 @@ public class XunitTraceListener : TraceListener
 		base.TraceEvent(eventCache, source, eventType, id, message);
 	}
 
-	public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
+	public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? format, params object?[]? args)
 	{
 		this.HasLoggedErrors |= eventType == TraceEventType.Error;
 		base.TraceEvent(eventCache, source, eventType, id, format, args);
