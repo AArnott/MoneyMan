@@ -107,11 +107,6 @@ public partial class MainWindow : Window
 		dialog.FilterIndex = 0;
 	}
 
-	private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
-	{
-		e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction(volatileOnly: true) ?? throw new InvalidOperationException("No selected account.");
-	}
-
 	private void SplitGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
 	{
 		e.NewItem = this.ViewModel.Document.SelectedTransaction?.NewSplit(volatileOnly: true) ?? throw new InvalidOperationException("No selected transaction.");

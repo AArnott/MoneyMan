@@ -82,7 +82,6 @@
 								  ItemsSource="{Binding Source={StaticResource transactions}}"
 								  IsSynchronizedWithCurrentItem="True"
 								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
-								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">

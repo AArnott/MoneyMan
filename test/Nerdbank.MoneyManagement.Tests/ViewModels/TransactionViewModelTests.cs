@@ -35,7 +35,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.account = this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = this.DocumentViewModel.GetAccount(otherAccountModel.Id);
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
-		this.viewModel = this.account.NewTransaction(volatileOnly: true);
+		this.viewModel = this.account.Transactions[^1];
 	}
 
 	[Fact]
@@ -87,7 +87,6 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void AmountIsReadOnly()
 	{
-		this.account.Add(this.viewModel);
 		this.viewModel.Save();
 		Assert.False(this.viewModel.AmountIsReadOnly);
 		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
@@ -123,7 +122,6 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void Balance_OnSplitTransactions()
 	{
-		this.account.Add(this.viewModel);
 		this.viewModel.Save();
 		this.viewModel.Amount = -50;
 		Assert.Equal(-50, this.viewModel.Balance);

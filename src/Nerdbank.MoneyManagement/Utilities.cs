@@ -51,6 +51,26 @@ internal static class Utilities
 			});
 	}
 
+	/// <summary>
+	/// Compares two nullable integers and sorts them such that the <see langword="null" /> value sorts last.
+	/// If both or neither are <see langword="null" /> they are considered equal without regard to their integer value if any.
+	/// </summary>
+	/// <param name="x">The first value to compare.</param>
+	/// <param name="y">The second value to compare.</param>
+	/// <returns><inheritdoc cref="IComparer{T}.Compare(T, T)" path="/returns"/></returns>
+	internal static int CompareNullOrZeroComesLast(int? x, int? y)
+	{
+		bool xIsNullOrZero = x is null or 0;
+		bool yIsNullOrZero = y is null or 0;
+
+		if (xIsNullOrZero == yIsNullOrZero)
+		{
+			return 0;
+		}
+
+		return yIsNullOrZero ? -1 : 1;
+	}
+
 	/// <inheritdoc cref="BinarySearch{T}(IReadOnlyList{T}, int, int, T, IComparer{T}?)"/>
 	internal static int BinarySearch<T>(this IReadOnlyList<T> sortedList, T item, IComparer<T>? comparer = null) => BinarySearch(sortedList, 0, sortedList.Count, item, comparer);
 

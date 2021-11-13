@@ -35,13 +35,6 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	private decimal balance;
 	private SplitTransactionViewModel? selectedSplit;
 
-	[Obsolete("Do not use this constructor.")]
-	public TransactionViewModel()
-	{
-		// This constructor exists only to get WPF to allow the user to add transaction rows.
-		throw new NotSupportedException();
-	}
-
 	public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction)
 		: base(thisAccount.MoneyFile)
 	{
@@ -240,13 +233,13 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	/// </summary>
 	public AccountViewModel ThisAccount { get; }
 
-	private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
+	private string DebuggerDisplay => $"Transaction ({this.Id}): {this.When} {this.Payee} {this.Amount}";
 
 	public SplitTransactionViewModel NewSplit(bool volatileOnly = false)
 	{
 		Verify.Operation(!this.IsSplitMemberOfParentTransaction, "Cannot split a transaction that is already a member of a split transaction.");
 
-		if (this.Id is null)
+		if (!this.IsPersisted)
 		{
 			// Persist this transaction so the splits can refer to it.
 			this.Save();
