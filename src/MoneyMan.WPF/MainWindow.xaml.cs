@@ -49,7 +49,7 @@ public partial class MainWindow : Window
 	{
 		SaveFileDialog dialog = new()
 		{
-			Title = this.ViewModel.FileOpenDialogTitle,
+			Title = this.ViewModel.FileNewDialogTitle,
 			OverwritePrompt = true,
 		};
 		this.InitializeFileDialog(dialog);
