@@ -12,6 +12,24 @@ internal static class DatabaseSchemaUpgradeManager
 {
 	private static int latestVersion = GetLatestVersion();
 
+	internal enum SchemaCompatibility
+	{
+		/// <summary>
+		/// The database was created with an older version of the application. The database should be upgraded.
+		/// </summary>
+		RequiresDatabaseUpgrade = -1,
+
+		/// <summary>
+		/// The database has a schema that matches the current version of the application.
+		/// </summary>
+		VersionMatch = 0,
+
+		/// <summary>
+		/// The database was created with a newer version of the application. The application requires an upgrade before opening the database.
+		/// </summary>
+		RequiresAppUpgrade = 1,
+	}
+
 	internal static int GetCurrentSchema(SQLiteConnection db)
 	{
 		if (db.GetTableInfo(nameof(SchemaHistory)).Count == 0)
@@ -28,17 +46,50 @@ internal static class DatabaseSchemaUpgradeManager
 		return table.Max(s => s.SchemaVersion);
 	}
 
-	internal static bool IsSchemaCurrent(SQLiteConnection db) => GetCurrentSchema(db) == latestVersion;
+	internal static SchemaCompatibility IsUpgradeRequired(SQLiteConnection db)
+	{
+		int initialFileVersion = GetCurrentSchema(db);
+		return (SchemaCompatibility)initialFileVersion.CompareTo(latestVersion);
+	}
 
+	/// <summary>
+	/// Upgrades a database using a backup file to avoid corruption when an upgrade fails.
+	/// </summary>
+	/// <param name="path">The path to the database file to upgrade.</param>
+	/// <exception cref="InvalidOperationException">Thrown when an upgrade failure occurs.</exception>
+	internal static void Upgrade(string path)
+	{
+		// An upgrade is required. Copy the file elsewhere and execute the upgrade in another location
+		// so we don't leave the database in a corrupted state if the upgrade goes badly.
+		// Mitigating corruption with transactions doesn't work because we need to be able to enable/disable
+		// pragma's that cannot be changed within a transaction during the upgrade.
+		string tempPath = Path.GetTempFileName();
+		File.Copy(path, tempPath, overwrite: true);
+		try
+		{
+			using (SQLiteConnection tempDb = new(tempPath))
+			{
+				Upgrade(tempDb);
+			}
+
+			// We were successful. Overwrite the original file with the successfully upgraded database.
+			File.Move(tempPath, path, overwrite: true);
+		}
+		catch
+		{
+			File.Delete(tempPath);
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Upgrades a database in-place with no backup.
+	/// </summary>
+	/// <param name="db">The database to upgrade.</param>
+	/// <exception cref="InvalidOperationException">Thrown when an upgrade failure occurs.</exception>
 	internal static void Upgrade(SQLiteConnection db)
 	{
-		// The version of the file is assumed to match the highest schema version this db has ever been.
 		int initialFileVersion = GetCurrentSchema(db);
-
-		if (initialFileVersion > latestVersion)
-		{
-			throw new InvalidOperationException("This file format is newer than this app version recognizes. Upgrade the application first.");
-		}
 
 		// The upgrade process is one version at a time.
 		// Every version from the past is represented in a case statement below with the required steps
@@ -46,7 +97,6 @@ internal static class DatabaseSchemaUpgradeManager
 		for (int targetVersion = initialFileVersion + 1; targetVersion <= latestVersion; targetVersion++)
 		{
 			// Complete each upgrade step within the context of a transaction.
-			db.BeginTransaction();
 			try
 			{
 				string sql = GetSqlUpgradeScript(targetVersion);
@@ -59,12 +109,10 @@ internal static class DatabaseSchemaUpgradeManager
 					AppliedDateUtc = DateTime.UtcNow,
 					AppVersion = ThisAssembly.AssemblyInformationalVersion,
 				});
-				db.Commit();
 			}
 			catch (Exception ex)
 			{
-				db.Rollback();
-				throw new InvalidOperationException($"Failed to apply database schema version {targetVersion}.", ex);
+				throw new InvalidOperationException($"Failed to apply database schema version {targetVersion}. {ex.Message}", ex);
 			}
 		}
 	}
