@@ -76,13 +76,13 @@
 						</DockPanel.Resources>
 						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 						<DataGrid Name="TransactionDataGrid"
-								  AlternatingRowBackground="LightBlue"
-								  AlternationCount="2" 
-								  PreparingCellForEdit="TransactionDataGrid_PreparingCellForEdit"
-								  ItemsSource="{Binding Source={StaticResource transactions}}"
-								  IsSynchronizedWithCurrentItem="True"
-								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
-								  AutoGenerateColumns="False">
+						          AlternatingRowBackground="LightBlue"
+						          AlternationCount="2" 
+						          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+						          ItemsSource="{Binding Source={StaticResource transactions}}"
+						          IsSynchronizedWithCurrentItem="True"
+						          SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
+						          AutoGenerateColumns="False">
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
@@ -201,6 +201,7 @@
 									<DataGrid AlternatingRowBackground="LightGreen"
 									          AlternationCount="2"
 									          Margin="5,0,0,0"
+									          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
 									          ItemsSource="{Binding Splits}"
 									          IsSynchronizedWithCurrentItem="True"
 									          SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"

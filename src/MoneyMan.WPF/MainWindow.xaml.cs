@@ -162,7 +162,7 @@ public partial class MainWindow : Window
 		}
 	}
 
-	private void TransactionDataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+	private void DataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
 	{
 		WpfHelpers.GetFirstChildByType<Control>(e.EditingElement)?.Focus();
 	}
