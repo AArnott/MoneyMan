@@ -61,7 +61,9 @@ public class MoneyFile : IDisposableObservable
 		get
 		{
 			Verify.NotDisposed(this);
-			return this.connection.Table<Category>();
+
+			// Omit the special categories like those used for splits.
+			return this.connection.Table<Category>().Where(cat => cat.Id > 0);
 		}
 	}
 
@@ -78,10 +80,27 @@ public class MoneyFile : IDisposableObservable
 	public static MoneyFile Load(string path)
 	{
 		Requires.NotNullOrEmpty(path, nameof(path));
-		var db = new SQLiteConnection(path);
+		SQLiteConnection db = new(path);
 		try
 		{
-			DatabaseSchemaUpgradeManager.Upgrade(db);
+			switch (DatabaseSchemaUpgradeManager.IsUpgradeRequired(db))
+			{
+				case DatabaseSchemaUpgradeManager.SchemaCompatibility.RequiresAppUpgrade:
+					throw new InvalidOperationException("This file was created with a newer version of the application. Please upgrade your application first.");
+				case DatabaseSchemaUpgradeManager.SchemaCompatibility.RequiresDatabaseUpgrade:
+					if (path != ":memory:")
+					{
+						db.Dispose();
+						DatabaseSchemaUpgradeManager.Upgrade(path);
+						db = new SQLiteConnection(path);
+					}
+					else
+					{
+						DatabaseSchemaUpgradeManager.Upgrade(db);
+					}
+
+					break;
+			}
 
 			return new MoneyFile(db);
 		}

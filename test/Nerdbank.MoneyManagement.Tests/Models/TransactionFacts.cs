@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using Nerdbank.MoneyManagement;
+using Nerdbank.MoneyManagement.ViewModels;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,11 +22,13 @@ public class TransactionFacts : EntityTestBase
 	[Fact]
 	public void BasicPropertiesSerialization()
 	{
+		CategoryViewModel cat = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
+
 		DateTime when = DateTime.Now;
 		const int checkNo = 3;
 		const decimal amount = 5.2398345m;
 		const string payee = "Them";
-		const int categoryId = 8;
+		int categoryId = cat.Id!.Value;
 		const string memo = "Some memo";
 		const ClearedState cleared = ClearedState.Reconciled;
 

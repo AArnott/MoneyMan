@@ -16,20 +16,28 @@ public class CategoryFacts : EntityTestBase
 	public void BasicPropertiesSerialization()
 	{
 		const string name = "Some name";
-		const int parentId = 5;
+		const string childName = "child";
 
 		var p = new Category
 		{
 			Name = name,
-			ParentCategoryId = parentId,
 		};
 
 		Assert.Equal(name, p.Name);
-		Assert.Equal(parentId, p.ParentCategoryId);
+		Assert.Null(p.ParentCategoryId);
 
 		Category? p2 = this.SaveAndReload(p);
 
 		Assert.Equal(name, p2.Name);
-		Assert.Equal(parentId, p2.ParentCategoryId);
+		Assert.Null(p.ParentCategoryId);
+
+		var pChild = new Category
+		{
+			Name = childName,
+			ParentCategoryId = p.Id,
+		};
+
+		Category? pChild2 = this.SaveAndReload(pChild);
+		Assert.Equal(p.Id, pChild2.ParentCategoryId);
 	}
 }
