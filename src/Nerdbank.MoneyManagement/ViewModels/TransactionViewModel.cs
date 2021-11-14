@@ -35,13 +35,6 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	private decimal balance;
 	private SplitTransactionViewModel? selectedSplit;
 
-	[Obsolete("Do not use this constructor.")]
-	public TransactionViewModel()
-	{
-		// This constructor exists only to get WPF to allow the user to add transaction rows.
-		throw new NotSupportedException();
-	}
-
 	public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction)
 		: base(thisAccount.MoneyFile)
 	{
@@ -88,7 +81,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			this.ThrowIfSplitInForeignAccount();
 			this.SetProperty(ref this.when, value);
 
-			foreach (SplitTransactionViewModel split in this.Splits)
+			foreach (SplitTransactionViewModel split in this.Splits.Where(s => s.IsPersisted))
 			{
 				if (split.Model is object)
 				{
@@ -145,7 +138,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			this.ThrowIfSplitInForeignAccount();
 			this.SetProperty(ref this.payee, value);
 
-			foreach (SplitTransactionViewModel split in this.Splits)
+			foreach (SplitTransactionViewModel split in this.Splits.Where(s => s.IsPersisted))
 			{
 				if (split.Model is object)
 				{
@@ -171,7 +164,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 				return;
 			}
 
-			Verify.Operation(this.Splits.Count == 0 || value == SplitCategoryPlaceholder.Singleton, "Cannot set category or transfer on a transaction containing splits.");
+			Verify.Operation(!this.ContainsSplits || value == SplitCategoryPlaceholder.Singleton, "Cannot set category or transfer on a transaction containing splits.");
 			this.ThrowIfSplitInForeignAccount();
 			this.SetProperty(ref this.categoryOrTransfer, value);
 		}
@@ -186,7 +179,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != SplitCategoryPlaceholder.Singleton);
 
 	////[SplitSumMatchesTransactionAmount]
-	public IReadOnlyCollection<SplitTransactionViewModel> Splits
+	public IReadOnlyList<SplitTransactionViewModel> Splits
 	{
 		get
 		{
@@ -202,6 +195,11 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 						SplitTransactionViewModel splitViewModel = new(this, split);
 						this.splits.Add(splitViewModel);
 						splitViewModel.PropertyChanged += this.Splits_PropertyChanged;
+					}
+
+					if (this.splits.Count > 0)
+					{
+						this.CreateVolatileSplit();
 					}
 				}
 			}
@@ -240,13 +238,13 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	/// </summary>
 	public AccountViewModel ThisAccount { get; }
 
-	private string DebuggerDisplay => $"Transaction: {this.When} {this.Payee} {this.Amount}";
+	private string DebuggerDisplay => $"Transaction ({this.Id}): {this.When} {this.Payee} {this.Amount}";
 
-	public SplitTransactionViewModel NewSplit(bool volatileOnly = false)
+	public SplitTransactionViewModel NewSplit()
 	{
 		Verify.Operation(!this.IsSplitMemberOfParentTransaction, "Cannot split a transaction that is already a member of a split transaction.");
 
-		if (this.Id is null)
+		if (!this.IsPersisted)
 		{
 			// Persist this transaction so the splits can refer to it.
 			this.Save();
@@ -256,12 +254,15 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		bool wasSplit = this.ContainsSplits;
 		SplitTransactionViewModel split = new(this, null)
 		{
-			MoneyFile = this.MoneyFile,
 			Amount = wasSplit ? 0 : this.Amount,
 		};
 		using (this.SuspendAutoSave())
 		{
-			split.CategoryOrTransfer = this.CategoryOrTransfer;
+			if (this.CategoryOrTransfer != SplitCategoryPlaceholder.Singleton)
+			{
+				split.CategoryOrTransfer = this.CategoryOrTransfer;
+			}
+
 			this.CategoryOrTransfer = SplitCategoryPlaceholder.Singleton;
 
 			split.Model = new()
@@ -269,16 +270,15 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 				When = this.When,
 				Payee = this.Payee,
 			};
-			if (!volatileOnly)
-			{
-				this.splits!.Add(split);
-			}
+			this.splits!.Add(split);
 		}
 
+		split.Save();
 		split.PropertyChanged += this.Splits_PropertyChanged;
 		if (!wasSplit)
 		{
 			this.OnPropertyChanged(nameof(this.ContainsSplits));
+			this.CreateVolatileSplit();
 		}
 
 		return split;
@@ -291,6 +291,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			throw new InvalidOperationException("Splits haven't been initialized.");
 		}
 
+		int indexOfSplit = this.splits.IndexOf(split);
 		if (!this.splits.Remove(split))
 		{
 			return;
@@ -301,12 +302,20 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			this.ThisAccount.MoneyFile?.Delete(split.Model);
 		}
 
-		if (this.ContainsSplits)
+		if (this.Splits.Count(s => s.IsPersisted) > 0)
 		{
 			this.SetAmountBasedOnSplits();
+
+			if (!split.IsPersisted)
+			{
+				// We deleted the volatile transaction (new row placeholder). Recreate it.
+				this.CreateVolatileSplit();
+			}
 		}
 		else
 		{
+			decimal amount = this.Amount;
+			this.splits.Clear();
 			this.OnPropertyChanged(nameof(this.ContainsSplits));
 
 			// Salvage some data from the last split.
@@ -316,6 +325,15 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			}
 
 			this.CategoryOrTransfer = split.CategoryOrTransfer;
+			this.Amount = amount;
+		}
+
+		if (this.SelectedSplit == split)
+		{
+			this.SelectedSplit =
+				this.splits.Count > indexOfSplit ? this.splits[indexOfSplit] :
+				this.splits.Count == indexOfSplit ? this.splits[indexOfSplit - 1] :
+				null;
 		}
 	}
 
@@ -323,9 +341,9 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	{
 		_ = this.Splits;
 
-		if (this.Splits.Count > 0)
+		if (this.ContainsSplits)
 		{
-			int originalSplitCount = this.Splits.Count;
+			int originalSplitCount = this.Splits.Count(s => s.IsPersisted); // don't count the volatile split placeholder.
 			decimal amount = this.Amount;
 			foreach (SplitTransactionViewModel split in this.Splits.ToList())
 			{
@@ -390,10 +408,10 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		transaction.Memo = this.Memo;
 		transaction.CheckNumber = this.CheckNumber;
 		transaction.Cleared = this.Cleared.Value;
-		if (this.Splits.Count > 0)
+		if (this.ContainsSplits)
 		{
 			transaction.CategoryId = Category.Split;
-			foreach (SplitTransactionViewModel split in this.Splits)
+			foreach (SplitTransactionViewModel split in this.Splits.ToList())
 			{
 				split.Save();
 			}
@@ -476,7 +494,12 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
-		if (propertyName == nameof(this.Balance))
+		if (propertyName is nameof(this.Balance) or nameof(this.ContainsSplits) or nameof(this.SelectedSplit))
+		{
+			return false;
+		}
+
+		if (propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip"))
 		{
 			return false;
 		}
@@ -501,6 +524,29 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	{
 		this.Amount = this.Splits.Sum(s => s.Amount);
 		this.ThisAccount.NotifyAmountChangedOnSplitTransaction(this);
+	}
+
+	private SplitTransactionViewModel CreateVolatileSplit()
+	{
+		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
+		_ = this.Splits;
+		var volatileModel = new Transaction()
+		{
+		};
+		SplitTransactionViewModel volatileViewModel = new(this, volatileModel);
+		this.splits!.Add(volatileViewModel);
+		volatileViewModel.Saved += this.VolatileSplitTransaction_Saved;
+		return volatileViewModel;
+	}
+
+	private void VolatileSplitTransaction_Saved(object? sender, EventArgs args)
+	{
+		SplitTransactionViewModel? volatileSplit = (SplitTransactionViewModel?)sender;
+		Assumes.NotNull(volatileSplit);
+		volatileSplit.Saved -= this.VolatileSplitTransaction_Saved;
+
+		// We need a new volatile transaction.
+		this.CreateVolatileSplit();
 	}
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
@@ -542,7 +588,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			}
 			else
 			{
-				if (this.transactionViewModel.ThisAccount.DocumentViewModel.UserNotification is { } userNotification && this.transactionViewModel.Splits.Count > 1)
+				if (this.transactionViewModel.ThisAccount.DocumentViewModel.UserNotification is { } userNotification && this.transactionViewModel.Splits.Count(s => s.IsPersisted) > 1)
 				{
 					if (!await userNotification.ConfirmAsync("This operation will delete all splits.", defaultConfirm: false))
 					{

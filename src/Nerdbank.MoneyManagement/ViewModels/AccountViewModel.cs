@@ -69,6 +69,9 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 					this.UpdateBalances(0);
 				}
 
+				// Always add one more "volatile" transaction at the end as a placeholder to add new data.
+				this.CreateVolatileTransaction();
+
 				this.transactions.CollectionChanged += this.Transactions_CollectionChanged;
 			}
 
@@ -84,9 +87,8 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	/// Creates a new <see cref="TransactionViewModel"/> for this account,
 	/// but does <em>not</em> add it to the collection.
 	/// </summary>
-	/// <param name="volatileOnly"><see langword="true"/> to only create the view model without adding it to the <see cref="Transactions"/> collection or saving it to the database; <see langword="false"/> otherwise.</param>
 	/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
-	public TransactionViewModel NewTransaction(bool volatileOnly = false)
+	public TransactionViewModel NewTransaction()
 	{
 		// Make sure our collection has been initialized by now.
 		_ = this.Transactions;
@@ -95,20 +97,11 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 		viewModel.When = DateTime.Now;
 		viewModel.Model = new();
 
-		if (!volatileOnly)
-		{
-			_ = this.Transactions; // make sure our collection is initialized.
-			this.transactions!.Add(viewModel);
-			viewModel.Save();
-		}
+		_ = this.Transactions; // make sure our collection is initialized.
+		this.transactions!.Add(viewModel);
+		viewModel.Save();
 
 		return viewModel;
-	}
-
-	public int Add(TransactionViewModel transaction)
-	{
-		_ = this.Transactions;
-		return this.transactions!.Add(transaction);
 	}
 
 	public void DeleteTransaction(TransactionViewModel transaction)
@@ -133,13 +126,11 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 				this.RemoveTransactionFromViewModel(transaction);
 			}
 		}
-		else
+
+		if (!transaction.IsPersisted)
 		{
-			int index = this.transactions.Remove(transaction);
-			if (index >= 0)
-			{
-				this.UpdateBalances(index);
-			}
+			// We deleted the volatile transaction (new row placeholder). Recreate it.
+			this.CreateVolatileTransaction();
 		}
 	}
 
@@ -310,6 +301,29 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 		}
 	}
 
+	private void CreateVolatileTransaction()
+	{
+		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
+		_ = this.Transactions;
+		var volatileModel = new Transaction()
+		{
+			When = DateTime.Today,
+		};
+		TransactionViewModel volatileViewModel = new(this, volatileModel);
+		this.transactions!.Add(volatileViewModel);
+		volatileViewModel.Saved += this.VolatileTransaction_Saved;
+	}
+
+	private void VolatileTransaction_Saved(object? sender, EventArgs args)
+	{
+		TransactionViewModel? volatileTransaction = (TransactionViewModel?)sender;
+		Assumes.NotNull(volatileTransaction);
+		volatileTransaction.Saved -= this.VolatileTransaction_Saved;
+
+		// We need a new volatile transaction.
+		this.CreateVolatileTransaction();
+	}
+
 	private class TransactionSort : IOptimizedComparer<TransactionViewModel>
 	{
 		internal static readonly TransactionSort Instance = new();
@@ -329,7 +343,13 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 				return 1;
 			}
 
-			int order = x.When.CompareTo(y.When);
+			int order = Utilities.CompareNullOrZeroComesLast(x.Id, y.Id);
+			if (order != 0)
+			{
+				return order;
+			}
+
+			order = x.When.CompareTo(y.When);
 			if (order != 0)
 			{
 				return order;

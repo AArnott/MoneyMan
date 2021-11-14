@@ -82,7 +82,6 @@
 								  ItemsSource="{Binding Source={StaticResource transactions}}"
 								  IsSynchronizedWithCurrentItem="True"
 								  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
-								  AddingNewItem="TransactionGrid_AddingNewItem"
 								  AutoGenerateColumns="False">
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
@@ -207,7 +206,6 @@
 									          SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
 									          SelectionMode="Single"
 									          Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
-									          AddingNewItem="SplitGrid_AddingNewItem"
 									          AutoGenerateColumns="False">
 										<DataGrid.ContextMenu>
 											<ContextMenu>

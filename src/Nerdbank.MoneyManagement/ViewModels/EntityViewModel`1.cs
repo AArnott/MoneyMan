@@ -34,9 +34,17 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 	}
 
 	/// <summary>
+	/// Occurs when the entity is saved to the database.
+	/// </summary>
+	public event EventHandler? Saved;
+
+	/// <summary>
 	/// Gets the primary key for this entity.
 	/// </summary>
 	public int? Id { get; private set; }
+
+	/// <inheritdoc cref="ModelBase.IsPersisted"/>
+	public bool IsPersisted => this.Model?.IsPersisted is true;
 
 	/// <summary>
 	/// Gets or sets a value indicating whether this entity has been changed since <see cref="ApplyTo(TEntity)"/> was last called.
@@ -145,6 +153,8 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 
 			// First insert of an entity assigns it an ID. Make sure the view model matches it.
 			this.Id = this.Model.Id;
+
+			this.Saved?.Invoke(this, EventArgs.Empty);
 		}
 	}
 

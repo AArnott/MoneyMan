@@ -107,16 +107,6 @@ public partial class MainWindow : Window
 		dialog.FilterIndex = 0;
 	}
 
-	private void TransactionGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
-	{
-		e.NewItem = this.ViewModel.Document.BankingPanel.SelectedAccount?.NewTransaction(volatileOnly: true) ?? throw new InvalidOperationException("No selected account.");
-	}
-
-	private void SplitGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
-	{
-		e.NewItem = this.ViewModel.Document.SelectedTransaction?.NewSplit(volatileOnly: true) ?? throw new InvalidOperationException("No selected transaction.");
-	}
-
 #pragma warning disable VSTHRD100 // Avoid async void methods
 	private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // Avoid async void methods

@@ -16,7 +16,7 @@ public abstract class ModelBase
 	/// <summary>
 	/// Gets a value indicating whether this entity has already received an assigned primary key from the database.
 	/// </summary>
-	internal bool IsPersisted => this.Id > 0;
+	public bool IsPersisted => this.Id > 0;
 
 	/// <summary>
 	/// Saves this entity to the given <see cref="MoneyFile"/>.
