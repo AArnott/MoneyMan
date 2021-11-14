@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using Nerdbank.MoneyManagement;
+using SQLite;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -210,6 +211,33 @@ public class MoneyFileTests : IDisposable
 		MoneyFile money = this.Load();
 		money.Dispose();
 		money.Dispose();
+	}
+
+	[Fact]
+	public void LoadNewerThanCurrentFileFormatThrows()
+	{
+		this.Load().Dispose();
+		using (SQLiteConnection db = new(this.dbPath))
+		{
+			int currentVersion = db.ExecuteScalar<int>("SELECT MAX(SchemaVersion) FROM SchemaHistory");
+			db.Execute("INSERT INTO SchemaHistory VALUES (?, ?, ?)", currentVersion + 1, DateTime.Now, "test");
+		}
+
+		MoneyFile? money = null;
+		try
+		{
+			Assert.Throws<InvalidOperationException>(() => money = this.Load());
+		}
+		catch (InvalidOperationException)
+		{
+			// Expected exception thrown.
+		}
+		finally
+		{
+#pragma warning disable CA1508 // Avoid dead conditional code
+			money?.Dispose();
+#pragma warning restore CA1508 // Avoid dead conditional code
+		}
 	}
 
 	private MoneyFile Load()
