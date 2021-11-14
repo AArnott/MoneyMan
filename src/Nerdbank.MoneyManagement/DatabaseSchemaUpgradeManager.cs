@@ -35,6 +35,11 @@ internal static class DatabaseSchemaUpgradeManager
 		// The version of the file is assumed to match the highest schema version this db has ever been.
 		int initialFileVersion = GetCurrentSchema(db);
 
+		if (initialFileVersion > latestVersion)
+		{
+			throw new InvalidOperationException("This file format is newer than this app version recognizes. Upgrade the application first.");
+		}
+
 		// The upgrade process is one version at a time.
 		// Every version from the past is represented in a case statement below with the required steps
 		// to upgrade it to the subsequent version. We loop over each version till we reach the current schema.
