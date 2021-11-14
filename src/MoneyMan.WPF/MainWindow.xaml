@@ -206,7 +206,6 @@
 									          SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
 									          SelectionMode="Single"
 									          Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
-									          AddingNewItem="SplitGrid_AddingNewItem"
 									          AutoGenerateColumns="False">
 										<DataGrid.ContextMenu>
 											<ContextMenu>

@@ -197,7 +197,10 @@ public class TransactionViewModelTests : MoneyTestBase
 	{
 		SplitTransactionViewModel split = this.viewModel.NewSplit();
 		Assert.Same(this.viewModel, split.ParentTransaction);
-		Assert.Same(split, Assert.Single(this.viewModel.Splits));
+		Assert.Same(split, this.viewModel.Splits[0]);
+		Assert.Equal(2, this.viewModel.Splits.Count);
+		Assert.True(this.viewModel.Splits[0].IsPersisted);
+		Assert.False(this.viewModel.Splits[1].IsPersisted);
 	}
 
 	[Fact]
@@ -210,9 +213,46 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.AssertNowAndAfterReload(delegate
 		{
 			Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
-			split = this.viewModel.Splits.Single();
+			split = this.viewModel.Splits[0];
 			Assert.Equal(categoryViewModel.Id, split.CategoryOrTransfer?.Id);
 		});
+	}
+
+	[Fact]
+	public void MultipleNewSplits()
+	{
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		Assert.Null(split1.CategoryOrTransfer);
+		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		Assert.Null(split2.CategoryOrTransfer);
+	}
+
+	[Fact]
+	public void DeleteSplit()
+	{
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		Assert.Equal(3, this.viewModel.Splits.Count);
+		this.viewModel.DeleteSplit(split1);
+		Assert.Equal(2, this.viewModel.Splits.Count);
+		this.viewModel.DeleteSplit(split2);
+		Assert.Equal(0, this.viewModel.Splits.Count); // jump to zero since the only remaining split was provisionary
+	}
+
+	[Fact]
+	public void DeleteSplitCommand()
+	{
+		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		Assert.Equal(3, this.viewModel.Splits.Count);
+
+		this.viewModel.SelectedSplit = split2;
+		Assert.Equal(3, this.viewModel.Splits.Count);
+
+		Assert.True(this.viewModel.DeleteSplitCommand.CanExecute(null));
+		this.viewModel.DeleteSplitCommand.Execute(null);
+		Assert.Equal(2, this.viewModel.Splits.Count);
+		Assert.Same(this.viewModel.Splits[1], this.viewModel.SelectedSplit);
 	}
 
 	[Fact]
@@ -250,7 +290,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		await TestUtilities.AssertPropertyChangedEventAsync(this.viewModel, () => this.viewModel.SplitCommand.ExecuteAsync(), nameof(this.viewModel.ContainsSplits));
 		Assert.True(this.viewModel.ContainsSplits);
 
-		SplitTransactionViewModel split = Assert.Single(this.viewModel.Splits);
+		SplitTransactionViewModel split = this.viewModel.Splits[0];
 		split.Amount = 10;
 		split.CategoryOrTransfer = categoryViewModel;
 
@@ -295,9 +335,23 @@ public class TransactionViewModelTests : MoneyTestBase
 			}
 			else
 			{
-				Assert.Equal(2, this.viewModel.Splits.Count);
+				Assert.Equal(3, this.viewModel.Splits.Count);
 			}
 		});
+	}
+
+	[Fact]
+	public void ChangingVolatileTransactionProducesNewOne()
+	{
+		SplitTransactionViewModel tx1 = this.viewModel.NewSplit();
+		SplitTransactionViewModel volatileTx = this.viewModel.Splits[1];
+		Assert.True(tx1.IsPersisted);
+		Assert.False(volatileTx.IsPersisted);
+		volatileTx.Amount = 50;
+		Assert.True(volatileTx.IsPersisted);
+		Assert.Equal(3, this.viewModel.Splits.Count);
+		SplitTransactionViewModel volatileTx2 = this.viewModel.Splits[2];
+		Assert.False(volatileTx2.IsPersisted);
 	}
 
 	[Fact]
@@ -344,7 +398,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		Assert.True(this.viewModel.ContainsSplits);
 
 		// Transition back to non-split.
-		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.DeleteSplit(this.viewModel.Splits.Single()), nameof(this.viewModel.ContainsSplits));
+		TestUtilities.AssertPropertyChangedEvent(this.viewModel, () => this.viewModel.DeleteSplit(this.viewModel.Splits[0]), nameof(this.viewModel.ContainsSplits));
 		Assert.False(this.viewModel.ContainsSplits);
 	}
 
@@ -360,7 +414,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.ReloadViewModel();
 
 		categoryViewModel = this.DocumentViewModel.CategoriesPanel.Categories.Single();
-		split1 = Assert.Single(this.viewModel.Splits);
+		split1 = this.viewModel.Splits[0];
 		Assert.Equal(this.amount, split1.Amount);
 		Assert.Equal(this.memo, split1.Memo);
 		Assert.Same(categoryViewModel, split1.CategoryOrTransfer);
@@ -594,7 +648,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.viewModel = Assert.Single(this.account.Transactions, t => t.Id == transaction.Id);
 		Assert.Equal(10, this.viewModel.Amount);
 		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
-		Assert.Equal(2, this.viewModel.Splits.Count);
+		Assert.Equal(3, this.viewModel.Splits.Count);
 		Assert.Single(this.viewModel.Splits, s => s.Amount == split1.Amount);
 		Assert.Single(this.viewModel.Splits, s => s.Amount == split2.Amount);
 	}

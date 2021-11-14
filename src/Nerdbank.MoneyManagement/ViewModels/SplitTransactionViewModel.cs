@@ -17,14 +17,8 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 	private string? memo;
 	private ITransactionTarget? categoryOrTransfer;
 
-	[Obsolete("Do not use this constructor.")]
-	public SplitTransactionViewModel()
-	{
-		// This constructor exists only to get WPF to allow the user to add transaction rows.
-		throw new NotSupportedException();
-	}
-
 	public SplitTransactionViewModel(TransactionViewModel parent, Transaction? splitTransaction)
+		: base(parent.MoneyFile)
 	{
 		this.ParentTransaction = parent;
 		this.AutoSave = true;
@@ -62,7 +56,7 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 
 	public IEnumerable<ITransactionTarget> AvailableTransactionTargets => this.ParentTransaction.AvailableTransactionTargets;
 
-	private string DebuggerDisplay => $"Split: {this.Memo} {this.CategoryOrTransfer?.Name} {this.Amount}";
+	private string DebuggerDisplay => $"Split ({this.Id}): {this.Memo} {this.CategoryOrTransfer?.Name} {this.Amount}";
 
 	protected override void ApplyToCore(Transaction split)
 	{
