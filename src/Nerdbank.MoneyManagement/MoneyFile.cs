@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using SQLite;
 using Validation;
 
@@ -238,6 +239,20 @@ public class MoneyFile : IDisposableObservable
 			yield return new IntegrityChecks.SplitTransactionTotalMismatch(badSplit);
 			cancellationToken.ThrowIfCancellationRequested();
 		}
+	}
+
+	internal bool IsCategoryInUse(int categoryId)
+	{
+		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CategoryId)}"" == ?";
+		return this.ExecuteScalar<int>(sql, categoryId) > 0;
+	}
+
+	internal void ReassignCategory(IEnumerable<int> oldCategoryIds, int? newId)
+	{
+		string sql = $@"UPDATE ""{nameof(Transaction)}""
+SET ""{nameof(Transaction.CategoryId)}"" = ?
+WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
+		this.connection.Execute(sql, newId);
 	}
 
 	internal List<Transaction> GetTopLevelTransactionsFor(int accountId)
