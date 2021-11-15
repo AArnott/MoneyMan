@@ -89,7 +89,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public async Task DeleteCommand_Multiple()
+	public async Task Delete_MultipleWhenCategoriesAreNotInUse()
 	{
 		var cat1 = this.DocumentViewModel.CategoriesPanel.NewCategory("cat1");
 		var cat2 = this.DocumentViewModel.CategoriesPanel.NewCategory("cat2");
@@ -102,6 +102,152 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Equal("cat2", Assert.Single(this.ViewModel.Categories).Name);
 		Assert.Null(this.ViewModel.SelectedCategory);
 		Assert.Equal("cat2", Assert.Single(this.Money.Categories).Name);
+	}
+
+	[Fact]
+	public async Task Delete_WhenCategoryIsInUse()
+	{
+		var cat1 = this.ViewModel.NewCategory("cat1");
+		var cat2 = this.ViewModel.NewCategory("cat2");
+
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		TransactionViewModel transaction = checking.NewTransaction();
+		transaction.CategoryOrTransfer = cat1;
+
+		this.ViewModel.SelectedCategories = new[] { cat1 };
+		bool presented = false;
+		this.UserNotification.Presentation += (s, e) =>
+		{
+			var pickerWindowViewModel = (PickerWindowViewModel)e;
+			Assert.True(pickerWindowViewModel.Options.Contains(cat2));
+			pickerWindowViewModel.SelectedOption = cat2;
+			pickerWindowViewModel.ProceedCommand?.Execute(null);
+			presented = true;
+		};
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		Assert.True(presented);
+
+		Assert.Same(cat2, transaction.CategoryOrTransfer);
+		Assert.DoesNotContain(cat1, this.ViewModel.Categories);
+
+		this.ReloadViewModel();
+		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
+		Assert.Equal(cat2.Name, transaction.CategoryOrTransfer?.Name);
+		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == cat1.Name);
+	}
+
+	[Fact]
+	public async Task Delete_WhenCategoryIsInUseBySplit()
+	{
+		var cat1 = this.ViewModel.NewCategory("cat1");
+		var cat2 = this.ViewModel.NewCategory("cat2");
+
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		TransactionViewModel transaction = checking.NewTransaction();
+		SplitTransactionViewModel split = transaction.NewSplit();
+		split.CategoryOrTransfer = cat1;
+
+		this.ViewModel.SelectedCategories = new[] { cat1 };
+		bool presented = false;
+		this.UserNotification.Presentation += (s, e) =>
+		{
+			var pickerWindowViewModel = (PickerWindowViewModel)e;
+			Assert.True(pickerWindowViewModel.Options.Contains(cat2));
+			Assert.False(pickerWindowViewModel.Options.Contains(cat1));
+			pickerWindowViewModel.SelectedOption = cat2;
+			pickerWindowViewModel.ProceedCommand?.Execute(null);
+			presented = true;
+		};
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		Assert.True(presented);
+
+		Assert.Same(cat2, split.CategoryOrTransfer);
+
+		this.ReloadViewModel();
+		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
+		split = transaction.Splits[0];
+		Assert.Equal(cat2.Name, split.CategoryOrTransfer?.Name);
+	}
+
+	[Fact]
+	public async Task Delete_WhenCategoryIsNotInUse()
+	{
+		var cat1 = this.ViewModel.NewCategory("cat1");
+		var cat2 = this.ViewModel.NewCategory("cat2");
+
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		TransactionViewModel transaction = checking.NewTransaction();
+		transaction.CategoryOrTransfer = cat1;
+
+		this.ViewModel.SelectedCategories = new[] { cat2 };
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+
+		Assert.Same(cat1, transaction.CategoryOrTransfer);
+		Assert.DoesNotContain(cat2, this.ViewModel.Categories);
+
+		this.ReloadViewModel();
+		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
+		Assert.Equal(cat1.Name, transaction.CategoryOrTransfer?.Name);
+		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == cat2.Name);
+	}
+
+	[Fact]
+	public async Task Delete_MultipleWhenCategoriesAreInUse()
+	{
+		var cat1 = this.ViewModel.NewCategory("cat1");
+		var cat2 = this.ViewModel.NewCategory("cat2");
+		var cat3 = this.ViewModel.NewCategory("cat3");
+
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		TransactionViewModel transaction = checking.NewTransaction();
+		transaction.CategoryOrTransfer = cat1;
+
+		this.ViewModel.SelectedCategories = new[] { cat1, cat2 };
+		bool presented = false;
+		this.UserNotification.Presentation += (s, e) =>
+		{
+			var pickerWindowViewModel = (PickerWindowViewModel)e;
+			Assert.False(pickerWindowViewModel.Options.Contains(cat1));
+			Assert.False(pickerWindowViewModel.Options.Contains(cat2));
+			Assert.True(pickerWindowViewModel.Options.Contains(cat3));
+			pickerWindowViewModel.SelectedOption = pickerWindowViewModel.Options[0]; // the "clear" option
+			pickerWindowViewModel.ProceedCommand?.Execute(null);
+			presented = true;
+		};
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		Assert.True(presented);
+
+		Assert.Null(transaction.CategoryOrTransfer);
+
+		this.ReloadViewModel();
+		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
+		Assert.Null(transaction.CategoryOrTransfer);
+	}
+
+	[Fact]
+	public async Task Delete_AllWhenCategoriesAreInUse()
+	{
+		var cat1 = this.ViewModel.NewCategory("cat1");
+		var cat2 = this.ViewModel.NewCategory("cat2");
+		var cat3 = this.ViewModel.NewCategory("cat3");
+
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		TransactionViewModel transaction = checking.NewTransaction();
+		transaction.CategoryOrTransfer = cat1;
+
+		this.ViewModel.SelectedCategories = new[] { cat1, cat2, cat3 };
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+
+		Assert.Null(transaction.CategoryOrTransfer);
+
+		this.ReloadViewModel();
+		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
+		Assert.Null(transaction.CategoryOrTransfer);
 	}
 
 	[Fact]

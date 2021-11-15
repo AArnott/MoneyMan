@@ -223,6 +223,30 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 		}
 	}
 
+	internal void NotifyReassignCategory(List<CategoryViewModel> oldCategories, CategoryViewModel? newCategory)
+	{
+		if (this.transactions is object)
+		{
+			foreach (TransactionViewModel transaction in this.transactions)
+			{
+				if (transaction.CategoryOrTransfer == SplitCategoryPlaceholder.Singleton)
+				{
+					foreach (SplitTransactionViewModel split in transaction.Splits)
+					{
+						if (oldCategories.Contains(split.CategoryOrTransfer))
+						{
+							split.CategoryOrTransfer = newCategory;
+						}
+					}
+				}
+				else if (oldCategories.Contains(transaction.CategoryOrTransfer))
+				{
+					transaction.CategoryOrTransfer = newCategory;
+				}
+			}
+		}
+	}
+
 	protected override void ApplyToCore(Account account)
 	{
 		Requires.NotNull(account, nameof(account));

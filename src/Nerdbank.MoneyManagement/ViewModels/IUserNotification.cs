@@ -56,4 +56,13 @@ public interface IUserNotification
 	/// <returns>The user's selected action.</returns>
 	/// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is canceled before the user chooses an action.</exception>
 	Task<UserAction> AskOrCancelAsync(string text, UserAction defaultButton, CancellationToken cancellationToken = default);
+
+	/// <summary>
+	/// Presents a modal view for a given view model.
+	/// </summary>
+	/// <param name="viewModel">The view model to bind to the view. The runtime type will determine which view is selected to present to the user.</param>
+	/// <param name="cancellationToken">A cancellation token which may dismiss the UI automatically.</param>
+	/// <returns>A task that completes when the view is dismissed.</returns>
+	/// <exception cref="NotSupportedException">Thrown if the <paramref name="viewModel"/> is not of a recognized type.</exception>
+	Task PresentAsync(IPresentedWindowViewModel viewModel, CancellationToken cancellationToken = default);
 }

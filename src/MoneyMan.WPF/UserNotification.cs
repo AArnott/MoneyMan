@@ -60,4 +60,28 @@ internal class UserNotification : IUserNotification
 			MessageBox.Show(this.mainWindow, text);
 		});
 	}
+
+	public async Task PresentAsync(IPresentedWindowViewModel viewModel, CancellationToken cancellationToken = default)
+	{
+		await this.mainWindow.Dispatcher.InvokeAsync(delegate
+		{
+			Window window = viewModel switch
+			{
+				PickerWindowViewModel picker => new PickerWindow(picker) { Owner = this.mainWindow },
+				_ => throw new NotSupportedException("Unrecognized view model type: " + viewModel.GetType().FullName),
+			};
+			viewModel.Closing += (s, e) => window.Close();
+			bool cancelled = false;
+			using CancellationTokenRegistration ctr = cancellationToken.Register(delegate
+			{
+				window.Close();
+				cancelled = true;
+			});
+			window.ShowDialog();
+			if (cancelled)
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+			}
+		});
+	}
 }
