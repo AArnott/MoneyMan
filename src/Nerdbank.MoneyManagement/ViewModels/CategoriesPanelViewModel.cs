@@ -127,6 +127,16 @@ public class CategoriesPanelViewModel : BindableBase
 		}
 	}
 
+	/// <summary>
+	/// Clears the view model without deleting anything from the database.
+	/// </summary>
+	internal void ClearViewModel()
+	{
+		this.categories.Clear();
+		this.selectedCategory = null;
+		this.selectedCategories?.Clear();
+	}
+
 	private class AddCategoryCommand : CommandBase
 	{
 		private readonly CategoriesPanelViewModel viewModel;

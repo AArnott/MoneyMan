@@ -271,7 +271,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 		this.transactions = null;
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
+	protected override bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.Balance) or nameof(this.TransferTargetName));
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
 	{

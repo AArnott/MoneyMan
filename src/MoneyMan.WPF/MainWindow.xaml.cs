@@ -28,6 +28,7 @@ public partial class MainWindow : Window
 
 		this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 		this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
+		this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, this.FileSave));
 	}
 
 	public bool ReopenLastFile { get; set; } = true;
@@ -41,6 +42,7 @@ public partial class MainWindow : Window
 	protected override void OnClosed(EventArgs e)
 	{
 		this.closingTokenSource.Cancel();
+		this.ViewModel.Document.Dispose();
 		AppSettings.Default.Save();
 		base.OnClosed(e);
 	}
@@ -91,6 +93,11 @@ public partial class MainWindow : Window
 		{
 			MessageBox.Show($@"Failed to open ""{path}"". {ex.Message}");
 		}
+	}
+
+	private void FileSave(object sender, ExecutedRoutedEventArgs e)
+	{
+		this.ViewModel.Document.Save();
 	}
 
 	private void ViewModel_FileClosed(object? sender, EventArgs e)

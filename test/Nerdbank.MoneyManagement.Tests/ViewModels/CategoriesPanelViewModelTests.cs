@@ -281,4 +281,15 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Null(this.ViewModel.SelectedCategory);
 		Assert.Empty(this.ViewModel.Categories);
 	}
+
+	[Fact]
+	public async Task CreateCategory_Undo()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		const string name = "Some new category";
+		this.ViewModel.SelectedCategory!.Name = name;
+		Assert.True(this.DocumentViewModel.UndoCommand.CanExecute());
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
+	}
 }

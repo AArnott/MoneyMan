@@ -72,6 +72,18 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.Money.Accounts.Count());
 	}
 
+	[Fact]
+	public async Task AddCommand_Undo()
+	{
+		const string name = "name";
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		this.ViewModel.SelectedAccount!.Name = name;
+
+		Assert.True(this.DocumentViewModel.UndoCommand.CanExecute());
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.DoesNotContain(this.ViewModel.Accounts, acct => acct.Name == name);
+	}
+
 	[Theory, PairwiseData]
 	public async Task DeleteCommand(bool saveFirst)
 	{

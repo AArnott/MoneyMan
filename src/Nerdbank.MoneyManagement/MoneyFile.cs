@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using PCLCommandBase;
 using SQLite;
 using Validation;
 
@@ -13,12 +14,19 @@ namespace Nerdbank.MoneyManagement;
 /// Manages the database that stores accounts, transactions, and other entities.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class MoneyFile : IDisposableObservable
+public class MoneyFile : BindableBase, IDisposableObservable
 {
 	/// <summary>
 	/// The SQLite database connection.
 	/// </summary>
 	private readonly SQLiteConnection connection;
+
+	/// <summary>
+	/// The undo stack.
+	/// </summary>
+	private readonly Stack<(string SavepointName, string Activity)> undoStack = new();
+
+	private bool inUndoableTransaction;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MoneyFile"/> class.
@@ -68,6 +76,8 @@ public class MoneyFile : IDisposableObservable
 		}
 	}
 
+	public IEnumerable<(string Savepoint, string Activity)> UndoStack => this.undoStack;
+
 	public bool IsDisposed => this.connection.Handle is null;
 
 	private string DebuggerDisplay => this.Path;
@@ -111,6 +121,28 @@ public class MoneyFile : IDisposableObservable
 			throw;
 		}
 	}
+
+	/// <summary>
+	/// Commits all changes to the database and clears the undo stack.
+	/// </summary>
+	public void Save()
+	{
+		if (this.undoStack.Count > 0)
+		{
+			this.undoStack.Clear();
+			this.connection.Commit();
+			this.OnPropertyChanged(nameof(this.UndoStack));
+		}
+	}
+
+	public void Undo()
+	{
+		string savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop().SavepointName : throw new InvalidOperationException("Nothing to undo.");
+		this.OnPropertyChanged(nameof(this.UndoStack));
+		this.connection.RollbackTo(savepoint);
+	}
+
+	public void Rollback(string savepoint) => this.connection.RollbackTo(savepoint);
 
 	public T Get<T>(object primaryKey)
 		where T : new()
@@ -225,7 +257,21 @@ public class MoneyFile : IDisposableObservable
 	/// <inheritdoc/>
 	public void Dispose()
 	{
+		this.Save();
 		this.connection.Dispose();
+	}
+
+	internal IDisposable? UndoableTransaction(string description)
+	{
+		if (this.inUndoableTransaction)
+		{
+			// We only want top-level user actions to be reversible.
+			return null;
+		}
+
+		this.inUndoableTransaction = true;
+		this.RecordSavepoint(description);
+		return new ActionOnDispose(() => this.inUndoableTransaction = false);
 	}
 
 	internal IEnumerable<IntegrityChecks.SplitTransactionTotalMismatch> FindBadSplitTransactions(CancellationToken cancellationToken)
@@ -262,6 +308,12 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 			+ $@" WHERE (t.[{nameof(Transaction.CreditAccountId)}] == ? OR t.[{nameof(Transaction.DebitAccountId)}] == ?)"
 			+ $@" AND (t.[{nameof(Transaction.ParentTransactionId)}] IS NULL OR (SELECT [{nameof(Transaction.CreditAccountId)}] FROM ""{nameof(Transaction)}"" WHERE [{nameof(Transaction.Id)}] == t.[{nameof(Transaction.ParentTransactionId)}]) != ?)";
 		return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
+	}
+
+	internal void RecordSavepoint(string nextActivityDescription)
+	{
+		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription));
+		this.OnPropertyChanged(nameof(this.UndoStack));
 	}
 
 	private static string SqlJoinConditionWithOperator(string op, IEnumerable<string> constraints) => string.Join($" {op} ", constraints.Select(c => $"({c})"));

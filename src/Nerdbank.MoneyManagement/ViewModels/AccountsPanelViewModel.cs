@@ -152,6 +152,16 @@ public class AccountsPanelViewModel : BindableBase
 		}
 	}
 
+	/// <summary>
+	/// Clears the view model without deleting anything from the database.
+	/// </summary>
+	internal void ClearViewModel()
+	{
+		this.accounts.Clear();
+		this.selectedAccount = null;
+		this.selectedAccounts?.Clear();
+	}
+
 	private class AddAccountCommand : CommandBase
 	{
 		private readonly AccountsPanelViewModel viewModel;

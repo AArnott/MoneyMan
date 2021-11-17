@@ -35,6 +35,25 @@ public class DocumentViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Undo_NewFile()
+	{
+		Assert.False(this.DocumentViewModel.UndoCommand.CanExecute());
+	}
+
+	[Fact]
+	public async Task UndoCommandCaption_PropertyChangeEvent()
+	{
+		await TestUtilities.AssertPropertyChangedEventAsync(
+			this.DocumentViewModel,
+			async delegate
+			{
+				await this.DocumentViewModel.AccountsPanel.AddCommand.ExecuteAsync();
+				this.DocumentViewModel.AccountsPanel.SelectedAccount!.Name = "some new account";
+			},
+			nameof(this.DocumentViewModel.UndoCommandCaption));
+	}
+
+	[Fact]
 	public void NewFileGetsDefaultCategories()
 	{
 		DocumentViewModel documentViewModel = DocumentViewModel.CreateNew(MoneyFile.Load(":memory:"));

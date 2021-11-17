@@ -38,28 +38,17 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		// Keep targets collection in sync with the two collections that make it up.
 		this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
+		this.Reset();
 
 		if (moneyFile is object)
 		{
-			foreach (Account account in moneyFile.Accounts)
-			{
-				AccountViewModel viewModel = new(account, this);
-				this.AccountsPanel.Add(viewModel);
-				this.BankingPanel.Add(viewModel);
-			}
-
-			foreach (Category category in moneyFile.Categories)
-			{
-				CategoryViewModel viewModel = new(category, moneyFile);
-				this.CategoriesPanel.Categories.Add(viewModel);
-			}
-
-			this.netWorth = moneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 			moneyFile.EntitiesChanged += this.Model_EntitiesChanged;
+			moneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
 		}
 
 		this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
 		this.JumpToSplitTransactionParentCommand = new JumpToSplitTransactionParentCommandImpl(this);
+		this.UndoCommand = new UndoCommandImpl(this);
 	}
 
 	public bool IsFileOpen => this.MoneyFile is object;
@@ -110,9 +99,13 @@ public class DocumentViewModel : BindableBase, IDisposable
 	/// </summary>
 	public CommandBase JumpToSplitTransactionParentCommand { get; }
 
+	public CommandBase UndoCommand { get; }
+
 	public string DeleteCommandCaption => "_Delete";
 
 	public string JumpToSplitTransactionParentCommandCaption => "_Jump to split parent";
+
+	public string UndoCommandCaption => this.MoneyFile?.UndoStack.FirstOrDefault().Activity is string top ? $"Undo {top}" : "Undo";
 
 	/// <summary>
 	/// Gets or sets a view-supplied mechanism to prompt or notify the user.
@@ -169,6 +162,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? throw new ArgumentException("No match found.");
 
 	public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
+
+	public void Save() => this.MoneyFile?.Save();
 
 	public void Dispose()
 	{
@@ -276,6 +271,41 @@ public class DocumentViewModel : BindableBase, IDisposable
 				}
 
 				break;
+		}
+	}
+
+	private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName == nameof(this.MoneyFile.UndoStack))
+		{
+			this.OnPropertyChanged(nameof(this.UndoCommandCaption));
+		}
+	}
+
+	/// <summary>
+	/// Reconstructs the entire view model graph given arbitrary changes that may have been made to the database.
+	/// </summary>
+	private void Reset()
+	{
+		if (this.MoneyFile is object)
+		{
+			this.AccountsPanel.ClearViewModel();
+			this.BankingPanel.ClearViewModel();
+			foreach (Account account in this.MoneyFile.Accounts)
+			{
+				AccountViewModel viewModel = new(account, this);
+				this.AccountsPanel.Add(viewModel);
+				this.BankingPanel.Add(viewModel);
+			}
+
+			this.CategoriesPanel.ClearViewModel();
+			foreach (Category category in this.MoneyFile.Categories)
+			{
+				CategoryViewModel viewModel = new(category, this.MoneyFile);
+				this.CategoriesPanel.Categories.Add(viewModel);
+			}
+
+			this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 	}
 
@@ -415,6 +445,34 @@ public class DocumentViewModel : BindableBase, IDisposable
 			}
 
 			return Task.CompletedTask;
+		}
+	}
+
+	private class UndoCommandImpl : CommandBase
+	{
+		private readonly DocumentViewModel documentViewModel;
+
+		public UndoCommandImpl(DocumentViewModel documentViewModel)
+		{
+			this.documentViewModel = documentViewModel;
+			if (documentViewModel.MoneyFile is object)
+			{
+				documentViewModel.MoneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
+			}
+		}
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.MoneyFile?.UndoStack.Any() is true;
+
+		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+		{
+			this.documentViewModel.MoneyFile?.Undo();
+			this.documentViewModel.Reset();
+			return Task.CompletedTask;
+		}
+
+		private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+		{
+			this.OnCanExecuteChanged();
 		}
 	}
 

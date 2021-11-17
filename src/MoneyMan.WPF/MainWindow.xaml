@@ -20,10 +20,11 @@
 			<MenuItem Header="_File">
 				<MenuItem Header="_New" Command="ApplicationCommands.New" />
 				<MenuItem Header="_Open" Command="ApplicationCommands.Open" />
+				<MenuItem Header="_Save" Command="ApplicationCommands.Save" />
 				<MenuItem Header="_Close" Command="{Binding FileCloseCommand, Source={StaticResource viewModel}}" />
 			</MenuItem>
 		</Menu>
-		<ToolBarTray DockPanel.Dock="Top" Visibility="Collapsed">
+		<ToolBarTray DockPanel.Dock="Top">
 			<ToolBar>
 				<Button Command="NavigationCommands.BrowseBack">
 					Back
@@ -31,6 +32,7 @@
 				<Button Command="NavigationCommands.BrowseForward">
 					Forward
 				</Button>
+				<Button Command="{Binding UndoCommand}" Content="{Binding UndoCommandCaption}" />
 			</ToolBar>
 		</ToolBarTray>
 		<StatusBar DockPanel.Dock="Bottom" DataContext="{StaticResource viewModel}">
