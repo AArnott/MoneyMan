@@ -186,81 +186,90 @@ public class CategoriesPanelViewModel : BindableBase
 
 		public override bool CanExecute(object? parameter) => base.CanExecute(parameter) && (this.viewModel.SelectedCategories?.Count > 0 || this.viewModel.SelectedCategory is object);
 
-		protected override async Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
+		protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 		{
 			if (this.viewModel.SelectedCategories is object)
 			{
-				IEnumerable<CategoryViewModel> categories = this.viewModel.SelectedCategories.OfType<CategoryViewModel>();
-				List<CategoryViewModel> inUse = new(), notInUse = new();
-				foreach (CategoryViewModel category in categories)
+				return this.ExecuteCoreAsync(this.viewModel.SelectedCategories, cancellationToken);
+			}
+
+			if (this.viewModel.SelectedCategory is object)
+			{
+				return this.ExecuteCoreAsync(new CategoryViewModel[] { this.viewModel.SelectedCategory }, cancellationToken);
+			}
+
+			return Task.CompletedTask;
+		}
+
+		private async Task ExecuteCoreAsync(IList categoryViewModels, CancellationToken cancellationToken)
+		{
+			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryViewModel>().FirstOrDefault()?.Model);
+			IEnumerable<CategoryViewModel> categories = categoryViewModels.OfType<CategoryViewModel>();
+			List<CategoryViewModel> inUse = new(), notInUse = new();
+			foreach (CategoryViewModel category in categories)
+			{
+				if (category.Id is int id && this.viewModel.documentViewModel.MoneyFile?.IsCategoryInUse(id) is true)
 				{
-					if (category.Id is int id && this.viewModel.documentViewModel.MoneyFile?.IsCategoryInUse(id) is true)
+					inUse.Add(category);
+				}
+				else
+				{
+					notInUse.Add(category);
+				}
+			}
+
+			foreach (CategoryViewModel category in notInUse)
+			{
+				this.viewModel.DeleteCategory(category);
+			}
+
+			if (inUse.Count > 0)
+			{
+				// Ask the user what they want to do about the categories that are in use.
+				CategoryViewModel? redirectedCategory = null;
+				if (this.viewModel.documentViewModel.UserNotification is { } userNotification)
+				{
+					List<CategoryViewModel> options = new(this.viewModel.Categories);
+					options.RemoveAll(cat => inUse.Contains(cat));
+					options.Insert(0, new CategoryViewModel { Name = "(clear assigned category)" });
+
+					if (options.Count > 1)
 					{
-						inUse.Add(category);
+						var pickerViewModel = new PickerWindowViewModel("One or more of the categories selected are applied to transactions. How do you want to reassign those transactions?", options)
+						{
+							Title = "Category in use",
+						};
+						await userNotification.PresentAsync(pickerViewModel, cancellationToken);
+						redirectedCategory = (CategoryViewModel)pickerViewModel.GetSelectedOptionOrThrowCancelled();
 					}
 					else
 					{
-						notInUse.Add(category);
+						// No need to ask the user what to do when there is only one option.
+						redirectedCategory = options[0];
 					}
 				}
+				else
+				{
+					throw new NotSupportedException("Some categories are used by transactions but no UI is attached to prompt the user for how to deal with it.");
+				}
 
-				foreach (CategoryViewModel category in notInUse)
+				// Update every transaction in the database, including those for which no view model has been created.
+				if (this.viewModel.documentViewModel.MoneyFile is object)
+				{
+					this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.Id.HasValue).Select(cat => cat.Id!.Value), redirectedCategory.Id);
+				}
+
+				// Also update the live view models.
+				foreach (AccountViewModel account in this.viewModel.documentViewModel.BankingPanel.Accounts)
+				{
+					account.NotifyReassignCategory(inUse, redirectedCategory);
+				}
+
+				// Now actually delete the categories.
+				foreach (CategoryViewModel category in inUse)
 				{
 					this.viewModel.DeleteCategory(category);
 				}
-
-				if (inUse.Count > 0)
-				{
-					// Ask the user what they want to do about the categories that are in use.
-					CategoryViewModel? redirectedCategory = null;
-					if (this.viewModel.documentViewModel.UserNotification is { } userNotification)
-					{
-						List<CategoryViewModel> options = new(this.viewModel.Categories);
-						options.RemoveAll(cat => inUse.Contains(cat));
-						options.Insert(0, new CategoryViewModel { Name = "(clear assigned category)" });
-
-						if (options.Count > 1)
-						{
-							var pickerViewModel = new PickerWindowViewModel("One or more of the categories selected are applied to transactions. How do you want to reassign those transactions?", options)
-							{
-								Title = "Category in use",
-							};
-							await userNotification.PresentAsync(pickerViewModel, cancellationToken);
-							redirectedCategory = (CategoryViewModel)pickerViewModel.GetSelectedOptionOrThrowCancelled();
-						}
-						else
-						{
-							// No need to ask the user what to do when there is only one option.
-							redirectedCategory = options[0];
-						}
-					}
-					else
-					{
-						throw new NotSupportedException("Some categories are used by transactions but no UI is attached to prompt the user for how to deal with it.");
-					}
-
-					// Update every transaction in the database, including those for which no view model has been created.
-					if (this.viewModel.documentViewModel.MoneyFile is object)
-					{
-						this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.Id.HasValue).Select(cat => cat.Id!.Value), redirectedCategory.Id);
-					}
-
-					// Also update the live view models.
-					foreach (AccountViewModel account in this.viewModel.documentViewModel.BankingPanel.Accounts)
-					{
-						account.NotifyReassignCategory(inUse, redirectedCategory);
-					}
-
-					// Now actually delete the categories.
-					foreach (CategoryViewModel category in inUse)
-					{
-						this.viewModel.DeleteCategory(category);
-					}
-				}
-			}
-			else if (this.viewModel.SelectedCategory is object)
-			{
-				this.viewModel.DeleteCategory(this.viewModel.SelectedCategory);
 			}
 		}
 
