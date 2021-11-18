@@ -311,18 +311,19 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	private abstract class SelectedTransactionCommandBase : CommandBase
 	{
-		private readonly DocumentViewModel viewModel;
 		private INotifyCollectionChanged? subscribedSelectedTransactions;
 
 		internal SelectedTransactionCommandBase(DocumentViewModel viewModel)
 		{
-			this.viewModel = viewModel;
-			this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
+			this.ViewModel = viewModel;
+			this.ViewModel.PropertyChanged += this.ViewModel_PropertyChanged;
 			this.SubscribeToSelectionChanged();
 			this.CanExecuteChanged += (s, e) => this.OnPropertyChanged(nameof(this.IsEnabled));
 		}
 
 		public bool IsEnabled => this.CanExecute();
+
+		protected DocumentViewModel ViewModel { get; }
 
 		public sealed override bool CanExecute(object? parameter = null)
 		{
@@ -331,15 +332,15 @@ public class DocumentViewModel : BindableBase, IDisposable
 				return false;
 			}
 
-			if (this.viewModel.SelectedTransactions is object)
+			if (this.ViewModel.SelectedTransactions is object)
 			{
 				// When multiple transaction selection is supported, enable the command if *any* of the selected commands are not splits in foreign accounts.
-				return this.CanExecute(this.viewModel.SelectedTransactions);
+				return this.CanExecute(this.ViewModel.SelectedTransactions);
 			}
 
-			if (this.viewModel.SelectedTransaction is object)
+			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.CanExecute(new TransactionViewModel[] { this.viewModel.SelectedTransaction });
+				return this.CanExecute(new TransactionViewModel[] { this.ViewModel.SelectedTransaction });
 			}
 
 			return false;
@@ -349,14 +350,14 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected sealed override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
-			if (this.viewModel.SelectedTransactions is object)
+			if (this.ViewModel.SelectedTransactions is object)
 			{
-				return this.ExecuteCoreAsync(this.viewModel.SelectedTransactions, cancellationToken);
+				return this.ExecuteCoreAsync(this.ViewModel.SelectedTransactions, cancellationToken);
 			}
 
-			if (this.viewModel.SelectedTransaction is object)
+			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.ExecuteCoreAsync(new TransactionViewModel[] { this.viewModel.SelectedTransaction }, cancellationToken);
+				return this.ExecuteCoreAsync(new TransactionViewModel[] { this.ViewModel.SelectedTransaction }, cancellationToken);
 			}
 
 			return Task.CompletedTask;
@@ -366,11 +367,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
-			if (e.PropertyName is nameof(this.viewModel.SelectedTransactions))
+			if (e.PropertyName is nameof(this.ViewModel.SelectedTransactions))
 			{
 				this.SubscribeToSelectionChanged();
 			}
-			else if (e.PropertyName is nameof(this.viewModel.SelectedTransaction))
+			else if (e.PropertyName is nameof(this.ViewModel.SelectedTransaction))
 			{
 				this.OnCanExecuteChanged();
 			}
@@ -385,7 +386,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 				this.subscribedSelectedTransactions.CollectionChanged -= this.SelectedTransactions_CollectionChanged;
 			}
 
-			this.subscribedSelectedTransactions = this.viewModel.SelectedTransactions as INotifyCollectionChanged;
+			this.subscribedSelectedTransactions = this.ViewModel.SelectedTransactions as INotifyCollectionChanged;
 
 			if (this.subscribedSelectedTransactions is object)
 			{
@@ -416,6 +417,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
 		{
+			using IDisposable? undo = this.ViewModel.MoneyFile?.UndoableTransaction($"Delete {transactionViewModels.Count} transactions.");
 			foreach (TransactionViewModel transaction in transactionViewModels.OfType<TransactionViewModel>().ToList())
 			{
 				transaction.ThisAccount.DeleteTransaction(transaction);

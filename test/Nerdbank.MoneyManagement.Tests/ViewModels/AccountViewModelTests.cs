@@ -618,9 +618,41 @@ public class AccountViewModelTests : MoneyTestBase
 		});
 	}
 
+	[Fact]
+	public async Task NewTransaction_Undo()
+	{
+		const string memo = "some memo";
+		this.checking.Transactions[^1].Memo = memo;
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		this.RefetchViewModels();
+		Assert.DoesNotContain(this.checking.Transactions, t => t.Memo == memo);
+		Assert.False(this.checking.Transactions[^1].IsPersisted);
+	}
+
+	[Fact]
+	public async Task DeleteTransaction_Undo()
+	{
+		const string memo = "some memo";
+		this.DocumentViewModel.SelectedTransaction = this.checking.Transactions[0];
+		this.checking.Transactions[0].Memo = memo;
+		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
+		Assert.Null(this.checking.Transactions[0].Memo);
+
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		this.RefetchViewModels();
+		Assert.Equal(memo, this.checking.Transactions[0].Memo);
+		Assert.True(this.checking.Transactions[0].IsPersisted);
+		Assert.False(this.checking.Transactions[^1].IsPersisted);
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();
+		this.RefetchViewModels();
+	}
+
+	private void RefetchViewModels()
+	{
 		this.checking = this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Checking");
 		this.savings = this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Savings");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;

@@ -283,7 +283,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public async Task CreateCategory_Undo()
+	public async Task AddCommand_Undo()
 	{
 		await this.ViewModel.AddCommand.ExecuteAsync();
 		const string name = "Some new category";
@@ -291,5 +291,18 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.True(this.DocumentViewModel.UndoCommand.CanExecute());
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
+	}
+
+	[Fact]
+	public async Task DeleteCommand_Undo()
+	{
+		const string name = "Some new category";
+		this.ViewModel.NewCategory(name);
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
+
+		Assert.True(this.DocumentViewModel.UndoCommand.CanExecute());
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.Contains(this.ViewModel.Categories, cat => cat.Name == name);
 	}
 }

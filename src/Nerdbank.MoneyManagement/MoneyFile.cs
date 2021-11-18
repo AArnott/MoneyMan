@@ -137,12 +137,11 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	public void Undo()
 	{
-		string savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop().SavepointName : throw new InvalidOperationException("Nothing to undo.");
+		(string SavepointName, string Activity) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
 		this.OnPropertyChanged(nameof(this.UndoStack));
-		this.connection.RollbackTo(savepoint);
+		this.Logger?.WriteLine("Rolling back: {0}", savepoint.Activity);
+		this.connection.RollbackTo(savepoint.SavepointName);
 	}
-
-	public void Rollback(string savepoint) => this.connection.RollbackTo(savepoint);
 
 	public T Get<T>(object primaryKey)
 		where T : new()
@@ -312,6 +311,7 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 
 	internal void RecordSavepoint(string nextActivityDescription)
 	{
+		this.Logger?.WriteLine("Writing savepoint before: {0}", nextActivityDescription);
 		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription));
 		this.OnPropertyChanged(nameof(this.UndoStack));
 	}
