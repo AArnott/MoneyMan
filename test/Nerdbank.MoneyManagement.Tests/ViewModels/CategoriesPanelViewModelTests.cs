@@ -114,7 +114,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		TransactionViewModel transaction = checking.NewTransaction();
 		transaction.CategoryOrTransfer = cat1;
 
-		this.ViewModel.SelectedCategories = new[] { cat1 };
+		this.ViewModel.SelectedCategory = cat1;
 		bool presented = false;
 		this.UserNotification.Presentation += (s, e) =>
 		{
@@ -181,7 +181,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		TransactionViewModel transaction = checking.NewTransaction();
 		transaction.CategoryOrTransfer = cat1;
 
-		this.ViewModel.SelectedCategories = new[] { cat2 };
+		this.ViewModel.SelectedCategory = cat2;
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 
 		Assert.Same(cat1, transaction.CategoryOrTransfer);
@@ -280,5 +280,51 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.Null(this.ViewModel.SelectedCategory);
 		Assert.Empty(this.ViewModel.Categories);
+	}
+
+	[Fact]
+	public async Task AddCommand_Undo()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		const string name = "Some new category";
+		this.ViewModel.SelectedCategory!.Name = name;
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Categories, this.DocumentViewModel.SelectedViewIndex);
+	}
+
+	[Theory, PairwiseData]
+	public async Task DeleteCommand_Undo(bool useSelectedCollection)
+	{
+		const string name = "Some new category";
+		CategoryViewModel category = this.ViewModel.NewCategory(name);
+
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("checking");
+		TransactionViewModel transaction = checking.NewTransaction();
+		transaction.Memo = "some memo";
+		transaction.CategoryOrTransfer = category;
+
+		if (useSelectedCollection)
+		{
+			this.ViewModel.SelectedCategories = new[] { category };
+		}
+
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.Contains(this.ViewModel.Categories, cat => cat.Name == name);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Categories, this.DocumentViewModel.SelectedViewIndex);
+		Assert.Equal(category.Id, this.DocumentViewModel.CategoriesPanel.SelectedCategory?.Id);
+
+		// Verify that transaction assignments were also restored.
+		TransactionViewModel refreshedTransaction = this.DocumentViewModel.AccountsPanel.FindAccount(checking.Id!.Value)!.Transactions[0];
+		Assert.Equal(transaction.Memo, refreshedTransaction.Memo);
+		Assert.Equal(category.Id, refreshedTransaction.CategoryOrTransfer?.Id);
 	}
 }

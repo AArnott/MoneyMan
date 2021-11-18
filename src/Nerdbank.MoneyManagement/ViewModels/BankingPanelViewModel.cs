@@ -39,6 +39,8 @@ public class BankingPanelViewModel : BindableBase
 
 	public string BalanceHeader => "Balance";
 
+	public AccountViewModel? FindAccount(int id) => this.Accounts.FirstOrDefault(acct => acct.Id == id);
+
 	internal void Add(AccountViewModel account)
 	{
 		if (account.IsClosed)
@@ -61,6 +63,16 @@ public class BankingPanelViewModel : BindableBase
 		}
 
 		account.PropertyChanged -= this.Account_PropertyChanged;
+	}
+
+	/// <summary>
+	/// Clears the view model without deleting anything from the database.
+	/// </summary>
+	internal void ClearViewModel()
+	{
+		this.accounts.Clear();
+		this.closedAccounts.Clear();
+		this.selectedAccount = null;
 	}
 
 	private void Account_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

@@ -84,8 +84,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	private string? DebuggerDisplay => this.Name;
 
 	/// <summary>
-	/// Creates a new <see cref="TransactionViewModel"/> for this account,
-	/// but does <em>not</em> add it to the collection.
+	/// Creates a new <see cref="TransactionViewModel"/> for this account.
 	/// </summary>
 	/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
 	public TransactionViewModel NewTransaction()
@@ -112,6 +111,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 
 		if (this.MoneyFile is object && transaction.Model is object)
 		{
+			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {transaction.When.Date}", transaction.Model);
 			foreach (SplitTransactionViewModel split in transaction.Splits)
 			{
 				if (split.Model is object)
@@ -271,7 +271,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 		this.transactions = null;
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
+	protected override bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.Balance) or nameof(this.TransferTargetName));
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
 	{

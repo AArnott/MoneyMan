@@ -54,4 +54,6 @@ public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
 	{
 		this.Name = category.Name;
 	}
+
+	protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.TransferTargetName);
 }

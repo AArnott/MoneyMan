@@ -72,6 +72,38 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.Money.Accounts.Count());
 	}
 
+	[Fact]
+	public async Task AddCommand_Undo()
+	{
+		const string name = "name";
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		this.ViewModel.SelectedAccount!.Name = name;
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+
+		Assert.True(this.DocumentViewModel.UndoCommand.CanExecute());
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.DoesNotContain(this.ViewModel.Accounts, acct => acct.Name == name);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Accounts, this.DocumentViewModel.SelectedViewIndex);
+		Assert.Null(this.DocumentViewModel.AccountsPanel.SelectedAccount);
+	}
+
+	[Fact]
+	public async Task DeleteCommand_Undo()
+	{
+		const string name = "name";
+		AccountViewModel account = this.ViewModel.NewAccount(name);
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		Assert.DoesNotContain(this.ViewModel.Accounts, acct => acct.Name == name);
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.Contains(this.ViewModel.Accounts, acct => acct.Name == name);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Accounts, this.DocumentViewModel.SelectedViewIndex);
+		Assert.Equal(account.Id, this.DocumentViewModel.AccountsPanel.SelectedAccount?.Id);
+	}
+
 	[Theory, PairwiseData]
 	public async Task DeleteCommand(bool saveFirst)
 	{

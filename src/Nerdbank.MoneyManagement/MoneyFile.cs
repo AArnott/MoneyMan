@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using PCLCommandBase;
 using SQLite;
 using Validation;
 
@@ -13,12 +14,19 @@ namespace Nerdbank.MoneyManagement;
 /// Manages the database that stores accounts, transactions, and other entities.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class MoneyFile : IDisposableObservable
+public class MoneyFile : BindableBase, IDisposableObservable
 {
 	/// <summary>
 	/// The SQLite database connection.
 	/// </summary>
 	private readonly SQLiteConnection connection;
+
+	/// <summary>
+	/// The undo stack.
+	/// </summary>
+	private readonly Stack<(string SavepointName, string Activity, ModelBase? Model)> undoStack = new();
+
+	private bool inUndoableTransaction;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MoneyFile"/> class.
@@ -70,6 +78,8 @@ public class MoneyFile : IDisposableObservable
 
 	public bool IsDisposed => this.connection.Handle is null;
 
+	internal IEnumerable<(string Savepoint, string Activity, ModelBase? Model)> UndoStack => this.undoStack;
+
 	private string DebuggerDisplay => this.Path;
 
 	/// <summary>
@@ -110,6 +120,33 @@ public class MoneyFile : IDisposableObservable
 			db.Dispose();
 			throw;
 		}
+	}
+
+	/// <summary>
+	/// Commits all changes to the database and clears the undo stack.
+	/// </summary>
+	public void Save()
+	{
+		if (this.undoStack.Count > 0)
+		{
+			this.undoStack.Clear();
+			this.connection.Commit();
+			this.OnPropertyChanged(nameof(this.UndoStack));
+		}
+	}
+
+	/// <summary>
+	/// Reverts the database to the last savepoint as recorded with <see cref="RecordSavepoint(string, ModelBase?)"/>.
+	/// </summary>
+	/// <returns>A model that may have been impacted by the rollback.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if the undo stack is empty.</exception>
+	public ModelBase? Undo()
+	{
+		(string SavepointName, string Activity, ModelBase? Model) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
+		this.OnPropertyChanged(nameof(this.UndoStack));
+		this.Logger?.WriteLine("Rolling back: {0}", savepoint.Activity);
+		this.connection.RollbackTo(savepoint.SavepointName);
+		return savepoint.Model;
 	}
 
 	public T Get<T>(object primaryKey)
@@ -225,7 +262,27 @@ public class MoneyFile : IDisposableObservable
 	/// <inheritdoc/>
 	public void Dispose()
 	{
+		this.Save();
 		this.connection.Dispose();
+	}
+
+	/// <summary>
+	/// Starts a reversible transaction.
+	/// </summary>
+	/// <param name="description"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='nextActivityDescription']"/></param>
+	/// <param name="model"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='model']"/></param>
+	/// <returns>A value to dispose of at the conclusion of the operation.</returns>
+	internal IDisposable? UndoableTransaction(string description, ModelBase? model)
+	{
+		if (this.inUndoableTransaction)
+		{
+			// We only want top-level user actions to be reversible.
+			return null;
+		}
+
+		this.inUndoableTransaction = true;
+		this.RecordSavepoint(description, model);
+		return new ActionOnDispose(() => this.inUndoableTransaction = false);
 	}
 
 	internal IEnumerable<IntegrityChecks.SplitTransactionTotalMismatch> FindBadSplitTransactions(CancellationToken cancellationToken)
@@ -262,6 +319,19 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 			+ $@" WHERE (t.[{nameof(Transaction.CreditAccountId)}] == ? OR t.[{nameof(Transaction.DebitAccountId)}] == ?)"
 			+ $@" AND (t.[{nameof(Transaction.ParentTransactionId)}] IS NULL OR (SELECT [{nameof(Transaction.CreditAccountId)}] FROM ""{nameof(Transaction)}"" WHERE [{nameof(Transaction.Id)}] == t.[{nameof(Transaction.ParentTransactionId)}]) != ?)";
 		return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
+	}
+
+	/// <summary>
+	/// Marks this particular version of the database so that it may later be recovered
+	/// by a call to <see cref="Undo"/>.
+	/// </summary>
+	/// <param name="nextActivityDescription">A human-readable description of the operation that is about to be applied to the database. Use present tense with no trailing period.</param>
+	/// <param name="model">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
+	internal void RecordSavepoint(string nextActivityDescription, ModelBase? model)
+	{
+		this.Logger?.WriteLine("Writing savepoint before: {0}", nextActivityDescription);
+		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription, model));
+		this.OnPropertyChanged(nameof(this.UndoStack));
 	}
 
 	private static string SqlJoinConditionWithOperator(string op, IEnumerable<string> constraints) => string.Join($" {op} ", constraints.Select(c => $"({c})"));

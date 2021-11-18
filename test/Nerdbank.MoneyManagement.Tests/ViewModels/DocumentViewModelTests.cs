@@ -35,6 +35,25 @@ public class DocumentViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Undo_NewFile()
+	{
+		Assert.False(this.DocumentViewModel.UndoCommand.CanExecute());
+	}
+
+	[Fact]
+	public async Task UndoCommandCaption_PropertyChangeEvent()
+	{
+		await TestUtilities.AssertPropertyChangedEventAsync(
+			this.DocumentViewModel,
+			async delegate
+			{
+				await this.DocumentViewModel.AccountsPanel.AddCommand.ExecuteAsync();
+				this.DocumentViewModel.AccountsPanel.SelectedAccount!.Name = "some new account";
+			},
+			nameof(this.DocumentViewModel.UndoCommandCaption));
+	}
+
+	[Fact]
 	public void NewFileGetsDefaultCategories()
 	{
 		DocumentViewModel documentViewModel = DocumentViewModel.CreateNew(MoneyFile.Load(":memory:"));
@@ -147,6 +166,16 @@ public class DocumentViewModelTests : MoneyTestBase
 		Assert.Equal<ITransactionTarget>(
 			new ITransactionTarget[] { categoryA, categoryG, SplitCategoryPlaceholder.Singleton, accountA, accountG },
 			this.DocumentViewModel.TransactionTargets);
+	}
+
+	[Fact]
+	public void Reset()
+	{
+		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewAccount("checking");
+		this.DocumentViewModel.Reset();
+		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == account.Name);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == SplitCategoryPlaceholder.Singleton.Name);
 	}
 
 	protected override void Dispose(bool disposing)

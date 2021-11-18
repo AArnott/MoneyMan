@@ -138,6 +138,7 @@ public class AccountsPanelViewModel : BindableBase
 
 		if (accountViewModel.Model is object)
 		{
+			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted account \"{accountViewModel.Name}\"", accountViewModel.Model);
 			this.documentViewModel.MoneyFile?.Delete(accountViewModel.Model);
 		}
 
@@ -150,6 +151,18 @@ public class AccountsPanelViewModel : BindableBase
 		{
 			this.AddingAccount = null;
 		}
+	}
+
+	public AccountViewModel? FindAccount(int id) => this.Accounts.FirstOrDefault(acct => acct.Id == id);
+
+	/// <summary>
+	/// Clears the view model without deleting anything from the database.
+	/// </summary>
+	internal void ClearViewModel()
+	{
+		this.accounts.Clear();
+		this.selectedAccount = null;
+		this.selectedAccounts?.Clear();
 	}
 
 	private class AddAccountCommand : CommandBase

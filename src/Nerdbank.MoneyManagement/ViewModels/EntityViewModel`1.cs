@@ -148,6 +148,8 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 		this.ApplyToModel();
 		if (this.MoneyFile is { IsDisposed: false })
 		{
+			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this.Model);
+
 			this.Model ??= new();
 			this.Model.Save(this.MoneyFile);
 
