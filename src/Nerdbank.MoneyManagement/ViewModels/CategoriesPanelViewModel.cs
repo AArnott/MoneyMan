@@ -113,7 +113,7 @@ public class CategoriesPanelViewModel : BindableBase
 		this.categories.Remove(categoryViewModel);
 		if (categoryViewModel.Model is object)
 		{
-			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\".", categoryViewModel.Model);
+			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel.Model);
 			this.documentViewModel.MoneyFile?.Delete(categoryViewModel.Model);
 		}
 

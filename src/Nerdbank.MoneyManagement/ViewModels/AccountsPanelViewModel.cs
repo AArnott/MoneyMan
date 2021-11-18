@@ -138,7 +138,7 @@ public class AccountsPanelViewModel : BindableBase
 
 		if (accountViewModel.Model is object)
 		{
-			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted account \"{accountViewModel.Name}\".", accountViewModel.Model);
+			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted account \"{accountViewModel.Name}\"", accountViewModel.Model);
 			this.documentViewModel.MoneyFile?.Delete(accountViewModel.Model);
 		}
 

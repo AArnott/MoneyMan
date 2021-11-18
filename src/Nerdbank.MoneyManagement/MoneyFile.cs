@@ -266,6 +266,12 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		this.connection.Dispose();
 	}
 
+	/// <summary>
+	/// Starts a reversible transaction.
+	/// </summary>
+	/// <param name="description"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='nextActivityDescription']"/></param>
+	/// <param name="model"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='model']"/></param>
+	/// <returns>A value to dispose of at the conclusion of the operation.</returns>
 	internal IDisposable? UndoableTransaction(string description, ModelBase? model)
 	{
 		if (this.inUndoableTransaction)
@@ -319,7 +325,7 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 	/// Marks this particular version of the database so that it may later be recovered
 	/// by a call to <see cref="Undo"/>.
 	/// </summary>
-	/// <param name="nextActivityDescription">A human-readable description of the operation that is about to be applied to the database.</param>
+	/// <param name="nextActivityDescription">A human-readable description of the operation that is about to be applied to the database. Use present tense with no trailing period.</param>
 	/// <param name="model">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
 	internal void RecordSavepoint(string nextActivityDescription, ModelBase? model)
 	{
