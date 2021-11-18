@@ -622,40 +622,51 @@ public class AccountViewModelTests : MoneyTestBase
 	public async Task NewTransaction_Undo()
 	{
 		const string memo = "some memo";
-		this.checking.Transactions[^1].Memo = memo;
+		this.savings.Transactions[^1].Memo = memo;
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
+
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		this.RefetchViewModels();
-		Assert.DoesNotContain(this.checking.Transactions, t => t.Memo == memo);
-		Assert.False(this.checking.Transactions[^1].IsPersisted);
+		Assert.DoesNotContain(this.savings.Transactions, t => t.Memo == memo);
+		Assert.False(this.savings.Transactions[^1].IsPersisted);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Banking, this.DocumentViewModel.SelectedViewIndex);
+		Assert.Same(this.savings, this.DocumentViewModel.BankingPanel.SelectedAccount);
+		Assert.Null(this.DocumentViewModel.SelectedTransaction);
 	}
 
 	[Fact]
 	public async Task DeleteTransaction_Undo()
 	{
 		const string memo = "some memo";
-		this.DocumentViewModel.SelectedTransaction = this.checking.Transactions[0];
-		this.checking.Transactions[0].Memo = memo;
+		this.DocumentViewModel.SelectedTransaction = this.savings.Transactions[0];
+		this.savings.Transactions[0].Memo = memo;
 		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
-		Assert.Null(this.checking.Transactions[0].Memo);
+		Assert.Null(this.savings.Transactions[0].Memo);
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
 
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		this.RefetchViewModels();
-		Assert.Equal(memo, this.checking.Transactions[0].Memo);
-		Assert.True(this.checking.Transactions[0].IsPersisted);
-		Assert.False(this.checking.Transactions[^1].IsPersisted);
+		Assert.Equal(memo, this.savings.Transactions[0].Memo);
+		Assert.True(this.savings.Transactions[0].IsPersisted);
+		Assert.False(this.savings.Transactions[^1].IsPersisted);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Banking, this.DocumentViewModel.SelectedViewIndex);
+		Assert.Same(this.savings, this.DocumentViewModel.BankingPanel.SelectedAccount);
+		Assert.Same(this.savings.Transactions[0], this.DocumentViewModel.SelectedTransaction);
 	}
 
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();
 		this.RefetchViewModels();
+		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 	}
 
 	private void RefetchViewModels()
 	{
 		this.checking = this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Checking");
 		this.savings = this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Savings");
-		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 	}
 
 	private TransactionViewModel CreateSplitWithCategoryAndTransfer()

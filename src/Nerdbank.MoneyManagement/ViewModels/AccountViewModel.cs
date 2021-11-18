@@ -111,7 +111,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 
 		if (this.MoneyFile is object && transaction.Model is object)
 		{
-			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleting transaction from {transaction.When.Date}.");
+			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleting transaction from {transaction.When.Date}.", transaction.Model);
 			foreach (SplitTransactionViewModel split in transaction.Splits)
 			{
 				if (split.Model is object)

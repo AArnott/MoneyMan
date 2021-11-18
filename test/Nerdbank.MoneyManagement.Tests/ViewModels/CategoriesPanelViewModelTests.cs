@@ -288,21 +288,27 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		await this.ViewModel.AddCommand.ExecuteAsync();
 		const string name = "Some new category";
 		this.ViewModel.SelectedCategory!.Name = name;
-		Assert.True(this.DocumentViewModel.UndoCommand.CanExecute());
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Categories, this.DocumentViewModel.SelectedViewIndex);
 	}
 
 	[Fact]
 	public async Task DeleteCommand_Undo()
 	{
 		const string name = "Some new category";
-		this.ViewModel.NewCategory(name);
+		CategoryViewModel category = this.ViewModel.NewCategory(name);
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
 
-		Assert.True(this.DocumentViewModel.UndoCommand.CanExecute());
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		Assert.Contains(this.ViewModel.Categories, cat => cat.Name == name);
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Categories, this.DocumentViewModel.SelectedViewIndex);
+		Assert.Equal(category.Id, this.DocumentViewModel.CategoriesPanel.SelectedCategory?.Id);
 	}
 }

@@ -113,7 +113,7 @@ public class CategoriesPanelViewModel : BindableBase
 		this.categories.Remove(categoryViewModel);
 		if (categoryViewModel.Model is object)
 		{
-			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\".");
+			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\".", categoryViewModel.Model);
 			this.documentViewModel.MoneyFile?.Delete(categoryViewModel.Model);
 		}
 
@@ -137,6 +137,8 @@ public class CategoriesPanelViewModel : BindableBase
 		this.selectedCategory = null;
 		this.selectedCategories?.Clear();
 	}
+
+	internal CategoryViewModel? FindCategory(int id) => this.Categories.FirstOrDefault(cat => cat.Id == id);
 
 	private class AddCategoryCommand : CommandBase
 	{

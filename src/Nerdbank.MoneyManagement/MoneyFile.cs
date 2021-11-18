@@ -24,7 +24,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	/// <summary>
 	/// The undo stack.
 	/// </summary>
-	private readonly Stack<(string SavepointName, string Activity)> undoStack = new();
+	private readonly Stack<(string SavepointName, string Activity, ModelBase? Model)> undoStack = new();
 
 	private bool inUndoableTransaction;
 
@@ -76,9 +76,9 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
-	public IEnumerable<(string Savepoint, string Activity)> UndoStack => this.undoStack;
-
 	public bool IsDisposed => this.connection.Handle is null;
+
+	internal IEnumerable<(string Savepoint, string Activity, ModelBase? Model)> UndoStack => this.undoStack;
 
 	private string DebuggerDisplay => this.Path;
 
@@ -135,12 +135,18 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
-	public void Undo()
+	/// <summary>
+	/// Reverts the database to the last savepoint as recorded with <see cref="RecordSavepoint(string, ModelBase?)"/>.
+	/// </summary>
+	/// <returns>A model that may have been impacted by the rollback.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if the undo stack is empty.</exception>
+	public ModelBase? Undo()
 	{
-		(string SavepointName, string Activity) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
+		(string SavepointName, string Activity, ModelBase? Model) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
 		this.OnPropertyChanged(nameof(this.UndoStack));
 		this.Logger?.WriteLine("Rolling back: {0}", savepoint.Activity);
 		this.connection.RollbackTo(savepoint.SavepointName);
+		return savepoint.Model;
 	}
 
 	public T Get<T>(object primaryKey)
@@ -260,7 +266,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		this.connection.Dispose();
 	}
 
-	internal IDisposable? UndoableTransaction(string description)
+	internal IDisposable? UndoableTransaction(string description, ModelBase? model)
 	{
 		if (this.inUndoableTransaction)
 		{
@@ -269,7 +275,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 
 		this.inUndoableTransaction = true;
-		this.RecordSavepoint(description);
+		this.RecordSavepoint(description, model);
 		return new ActionOnDispose(() => this.inUndoableTransaction = false);
 	}
 
@@ -309,10 +315,16 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
 	}
 
-	internal void RecordSavepoint(string nextActivityDescription)
+	/// <summary>
+	/// Marks this particular version of the database so that it may later be recovered
+	/// by a call to <see cref="Undo"/>.
+	/// </summary>
+	/// <param name="nextActivityDescription">A human-readable description of the operation that is about to be applied to the database.</param>
+	/// <param name="model">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
+	internal void RecordSavepoint(string nextActivityDescription, ModelBase? model)
 	{
 		this.Logger?.WriteLine("Writing savepoint before: {0}", nextActivityDescription);
-		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription));
+		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription, model));
 		this.OnPropertyChanged(nameof(this.UndoStack));
 	}
 

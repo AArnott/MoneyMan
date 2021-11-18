@@ -14,6 +14,7 @@
 		<converters:BoolInvertingConverter x:Key="boolInvertingConverter" />
 		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
 		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
+		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
 	</Window.Resources>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
@@ -44,6 +45,7 @@
 			<StatusBarItem Content="{Binding StatusMessage}" />
 		</StatusBar>
 		<TabControl TabStripPlacement="Bottom"
+					SelectedIndex="{Binding SelectedViewIndex, Converter={StaticResource enumToOrdinalConverter}}"
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
 			<TabItem Header="{Binding Title}" DataContext="{Binding BankingPanel}">
 				<TabItem.Resources>

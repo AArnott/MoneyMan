@@ -168,6 +168,16 @@ public class DocumentViewModelTests : MoneyTestBase
 			this.DocumentViewModel.TransactionTargets);
 	}
 
+	[Fact]
+	public void Reset()
+	{
+		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewAccount("checking");
+		this.DocumentViewModel.Reset();
+		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == account.Name);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == SplitCategoryPlaceholder.Singleton.Name);
+	}
+
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
