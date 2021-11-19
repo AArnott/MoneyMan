@@ -48,6 +48,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
 		this.JumpToSplitTransactionParentCommand = new JumpToSplitTransactionParentCommandImpl(this);
 		this.UndoCommand = new UndoCommandImpl(this);
+		this.SaveCommand = new SaveCommandImpl(this);
 	}
 
 	public enum SelectableViews
@@ -123,6 +124,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public CommandBase JumpToSplitTransactionParentCommand { get; }
 
 	public CommandBase UndoCommand { get; }
+
+	public CommandBase SaveCommand { get; }
 
 	public string DeleteCommandCaption => "_Delete";
 
@@ -537,6 +540,33 @@ public class DocumentViewModel : BindableBase, IDisposable
 				this.documentViewModel.Select(model);
 			}
 
+			return Task.CompletedTask;
+		}
+
+		private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+		{
+			this.OnCanExecuteChanged();
+		}
+	}
+
+	private class SaveCommandImpl : CommandBase
+	{
+		private readonly DocumentViewModel documentViewModel;
+
+		public SaveCommandImpl(DocumentViewModel documentViewModel)
+		{
+			this.documentViewModel = documentViewModel;
+			if (documentViewModel.MoneyFile is object)
+			{
+				documentViewModel.MoneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
+			}
+		}
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.MoneyFile?.UndoStack.Any() is true;
+
+		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+		{
+			this.documentViewModel.MoneyFile?.Save();
 			return Task.CompletedTask;
 		}
 

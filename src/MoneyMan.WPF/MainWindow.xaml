@@ -16,12 +16,15 @@
 		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
 	</Window.Resources>
+	<Window.InputBindings>
+		<KeyBinding Command="{Binding Document.SaveCommand, Source={StaticResource viewModel}}" Key="S" Modifiers="Ctrl" />
+	</Window.InputBindings>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
 			<MenuItem Header="_File">
 				<MenuItem Header="_New" Command="ApplicationCommands.New" />
 				<MenuItem Header="_Open" Command="ApplicationCommands.Open" />
-				<MenuItem Header="_Save" Command="ApplicationCommands.Save" />
+				<MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S" />
 				<MenuItem Header="_Close" Command="{Binding FileCloseCommand, Source={StaticResource viewModel}}" />
 			</MenuItem>
 		</Menu>
