@@ -32,6 +32,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		this.ownsMoneyFile = ownsMoneyFile;
 
 		this.BankingPanel = new();
+		this.AssetsPanel = new();
 		this.CategoriesPanel = new(this);
 		this.AccountsPanel = new(this);
 
@@ -54,17 +55,22 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public enum SelectableViews
 	{
 		/// <summary>
-		/// The banking tab, where transactions are managed.
+		/// The banking tab.
 		/// </summary>
 		Banking = 0,
 
 		/// <summary>
-		/// The accounts tab, where accounts may be created or deleted.
+		/// The assets tax.
+		/// </summary>
+		Assets,
+
+		/// <summary>
+		/// The accounts tab.
 		/// </summary>
 		Accounts,
 
 		/// <summary>
-		/// The categories tab, where categories may be created or deleted.
+		/// The categories tab.
 		/// </summary>
 		Categories,
 	}
@@ -80,6 +86,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 	}
 
 	public BankingPanelViewModel BankingPanel { get; }
+
+	public AssetsPanelViewModel AssetsPanel { get; }
 
 	public AccountsPanelViewModel AccountsPanel { get; }
 

@@ -393,7 +393,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 				return order;
 			}
 
-			return x.Payee?.CompareTo(y.Payee) ?? 0;
+			return StringComparer.CurrentCultureIgnoreCase.Compare(x.Payee, y.Payee);
 		}
 
 		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(TransactionViewModel.When) or nameof(TransactionViewModel.Amount) or nameof(TransactionViewModel.Id) or nameof(TransactionViewModel.Payee);
