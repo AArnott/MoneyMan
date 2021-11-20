@@ -300,16 +300,19 @@
 						<ColumnDefinition Width="3*" />
 						<ColumnDefinition Width="1*" />
 					</Grid.ColumnDefinitions>
-					<ListView ItemsSource="{Binding Source={StaticResource assets}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAsset}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
-						<ListView.ItemTemplate>
-							<DataTemplate>
-								<DockPanel>
-									<TextBlock Text="{Binding Balance, StringFormat=C}" DockPanel.Dock="Right" />
-									<TextBlock Text="{Binding Name}" />
-								</DockPanel>
-							</DataTemplate>
-						</ListView.ItemTemplate>
-					</ListView>
+					<DockPanel>
+						<Button DockPanel.Dock="Bottom" Content="{Binding AddCommandCaption}" Command="{Binding AddCommand}" />
+						<ListView ItemsSource="{Binding Source={StaticResource assets}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAsset}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
+							<ListView.ItemTemplate>
+								<DataTemplate>
+									<DockPanel>
+										<TextBlock Text="{Binding Balance, StringFormat=C}" DockPanel.Dock="Right" />
+										<TextBlock Text="{Binding Name}" />
+									</DockPanel>
+								</DataTemplate>
+							</ListView.ItemTemplate>
+						</ListView>
+					</DockPanel>
 					<DockPanel Grid.Column="1"
 							   DataContext="{Binding SelectedAsset}" 
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">

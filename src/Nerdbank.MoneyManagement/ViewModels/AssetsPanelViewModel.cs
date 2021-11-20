@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Windows.Input;
 using PCLCommandBase;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -10,7 +11,16 @@ public class AssetsPanelViewModel : BindableBase
 	private readonly SortedObservableCollection<AssetViewModel> assets = new(AssetSort.Instance);
 	private AssetViewModel? selectedAsset;
 
+	public AssetsPanelViewModel()
+	{
+		this.AddCommand = new AddCommandImpl(this);
+	}
+
 	public string Title => "Assets";
+
+	public ICommand AddCommand { get; }
+
+	public string AddCommandCaption => "Add new";
 
 	public string NameLabel => "Name";
 
@@ -53,6 +63,21 @@ public class AssetsPanelViewModel : BindableBase
 			}
 
 			return StringComparer.CurrentCultureIgnoreCase.Compare(x.Name, y.Name);
+		}
+	}
+
+	private class AddCommandImpl : CommandBase
+	{
+		private readonly AssetsPanelViewModel viewModel;
+
+		internal AddCommandImpl(AssetsPanelViewModel viewModel)
+		{
+			this.viewModel = viewModel;
+		}
+
+		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }
