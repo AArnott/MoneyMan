@@ -9,12 +9,19 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class AssetsPanelViewModel : BindableBase
 {
 	private readonly SortedObservableCollection<AssetViewModel> assets = new(AssetSort.Instance);
+	private readonly DocumentViewModel documentViewModel;
 	private AssetViewModel? selectedAsset;
 
-	public AssetsPanelViewModel()
+	public AssetsPanelViewModel(DocumentViewModel documentViewModel)
 	{
 		this.AddCommand = new AddCommandImpl(this);
+		this.documentViewModel = documentViewModel;
 	}
+
+	/// <summary>
+	/// Occurs when a new asset is being interactively created.
+	/// </summary>
+	public event EventHandler? AddingNewAsset;
 
 	public string Title => "Assets";
 
@@ -22,7 +29,7 @@ public class AssetsPanelViewModel : BindableBase
 
 	public string AddCommandCaption => "Add new";
 
-	public string NameLabel => "Name";
+	public string NameLabel => "_Name";
 
 	public int NameMaxLength => 50;
 
@@ -36,6 +43,53 @@ public class AssetsPanelViewModel : BindableBase
 	}
 
 	public IReadOnlyList<AssetViewModel> Assets => this.assets;
+
+	internal AssetViewModel? AddingAsset { get; set; }
+
+	public AssetViewModel NewAsset(string name = "")
+	{
+		this.AddingNewAsset?.Invoke(this, EventArgs.Empty);
+		if (this.AddingAsset is object)
+		{
+			this.SelectedAsset = this.AddingAsset;
+			return this.AddingAsset;
+		}
+
+		AssetViewModel newAssetViewModel = new(null, this.documentViewModel.MoneyFile)
+		{
+			Model = new(),
+		};
+
+		this.assets.Add(newAssetViewModel);
+		this.SelectedAsset = newAssetViewModel;
+		if (string.IsNullOrEmpty(name))
+		{
+			this.AddingAsset = newAssetViewModel;
+			newAssetViewModel.NotifyWhenValid(s =>
+			{
+				if (this.AddingAsset == s)
+				{
+					this.AddingAsset = null;
+				}
+			});
+		}
+		else
+		{
+			newAssetViewModel.Name = name;
+		}
+
+		return newAssetViewModel;
+	}
+
+	internal void Add(AssetViewModel asset)
+	{
+		this.assets.Add(asset);
+	}
+
+	internal void ClearViewModel()
+	{
+		this.assets.Clear();
+	}
 
 	private class AssetSort : IComparer<AssetViewModel>
 	{
@@ -77,7 +131,8 @@ public class AssetsPanelViewModel : BindableBase
 
 		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
-			throw new NotImplementedException();
+			this.viewModel.NewAsset();
+			return Task.CompletedTask;
 		}
 	}
 }

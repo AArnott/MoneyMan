@@ -32,7 +32,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		this.ownsMoneyFile = ownsMoneyFile;
 
 		this.BankingPanel = new();
-		this.AssetsPanel = new();
+		this.AssetsPanel = new(this);
 		this.CategoriesPanel = new(this);
 		this.AccountsPanel = new(this);
 
@@ -209,6 +209,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		if (this.MoneyFile is object)
 		{
+			this.AssetsPanel.ClearViewModel();
 			this.AccountsPanel.ClearViewModel();
 			this.BankingPanel.ClearViewModel();
 			foreach (Account account in this.MoneyFile.Accounts)
@@ -223,6 +224,12 @@ public class DocumentViewModel : BindableBase, IDisposable
 			{
 				CategoryViewModel viewModel = new(category, this.MoneyFile);
 				this.CategoriesPanel.Categories.Add(viewModel);
+			}
+
+			foreach (Asset asset in this.MoneyFile.Assets)
+			{
+				AssetViewModel viewModel = new(asset, this.MoneyFile);
+				this.AssetsPanel.Add(viewModel);
 			}
 
 			this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });

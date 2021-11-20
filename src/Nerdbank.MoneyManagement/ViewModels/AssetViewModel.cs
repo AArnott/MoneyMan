@@ -3,7 +3,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using Microsoft;
-using Nerdbank.MoneyManagement.Models;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 

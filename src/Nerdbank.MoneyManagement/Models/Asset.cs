@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace Nerdbank.MoneyManagement.Models;
+namespace Nerdbank.MoneyManagement;
 
 /// <summary>
 /// An asset, which may be a share of a company, a car, a cryptocurrency, etc.
