@@ -51,14 +51,14 @@ public class AssetPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void AddCommand()
+	public async Task AddCommand()
 	{
 		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
 
-		TestUtilities.AssertRaises(
+		await TestUtilities.AssertRaisesAsync(
 			h => this.ViewModel.AddingNewAsset += h,
 			h => this.ViewModel.AddingNewAsset -= h,
-			() => this.ViewModel.AddCommand.Execute(null));
+			() => this.ViewModel.AddCommand.ExecuteAsync());
 		AssetViewModel newAsset = Assert.Single(this.ViewModel.Assets);
 		Assert.Same(newAsset, this.ViewModel.SelectedAsset);
 		Assert.Equal(string.Empty, newAsset.Name);
@@ -68,19 +68,82 @@ public class AssetPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void AddCommand_Twice()
+	public async Task AddCommand_Twice()
 	{
-		this.ViewModel.AddCommand.Execute(null);
+		await this.ViewModel.AddCommand.ExecuteAsync();
 		AssetViewModel? newAsset = this.ViewModel.SelectedAsset;
 		Assert.NotNull(newAsset);
 		newAsset!.Name = "cat";
 
-		this.ViewModel.AddCommand.Execute(null);
+		await this.ViewModel.AddCommand.ExecuteAsync();
 		newAsset = this.ViewModel.SelectedAsset;
 		Assert.NotNull(newAsset);
 		newAsset!.Name = "dog";
 
 		Assert.Equal(2, this.Money.Assets.Count());
+	}
+
+	[Fact]
+	public async Task DeleteCommand()
+	{
+		Assert.False(this.ViewModel.DeleteCommand.CanExecute());
+		AssetViewModel asset = this.ViewModel.NewAsset(SomeAssetName);
+
+		this.ViewModel.SelectedAsset = asset;
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+
+		Assert.Null(this.ViewModel.SelectedAsset);
+		Assert.DoesNotContain(asset, this.ViewModel.Assets);
+
+		this.ReloadViewModel();
+		Assert.DoesNotContain(this.ViewModel.Assets, a => a.Id == asset.Id);
+	}
+
+	[Fact]
+	public void DeleteCommand_CanExecuteOnSelectionChanged()
+	{
+		AssetViewModel asset = this.ViewModel.NewAsset(SomeAssetName);
+		this.ViewModel.SelectedAsset = null;
+
+		Assert.False(this.ViewModel.DeleteCommand.CanExecute(null));
+		TestUtilities.AssertCommandCanExecuteChanged(
+			this.ViewModel.DeleteCommand,
+			() => this.ViewModel.SelectedAsset = asset);
+		Assert.True(this.ViewModel.DeleteCommand.CanExecute(null));
+	}
+
+	[Fact]
+	public async Task DeleteAsset_Undo()
+	{
+		AssetViewModel asset = this.ViewModel.NewAsset(SomeAssetName);
+		this.ViewModel.SelectedAsset = asset;
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
+
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+
+		Assert.Equal(DocumentViewModel.SelectableViews.Assets, this.DocumentViewModel.SelectedViewIndex);
+		Assert.Equal(asset.Id, this.DocumentViewModel.AssetsPanel.SelectedAsset?.Id);
+	}
+
+	[Fact]
+	public async Task AddAddThenDelete()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		Assert.NotNull(this.ViewModel.SelectedAsset);
+		AssetViewModel asset = this.ViewModel.SelectedAsset!;
+		int count = this.ViewModel.Assets.Count;
+
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		Assert.Same(asset, this.ViewModel.SelectedAsset);
+		Assert.Equal(count, this.ViewModel.Assets.Count);
+
+		await this.ViewModel.DeleteCommand.ExecuteAsync();
+		Assert.Null(this.ViewModel.SelectedAsset);
+
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		Assert.NotSame(asset, this.ViewModel.SelectedAsset);
+		Assert.Equal(count, this.ViewModel.Assets.Count);
 	}
 
 	[Fact]

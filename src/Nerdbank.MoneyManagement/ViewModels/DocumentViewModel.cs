@@ -387,6 +387,10 @@ public class DocumentViewModel : BindableBase, IDisposable
 				this.SelectedViewIndex = SelectableViews.Accounts;
 				this.AccountsPanel.SelectedAccount = this.AccountsPanel.FindAccount(account.Id);
 				break;
+			case Asset asset:
+				this.SelectedViewIndex = SelectableViews.Assets;
+				this.AssetsPanel.SelectedAsset = this.AssetsPanel.FindAsset(asset.Id);
+				break;
 		}
 	}
 

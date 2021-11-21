@@ -15,6 +15,7 @@ public class AssetsPanelViewModel : BindableBase
 	public AssetsPanelViewModel(DocumentViewModel documentViewModel)
 	{
 		this.AddCommand = new AddCommandImpl(this);
+		this.DeleteCommand = new DeleteCommandImpl(this);
 		this.documentViewModel = documentViewModel;
 	}
 
@@ -25,9 +26,9 @@ public class AssetsPanelViewModel : BindableBase
 
 	public string Title => "Assets";
 
-	public ICommand AddCommand { get; }
+	public CommandBase AddCommand { get; }
 
-	public string AddCommandCaption => "Add new";
+	public CommandBase DeleteCommand { get; }
 
 	public string NameLabel => "_Name";
 
@@ -81,6 +82,29 @@ public class AssetsPanelViewModel : BindableBase
 		return newAssetViewModel;
 	}
 
+	public void DeleteAsset(AssetViewModel asset)
+	{
+		this.assets.Remove(asset);
+
+		if (asset.Model is object)
+		{
+			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted asset \"{asset.Name}\".", asset.Model);
+			this.documentViewModel.MoneyFile?.Delete(asset.Model);
+		}
+
+		if (this.SelectedAsset == asset)
+		{
+			this.SelectedAsset = null;
+		}
+
+		if (this.AddingAsset == asset)
+		{
+			this.AddingAsset = null;
+		}
+	}
+
+	public AssetViewModel? FindAsset(int id) => this.assets?.FirstOrDefault(a => a.Id == id);
+
 	internal void Add(AssetViewModel asset)
 	{
 		this.assets.Add(asset);
@@ -129,10 +153,43 @@ public class AssetsPanelViewModel : BindableBase
 			this.viewModel = viewModel;
 		}
 
+		public string Caption => "Add new";
+
 		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
 			this.viewModel.NewAsset();
 			return Task.CompletedTask;
+		}
+	}
+
+	private class DeleteCommandImpl : CommandBase
+	{
+		private readonly AssetsPanelViewModel viewModel;
+
+		internal DeleteCommandImpl(AssetsPanelViewModel viewModel)
+		{
+			this.viewModel = viewModel;
+			viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
+		}
+
+		public string Caption => "Delete";
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.viewModel.SelectedAsset is object;
+
+		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+		{
+			AssetViewModel asset = this.viewModel.SelectedAsset ?? throw new InvalidOperationException("Select an asset first.");
+
+			this.viewModel.DeleteAsset(asset);
+			return Task.CompletedTask;
+		}
+
+		private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == nameof(this.viewModel.SelectedAsset))
+			{
+				this.OnCanExecuteChanged();
+			}
 		}
 	}
 }

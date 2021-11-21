@@ -74,12 +74,6 @@ public class AccountsPanelViewModel : BindableBase
 
 	internal AccountViewModel? AddingAccount { get; set; }
 
-	public void Add(AccountViewModel accountViewModel)
-	{
-		this.accounts.Add(accountViewModel);
-		this.documentViewModel.AddTransactionTarget(accountViewModel);
-	}
-
 	/// <summary>
 	/// Creates a new <see cref="Account"/> and <see cref="AccountViewModel"/>.
 	/// The <see cref="AccountViewModel"/> is added to the view model collection,
@@ -154,6 +148,12 @@ public class AccountsPanelViewModel : BindableBase
 	}
 
 	public AccountViewModel? FindAccount(int id) => this.Accounts.FirstOrDefault(acct => acct.Id == id);
+
+	internal void Add(AccountViewModel accountViewModel)
+	{
+		this.accounts.Add(accountViewModel);
+		this.documentViewModel.AddTransactionTarget(accountViewModel);
+	}
 
 	/// <summary>
 	/// Clears the view model without deleting anything from the database.
