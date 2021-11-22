@@ -23,14 +23,17 @@ public class AccountFacts : EntityTestBase
 	{
 		string expected = "some name";
 		this.account.Name = expected;
-
 		Assert.Equal(expected, this.account.Name);
+
+		this.account.Type = Account.AccountType.Investing;
+		Assert.Equal(Account.AccountType.Investing, this.account.Type);
 
 		Account? account2 = this.SaveAndReload(this.account);
 
 		Assert.NotEqual(0, this.account.Id);
 		Assert.Equal(this.account.Id, account2.Id);
 		Assert.Equal(expected, account2.Name);
+		Assert.Equal(this.account.Type, account2.Type);
 	}
 
 	[Fact]

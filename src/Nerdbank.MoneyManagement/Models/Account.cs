@@ -13,6 +13,23 @@ namespace Nerdbank.MoneyManagement;
 public class Account : ModelBase
 {
 	/// <summary>
+	/// Enumerates the kinds of accounts.
+	/// </summary>
+	public enum AccountType
+	{
+		/// <summary>
+		/// The default account type, which deals with a single fiat currency with deposits, withdrawals and transfers.
+		/// </summary>
+		Banking = 0,
+
+		/// <summary>
+		/// An account that may hold any number of assets of various kinds.
+		/// E.g. a brokerage, 401k or cryptocurrency wallet.
+		/// </summary>
+		Investing = 1,
+	}
+
+	/// <summary>
 	/// Gets or sets the name of this account.
 	/// </summary>
 	public string Name { get; set; } = string.Empty;
@@ -24,6 +41,11 @@ public class Account : ModelBase
 	/// Closed accounts are excluded from most queries by default.
 	/// </remarks>
 	public bool IsClosed { get; set; }
+
+	/// <summary>
+	/// Gets or sets the type of this account.
+	/// </summary>
+	public AccountType Type { get; set; }
 
 	private string? DebuggerDisplay => this.Name;
 

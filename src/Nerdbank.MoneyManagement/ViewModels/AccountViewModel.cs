@@ -13,6 +13,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	private SortedObservableCollection<TransactionViewModel>? transactions;
 	private string name = string.Empty;
 	private bool isClosed;
+	private Account.AccountType type;
 	private decimal balance;
 
 	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
@@ -37,10 +38,18 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 
 	public string? TransferTargetName => $"[{this.Name}]";
 
+	/// <inheritdoc cref="Account.IsClosed"/>
 	public bool IsClosed
 	{
 		get => this.isClosed;
 		set => this.SetProperty(ref this.isClosed, value);
+	}
+
+	/// <inheritdoc cref="Account.Type"/>
+	public Account.AccountType Type
+	{
+		get => this.type;
+		set => this.SetProperty(ref this.type, value);
 	}
 
 	public decimal Balance
@@ -253,6 +262,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 
 		account.Name = this.name;
 		account.IsClosed = this.IsClosed;
+		account.Type = this.Type;
 	}
 
 	protected override void CopyFromCore(Account account)
@@ -261,6 +271,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 
 		this.Name = account.Name;
 		this.IsClosed = account.IsClosed;
+		this.Type = account.Type;
 
 		if (this.MoneyFile is object && account is object)
 		{

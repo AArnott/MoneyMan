@@ -349,9 +349,15 @@
 					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
 						<Label Content="{Binding Document.AccountsPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountName}" />
 						<TextBox Name="AccountName"
-								 MaxLength="100"
-								 Style="{StaticResource textBoxInError}"
-								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+						         MaxLength="100"
+						         Style="{StaticResource textBoxInError}"
+						         Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+						<Label Content="{Binding Document.AccountsPanel.TypeLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountType}" />
+						<ComboBox Name="AccountType"
+						          SelectedValue="{Binding Type, UpdateSourceTrigger=PropertyChanged}"
+						          ItemsSource="{Binding Document.AccountsPanel.AccountTypes, Source={StaticResource viewModel}}"
+						          DisplayMemberPath="Caption"
+						          SelectedValuePath="Value" />
 						<CheckBox IsChecked="{Binding IsClosed}" Content="{Binding Document.AccountsPanel.IsClosedLabel, Source={StaticResource viewModel}}" Margin="0,15,0,0" />
 						<TextBlock Text="{Binding Document.AccountsPanel.IsClosedExplanation, Source={StaticResource viewModel}}" TextWrapping="Wrap" />
 					</StackPanel>

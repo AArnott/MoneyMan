@@ -13,9 +13,9 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class TransactionViewModel : EntityViewModel<Transaction>
 {
-	public static readonly ClearedStateViewModel NotCleared = new ClearedStateViewModel(ClearedState.None, "None", string.Empty);
-	public static readonly ClearedStateViewModel Matched = new ClearedStateViewModel(ClearedState.Cleared, "Cleared", "C");
-	public static readonly ClearedStateViewModel Reconciled = new ClearedStateViewModel(ClearedState.Reconciled, "Reconciled", "R");
+	public static readonly ClearedStateViewModel NotCleared = new(ClearedState.None, "None", string.Empty);
+	public static readonly ClearedStateViewModel Matched = new(ClearedState.Cleared, "Cleared", "C");
+	public static readonly ClearedStateViewModel Reconciled = new(ClearedState.Reconciled, "Reconciled", "R");
 
 	public static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new[]
 	{
@@ -550,18 +550,13 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	}
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class ClearedStateViewModel
+	public class ClearedStateViewModel : EnumValueViewModel<ClearedState>
 	{
 		public ClearedStateViewModel(ClearedState value, string caption, string shortCaption)
+			: base(value, caption)
 		{
-			this.Value = value;
-			this.Caption = caption;
 			this.ShortCaption = shortCaption;
 		}
-
-		public ClearedState Value { get; }
-
-		public string Caption { get; }
 
 		public string ShortCaption { get; }
 

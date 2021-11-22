@@ -73,8 +73,28 @@ public class AccountViewModelTests : MoneyTestBase
 			() => this.checking.IsClosed = true,
 			nameof(this.checking.IsClosed));
 		TestUtilities.AssertPropertyChangedEvent(
-				this.checking,
-				() => this.checking.IsClosed = true);
+			this.checking,
+			() => this.checking.IsClosed = true);
+	}
+
+	[Fact]
+	public void Type()
+	{
+		Assert.Equal(Account.AccountType.Banking, this.checking.Type);
+		this.checking.Type = Account.AccountType.Investing;
+		Assert.Equal(Account.AccountType.Investing, this.checking.Type);
+	}
+
+	[Fact]
+	public void Type_PropertyChanged()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.checking,
+			() => this.checking.Type = Account.AccountType.Investing,
+			nameof(this.checking.Type));
+		TestUtilities.AssertPropertyChangedEvent(
+			this.checking,
+			() => this.checking.Type = Account.AccountType.Investing);
 	}
 
 	[Fact]
@@ -88,11 +108,13 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		this.checking.Name = "some name";
 		this.checking.IsClosed = !this.checking.IsClosed;
+		this.checking.Type = Account.AccountType.Investing;
 
 		this.checking.ApplyTo(this.checking.Model!);
 
 		Assert.Equal(this.checking.Name, this.checking.Model!.Name);
 		Assert.Equal(this.checking.IsClosed, this.checking.Model.IsClosed);
+		Assert.Equal(this.checking.Type, this.checking.Model.Type);
 	}
 
 	[Fact]
@@ -106,10 +128,12 @@ public class AccountViewModelTests : MoneyTestBase
 	{
 		this.checking.Model!.Name = "another name";
 		this.checking.Model.IsClosed = true;
+		this.checking.Model.Type = Account.AccountType.Investing;
 		this.checking.CopyFrom(this.checking.Model);
 
 		Assert.Equal(this.checking.Model.Name, this.checking.Name);
 		Assert.Equal(this.checking.Model.IsClosed, this.checking.IsClosed);
+		Assert.Equal(this.checking.Model.Type, this.checking.Type);
 	}
 
 	[Fact]

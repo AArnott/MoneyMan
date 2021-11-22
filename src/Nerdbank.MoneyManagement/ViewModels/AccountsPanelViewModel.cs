@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using PCLCommandBase;
@@ -10,6 +11,12 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 
 public class AccountsPanelViewModel : BindableBase
 {
+	public static readonly ReadOnlyCollection<EnumValueViewModel<Account.AccountType>> SharedAccountTypes = new(new EnumValueViewModel<Account.AccountType>[]
+	{
+		new(Account.AccountType.Banking, "Banking"),
+		new(Account.AccountType.Investing, "Investing"),
+	});
+
 	private readonly DocumentViewModel documentViewModel;
 	private readonly SortedObservableCollection<AccountViewModel> accounts = new(AccountSort.Instance);
 	private AccountViewModel? selectedAccount;
@@ -37,6 +44,10 @@ public class AccountsPanelViewModel : BindableBase
 	public string AddCommandCaption => "_Add new";
 
 	public string NameLabel => "_Name";
+
+	public string TypeLabel => "_Type";
+
+	public ReadOnlyCollection<EnumValueViewModel<Account.AccountType>> AccountTypes => SharedAccountTypes;
 
 	public string IsClosedLabel => "Account closed";
 
