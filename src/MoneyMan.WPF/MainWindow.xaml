@@ -327,20 +327,7 @@
 					<DockPanel Grid.Column="1"
 							   DataContext="{Binding SelectedAsset}" 
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
-						<DockPanel.Resources>
-							<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" />
-						</DockPanel.Resources>
-						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-						<DataGrid Name="AssetValuationDataGrid"
-						          AlternatingRowBackground="LightBlue"
-						          AlternationCount="2" 
-						          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
-						          IsSynchronizedWithCurrentItem="True"
-						          AutoGenerateColumns="False">
-							<DataGrid.Columns>
-								<!-- TODO: add columns here. -->
-							</DataGrid.Columns>
-						</DataGrid>
+						<TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="Price history will go here" />
 					</DockPanel>
 					<StackPanel Grid.Column="2" 
 								Margin="5,0,5,0" 
