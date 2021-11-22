@@ -192,12 +192,12 @@
 								<DataGridTemplateColumn Header="{Binding Document.BankingPanel.ClearedHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<TextBlock Margin="3pt" Text="{Binding Cleared.ShortCaption}" />
+											<TextBlock Margin="3pt" Text="{Binding ClearedShortCaption}" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<ComboBox SelectedItem="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+											<ComboBox SelectedValue="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 											          ItemsSource="{Binding ClearedStates}"
 											          DisplayMemberPath="Caption" 
 											          SelectedValuePath="Value" />

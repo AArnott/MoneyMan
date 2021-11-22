@@ -11,7 +11,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 
 public class AccountsPanelViewModel : BindableBase
 {
-	public static readonly ReadOnlyCollection<EnumValueViewModel<Account.AccountType>> SharedAccountTypes = new(new EnumValueViewModel<Account.AccountType>[]
+	private static readonly ReadOnlyCollection<EnumValueViewModel<Account.AccountType>> SharedAccountTypes = new(new EnumValueViewModel<Account.AccountType>[]
 	{
 		new(Account.AccountType.Banking, "Banking"),
 		new(Account.AccountType.Investing, "Investing"),

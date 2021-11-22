@@ -13,15 +13,11 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class TransactionViewModel : EntityViewModel<Transaction>
 {
-	public static readonly ClearedStateViewModel NotCleared = new(ClearedState.None, "None", string.Empty);
-	public static readonly ClearedStateViewModel Matched = new(ClearedState.Cleared, "Cleared", "C");
-	public static readonly ClearedStateViewModel Reconciled = new(ClearedState.Reconciled, "Reconciled", "R");
-
-	public static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new[]
+	private static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new ClearedStateViewModel[]
 	{
-		NotCleared,
-		Matched,
-		Reconciled,
+		new(ClearedState.None, "None", string.Empty),
+		new(ClearedState.Cleared, "Cleared", "C"),
+		new(ClearedState.Reconciled, "Reconciled", "R"),
 	});
 
 	private ObservableCollection<SplitTransactionViewModel>? splits;
@@ -29,7 +25,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	private int? checkNumber;
 	private decimal amount;
 	private string? memo;
-	private ClearedStateViewModel cleared = SharedClearedStates[0];
+	private ClearedState cleared = ClearedState.None;
 	private string? payee;
 	private ITransactionTarget? categoryOrTransfer;
 	private decimal balance;
@@ -52,6 +48,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		this.RegisterDependentProperty(nameof(this.AmountIsReadOnly), nameof(this.CategoryOrTransferIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.CategoryOrTransferIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.SplitCommandToolTip));
+		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
 	}
 
 	/// <summary>
@@ -124,11 +121,13 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		set => this.SetProperty(ref this.memo, value);
 	}
 
-	public ClearedStateViewModel Cleared
+	public ClearedState Cleared
 	{
 		get => this.cleared;
 		set => this.SetProperty(ref this.cleared, value);
 	}
+
+	public string ClearedShortCaption => SharedClearedStates[(int)this.Cleared].ShortCaption;
 
 	public string? Payee
 	{
@@ -407,7 +406,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		transaction.When = this.When;
 		transaction.Memo = this.Memo;
 		transaction.CheckNumber = this.CheckNumber;
-		transaction.Cleared = this.Cleared.Value;
+		transaction.Cleared = this.Cleared;
 		if (this.ContainsSplits)
 		{
 			transaction.CategoryId = Category.Split;
@@ -448,7 +447,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		this.SetProperty(ref this.when, transaction.When, nameof(this.When));
 		this.Memo = transaction.Memo;
 		this.CheckNumber = transaction.CheckNumber;
-		this.Cleared = SharedClearedStates.Single(cs => cs.Value == transaction.Cleared);
+		this.Cleared = transaction.Cleared;
 
 		if (transaction.CategoryId is int categoryId)
 		{

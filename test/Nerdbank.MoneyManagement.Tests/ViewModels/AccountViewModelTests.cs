@@ -564,8 +564,8 @@ public class AccountViewModelTests : MoneyTestBase
 		Assert.Equal(txSavings.Memo, splitTransfer.Memo);
 
 		// Allow updating the cleared flag, independently of the parent transaction.
-		txSavings.Cleared = TransactionViewModel.Matched;
-		Assert.Equal(TransactionViewModel.NotCleared, tx.Cleared);
+		txSavings.Cleared = ClearedState.Cleared;
+		Assert.Equal(ClearedState.None, tx.Cleared);
 	}
 
 	[Fact]

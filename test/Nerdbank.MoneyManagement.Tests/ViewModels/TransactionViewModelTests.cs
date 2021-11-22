@@ -24,7 +24,7 @@ public class TransactionViewModelTests : MoneyTestBase
 
 	private int? checkNumber = 15;
 
-	private TransactionViewModel.ClearedStateViewModel cleared = TransactionViewModel.SharedClearedStates[0];
+	private ClearedState cleared = ClearedState.None;
 
 	public TransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
@@ -152,7 +152,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void Cleared()
 	{
-		this.viewModel.Cleared = TransactionViewModel.SharedClearedStates[1];
+		this.viewModel.Cleared = ClearedState.Cleared;
 		TestUtilities.AssertPropertyChangedEvent(
 			this.viewModel,
 			() => this.viewModel.Cleared = this.cleared,
@@ -509,7 +509,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(this.memo, transaction.Memo);
 		Assert.Equal(this.checkNumber, transaction.CheckNumber);
-		Assert.Equal(this.cleared.Value, transaction.Cleared);
+		Assert.Equal(this.cleared, transaction.Cleared);
 
 		// Test auto-save behavior.
 		viewModel.Memo = "bonus";
@@ -573,7 +573,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		transaction.When = this.when;
 		transaction.Memo = this.memo;
 		transaction.CheckNumber = this.checkNumber;
-		transaction.Cleared = this.cleared.Value;
+		transaction.Cleared = this.cleared;
 		transaction.CategoryId = categoryViewModel.Id;
 		transaction.DebitAccountId = this.account.Id;
 
@@ -584,7 +584,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		Assert.Equal(transaction.When, this.viewModel.When);
 		Assert.Equal(transaction.Memo, this.viewModel.Memo);
 		Assert.Equal(transaction.CheckNumber, this.viewModel.CheckNumber);
-		Assert.Equal(transaction.Cleared, this.viewModel.Cleared.Value);
+		Assert.Equal(transaction.Cleared, this.viewModel.Cleared);
 		Assert.Equal(categoryViewModel.Id, Assert.IsType<CategoryViewModel>(this.viewModel.CategoryOrTransfer).Id);
 
 		// Test auto-save behavior.
