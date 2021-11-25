@@ -61,7 +61,11 @@
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
 			<TabItem Header="{Binding Title}" DataContext="{Binding BankingPanel}">
 				<TabItem.Resources>
-					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" />
+					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" IsLiveGroupingRequested="True">
+						<CollectionViewSource.GroupDescriptions>
+							<PropertyGroupDescription PropertyName="Type" />
+						</CollectionViewSource.GroupDescriptions>
+					</CollectionViewSource>
 				</TabItem.Resources>
 				<Grid>
 					<Grid.ColumnDefinitions>
@@ -74,6 +78,15 @@
 							<TextBlock Text="{Binding NetWorthCaption}" FontWeight="Bold" />
 						</DockPanel>
 						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
+							<ListView.GroupStyle>
+								<GroupStyle>
+									<GroupStyle.HeaderTemplate>
+										<DataTemplate>
+											<TextBlock Background="LightGray" Padding="2" Text="{Binding Name}" />
+										</DataTemplate>
+									</GroupStyle.HeaderTemplate>
+								</GroupStyle>
+							</ListView.GroupStyle>
 							<ListView.ItemTemplate>
 								<DataTemplate>
 									<DockPanel>
@@ -343,10 +356,14 @@
 			</TabItem>
 			<TabItem Header="{Binding Title}" DataContext="{Binding AccountsPanel}" Height="20" VerticalAlignment="Top">
 				<TabItem.Resources>
-					<CollectionViewSource Source="{Binding Accounts}" x:Key="categories" />
+					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" IsLiveGroupingRequested="True">
+						<CollectionViewSource.GroupDescriptions>
+							<PropertyGroupDescription PropertyName="Type" />
+						</CollectionViewSource.GroupDescriptions>
+					</CollectionViewSource>
 				</TabItem.Resources>
 				<DockPanel>
-					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource accounts}">
 						<Label Content="{Binding Document.AccountsPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountName}" />
 						<TextBox Name="AccountName"
 						         MaxLength="100"
@@ -362,7 +379,7 @@
 						<TextBlock Text="{Binding Document.AccountsPanel.IsClosedExplanation, Source={StaticResource viewModel}}" TextWrapping="Wrap" />
 					</StackPanel>
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
-					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource categories}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
+					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
 						<ListView.ItemContainerStyle>
 							<Style TargetType="ListBoxItem">
 								<Setter Property="ContextMenu">
@@ -379,6 +396,15 @@
 								<TextBlock Text="{Binding Name}" />
 							</DataTemplate>
 						</ListView.ItemTemplate>
+						<ListView.GroupStyle>
+							<GroupStyle>
+								<GroupStyle.HeaderTemplate>
+									<DataTemplate>
+										<TextBlock Background="LightGray" Padding="2" Text="{Binding Name}" />
+									</DataTemplate>
+								</GroupStyle.HeaderTemplate>
+							</GroupStyle>
+						</ListView.GroupStyle>
 					</ListView>
 				</DockPanel>
 			</TabItem>
