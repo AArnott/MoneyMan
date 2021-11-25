@@ -80,11 +80,22 @@
 						<ListView ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
 							<ListView.GroupStyle>
 								<GroupStyle>
-									<GroupStyle.HeaderTemplate>
-										<DataTemplate>
-											<TextBlock Background="LightGray" Padding="2" Text="{Binding Name}" />
-										</DataTemplate>
-									</GroupStyle.HeaderTemplate>
+									<GroupStyle.ContainerStyle>
+										<Style TargetType="{x:Type GroupItem}">
+											<Setter Property="Template">
+												<Setter.Value>
+													<ControlTemplate>
+														<Expander IsExpanded="True">
+															<Expander.Header>
+																<TextBlock Text="{Binding Name}" />
+															</Expander.Header>
+															<ItemsPresenter />
+														</Expander>
+													</ControlTemplate>
+												</Setter.Value>
+											</Setter>
+										</Style>
+									</GroupStyle.ContainerStyle>
 								</GroupStyle>
 							</ListView.GroupStyle>
 							<ListView.ItemTemplate>
