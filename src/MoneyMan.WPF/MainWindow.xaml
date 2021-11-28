@@ -341,7 +341,7 @@
 							<ListView.ItemTemplate>
 								<DataTemplate>
 									<DockPanel>
-										<TextBlock Text="{Binding Balance, StringFormat=C}" DockPanel.Dock="Right" />
+										<TextBlock Text="{Binding CurrentPrice, StringFormat=C}" DockPanel.Dock="Right" />
 										<TextBlock Text="{Binding Name}" />
 									</DockPanel>
 								</DataTemplate>

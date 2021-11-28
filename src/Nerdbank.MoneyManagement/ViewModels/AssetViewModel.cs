@@ -9,6 +9,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class AssetViewModel : EntityViewModel<Asset>
 {
 	private string name = string.Empty;
+	private decimal currentPrice;
 
 	public AssetViewModel()
 		: this(null, null)
@@ -36,6 +37,12 @@ public class AssetViewModel : EntityViewModel<Asset>
 			Requires.NotNull(value, nameof(value));
 			this.SetProperty(ref this.name, value);
 		}
+	}
+
+	public decimal CurrentPrice
+	{
+		get => this.currentPrice;
+		set => this.SetProperty(ref this.currentPrice, value);
 	}
 
 	protected override void ApplyToCore(Asset model)
