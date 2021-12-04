@@ -35,4 +35,43 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			nameof(this.viewModel.Action));
 		Assert.Equal(InvestmentAction.Withdraw, this.viewModel.Action);
 	}
+
+	[Fact]
+	public void ApplyTo_Null()
+	{
+		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
+	}
+
+	[Fact]
+	public void ApplyTo()
+	{
+		InvestingTransaction transaction = new();
+		InvestingTransactionViewModel viewModel = new(this.account, null);
+
+		viewModel.When = this.when;
+		viewModel.Action = InvestmentAction.Sell;
+		viewModel.ApplyTo(transaction);
+
+		Assert.Equal(this.when, transaction.When);
+		Assert.Equal(InvestmentAction.Sell, transaction.Action);
+	}
+
+	[Fact]
+	public void CopyFrom_Null()
+	{
+		Assert.Throws<ArgumentNullException>(() => this.viewModel.CopyFrom(null!));
+	}
+
+	[Fact]
+	public void CopyFrom()
+	{
+		InvestingTransaction transaction = this.viewModel.Model!;
+		transaction.When = this.when;
+		transaction.Action = InvestmentAction.Sell;
+
+		this.viewModel.CopyFrom(transaction);
+
+		Assert.Equal(this.when, this.viewModel.When);
+		Assert.Equal(InvestmentAction.Sell, this.viewModel.Action);
+	}
 }
