@@ -30,7 +30,7 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		TestUtilities.AssertRaises(
 			h => this.ViewModel.AddingNewAccount += h,
 			h => this.ViewModel.AddingNewAccount -= h,
-			() => this.ViewModel.NewAccount());
+			() => this.ViewModel.NewBankingAccount());
 		AccountViewModel newAccount = Assert.Single(this.ViewModel.Accounts);
 		Assert.Same(newAccount, this.ViewModel.SelectedAccount);
 		Assert.Equal(string.Empty, newAccount.Name);
@@ -92,7 +92,7 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	public async Task DeleteCommand_Undo()
 	{
 		const string name = "name";
-		AccountViewModel account = this.ViewModel.NewAccount(name);
+		AccountViewModel account = this.ViewModel.NewBankingAccount(name);
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.DoesNotContain(this.ViewModel.Accounts, acct => acct.Name == name);
 		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
@@ -107,7 +107,7 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	[Theory, PairwiseData]
 	public async Task DeleteCommand(bool saveFirst)
 	{
-		AccountViewModel viewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel viewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		if (saveFirst)
 		{
 			viewModel.Name = "cat";
@@ -123,9 +123,9 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task DeleteCommand_Multiple()
 	{
-		var cat1 = this.DocumentViewModel.AccountsPanel.NewAccount("cat1");
-		var cat2 = this.DocumentViewModel.AccountsPanel.NewAccount("cat2");
-		var cat3 = this.DocumentViewModel.AccountsPanel.NewAccount("cat3");
+		var cat1 = this.DocumentViewModel.AccountsPanel.NewBankingAccount("cat1");
+		var cat2 = this.DocumentViewModel.AccountsPanel.NewBankingAccount("cat2");
+		var cat3 = this.DocumentViewModel.AccountsPanel.NewBankingAccount("cat3");
 
 		this.ViewModel.SelectedAccounts = new[] { cat1, cat3 };
 		Assert.True(this.ViewModel.DeleteCommand.CanExecute());
@@ -171,13 +171,13 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	[Fact]
 	public void AccountListIsSorted()
 	{
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		AccountViewModel savings = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		AccountViewModel savings = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
 		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
 		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[1]);
 
 		// Insert one new account that should sort to the top.
-		AccountViewModel anotherChecking = this.DocumentViewModel.AccountsPanel.NewAccount("Another checking");
+		AccountViewModel anotherChecking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Another checking");
 		Assert.Same(anotherChecking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
 		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[1]);
 		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[2]);

@@ -330,6 +330,14 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
 	}
 
+	internal List<InvestingTransaction> GetTopLevelInvestingTransactionsFor(int accountId)
+	{
+		// List all transactions that credit/debit to this account.
+		string sql = $@"SELECT * FROM ""{nameof(InvestingTransaction)}"" t"
+			+ $@" WHERE t.[{nameof(InvestingTransaction.CreditAccountId)}] == ? OR t.[{nameof(InvestingTransaction.DebitAccountId)}] == ? OR t.[{nameof(InvestingTransaction.FeeAccountId)}] == ?";
+		return this.connection.Query<InvestingTransaction>(sql, accountId, accountId, accountId);
+	}
+
 	/// <summary>
 	/// Marks this particular version of the database so that it may later be recovered
 	/// by a call to <see cref="Undo"/>.

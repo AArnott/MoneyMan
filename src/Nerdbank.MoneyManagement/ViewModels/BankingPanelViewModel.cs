@@ -17,6 +17,8 @@ public class BankingPanelViewModel : BindableBase
 
 	public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
 
+	public IEnumerable<BankingAccountViewModel> BankingAccounts => this.accounts.OfType<BankingAccountViewModel>();
+
 	public AccountViewModel? SelectedAccount
 	{
 		get => this.selectedAccount;

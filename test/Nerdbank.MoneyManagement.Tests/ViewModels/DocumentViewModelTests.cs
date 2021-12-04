@@ -80,7 +80,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NewAccount()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
@@ -89,7 +89,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void AddedAccountAddsToTransactionTargets()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
@@ -99,7 +99,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void DeletedAccountRemovesFromTransactionTargets()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		accountViewModel.Name = "some new account";
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 
@@ -129,7 +129,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransactionTargets_DoesNotIncludeVolatileAccounts()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		Assert.DoesNotContain(accountViewModel, this.DocumentViewModel.TransactionTargets);
 		accountViewModel.Name = "Checking";
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
@@ -142,7 +142,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransactionTargetsIncludesClosedAccounts()
 	{
-		AccountViewModel closed = this.DocumentViewModel.AccountsPanel.NewAccount("ToBeClosed");
+		AccountViewModel closed = this.DocumentViewModel.AccountsPanel.NewBankingAccount("ToBeClosed");
 		Assert.Contains(closed, this.DocumentViewModel.TransactionTargets);
 		closed.IsClosed = true;
 		Assert.Contains(closed, this.DocumentViewModel.TransactionTargets);
@@ -159,8 +159,8 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransactionTargets_IsSorted()
 	{
-		AccountViewModel accountG = this.DocumentViewModel.AccountsPanel.NewAccount("g");
-		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewAccount("a");
+		AccountViewModel accountG = this.DocumentViewModel.AccountsPanel.NewBankingAccount("g");
+		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewBankingAccount("a");
 		CategoryViewModel categoryA = this.DocumentViewModel.CategoriesPanel.NewCategory("a");
 		CategoryViewModel categoryG = this.DocumentViewModel.CategoriesPanel.NewCategory("g");
 		Assert.Equal<ITransactionTarget>(
@@ -171,7 +171,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void Reset()
 	{
-		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewAccount("checking");
+		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewBankingAccount("checking");
 		this.DocumentViewModel.Reset();
 		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
 		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == account.Name);

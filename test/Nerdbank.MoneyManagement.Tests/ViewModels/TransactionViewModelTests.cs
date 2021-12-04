@@ -9,10 +9,10 @@ using Xunit.Abstractions;
 
 public class TransactionViewModelTests : MoneyTestBase
 {
-	private AccountViewModel account;
-	private AccountViewModel otherAccount;
+	private BankingAccountViewModel account;
+	private BankingAccountViewModel otherAccount;
 
-	private TransactionViewModel viewModel;
+	private BankingTransactionViewModel viewModel;
 
 	private string payee = "some person";
 
@@ -32,8 +32,8 @@ public class TransactionViewModelTests : MoneyTestBase
 		Account thisAccountModel = this.Money.Insert(new Account { Name = "this" });
 		Account otherAccountModel = this.Money.Insert(new Account { Name = "other" });
 
-		this.account = this.DocumentViewModel.GetAccount(thisAccountModel.Id);
-		this.otherAccount = this.DocumentViewModel.GetAccount(otherAccountModel.Id);
+		this.account = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(thisAccountModel.Id);
+		this.otherAccount = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(otherAccountModel.Id);
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
 		this.viewModel = this.account.Transactions[^1];
 	}
@@ -47,7 +47,7 @@ public class TransactionViewModelTests : MoneyTestBase
 			nameof(this.viewModel.When));
 		Assert.Equal(this.when, this.viewModel.When);
 
-		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.Throws<InvalidOperationException>(() => foreignSplitTransaction.When = DateTime.Now);
 
 		// When linked across split transfers
@@ -60,7 +60,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void WhenIsReadOnly()
 	{
 		Assert.False(this.viewModel.WhenIsReadOnly);
-		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.True(foreignSplitTransaction.WhenIsReadOnly);
 	}
 
@@ -89,7 +89,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	{
 		this.viewModel.Save();
 		Assert.False(this.viewModel.AmountIsReadOnly);
-		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.True(foreignSplitTransaction.AmountIsReadOnly);
 		Assert.True(foreignSplitTransaction.GetSplitParent()!.AmountIsReadOnly);
 	}
@@ -169,7 +169,7 @@ public class TransactionViewModelTests : MoneyTestBase
 			nameof(this.viewModel.Payee));
 		Assert.Same("somebody", this.viewModel.Payee);
 
-		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.Throws<InvalidOperationException>(() => foreignSplitTransaction.Payee = "me");
 
 		// Payee linked across split transfers
@@ -182,7 +182,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void PayeeIsReadOnly()
 	{
 		Assert.False(this.viewModel.PayeeIsReadOnly);
-		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.True(foreignSplitTransaction.PayeeIsReadOnly);
 	}
 
@@ -376,7 +376,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void CategoryOrTransferIsReadOnly()
 	{
 		Assert.False(this.viewModel.CategoryOrTransferIsReadOnly);
-		TransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
+		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
 		Assert.True(foreignSplitTransaction.CategoryOrTransferIsReadOnly);
 	}
 
@@ -424,7 +424,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void Balance_JustOneTransaction()
 	{
 		// Verify that one lone transaction's balance is based on its own amount.
-		TransactionViewModel tx = this.account.NewTransaction();
+		BankingTransactionViewModel tx = this.account.NewTransaction();
 		tx.When = new DateTime(2021, 1, 2);
 		Assert.Equal(0m, tx.Balance);
 		tx.Amount = 5m;
@@ -434,11 +434,11 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void Balance_SecondTransactionBuildsOnFirst()
 	{
-		TransactionViewModel tx1 = this.account.NewTransaction();
+		BankingTransactionViewModel tx1 = this.account.NewTransaction();
 		tx1.When = new DateTime(2021, 1, 2);
 		tx1.Amount = 5m;
 
-		TransactionViewModel tx2 = this.account.NewTransaction();
+		BankingTransactionViewModel tx2 = this.account.NewTransaction();
 		tx2.When = new DateTime(2021, 1, 3);
 		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
 		tx2.Amount = 8m;
@@ -448,11 +448,11 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void Balance_UpdatesInResponseToTransactionInsertedAbove()
 	{
-		TransactionViewModel tx2 = this.account.NewTransaction();
+		BankingTransactionViewModel tx2 = this.account.NewTransaction();
 		tx2.When = new DateTime(2021, 1, 2);
 		tx2.Amount = 5m;
 
-		TransactionViewModel tx1 = this.account.NewTransaction();
+		BankingTransactionViewModel tx1 = this.account.NewTransaction();
 		tx1.When = new DateTime(2021, 1, 1);
 		TestUtilities.AssertPropertyChangedEvent(tx2, () => tx1.Amount = 4m, nameof(tx2.Balance));
 
@@ -469,11 +469,11 @@ public class TransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void Balance_UpdatesWhenEarlierTransactionIsRemoved()
 	{
-		TransactionViewModel tx1 = this.account.NewTransaction();
+		BankingTransactionViewModel tx1 = this.account.NewTransaction();
 		tx1.When = new DateTime(2021, 1, 2);
 		tx1.Amount = 5m;
 
-		TransactionViewModel tx2 = this.account.NewTransaction();
+		BankingTransactionViewModel tx2 = this.account.NewTransaction();
 		tx2.When = new DateTime(2021, 1, 3);
 		tx2.Amount = 3m;
 		Assert.Equal(tx1.Balance + tx2.Amount, tx2.Balance);
@@ -492,7 +492,7 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void ApplyTo()
 	{
 		Transaction transaction = new Transaction();
-		TransactionViewModel viewModel = new(this.account, null);
+		BankingTransactionViewModel viewModel = new(this.account, null);
 
 		viewModel.Payee = this.payee;
 		viewModel.Amount = this.amount;
@@ -608,7 +608,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.viewModel.CopyFrom(transaction);
 
 		Assert.Equal(transaction.Amount, this.viewModel.Amount);
-		Assert.Equal(this.otherAccount.Id, Assert.IsType<AccountViewModel>(this.viewModel.CategoryOrTransfer).Id);
+		Assert.Equal(this.otherAccount.Id, Assert.IsType<BankingAccountViewModel>(this.viewModel.CategoryOrTransfer).Id);
 	}
 
 	[Fact]
@@ -624,7 +624,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		this.viewModel.CopyFrom(transaction);
 
 		Assert.Equal(-transaction.Amount, this.viewModel.Amount);
-		Assert.Equal(this.otherAccount.Id, Assert.IsType<AccountViewModel>(this.viewModel.CategoryOrTransfer).Id);
+		Assert.Equal(this.otherAccount.Id, Assert.IsType<BankingAccountViewModel>(this.viewModel.CategoryOrTransfer).Id);
 	}
 
 	[Fact]
@@ -644,7 +644,7 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		this.ReloadViewModel();
 
-		this.account = Assert.Single(this.DocumentViewModel.BankingPanel.Accounts, a => a.Id == this.account.Id);
+		this.account = Assert.Single(this.DocumentViewModel.BankingPanel.BankingAccounts, a => a.Id == this.account.Id);
 		this.viewModel = Assert.Single(this.account.Transactions, t => t.Id == transaction.Id);
 		Assert.Equal(10, this.viewModel.Amount);
 		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
@@ -661,7 +661,7 @@ public class TransactionViewModelTests : MoneyTestBase
 			Payee = "some person",
 		};
 
-		this.viewModel = new TransactionViewModel(this.account, transaction);
+		this.viewModel = new BankingTransactionViewModel(this.account, transaction);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
@@ -687,7 +687,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		this.viewModel = new TransactionViewModel(this.account, transaction);
+		this.viewModel = new BankingTransactionViewModel(this.account, transaction);
 
 		Assert.Equal(transaction.Id, this.viewModel.Id);
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
@@ -711,7 +711,7 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		this.viewModel = new TransactionViewModel(this.account, transaction);
+		this.viewModel = new BankingTransactionViewModel(this.account, transaction);
 		this.Money.Dispose();
 		this.viewModel.Amount = 12;
 	}
@@ -720,8 +720,8 @@ public class TransactionViewModelTests : MoneyTestBase
 	{
 		base.ReloadViewModel();
 
-		this.account = this.DocumentViewModel.GetAccount(this.account.Id!.Value);
-		this.otherAccount = this.DocumentViewModel.GetAccount(this.otherAccount.Id!.Value);
+		this.account = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.account.Id!.Value);
+		this.otherAccount = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.otherAccount.Id!.Value);
 
 		if (this.viewModel.Id.HasValue)
 		{
@@ -729,12 +729,12 @@ public class TransactionViewModelTests : MoneyTestBase
 		}
 	}
 
-	private TransactionViewModel SplitAndFetchForeignTransactionViewModel()
+	private BankingTransactionViewModel SplitAndFetchForeignTransactionViewModel()
 	{
 		SplitTransactionViewModel split = this.viewModel.NewSplit();
 		Assert.True(this.viewModel.CategoryOrTransferIsReadOnly);
 		split.CategoryOrTransfer = this.otherAccount;
-		TransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single(t => t.Id == split.Id);
+		BankingTransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single(t => t.Id == split.Id);
 		return foreignSplitTransaction;
 	}
 }

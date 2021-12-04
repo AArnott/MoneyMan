@@ -11,21 +11,21 @@ using Xunit.Abstractions;
 /// </summary>
 public class UserStoryTests : MoneyTestBase
 {
-	private readonly AccountViewModel checkingAccount;
-	private readonly AccountViewModel savingsAccount;
+	private readonly BankingAccountViewModel checkingAccount;
+	private readonly BankingAccountViewModel savingsAccount;
 
 	public UserStoryTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		this.savingsAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
+		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		this.savingsAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checkingAccount;
 	}
 
 	[Fact]
 	public void AddCreditingTransaction()
 	{
-		TransactionViewModel tx = this.checkingAccount.NewTransaction();
+		BankingTransactionViewModel tx = this.checkingAccount.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Payee = "My boss";
 		tx.Amount = 15;
@@ -39,7 +39,7 @@ public class UserStoryTests : MoneyTestBase
 	[Fact]
 	public void AddTransferTransaction()
 	{
-		TransactionViewModel tx = this.checkingAccount.NewTransaction();
+		BankingTransactionViewModel tx = this.checkingAccount.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Amount = 15;
 		tx.CategoryOrTransfer = this.savingsAccount;

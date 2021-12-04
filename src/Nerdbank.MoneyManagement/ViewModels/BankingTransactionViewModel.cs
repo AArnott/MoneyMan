@@ -11,7 +11,7 @@ using Validation;
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class TransactionViewModel : EntityViewModel<Transaction>
+public class BankingTransactionViewModel : EntityViewModel<Transaction>
 {
 	private static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new ClearedStateViewModel[]
 	{
@@ -31,7 +31,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	private decimal balance;
 	private SplitTransactionViewModel? selectedSplit;
 
-	public TransactionViewModel(AccountViewModel thisAccount, Transaction? transaction)
+	public BankingTransactionViewModel(BankingAccountViewModel thisAccount, Transaction? transaction)
 		: base(thisAccount.MoneyFile)
 	{
 		this.ThisAccount = thisAccount;
@@ -235,7 +235,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 	/// <summary>
 	/// Gets the account this transaction was created to be displayed within.
 	/// </summary>
-	public AccountViewModel ThisAccount { get; }
+	public BankingAccountViewModel ThisAccount { get; }
 
 	private string DebuggerDisplay => $"Transaction ({this.Id}): {this.When} {this.Payee} {this.Amount}";
 
@@ -361,7 +361,7 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 		}
 	}
 
-	public TransactionViewModel? GetSplitParent()
+	public BankingTransactionViewModel? GetSplitParent()
 	{
 		int? splitParentId = this.Model?.ParentTransactionId;
 		if (splitParentId is null || this.MoneyFile is null)
@@ -378,13 +378,13 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			return null;
 		}
 
-		AccountViewModel parentAccount = this.ThisAccount.DocumentViewModel.GetAccount(accountId.Value);
+		BankingAccountViewModel parentAccount = (BankingAccountViewModel)this.ThisAccount.DocumentViewModel.GetAccount(accountId.Value);
 		return parentAccount.Transactions.First(tx => tx.Id == parentTransaction.Id);
 	}
 
 	public void JumpToSplitParent()
 	{
-		TransactionViewModel? splitParent = this.GetSplitParent();
+		BankingTransactionViewModel? splitParent = this.GetSplitParent();
 		Verify.Operation(splitParent is object, "Cannot jump to split parent from a transaction that is not a member of a split transaction.");
 		this.ThisAccount.DocumentViewModel.BankingPanel.SelectedAccount = splitParent.ThisAccount;
 		this.ThisAccount.DocumentViewModel.SelectedTransaction = splitParent;
@@ -429,12 +429,12 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 			if (this.Amount < 0)
 			{
 				transaction.DebitAccountId = this.ThisAccount.Id;
-				transaction.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				transaction.CreditAccountId = (this.CategoryOrTransfer as BankingAccountViewModel)?.Id;
 			}
 			else
 			{
 				transaction.CreditAccountId = this.ThisAccount.Id;
-				transaction.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+				transaction.DebitAccountId = (this.CategoryOrTransfer as BankingAccountViewModel)?.Id;
 			}
 		}
 	}
@@ -564,9 +564,9 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 
 	private class SplitCommandImpl : CommandBase
 	{
-		private TransactionViewModel transactionViewModel;
+		private BankingTransactionViewModel transactionViewModel;
 
-		public SplitCommandImpl(TransactionViewModel transactionViewModel)
+		public SplitCommandImpl(BankingTransactionViewModel transactionViewModel)
 		{
 			this.transactionViewModel = transactionViewModel;
 			transactionViewModel.PropertyChanged += this.TransactionViewModel_PropertyChanged;
@@ -605,9 +605,9 @@ public class TransactionViewModel : EntityViewModel<Transaction>
 
 	private class DeleteSplitCommandImpl : CommandBase
 	{
-		private TransactionViewModel transactionViewModel;
+		private BankingTransactionViewModel transactionViewModel;
 
-		public DeleteSplitCommandImpl(TransactionViewModel transactionViewModel)
+		public DeleteSplitCommandImpl(BankingTransactionViewModel transactionViewModel)
 		{
 			this.transactionViewModel = transactionViewModel;
 			this.transactionViewModel.PropertyChanged += this.TransactionViewModel_PropertyChanged;

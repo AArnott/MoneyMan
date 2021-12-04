@@ -110,8 +110,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		var cat1 = this.ViewModel.NewCategory("cat1");
 		var cat2 = this.ViewModel.NewCategory("cat2");
 
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		TransactionViewModel transaction = checking.NewTransaction();
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.CategoryOrTransfer = cat1;
 
 		this.ViewModel.SelectedCategory = cat1;
@@ -131,7 +131,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.DoesNotContain(cat1, this.ViewModel.Categories);
 
 		this.ReloadViewModel();
-		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
 		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
 		Assert.Equal(cat2.Name, transaction.CategoryOrTransfer?.Name);
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == cat1.Name);
@@ -143,8 +143,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		var cat1 = this.ViewModel.NewCategory("cat1");
 		var cat2 = this.ViewModel.NewCategory("cat2");
 
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		TransactionViewModel transaction = checking.NewTransaction();
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		BankingTransactionViewModel transaction = checking.NewTransaction();
 		SplitTransactionViewModel split = transaction.NewSplit();
 		split.CategoryOrTransfer = cat1;
 
@@ -165,7 +165,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Same(cat2, split.CategoryOrTransfer);
 
 		this.ReloadViewModel();
-		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
 		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
 		split = transaction.Splits[0];
 		Assert.Equal(cat2.Name, split.CategoryOrTransfer?.Name);
@@ -177,8 +177,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		var cat1 = this.ViewModel.NewCategory("cat1");
 		var cat2 = this.ViewModel.NewCategory("cat2");
 
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		TransactionViewModel transaction = checking.NewTransaction();
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.CategoryOrTransfer = cat1;
 
 		this.ViewModel.SelectedCategory = cat2;
@@ -188,7 +188,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.DoesNotContain(cat2, this.ViewModel.Categories);
 
 		this.ReloadViewModel();
-		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
 		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
 		Assert.Equal(cat1.Name, transaction.CategoryOrTransfer?.Name);
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == cat2.Name);
@@ -201,8 +201,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		var cat2 = this.ViewModel.NewCategory("cat2");
 		var cat3 = this.ViewModel.NewCategory("cat3");
 
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		TransactionViewModel transaction = checking.NewTransaction();
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.CategoryOrTransfer = cat1;
 
 		this.ViewModel.SelectedCategories = new[] { cat1, cat2 };
@@ -223,7 +223,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Null(transaction.CategoryOrTransfer);
 
 		this.ReloadViewModel();
-		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
 		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
 		Assert.Null(transaction.CategoryOrTransfer);
 	}
@@ -235,8 +235,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		var cat2 = this.ViewModel.NewCategory("cat2");
 		var cat3 = this.ViewModel.NewCategory("cat3");
 
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		TransactionViewModel transaction = checking.NewTransaction();
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.CategoryOrTransfer = cat1;
 
 		this.ViewModel.SelectedCategories = new[] { cat1, cat2, cat3 };
@@ -245,7 +245,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Null(transaction.CategoryOrTransfer);
 
 		this.ReloadViewModel();
-		checking = this.DocumentViewModel.AccountsPanel.Accounts[0];
+		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
 		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
 		Assert.Null(transaction.CategoryOrTransfer);
 	}
@@ -302,8 +302,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		const string name = "Some new category";
 		CategoryViewModel category = this.ViewModel.NewCategory(name);
 
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("checking");
-		TransactionViewModel transaction = checking.NewTransaction();
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("checking");
+		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.Memo = "some memo";
 		transaction.CategoryOrTransfer = category;
 
@@ -323,7 +323,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Equal(category.Id, this.DocumentViewModel.CategoriesPanel.SelectedCategory?.Id);
 
 		// Verify that transaction assignments were also restored.
-		TransactionViewModel refreshedTransaction = this.DocumentViewModel.AccountsPanel.FindAccount(checking.Id!.Value)!.Transactions[0];
+		BankingTransactionViewModel refreshedTransaction = ((BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(checking.Id!.Value)!).Transactions[0];
 		Assert.Equal(transaction.Memo, refreshedTransaction.Memo);
 		Assert.Equal(category.Id, refreshedTransaction.CategoryOrTransfer?.Id);
 	}

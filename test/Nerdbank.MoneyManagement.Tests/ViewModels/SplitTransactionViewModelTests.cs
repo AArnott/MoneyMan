@@ -9,9 +9,9 @@ using Xunit.Abstractions;
 
 public class SplitTransactionViewModelTests : MoneyTestBase
 {
-	private AccountViewModel checkingAccount;
+	private BankingAccountViewModel checkingAccount;
 	private CategoryViewModel spendingCategory;
-	private TransactionViewModel transaction;
+	private BankingTransactionViewModel transaction;
 	private SplitTransactionViewModel viewModel;
 
 	private decimal amount = 5.5m;
@@ -21,7 +21,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	public SplitTransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
+		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.spendingCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("Spending");
 		this.transaction = this.checkingAccount.NewTransaction();
 		this.viewModel = this.transaction.NewSplit();

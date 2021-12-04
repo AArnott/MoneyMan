@@ -19,7 +19,7 @@ internal class SplitSumMatchesTransactionAmountAttribute : ValidationAttribute
 			return ValidationResult.Success;
 		}
 
-		var transaction = (TransactionViewModel)(validationContext.ObjectInstance ?? throw new ArgumentException("Transaction state required.", nameof(validationContext)));
+		var transaction = (BankingTransactionViewModel)(validationContext.ObjectInstance ?? throw new ArgumentException("Transaction state required.", nameof(validationContext)));
 		decimal splitSum = splits.Sum(split => split.Amount);
 		return splitSum == transaction.Amount
 			? ValidationResult.Success

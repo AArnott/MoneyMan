@@ -18,7 +18,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 	private readonly SortedObservableCollection<ITransactionTarget> transactionTargets = new(TransactionTargetSort.Instance);
 	private decimal netWorth;
 	private IList? selectedTransactions;
-	private TransactionViewModel? selectedTransaction;
+	private BankingTransactionViewModel? selectedTransaction;
 	private SelectableViews selectedViewIndex;
 
 	public DocumentViewModel()
@@ -101,7 +101,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
 
-	public TransactionViewModel? SelectedTransaction
+	public BankingTransactionViewModel? SelectedTransaction
 	{
 		get => this.selectedTransaction;
 		set => this.SetProperty(ref this.selectedTransaction, value);
@@ -214,7 +214,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 			this.BankingPanel.ClearViewModel();
 			foreach (Account account in this.MoneyFile.Accounts)
 			{
-				AccountViewModel viewModel = new(account, this);
+				AccountViewModel viewModel = AccountViewModel.Create(account, this);
 				this.AccountsPanel.Add(viewModel);
 				this.BankingPanel.Add(viewModel);
 			}
@@ -268,7 +268,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		SearchForImpactedAccounts(e.Inserted);
 		SearchForImpactedAccounts(e.Deleted);
 		SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
-		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
+		foreach (BankingAccountViewModel accountViewModel in this.BankingPanel.BankingAccounts)
 		{
 			if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
 			{
@@ -370,10 +370,12 @@ public class DocumentViewModel : BindableBase, IDisposable
 					if (account is object)
 					{
 						this.BankingPanel.SelectedAccount = account;
-						TransactionViewModel? transactionViewModel = account.FindTransaction(transaction.Id);
-						if (transactionViewModel is object)
+						if (account is BankingAccountViewModel bankingAccount)
 						{
-							this.SelectedTransaction = transactionViewModel;
+							if (bankingAccount.FindTransaction(transaction.Id) is BankingTransactionViewModel transactionViewModel)
+							{
+								this.SelectedTransaction = transactionViewModel;
+							}
 						}
 					}
 				}
@@ -425,7 +427,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.CanExecute(new TransactionViewModel[] { this.ViewModel.SelectedTransaction });
+				return this.CanExecute(new BankingTransactionViewModel[] { this.ViewModel.SelectedTransaction });
 			}
 
 			return false;
@@ -442,7 +444,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.ExecuteCoreAsync(new TransactionViewModel[] { this.ViewModel.SelectedTransaction }, cancellationToken);
+				return this.ExecuteCoreAsync(new BankingTransactionViewModel[] { this.ViewModel.SelectedTransaction }, cancellationToken);
 			}
 
 			return Task.CompletedTask;
@@ -491,7 +493,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			foreach (object item in transactionViewModels)
 			{
-				if (item is TransactionViewModel { IsSplitInForeignAccount: false })
+				if (item is BankingTransactionViewModel { IsSplitInForeignAccount: false })
 				{
 					return true;
 				}
@@ -502,8 +504,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
 		{
-			using IDisposable? undo = this.ViewModel.MoneyFile?.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<TransactionViewModel>().FirstOrDefault()?.Model);
-			foreach (TransactionViewModel transaction in transactionViewModels.OfType<TransactionViewModel>().ToList())
+			using IDisposable? undo = this.ViewModel.MoneyFile?.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<BankingTransactionViewModel>().FirstOrDefault()?.Model);
+			foreach (BankingTransactionViewModel transaction in transactionViewModels.OfType<BankingTransactionViewModel>().ToList())
 			{
 				transaction.ThisAccount.DeleteTransaction(transaction);
 			}
@@ -521,12 +523,12 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override bool CanExecute(IList transactionViewModels)
 		{
-			return transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true };
+			return transactionViewModels is { Count: 1 } && transactionViewModels[0] is BankingTransactionViewModel { IsSplitInForeignAccount: true };
 		}
 
 		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
 		{
-			if (transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true } tx)
+			if (transactionViewModels is { Count: 1 } && transactionViewModels[0] is BankingTransactionViewModel { IsSplitInForeignAccount: true } tx)
 			{
 				tx.JumpToSplitParent();
 			}

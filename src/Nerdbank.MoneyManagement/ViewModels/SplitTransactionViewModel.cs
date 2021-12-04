@@ -17,7 +17,7 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 	private string? memo;
 	private ITransactionTarget? categoryOrTransfer;
 
-	public SplitTransactionViewModel(TransactionViewModel parent, Transaction? splitTransaction)
+	public SplitTransactionViewModel(BankingTransactionViewModel parent, Transaction? splitTransaction)
 		: base(parent.MoneyFile)
 	{
 		this.ParentTransaction = parent;
@@ -34,7 +34,7 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 	/// </summary>
 	public AccountViewModel ThisAccount => this.ParentTransaction.ThisAccount;
 
-	public TransactionViewModel ParentTransaction { get; }
+	public BankingTransactionViewModel ParentTransaction { get; }
 
 	public decimal Amount
 	{
