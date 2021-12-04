@@ -66,14 +66,17 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 	{
 		get
 		{
-			PropertyInfo[] propertyInfos = this.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+			PropertyInfo[] propertyInfos = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
 			foreach (PropertyInfo propertyInfo in propertyInfos)
 			{
-				var errorMsg = this[propertyInfo.Name];
-				if (errorMsg?.Length > 0)
+				if (propertyInfo.DeclaringType?.IsAssignableFrom(typeof(EntityViewModel<TEntity>)) is false)
 				{
-					return errorMsg;
+					var errorMsg = this[propertyInfo.Name];
+					if (errorMsg?.Length > 0)
+					{
+						return errorMsg;
+					}
 				}
 			}
 
