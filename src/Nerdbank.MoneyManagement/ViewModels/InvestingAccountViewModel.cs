@@ -14,6 +14,7 @@ public class InvestingAccountViewModel : AccountViewModel
 	public InvestingAccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(model, documentViewModel)
 	{
+		this.Type = Account.AccountType.Investing;
 	}
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)] // It's lazily initialized, and we don't want the debugger to trip over it.
@@ -45,6 +46,8 @@ public class InvestingAccountViewModel : AccountViewModel
 			return this.transactions;
 		}
 	}
+
+	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
 	{

@@ -7,7 +7,7 @@ using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
+public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 {
 	private string name = string.Empty;
 	private bool isClosed;
@@ -17,6 +17,7 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 		: base(documentViewModel.MoneyFile)
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
+		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.TypeIsReadOnly));
 		this.AutoSave = true;
 
 		this.DocumentViewModel = documentViewModel;
@@ -46,21 +47,46 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 	public Account.AccountType Type
 	{
 		get => this.type;
-		set => this.SetProperty(ref this.type, value);
+		set
+		{
+			Verify.Operation(this.type == value || this.IsEmpty, "Cannot change type of account when it contains transactions.");
+			this.SetProperty(ref this.type, value);
+		}
 	}
 
+	public bool TypeIsReadOnly => !this.IsEmpty;
+
 	protected internal DocumentViewModel DocumentViewModel { get; }
+
+	/// <summary>
+	/// Gets a value indicating whether the account is empty, and therefore able to change to another type.
+	/// </summary>
+	protected abstract bool IsEmpty { get; }
 
 	protected string? DebuggerDisplay => this.Name;
 
 	internal static AccountViewModel Create(Account model, DocumentViewModel documentViewModel)
 	{
-		return model.Type switch
-		{
-			Account.AccountType.Banking => new BankingAccountViewModel(model, documentViewModel),
-			Account.AccountType.Investing => new InvestingAccountViewModel(model, documentViewModel),
-			_ => throw new NotSupportedException("Unexpected account type."),
-		};
+		AccountViewModel accountViewModel = Create(model, model.Type, documentViewModel);
+		accountViewModel.CopyFrom(model);
+		return accountViewModel;
+	}
+
+	/// <summary>
+	/// Creates a new instance of this account of the appropriate derived runtime type to match the current value of <see cref="Type"/>.
+	/// </summary>
+	/// <returns>A new instance of <see cref="AccountViewModel"/>.</returns>
+	internal AccountViewModel Recreate()
+	{
+		Verify.Operation(this.Model is object, "Model must exist.");
+		AccountViewModel newViewModel = Create(this.Model, this.Type, this.DocumentViewModel);
+
+		// Copy over the base view model properties manually in case it wasn't in a valid state to copy to the model.
+		newViewModel.type = this.Type;
+		newViewModel.name = this.Name;
+		newViewModel.isClosed = this.IsClosed;
+
+		return newViewModel;
 	}
 
 	protected override void ApplyToCore(Account account)
@@ -77,5 +103,15 @@ public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 		this.Name = account.Name;
 		this.IsClosed = account.IsClosed;
 		this.Type = account.Type;
+	}
+
+	private static AccountViewModel Create(Account? model, Account.AccountType type, DocumentViewModel documentViewModel)
+	{
+		return type switch
+		{
+			Account.AccountType.Banking => new BankingAccountViewModel(model, documentViewModel),
+			Account.AccountType.Investing => new InvestingAccountViewModel(model, documentViewModel),
+			_ => throw new NotSupportedException("Unexpected account type."),
+		};
 	}
 }

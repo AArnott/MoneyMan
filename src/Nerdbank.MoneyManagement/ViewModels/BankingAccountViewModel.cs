@@ -15,6 +15,7 @@ public class BankingAccountViewModel : AccountViewModel
 	public BankingAccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(model, documentViewModel)
 	{
+		this.Type = Account.AccountType.Banking;
 	}
 
 	public decimal Balance
@@ -52,6 +53,8 @@ public class BankingAccountViewModel : AccountViewModel
 			return this.transactions;
 		}
 	}
+
+	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
 
 	/// <summary>
 	/// Creates a new <see cref="BankingTransactionViewModel"/> for this account.

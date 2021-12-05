@@ -125,6 +125,7 @@ public class AccountsPanelViewModel : BindableBase
 		AccountViewModel newAccountViewModel = AccountViewModel.Create(
 			new Account { Type = type },
 			this.documentViewModel);
+		newAccountViewModel.PropertyChanged += this.AccountViewModel_PropertyChanged;
 
 		this.accounts.Add(newAccountViewModel);
 		this.SelectedAccount = newAccountViewModel;
@@ -182,6 +183,7 @@ public class AccountsPanelViewModel : BindableBase
 
 	internal void Add(AccountViewModel accountViewModel)
 	{
+		accountViewModel.PropertyChanged += this.AccountViewModel_PropertyChanged;
 		this.accounts.Add(accountViewModel);
 		this.documentViewModel.AddTransactionTarget(accountViewModel);
 	}
@@ -196,6 +198,22 @@ public class AccountsPanelViewModel : BindableBase
 		this.selectedAccounts?.Clear();
 	}
 
+	private void AccountViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName == nameof(AccountViewModel.Type))
+		{
+			AccountViewModel before = (AccountViewModel)sender!;
+			AccountViewModel after = before.Recreate();
+			AccountViewModel? selectedAccount = this.SelectedAccount;
+			this.accounts.Remove(before);
+			this.accounts.Add(after);
+			if (selectedAccount == before)
+			{
+				this.SelectedAccount = after;
+			}
+		}
+	}
+
 	private class AddAccountCommand : CommandBase
 	{
 		private readonly AccountsPanelViewModel viewModel;
@@ -207,7 +225,7 @@ public class AccountsPanelViewModel : BindableBase
 
 		protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 		{
-			this.viewModel.NewBankingAccount();
+			this.viewModel.NewAccount(this.viewModel.AddingAccount?.Type ?? Account.AccountType.Banking);
 			return Task.CompletedTask;
 		}
 	}

@@ -56,6 +56,31 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		Assert.Equal("cat", Assert.Single(this.Money.Accounts).Name);
 	}
 
+	[Theory, PairwiseData]
+	public async Task AddCommand_SwitchToInvestingAccount(bool setNameFirst)
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel? newAccount = this.ViewModel.SelectedAccount;
+		Assert.Equal(Account.AccountType.Banking, newAccount!.Type);
+		Assert.IsType<BankingAccountViewModel>(newAccount);
+		if (setNameFirst)
+		{
+			newAccount.Name = "test";
+		}
+
+		// Changing the type must do something very peculiar.
+		// The view model itself is replaced by another instance of the new type.
+		newAccount.Type = Account.AccountType.Investing;
+		Assert.NotSame(newAccount, this.ViewModel.SelectedAccount);
+		newAccount = this.ViewModel.SelectedAccount;
+		Assert.Equal(Account.AccountType.Investing, newAccount!.Type);
+		Assert.IsType<InvestingAccountViewModel>(newAccount);
+		if (setNameFirst)
+		{
+			Assert.Equal("test", newAccount.Name);
+		}
+	}
+
 	[Fact]
 	public async Task AddCommand_Twice()
 	{
@@ -70,6 +95,23 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		newAccount!.Name = "dog";
 
 		Assert.Equal(2, this.Money.Accounts.Count());
+	}
+
+	[Fact]
+	public async Task AddCommand_SwitchToInvesting_AddAgain()
+	{
+		int accountCount = this.ViewModel.Accounts.Count;
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel? newAccount = this.ViewModel.SelectedAccount;
+		Assert.NotNull(newAccount);
+		newAccount!.Type = Account.AccountType.Investing;
+		Assert.Equal(accountCount + 1, this.ViewModel.Accounts.Count);
+
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		newAccount = this.ViewModel.SelectedAccount;
+		Assert.NotNull(newAccount);
+		Assert.Equal(Account.AccountType.Investing, newAccount!.Type);
+		Assert.Equal(accountCount + 1, this.ViewModel.Accounts.Count);
 	}
 
 	[Fact]
@@ -187,5 +229,18 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		Assert.Same(anotherChecking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
 		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[1]);
 		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[2]);
+	}
+
+	[Fact]
+	public async Task AccountTypeChangeDisallowedWhenNonEmpty()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		BankingAccountViewModel newAccount = (BankingAccountViewModel)this.ViewModel.SelectedAccount!;
+		newAccount.Name = "some account";
+		BankingTransactionViewModel transaction = newAccount.NewTransaction();
+		transaction.When = DateTime.Now;
+		transaction.Payee = "test";
+
+		Assert.Throws<InvalidOperationException>(() => newAccount.Type = Account.AccountType.Investing);
 	}
 }
