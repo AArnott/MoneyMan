@@ -10,18 +10,11 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class BankingAccountViewModel : AccountViewModel
 {
 	private SortedObservableCollection<BankingTransactionViewModel>? transactions;
-	private decimal balance;
 
 	public BankingAccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(model, documentViewModel)
 	{
 		this.Type = Account.AccountType.Banking;
-	}
-
-	public decimal Balance
-	{
-		get => this.balance;
-		set => this.SetProperty(ref this.balance, value);
 	}
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)] // It's lazily initialized, and we don't want the debugger to trip over it.
@@ -228,7 +221,7 @@ public class BankingAccountViewModel : AccountViewModel
 
 		if (this.MoneyFile is object && account.IsPersisted)
 		{
-			this.balance = this.MoneyFile.GetBalance(account);
+			this.Balance = this.MoneyFile.GetBalance(account);
 		}
 
 		// Force reinitialization.

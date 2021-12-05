@@ -15,6 +15,7 @@
 		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
 		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
+		<converters:TypeToVisibilityConverter x:Key="typeToVisibilityConverter" />
 		<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
 			<Style.Triggers>
 				<Trigger Property="Validation.HasError" Value="True">
@@ -109,8 +110,8 @@
 						</ListView>
 					</DockPanel>
 					<DockPanel Grid.Column="1"
-							   DataContext="{Binding SelectedAccount}" 
-							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
+					           DataContext="{Binding SelectedAccount}" 
+					           Visibility="{Binding Converter={StaticResource typeToVisibilityConverter}, ConverterParameter={x:Type vm:BankingAccountViewModel}}">
 						<DockPanel.Resources>
 							<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" />
 						</DockPanel.Resources>
@@ -312,6 +313,12 @@
 							</DataGrid.ContextMenu>
 						</DataGrid>
 					</DockPanel>
+					<DockPanel Grid.Column="1"
+					           DataContext="{Binding SelectedAccount}" 
+					           Visibility="{Binding Converter={StaticResource typeToVisibilityConverter}, ConverterParameter={x:Type vm:InvestingAccountViewModel}}">
+						<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
+						<TextBlock>Investment account</TextBlock>
+					</DockPanel>
 				</Grid>
 			</TabItem>
 			<TabItem Header="{Binding Title}" DataContext="{Binding AssetsPanel}">
@@ -382,6 +389,7 @@
 						         Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 						<Label Content="{Binding Document.AccountsPanel.TypeLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountType}" />
 						<ComboBox Name="AccountType"
+						          IsReadOnly="{Binding TypeIsReadOnly}"
 						          SelectedValue="{Binding Type, UpdateSourceTrigger=PropertyChanged}"
 						          ItemsSource="{Binding Document.AccountsPanel.AccountTypes, Source={StaticResource viewModel}}"
 						          DisplayMemberPath="Caption"

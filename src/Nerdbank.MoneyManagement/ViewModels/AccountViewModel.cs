@@ -9,6 +9,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 
 public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 {
+	private decimal balance;
 	private string name = string.Empty;
 	private bool isClosed;
 	private Account.AccountType type;
@@ -55,6 +56,12 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	}
 
 	public bool TypeIsReadOnly => !this.IsEmpty;
+
+	public decimal Balance
+	{
+		get => this.balance;
+		set => this.SetProperty(ref this.balance, value);
+	}
 
 	protected internal DocumentViewModel DocumentViewModel { get; }
 

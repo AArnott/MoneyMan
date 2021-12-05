@@ -191,7 +191,7 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 	public bool Contains(T item) => this.IndexOf(item) >= 0;
 
 	/// <inheritdoc/>
-	bool IList.Contains(object? value) => this.Contains((T)value!);
+	bool IList.Contains(object? value) => value is T item ? this.Contains(item) : value is null && !typeof(T).IsValueType ? this.Contains(default!) : false;
 
 	/// <inheritdoc/>
 	bool ICollection<T>.Remove(T item) => this.Remove(item) >= 0;

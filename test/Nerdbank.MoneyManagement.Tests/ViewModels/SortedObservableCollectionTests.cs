@@ -148,6 +148,25 @@ public class SortedObservableCollectionTests : TestBase
 	}
 
 	[Fact]
+	public void Contains_IList_WrongType()
+	{
+		IList collection = this.collection;
+		Assert.False(collection.Contains("wrong type"));
+	}
+
+	[Fact]
+	public void Contains_IList_NullValue()
+	{
+		IList collection = this.collection;
+		Assert.False(collection.Contains(null));
+
+		collection = new SortedObservableCollection<object?>();
+		Assert.False(collection.Contains(null));
+		collection.Add(null);
+		Assert.True(collection.Contains(null));
+	}
+
+	[Fact]
 	public void Remove()
 	{
 		Assert.Equal(~0, this.collection.Remove(1));
