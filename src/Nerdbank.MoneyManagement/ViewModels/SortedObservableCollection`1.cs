@@ -294,7 +294,13 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 		{
 			// Consider whether this item should be repositioned in the list.
 			(int OldIndex, int NewIndex) positions = this.list.UpdateSortPosition(item, this.comparer);
-			Requires.Argument(positions.OldIndex >= 0, nameof(sender), "Must belong to this collection.");
+			if (positions.OldIndex < 0)
+			{
+				// The item no longer belongs to this collection.
+				// Our event handler may be later in the chain than another that removed the item given its change.
+				return;
+			}
+
 			if (positions.OldIndex != positions.NewIndex && this.CollectionChanged is object)
 			{
 				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, item, positions.NewIndex, positions.OldIndex));

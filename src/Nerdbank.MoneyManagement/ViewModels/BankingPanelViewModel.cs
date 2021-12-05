@@ -67,6 +67,17 @@ public class BankingPanelViewModel : BindableBase
 		account.PropertyChanged -= this.Account_PropertyChanged;
 	}
 
+	internal void Replace(AccountViewModel before, AccountViewModel after)
+	{
+		AccountViewModel? selected = this.SelectedAccount;
+		this.Remove(before);
+		this.Add(after);
+		if (selected == before)
+		{
+			this.SelectedAccount = after;
+		}
+	}
+
 	/// <summary>
 	/// Clears the view model without deleting anything from the database.
 	/// </summary>

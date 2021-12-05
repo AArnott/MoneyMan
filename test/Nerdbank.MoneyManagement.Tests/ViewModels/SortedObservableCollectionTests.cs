@@ -421,8 +421,7 @@ public class SortedObservableCollectionTests : TestBase
 		collection.Add(b);
 
 		int oldCount = comparer.InvocationCount;
-		ArgumentException ex = Assert.Throws<ArgumentException>("sender", () => a.RaisePropertyChanged(new ObservableMutableClass(1), nameof(ObservableMutableClass.Value)));
-		this.Logger.WriteLine(ex.ToString());
+		a.RaisePropertyChanged(new ObservableMutableClass(1), nameof(ObservableMutableClass.Value));
 		Assert.Equal(oldCount, comparer.InvocationCount);
 	}
 

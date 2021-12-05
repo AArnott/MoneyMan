@@ -211,6 +211,11 @@ public class AccountsPanelViewModel : BindableBase
 			{
 				this.SelectedAccount = after;
 			}
+
+			this.documentViewModel.BankingPanel.Replace(before, after);
+
+			this.documentViewModel.RemoveTransactionTarget(before);
+			this.documentViewModel.AddTransactionTarget(after);
 		}
 	}
 

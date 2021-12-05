@@ -60,8 +60,8 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	public async Task AddCommand_SwitchToInvestingAccount(bool setNameFirst)
 	{
 		await this.ViewModel.AddCommand.ExecuteAsync();
-		AccountViewModel? newAccount = this.ViewModel.SelectedAccount;
-		Assert.Equal(Account.AccountType.Banking, newAccount!.Type);
+		AccountViewModel newAccount = this.ViewModel.SelectedAccount!;
+		Assert.Equal(Account.AccountType.Banking, newAccount.Type);
 		Assert.IsType<BankingAccountViewModel>(newAccount);
 		if (setNameFirst)
 		{
@@ -72,13 +72,45 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		// The view model itself is replaced by another instance of the new type.
 		newAccount.Type = Account.AccountType.Investing;
 		Assert.NotSame(newAccount, this.ViewModel.SelectedAccount);
-		newAccount = this.ViewModel.SelectedAccount;
-		Assert.Equal(Account.AccountType.Investing, newAccount!.Type);
+		newAccount = this.ViewModel.SelectedAccount!;
+		Assert.Equal(Account.AccountType.Investing, newAccount.Type);
 		Assert.IsType<InvestingAccountViewModel>(newAccount);
 		if (setNameFirst)
 		{
 			Assert.Equal("test", newAccount.Name);
 		}
+	}
+
+	[Fact]
+	public async Task SwitchAccountType_ReflectedInBankingPanel()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel bankingAccount = this.ViewModel.SelectedAccount!;
+		bankingAccount.Name = "test";
+		Assert.Contains(bankingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+		this.DocumentViewModel.BankingPanel.SelectedAccount = bankingAccount;
+
+		bankingAccount.Type = Account.AccountType.Investing;
+		AccountViewModel investingAccount = this.ViewModel.SelectedAccount!;
+
+		Assert.DoesNotContain(bankingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+		Assert.Contains(investingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+		Assert.Same(investingAccount, this.DocumentViewModel.BankingPanel.SelectedAccount);
+	}
+
+	[Fact]
+	public async Task SwitchAccountType_ReflectedInTransferTargets()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel bankingAccount = this.ViewModel.SelectedAccount!;
+		bankingAccount.Name = "test";
+		Assert.Contains(bankingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+
+		bankingAccount.Type = Account.AccountType.Investing;
+		AccountViewModel investingAccount = this.ViewModel.SelectedAccount!;
+
+		Assert.DoesNotContain(bankingAccount, this.DocumentViewModel.TransactionTargets);
+		Assert.Contains(investingAccount, this.DocumentViewModel.TransactionTargets);
 	}
 
 	[Fact]
@@ -242,5 +274,6 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		transaction.Payee = "test";
 
 		Assert.Throws<InvalidOperationException>(() => newAccount.Type = Account.AccountType.Investing);
+		Assert.Equal(Account.AccountType.Banking, newAccount.Type);
 	}
 }
