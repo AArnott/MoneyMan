@@ -21,7 +21,6 @@ public class MainPageViewModel : MainPageViewModelBase
 		this.Document.AccountsPanel.AddingNewAccount += this.AccountsPanel_AddingNewAccount;
 		this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
 		this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.CategoriesListView.SelectedItems;
-		this.Document.SelectedTransactions = this.MainWindow.TransactionDataGrid.SelectedItems;
 	}
 
 	private void AssetsPanel_AddingNewAsset(object? sender, EventArgs e)

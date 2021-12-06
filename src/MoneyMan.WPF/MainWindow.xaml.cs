@@ -5,6 +5,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using Microsoft;
 using Microsoft.Win32;
 using MoneyMan.ViewModel;
 using Squirrel;
@@ -172,5 +174,28 @@ public partial class MainWindow : Window
 	private void DataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
 	{
 		WpfHelpers.GetFirstChildByType<Control>(e.EditingElement)?.Focus();
+	}
+
+	private void BankingPanelAccountList_SelectionChanged(object sender, SelectionChangedEventArgs e) => this.UpdateSelectedTransactions();
+
+	private void BankingSelectedAccountPresenter_TemplateApplied(object sender, EventArgs e) => this.UpdateSelectedTransactions();
+
+	private void UpdateSelectedTransactions()
+	{
+		this.ViewModel.Document.SelectedTransactions = null;
+		if (this.BankingAccountsListView.SelectedItem?.GetType() is Type accountType)
+		{
+			DataTemplateKey key = new(accountType);
+			var accountTemplate = (DataTemplate?)this.BankingLayoutGrid.FindResource(key);
+			Assumes.NotNull(accountTemplate);
+			if (VisualTreeHelper.GetChildrenCount(this.BankingSelectedAccountPresenter) > 0)
+			{
+				ContentPresenter? presenter = VisualTreeHelper.GetChild(this.BankingSelectedAccountPresenter, 0) as ContentPresenter;
+				Assumes.NotNull(presenter);
+				presenter.ApplyTemplate();
+				var transactionDataGrid = (DataGrid?)accountTemplate.FindName("TransactionDataGrid", presenter);
+				this.ViewModel.Document.SelectedTransactions = transactionDataGrid?.SelectedItems;
+			}
+		}
 	}
 }
