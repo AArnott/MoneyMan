@@ -297,8 +297,22 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-											            IsEnabled="{Binding WhenIsReadOnly, Converter={StaticResource boolInvertingConverter}}"/>
+													<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentActionHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Text="{Binding Action}" Margin="3pt" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<ComboBox ItemsSource="{Binding Actions}"
+															  SelectedValue="{Binding Action}"
+															  SelectedValuePath="Value"
+															  DisplayMemberPath="Caption" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
