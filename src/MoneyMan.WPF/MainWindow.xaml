@@ -16,7 +16,6 @@
 		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
 		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
-		<converters:TypeToVisibilityConverter x:Key="typeToVisibilityConverter" />
 		<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
 			<Style.Triggers>
 				<Trigger Property="Validation.HasError" Value="True">
