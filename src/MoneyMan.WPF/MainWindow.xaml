@@ -276,8 +276,42 @@
 						</DataTemplate>
 						<DataTemplate DataType="{x:Type vm:InvestingAccountViewModel}">
 							<DockPanel>
+								<DockPanel.Resources>
+									<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" />
+								</DockPanel.Resources>
 								<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-								<TextBlock>Investment account</TextBlock>
+								<DataGrid Name="TransactionDataGrid"
+								          AlternatingRowBackground="LightBlue"
+								          AlternationCount="2" 
+								          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+								          ItemsSource="{Binding Source={StaticResource transactions}}"
+								          IsSynchronizedWithCurrentItem="True"
+								          SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
+								          AutoGenerateColumns="False">
+									<DataGrid.Columns>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Text="{Binding When, Mode=OneWay, StringFormat=d}" Margin="3pt" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+											            IsEnabled="{Binding WhenIsReadOnly, Converter={StaticResource boolInvertingConverter}}"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
+									</DataGrid.Columns>
+									<DataGrid.ContextMenu>
+										<ContextMenu>
+											<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
+											<MenuItem Header="{Binding Document.JumpToSplitTransactionParentCommandCaption, Source={StaticResource viewModel}}"
+									          Command="{Binding Document.JumpToSplitTransactionParentCommand, Source={StaticResource viewModel}}"
+									          Visibility="{Binding Document.JumpToSplitTransactionParentCommand.IsEnabled, Source={StaticResource viewModel}, Converter={StaticResource boolToVisibilityConverter}}"/>
+										</ContextMenu>
+									</DataGrid.ContextMenu>
+								</DataGrid>
 							</DockPanel>
 						</DataTemplate>
 					</Grid.Resources>

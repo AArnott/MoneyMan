@@ -18,7 +18,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 	private readonly SortedObservableCollection<ITransactionTarget> transactionTargets = new(TransactionTargetSort.Instance);
 	private decimal netWorth;
 	private IList? selectedTransactions;
-	private BankingTransactionViewModel? selectedTransaction;
+	private object? selectedTransaction;
 	private SelectableViews selectedViewIndex;
 
 	public DocumentViewModel()
@@ -101,7 +101,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
 
-	public BankingTransactionViewModel? SelectedTransaction
+	public object? SelectedTransaction
 	{
 		get => this.selectedTransaction;
 		set => this.SetProperty(ref this.selectedTransaction, value);
@@ -427,7 +427,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.CanExecute(new BankingTransactionViewModel[] { this.ViewModel.SelectedTransaction });
+				return this.CanExecute(new object[] { this.ViewModel.SelectedTransaction });
 			}
 
 			return false;
@@ -444,7 +444,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.ExecuteCoreAsync(new BankingTransactionViewModel[] { this.ViewModel.SelectedTransaction }, cancellationToken);
+				return this.ExecuteCoreAsync(new object[] { this.ViewModel.SelectedTransaction }, cancellationToken);
 			}
 
 			return Task.CompletedTask;
