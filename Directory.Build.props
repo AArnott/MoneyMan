@@ -28,6 +28,10 @@
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<IncludeSymbols Condition=" '$(DebugType)' != 'embedded' ">true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+		<SignAssembly>True</SignAssembly>
+		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)strongname.snk</AssemblyOriginatorKeyFile>
+		<NoWarn>$(NoWarn);CS8002</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
