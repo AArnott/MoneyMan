@@ -86,20 +86,20 @@ public class DocumentViewModelTests : MoneyTestBase
 		Assert.Equal(accountViewModel.Name, account.Name);
 	}
 
-	[Fact]
-	public void AddedAccountAddsToTransactionTargets()
+	[Theory, PairwiseData]
+	public void AddedAccountAddsToTransactionTargets(Account.AccountType type)
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
-	[Fact]
-	public void DeletedAccountRemovesFromTransactionTargets()
+	[Theory, PairwiseData]
+	public void DeletedAccountRemovesFromTransactionTargets(Account.AccountType type)
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
 		accountViewModel.Name = "some new account";
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 

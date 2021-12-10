@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft;
 using PCLCommandBase;
 
@@ -101,6 +102,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
 
+	public AssetViewModel? DefaultCurrency => this.AssetsPanel.FindAsset("USD");
+
 	public object? SelectedTransaction
 	{
 		get => this.selectedTransaction;
@@ -193,7 +196,13 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
+	[return: NotNullIfNotNull("accountId")]
+	public AccountViewModel? GetAccount(int? accountId) => accountId is null ? null : this.GetAccount(accountId.Value);
+
 	public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? throw new ArgumentException("No match found.");
+
+	[return: NotNullIfNotNull("assetId")]
+	public AssetViewModel? GetAsset(int? assetId) => assetId is null ? null : this.AssetsPanel.FindAsset(assetId.Value);
 
 	public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
 

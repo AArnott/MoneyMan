@@ -34,6 +34,8 @@ public class AssetsPanelViewModel : BindableBase
 
 	public int NameMaxLength => 50;
 
+	public string TypeLabel => "_Type";
+
 	/// <summary>
 	/// Gets or sets the selected asset.
 	/// </summary>
@@ -59,6 +61,7 @@ public class AssetsPanelViewModel : BindableBase
 		AssetViewModel newAssetViewModel = new(null, this.documentViewModel.MoneyFile)
 		{
 			Model = new(),
+			Type = Asset.AssetType.Security,
 		};
 
 		this.assets.Add(newAssetViewModel);
@@ -104,6 +107,8 @@ public class AssetsPanelViewModel : BindableBase
 	}
 
 	public AssetViewModel? FindAsset(int id) => this.assets?.FirstOrDefault(a => a.Id == id);
+
+	public AssetViewModel? FindAsset(string name) => this.assets?.FirstOrDefault(a => a.Name == name);
 
 	internal void Add(AssetViewModel asset)
 	{

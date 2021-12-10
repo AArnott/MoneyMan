@@ -11,10 +11,28 @@ namespace Nerdbank.MoneyManagement;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class Asset : ModelBase
 {
+	public enum AssetType
+	{
+		/// <summary>
+		/// This asset represents a fiat currency.
+		/// </summary>
+		Currency = 0,
+
+		/// <summary>
+		/// This asset represents some security such as a stock or cryptocurrency.
+		/// </summary>
+		Security,
+	}
+
 	/// <summary>
 	/// Gets or sets the name of this asset.
 	/// </summary>
 	public string Name { get; set; } = string.Empty;
+
+	/// <summary>
+	/// Gets or sets the type of asset.
+	/// </summary>
+	public AssetType Type { get; set; }
 
 	private string? DebuggerDisplay => this.Name;
 }

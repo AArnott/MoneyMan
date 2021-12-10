@@ -1,20 +1,20 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
+using Microsoft;
 
 public class BankingAccountViewModelTests : MoneyTestBase
 {
+	private AssetViewModel alternateCurrency;
 	private BankingAccountViewModel checking;
 	private BankingAccountViewModel savings;
 
 	public BankingAccountViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.alternateCurrency = this.DocumentViewModel.AssetsPanel.NewAsset("alternate");
+		this.alternateCurrency.Type = Asset.AssetType.Currency;
+
 		this.checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.savings = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
@@ -42,6 +42,21 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.checking.Name = "a";
 		Assert.Equal(string.Empty, this.checking[nameof(this.checking.Name)]);
+	}
+
+	[Fact]
+	public void CurrencyAssets()
+	{
+		Assert.Contains(this.checking.CurrencyAssets, asset => asset.Name == "USD");
+	}
+
+	[Fact]
+	public void CurrencyAsset()
+	{
+		AssetViewModel? usd = this.DocumentViewModel.AssetsPanel.FindAsset("USD");
+		Assumes.NotNull(usd);
+		Assert.Same(usd, this.checking.CurrencyAsset);
+		Assert.False(this.checking.CurrencyAssetIsReadOnly);
 	}
 
 	[Fact]
@@ -109,12 +124,14 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.checking.Name = "some name";
 		this.checking.IsClosed = !this.checking.IsClosed;
 		this.checking.Type = Account.AccountType.Investing;
+		this.checking.CurrencyAsset = this.alternateCurrency;
 
 		this.checking.ApplyTo(this.checking.Model!);
 
 		Assert.Equal(this.checking.Name, this.checking.Model!.Name);
 		Assert.Equal(this.checking.IsClosed, this.checking.Model.IsClosed);
 		Assert.Equal(this.checking.Type, this.checking.Model.Type);
+		Assert.Equal(this.checking.CurrencyAsset?.Id, this.checking.Model.CurrencyAssetId);
 	}
 
 	[Fact]
@@ -129,11 +146,13 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.checking.Model!.Name = "another name";
 		this.checking.Model.IsClosed = true;
 		this.checking.Model.Type = Account.AccountType.Investing;
+		this.checking.Model.CurrencyAssetId = this.alternateCurrency.Id;
 		this.checking.CopyFrom(this.checking.Model);
 
 		Assert.Equal(this.checking.Model.Name, this.checking.Name);
 		Assert.Equal(this.checking.Model.IsClosed, this.checking.IsClosed);
 		Assert.Equal(this.checking.Model.Type, this.checking.Type);
+		Assert.Equal(this.checking.Model.CurrencyAssetId, this.checking.CurrencyAsset?.Id);
 	}
 
 	[Fact]

@@ -193,8 +193,15 @@ public partial class MainWindow : Window
 				ContentPresenter? presenter = VisualTreeHelper.GetChild(this.BankingSelectedAccountPresenter, 0) as ContentPresenter;
 				Assumes.NotNull(presenter);
 				presenter.ApplyTemplate();
-				var transactionDataGrid = (DataGrid?)accountTemplate.FindName("TransactionDataGrid", presenter);
-				this.ViewModel.Document.SelectedTransactions = transactionDataGrid?.SelectedItems;
+				try
+				{
+					var transactionDataGrid = (DataGrid?)accountTemplate.FindName("TransactionDataGrid", presenter);
+					this.ViewModel.Document.SelectedTransactions = transactionDataGrid?.SelectedItems;
+				}
+				catch (InvalidOperationException)
+				{
+					// Sometimes we lose. I don't know why.
+				}
 			}
 		}
 	}

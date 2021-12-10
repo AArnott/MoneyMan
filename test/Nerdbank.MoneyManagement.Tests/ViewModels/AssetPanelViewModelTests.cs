@@ -1,11 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
-
 public class AssetPanelViewModelTests : MoneyTestBase
 {
 	private const string SomeAssetName = "some asset";
@@ -20,7 +15,8 @@ public class AssetPanelViewModelTests : MoneyTestBase
 	[Fact]
 	public void InitialState()
 	{
-		Assert.Empty(this.ViewModel.Assets);
+		AssetViewModel asset = Assert.Single(this.ViewModel.Assets);
+		Assert.Equal("USD", asset.Name);
 		Assert.Null(this.ViewModel.SelectedAsset);
 	}
 
@@ -42,12 +38,19 @@ public class AssetPanelViewModelTests : MoneyTestBase
 			h => this.ViewModel.AddingNewAsset += h,
 			h => this.ViewModel.AddingNewAsset -= h,
 			() => this.ViewModel.NewAsset());
-		AssetViewModel newAsset = Assert.Single(this.ViewModel.Assets);
-		Assert.Same(newAsset, this.ViewModel.SelectedAsset);
-		Assert.Equal(string.Empty, newAsset.Name);
+		AssetViewModel? newAsset = this.ViewModel.SelectedAsset;
+		Assert.NotNull(newAsset);
+		Assert.Equal(string.Empty, newAsset!.Name);
 
 		newAsset.Name = "cat";
-		Assert.Equal("cat", Assert.Single(this.Money.Assets).Name);
+		Assert.Contains(this.Money.Assets, a => a.Name == newAsset.Name);
+	}
+
+	[Fact]
+	public async Task NewAsset_TypeDefault()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		Assert.Equal(Asset.AssetType.Security, this.ViewModel.SelectedAsset?.Type);
 	}
 
 	[Fact]
@@ -59,17 +62,19 @@ public class AssetPanelViewModelTests : MoneyTestBase
 			h => this.ViewModel.AddingNewAsset += h,
 			h => this.ViewModel.AddingNewAsset -= h,
 			() => this.ViewModel.AddCommand.ExecuteAsync());
-		AssetViewModel newAsset = Assert.Single(this.ViewModel.Assets);
-		Assert.Same(newAsset, this.ViewModel.SelectedAsset);
-		Assert.Equal(string.Empty, newAsset.Name);
+		AssetViewModel? newAsset = this.ViewModel.SelectedAsset;
+		Assert.NotNull(newAsset);
+		Assert.Equal(string.Empty, newAsset!.Name);
 
 		newAsset.Name = "asset";
-		Assert.Equal("asset", Assert.Single(this.Money.Assets).Name);
+		Assert.Contains(this.Money.Assets, a => a.Name == newAsset.Name);
 	}
 
 	[Fact]
 	public async Task AddCommand_Twice()
 	{
+		int originalCount = this.Money.Assets.Count();
+
 		await this.ViewModel.AddCommand.ExecuteAsync();
 		AssetViewModel? newAsset = this.ViewModel.SelectedAsset;
 		Assert.NotNull(newAsset);
@@ -80,7 +85,7 @@ public class AssetPanelViewModelTests : MoneyTestBase
 		Assert.NotNull(newAsset);
 		newAsset!.Name = "dog";
 
-		Assert.Equal(2, this.Money.Assets.Count());
+		Assert.Equal(originalCount + 2, this.Money.Assets.Count());
 	}
 
 	[Fact]

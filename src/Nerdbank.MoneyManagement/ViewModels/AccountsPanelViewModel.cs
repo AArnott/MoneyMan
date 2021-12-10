@@ -123,7 +123,7 @@ public class AccountsPanelViewModel : BindableBase
 		}
 
 		AccountViewModel newAccountViewModel = AccountViewModel.Create(
-			new Account { Type = type },
+			new Account { Type = type, CurrencyAssetId = this.documentViewModel.DefaultCurrency?.Id },
 			this.documentViewModel);
 		newAccountViewModel.PropertyChanged += this.AccountViewModel_PropertyChanged;
 
@@ -166,6 +166,11 @@ public class AccountsPanelViewModel : BindableBase
 		{
 			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted account \"{accountViewModel.Name}\"", accountViewModel.Model);
 			this.documentViewModel.MoneyFile?.Delete(accountViewModel.Model);
+}
+
+		if (accountViewModel is BankingAccountViewModel { CurrencyAsset: not null } bankingAccount)
+		{
+			bankingAccount.CurrencyAsset.NotifyUseChange();
 		}
 
 		if (this.SelectedAccount == accountViewModel)
@@ -206,7 +211,9 @@ public class AccountsPanelViewModel : BindableBase
 			AccountViewModel after = before.Recreate();
 			AccountViewModel? selectedAccount = this.SelectedAccount;
 			this.accounts.Remove(before);
+			before.PropertyChanged -= this.AccountViewModel_PropertyChanged;
 			this.accounts.Add(after);
+			after.PropertyChanged += this.AccountViewModel_PropertyChanged;
 			if (selectedAccount == before)
 			{
 				this.SelectedAccount = after;

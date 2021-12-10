@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Xunit;
-using Xunit.Abstractions;
-
 public class AccountFacts : EntityTestBase
 {
 	private Account account;
@@ -28,12 +24,15 @@ public class AccountFacts : EntityTestBase
 		this.account.Type = Account.AccountType.Investing;
 		Assert.Equal(Account.AccountType.Investing, this.account.Type);
 
+		this.account.CurrencyAssetId = 1; // assumed ID for the "USD" entry added by the sql scripts
+
 		Account? account2 = this.SaveAndReload(this.account);
 
 		Assert.NotEqual(0, this.account.Id);
 		Assert.Equal(this.account.Id, account2.Id);
 		Assert.Equal(expected, account2.Name);
 		Assert.Equal(this.account.Type, account2.Type);
+		Assert.Equal(this.account.CurrencyAssetId, account2.CurrencyAssetId);
 	}
 
 	[Fact]

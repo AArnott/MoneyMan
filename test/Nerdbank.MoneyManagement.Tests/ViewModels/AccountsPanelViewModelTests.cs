@@ -114,6 +114,23 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public async Task SwitchAccountType_AndBackAgain()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel? newAccount = this.ViewModel.SelectedAccount;
+		Assert.NotNull(newAccount);
+		newAccount!.Name = "test";
+
+		newAccount!.Type = Account.AccountType.Investing;
+		newAccount = this.ViewModel.SelectedAccount;
+		Assert.IsType<InvestingAccountViewModel>(newAccount);
+
+		newAccount!.Type = Account.AccountType.Banking;
+		newAccount = this.ViewModel.SelectedAccount;
+		Assert.IsType<BankingAccountViewModel>(newAccount);
+	}
+
+	[Fact]
 	public async Task AddCommand_Twice()
 	{
 		await this.ViewModel.AddCommand.ExecuteAsync();

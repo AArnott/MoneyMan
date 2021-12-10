@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Xunit;
-using Xunit.Abstractions;
-
 public class AssetFacts : EntityTestBase
 {
 	public AssetFacts(ITestOutputHelper logger)
@@ -20,12 +16,15 @@ public class AssetFacts : EntityTestBase
 		var p = new Asset
 		{
 			Name = name,
+			Type = Asset.AssetType.Security,
 		};
 
 		Assert.Equal(name, p.Name);
+		Assert.Equal(Asset.AssetType.Security, p.Type);
 
 		Asset? p2 = this.SaveAndReload(p);
 
 		Assert.Equal(name, p2.Name);
+		Assert.Equal(p.Type, p2.Type);
 	}
 }

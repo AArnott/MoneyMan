@@ -109,7 +109,11 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	{
 		this.Name = account.Name;
 		this.IsClosed = account.IsClosed;
-		this.Type = account.Type;
+		if (account.Type != this.type)
+		{
+			this.type = account.Type;
+			this.OnPropertyChanged(nameof(this.Type));
+		}
 	}
 
 	private static AccountViewModel Create(Account? model, Account.AccountType type, DocumentViewModel documentViewModel)

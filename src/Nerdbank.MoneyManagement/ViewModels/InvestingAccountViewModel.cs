@@ -49,6 +49,12 @@ public class InvestingAccountViewModel : AccountViewModel
 
 	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
 
+	protected override void ApplyToCore(Account account)
+	{
+		base.ApplyToCore(account);
+		account.CurrencyAssetId = null;
+	}
+
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
 	{
 		if (e.NewStartingIndex >= 0)

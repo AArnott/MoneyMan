@@ -47,6 +47,12 @@ public class Account : ModelBase
 	/// </summary>
 	public AccountType Type { get; set; }
 
+	/// <summary>
+	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> used as the currency for this account,
+	/// when <see cref="Type"/> is set to <see cref="AccountType.Banking"/>.
+	/// </summary>
+	public int? CurrencyAssetId { get; set; }
+
 	private string? DebuggerDisplay => this.Name;
 
 	/// <summary>

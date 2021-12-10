@@ -313,6 +313,23 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		return this.ExecuteScalar<int>(sql, categoryId) > 0;
 	}
 
+	internal bool IsAssetInUse(int assetId)
+	{
+		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Account)}"" WHERE ""{nameof(Account.CurrencyAssetId)}"" == ?";
+		if (this.ExecuteScalar<int>(sql, assetId) > 0)
+		{
+			return true;
+		}
+
+		sql = $@"SELECT COUNT(*) FROM ""{nameof(InvestingTransaction)}"" WHERE ""{nameof(InvestingTransaction.CreditAssetId)}"" == ? OR ""{nameof(InvestingTransaction.DebitAssetId)}"" == ? OR ""{nameof(InvestingTransaction.FeeAssetId)}"" == ?";
+		if (this.ExecuteScalar<int>(sql, assetId, assetId, assetId) > 0)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 	internal void ReassignCategory(IEnumerable<int> oldCategoryIds, int? newId)
 	{
 		string sql = $@"UPDATE ""{nameof(Transaction)}""

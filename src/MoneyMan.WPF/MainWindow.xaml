@@ -16,6 +16,7 @@
 		<converters:NumberOrNullConverter x:Key="numberOrNullConverter" />
 		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
+		<converters:TypeToVisibilityConverter x:Key="typeToVisibilityConverter" />
 		<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
 			<Style.Triggers>
 				<Trigger Property="Validation.HasError" Value="True">
@@ -121,11 +122,11 @@
 												<DataTemplate>
 													<StackPanel Orientation="Horizontal">
 														<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt"
-												           Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter}}" />
+															Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter}}" />
 														<ComboBox
-												          Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter},ConverterParameter=true}"
-												          ItemsSource="{Binding AvailableTransactionTargets}"
-												          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+															Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter},ConverterParameter=true}"
+															ItemsSource="{Binding AvailableTransactionTargets}"
+															SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 															<ComboBox.ItemTemplate>
 																<DataTemplate>
 																	<TextBlock Text="{Binding TransferTargetName}" />
@@ -183,9 +184,9 @@
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
 													<ComboBox SelectedValue="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-											          ItemsSource="{Binding ClearedStates}"
-											          DisplayMemberPath="Caption" 
-											          SelectedValuePath="Value" />
+															  ItemsSource="{Binding ClearedStates}"
+															  DisplayMemberPath="Caption" 
+															  SelectedValuePath="Value" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
@@ -225,7 +226,7 @@
 														<DataGridTemplateColumn.CellEditingTemplate>
 															<DataTemplate>
 																<ComboBox ItemsSource="{Binding AvailableTransactionTargets}"
-														          SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+																		  SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 																	<ComboBox.ItemTemplate>
 																		<DataTemplate>
 																			<TextBlock Text="{Binding TransferTargetName}" />
@@ -380,7 +381,11 @@
 			</TabItem>
 			<TabItem Header="{Binding Title}" DataContext="{Binding AssetsPanel}">
 				<TabItem.Resources>
-					<CollectionViewSource Source="{Binding Assets}" x:Key="assets" />
+					<CollectionViewSource Source="{Binding Assets}" x:Key="assets" IsLiveGroupingRequested="True">
+						<CollectionViewSource.GroupDescriptions>
+							<PropertyGroupDescription PropertyName="Type" />
+						</CollectionViewSource.GroupDescriptions>
+					</CollectionViewSource>
 				</TabItem.Resources>
 				<Grid>
 					<Grid.ColumnDefinitions>
@@ -410,6 +415,15 @@
 									</DockPanel>
 								</DataTemplate>
 							</ListView.ItemTemplate>
+							<ListView.GroupStyle>
+								<GroupStyle>
+									<GroupStyle.HeaderTemplate>
+										<DataTemplate>
+											<TextBlock Background="LightGray" Padding="2" Text="{Binding Name}" />
+										</DataTemplate>
+									</GroupStyle.HeaderTemplate>
+								</GroupStyle>
+							</ListView.GroupStyle>
 						</ListView>
 					</DockPanel>
 					<DockPanel Grid.Column="1"
@@ -426,6 +440,13 @@
 								 MaxLength="{Binding Document.AssetsPanel.NameMaxLength, Source={StaticResource viewModel}}"
 								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+						<Label Content="{Binding Document.AssetsPanel.TypeLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AssetType}" />
+						<ComboBox Name="AssetType"
+						          ItemsSource="{Binding Types}"
+						          IsEnabled="{Binding TypeIsReadOnly, Converter={StaticResource boolInvertingConverter}}"
+						          SelectedValuePath="Value"
+						          DisplayMemberPath="Caption"
+						          SelectedValue="{Binding Type}" />
 					</StackPanel>
 				</Grid>
 			</TabItem>
@@ -439,6 +460,20 @@
 				</TabItem.Resources>
 				<DockPanel>
 					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource accounts}">
+						<StackPanel.Resources>
+							<DataTemplate DataType="{x:Type vm:BankingAccountViewModel}">
+								<StackPanel>
+									<Label Content="{Binding CurrencyAssetLabel}" Target="{Binding ElementName=CurrencyAsset}" />
+									<ComboBox Name="CurrencyAsset"
+											  ItemsSource="{Binding CurrencyAssets}"
+											  IsEnabled="{Binding CurrencyAssetIsReadOnly, Converter={StaticResource boolInvertingConverter}}"
+											  SelectedItem="{Binding CurrencyAsset}"
+											  DisplayMemberPath="Name" />
+								</StackPanel>
+							</DataTemplate>
+							<DataTemplate DataType="{x:Type vm:InvestingAccountViewModel}">
+							</DataTemplate>
+						</StackPanel.Resources>
 						<Label Content="{Binding Document.AccountsPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountName}" />
 						<TextBox Name="AccountName"
 						         MaxLength="100"
@@ -446,13 +481,14 @@
 						         Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 						<Label Content="{Binding Document.AccountsPanel.TypeLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountType}" />
 						<ComboBox Name="AccountType"
-						          IsReadOnly="{Binding TypeIsReadOnly}"
+						          IsEnabled="{Binding TypeIsReadOnly, Converter={StaticResource boolInvertingConverter}}"
 						          SelectedValue="{Binding Type, UpdateSourceTrigger=PropertyChanged}"
 						          ItemsSource="{Binding Document.AccountsPanel.AccountTypes, Source={StaticResource viewModel}}"
 						          DisplayMemberPath="Caption"
 						          SelectedValuePath="Value" />
 						<CheckBox IsChecked="{Binding IsClosed}" Content="{Binding Document.AccountsPanel.IsClosedLabel, Source={StaticResource viewModel}}" Margin="0,15,0,0" />
 						<TextBlock Text="{Binding Document.AccountsPanel.IsClosedExplanation, Source={StaticResource viewModel}}" TextWrapping="Wrap" />
+						<ContentControl Content="{Binding Path=Document.AccountsPanel.SelectedAccount, Source={StaticResource viewModel}}" />
 					</StackPanel>
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListView Name="AccountsListView" ItemsSource="{Binding Source={StaticResource accounts}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}">
