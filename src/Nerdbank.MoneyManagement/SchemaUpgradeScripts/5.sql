@@ -1,2 +1,0 @@
-﻿ALTER TABLE "Account"
-	ADD "Type" INTEGER NOT NULL DEFAULT(0)

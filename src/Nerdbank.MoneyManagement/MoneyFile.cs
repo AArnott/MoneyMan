@@ -26,6 +26,8 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	/// </summary>
 	private readonly Stack<(string SavepointName, string Activity, ModelBase? Model)> undoStack = new();
 
+	private int preferredAssetId;
+
 	private bool inUndoableTransaction;
 
 	/// <summary>
@@ -36,6 +38,8 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Requires.NotNull(connection, nameof(connection));
 		this.connection = connection;
+
+		this.preferredAssetId = this.connection.ExecuteScalar<int>("SELECT [PreferredAssetId] FROM [Configuration] LIMIT 1");
 	}
 
 	/// <summary>
@@ -82,6 +86,20 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 			// Omit the special categories like those used for splits.
 			return this.connection.Table<Category>().Where(cat => cat.Id > 0);
+		}
+	}
+
+	public int PreferredAssetId
+	{
+		get => this.preferredAssetId;
+		set
+		{
+			if (this.connection.Execute("UPDATE [Configuration] SET [PreferredAssetId] = ?", value) != 1)
+			{
+				throw new InvalidOperationException("Failure writing configuration.");
+			}
+
+			this.preferredAssetId = value;
 		}
 	}
 
@@ -220,52 +238,56 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 
-		ImmutableList<string> constraints = ImmutableList<string>.Empty;
-		ImmutableList<object> args = ImmutableList<object>.Empty;
-		if (options.BeforeDate.HasValue)
-		{
-			constraints = constraints.Add($@"""{nameof(Transaction.When)}"" < ?");
-			args = args.Add(options.BeforeDate);
-		}
+		this.RefreshBalances(options);
 
-		if (!options.IncludeClosedAccounts)
-		{
-			constraints = constraints.Add($@"a.""{nameof(Account.IsClosed)}"" = 0");
-		}
+		string closedAccountFilter = options.IncludeClosedAccounts ? string.Empty : "WHERE [Account].[IsClosed] = 0";
 
-		string netCreditConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL";
-		string netDebitConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL";
+		string sql = $@"
+SELECT [Balances].[AssetId], TOTAL([Balances].[Balance]) AS [Balance]
+FROM [Balances]
+INNER JOIN [Asset] ON [Asset].[Id] = [Balances].[AssetId]
+INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
+{closedAccountFilter}
+GROUP BY [AssetId]";
 
-		string sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
-			+ $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.CreditAccountId)}"""
-			+ SqlWhere(SqlAnd(constraints.Add(netCreditConstraint)));
-		decimal credits = this.ExecuteScalar<decimal>(sql, args.ToArray());
+		// When we have a table of historical values for each asset, we can look up each asset's value
+		// as of the given date to multiply by the count of the asset
+		// to find out the worth of each held asset.
+		// TODO: code here
 
-		sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
-			+ $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.DebitAccountId)}"""
-			+ SqlWhere(SqlAnd(constraints.Add(netDebitConstraint)));
-		decimal debits = this.ExecuteScalar<decimal>(sql, args.ToArray());
-
-		decimal sum = credits - debits;
-		return sum;
+		List<BalancesRow> balances = this.connection.Query<BalancesRow>(sql);
+		return balances.Sum(b => b.Balance);
 	}
 
-	public decimal GetBalance(Account account)
+	/// <summary>
+	/// Gets the balance of each asset held in this account.
+	/// </summary>
+	/// <param name="account">The account to query.</param>
+	/// <returns>A map of asset IDs and the balance held of that asset in the <paramref name="account"/>.</returns>
+	public IReadOnlyDictionary<int, decimal> GetBalances(Account account)
 	{
 		Requires.NotNull(account, nameof(account));
 		Requires.Argument(account.IsPersisted, nameof(account), "Account must be saved to the database first.");
 		Verify.NotDisposed(this);
 
-		decimal credits = this.ExecuteScalar<decimal>(
-			$@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
-                WHERE ""{nameof(Transaction.CreditAccountId)}"" = ?",
-			account.Id);
-		decimal debits = this.ExecuteScalar<decimal>(
-			$@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
-                WHERE ""{nameof(Transaction.DebitAccountId)}"" = ?",
-			account.Id);
-		decimal sum = credits - debits;
-		return sum;
+		this.RefreshBalances();
+		string sql = "SELECT [AssetId], TOTAL([Balance]) AS [Balance] FROM [Balances] WHERE [AccountId] = ? AND [AssetId] IS NOT NULL GROUP BY [AssetId]";
+		List<BalancesRow> balances = this.connection.Query<BalancesRow>(sql, account.Id);
+		return balances.ToDictionary(b => b.AssetId, b => b.Balance);
+	}
+
+	/// <summary>
+	/// Gets the value held in this account.
+	/// The value is the sum of all assets held in the account after multiplying their count by their individual value relative to the user's preferred asset.
+	/// </summary>
+	/// <param name="account">The account to query.</param>
+	/// <returns>The value of the account, measured in the user's preferred units.</returns>
+	public decimal GetValue(Account account)
+	{
+		IReadOnlyDictionary<int, decimal> balances = this.GetBalances(account);
+
+		// TODO: Consider all assets.
+		return balances.TryGetValue(this.PreferredAssetId, out decimal value) ? value : 0m;
 	}
 
 	/// <inheritdoc/>
@@ -298,7 +320,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 		string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
-			+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND t.[{nameof(Transaction.Amount)}] != 0";
+			+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND (t.[{nameof(Transaction.CreditAmount)}] != 0 OR t.[{nameof(Transaction.DebitAmount)}] != 0)";
 
 		foreach (Transaction badSplit in this.connection.Query<Transaction>(sql))
 		{
@@ -315,14 +337,14 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	internal bool IsAssetInUse(int assetId)
 	{
-		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Account)}"" WHERE ""{nameof(Account.CurrencyAssetId)}"" == ?";
+		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Account)}"" WHERE ""{nameof(Account.CurrencyAssetId)}"" == ? LIMIT 1";
 		if (this.ExecuteScalar<int>(sql, assetId) > 0)
 		{
 			return true;
 		}
 
-		sql = $@"SELECT COUNT(*) FROM ""{nameof(InvestingTransaction)}"" WHERE ""{nameof(InvestingTransaction.CreditAssetId)}"" == ? OR ""{nameof(InvestingTransaction.DebitAssetId)}"" == ? OR ""{nameof(InvestingTransaction.FeeAssetId)}"" == ?";
-		if (this.ExecuteScalar<int>(sql, assetId, assetId, assetId) > 0)
+		sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CreditAssetId)}"" == ? OR ""{nameof(Transaction.DebitAssetId)}"" == ? LIMIT 1";
+		if (this.ExecuteScalar<int>(sql, assetId, assetId) > 0)
 		{
 			return true;
 		}
@@ -345,14 +367,6 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 			+ $@" WHERE (t.[{nameof(Transaction.CreditAccountId)}] == ? OR t.[{nameof(Transaction.DebitAccountId)}] == ?)"
 			+ $@" AND (t.[{nameof(Transaction.ParentTransactionId)}] IS NULL OR (SELECT [{nameof(Transaction.CreditAccountId)}] FROM ""{nameof(Transaction)}"" WHERE [{nameof(Transaction.Id)}] == t.[{nameof(Transaction.ParentTransactionId)}]) != ?)";
 		return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
-	}
-
-	internal List<InvestingTransaction> GetTopLevelInvestingTransactionsFor(int accountId)
-	{
-		// List all transactions that credit/debit to this account.
-		string sql = $@"SELECT * FROM ""{nameof(InvestingTransaction)}"" t"
-			+ $@" WHERE t.[{nameof(InvestingTransaction.CreditAccountId)}] == ? OR t.[{nameof(InvestingTransaction.DebitAccountId)}] == ? OR t.[{nameof(InvestingTransaction.FeeAccountId)}] == ?";
-		return this.connection.Query<InvestingTransaction>(sql, accountId, accountId, accountId);
 	}
 
 	/// <summary>
@@ -388,6 +402,53 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		}
 
 		return this.connection.ExecuteScalar<T>(query, args);
+	}
+
+	private void RefreshBalances(NetWorthQueryOptions options = default(NetWorthQueryOptions))
+	{
+		List<object> args = new();
+		string dateFilter = string.Empty;
+		if (options.BeforeDate.HasValue)
+		{
+			dateFilter = "AND [When] < ?";
+			args.Add(options.BeforeDate.Value);
+		}
+
+		object[] argsArray = args.ToArray();
+
+		string sql = "DROP TABLE IF EXISTS [Balances]";
+		this.connection.Execute(sql);
+		sql = @"
+CREATE TEMP TABLE [Balances] (
+  [AccountId] INTEGER,
+  [AssetId] INTEGER,
+  [Balance] REAL
+)";
+		this.connection.Execute(sql);
+		sql = $@"
+INSERT INTO [Balances]
+SELECT [CreditAccountId] AS [AccountId], [CreditAssetId] AS [AssetId], TOTAL([CreditAmount]) AS [Amount]
+FROM [Transaction]
+WHERE [CreditAccountId] IS NOT NULL {dateFilter}
+GROUP BY [CreditAccountId], [CreditAssetId]";
+		this.connection.Execute(sql, argsArray);
+
+		sql = $@"INSERT INTO [Balances]
+SELECT [DebitAccountId] AS [AccountId], [DebitAssetId] AS [AssetId], -TOTAL([DebitAmount]) AS [Amount]
+FROM [Transaction]
+WHERE [DebitAccountId] IS NOT NULL {dateFilter}
+GROUP BY [DebitAccountId], [DebitAssetId]";
+		this.connection.Execute(sql, argsArray);
+	}
+
+	private void ExecuteSql(string sql)
+	{
+		int result = SQLitePCL.raw.sqlite3_exec(this.connection.Handle, sql);
+		if (result is not SQLitePCL.raw.SQLITE_OK or SQLitePCL.raw.SQLITE_DONE)
+		{
+			string errMsg = SQLitePCL.raw.sqlite3_errmsg(this.connection.Handle).utf8_to_string();
+			throw new Exception(errMsg);
+		}
 	}
 
 	public struct NetWorthQueryOptions
@@ -431,5 +492,16 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		public IReadOnlyCollection<(ModelBase Before, ModelBase After)> Changed { get; }
 
 		public IReadOnlyCollection<ModelBase> Deleted { get; }
+	}
+
+	private class BalancesRow
+	{
+#pragma warning disable CS0649 // unset fields will be set by sqlite-pcl
+		public int AccountId { get; set; }
+
+		public int AssetId { get; set; }
+
+		public decimal Balance { get; set; }
+#pragma warning restore CS0649
 	}
 }

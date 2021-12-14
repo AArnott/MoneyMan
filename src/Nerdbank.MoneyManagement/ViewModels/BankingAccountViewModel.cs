@@ -70,6 +70,8 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
+	protected override bool IsPopulated => this.transactions is object;
+
 	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
 
 	/// <summary>
@@ -123,21 +125,7 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	internal void NotifyTransactionDeleted(Transaction transaction)
-	{
-		if (this.transactions is null)
-		{
-			// Nothing to refresh.
-			return;
-		}
-
-		if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
-		{
-			this.RemoveTransactionFromViewModel(transactionViewModel);
-		}
-	}
-
-	internal void NotifyTransactionChanged(Transaction transaction)
+	internal override void NotifyTransactionChanged(Transaction transaction)
 	{
 		if (this.transactions is null)
 		{
@@ -186,7 +174,7 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	internal BankingTransactionViewModel? FindTransaction(int id)
+	internal override BankingTransactionViewModel? FindTransaction(int id)
 	{
 		foreach (BankingTransactionViewModel transactionViewModel in this.Transactions)
 		{
@@ -236,7 +224,7 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.Balance) or nameof(this.TransferTargetName));
+	protected override bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.Value) or nameof(this.TransferTargetName));
 
 	protected override void CopyFromCore(Account account)
 	{
@@ -246,7 +234,7 @@ public class BankingAccountViewModel : AccountViewModel
 
 		if (this.MoneyFile is object && account.IsPersisted)
 		{
-			this.Balance = this.MoneyFile.GetBalance(account);
+			this.Value = this.MoneyFile.GetValue(account);
 		}
 
 		// Force reinitialization.
@@ -257,6 +245,19 @@ public class BankingAccountViewModel : AccountViewModel
 	{
 		base.ApplyToCore(account);
 		account.CurrencyAssetId = this.CurrencyAsset?.Id;
+	}
+
+	protected override void RemoveTransactionFromViewModel(EntityViewModel<Transaction> transactionViewModel)
+	{
+		if (this.transactions is null)
+		{
+			// Nothing to remove when the collection isn't initialized.
+			return;
+		}
+
+		int index = this.transactions.IndexOf((BankingTransactionViewModel)transactionViewModel);
+		this.transactions.RemoveAt(index);
+		this.UpdateBalances(index);
 	}
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -276,19 +277,6 @@ public class BankingAccountViewModel : AccountViewModel
 		{
 			this.UpdateBalances(e.OldStartingIndex);
 		}
-	}
-
-	private void RemoveTransactionFromViewModel(BankingTransactionViewModel transactionViewModel)
-	{
-		if (this.transactions is null)
-		{
-			// Nothing to remove when the collection isn't initialized.
-			return;
-		}
-
-		int index = this.transactions.IndexOf(transactionViewModel);
-		this.transactions.RemoveAt(index);
-		this.UpdateBalances(index);
 	}
 
 	private void UpdateBalances(int changedIndex1, int changedIndex2 = -1)

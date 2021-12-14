@@ -11,6 +11,7 @@ public class AccountFacts : EntityTestBase
 		this.account = new Account
 		{
 			Name = "test",
+			CurrencyAssetId = this.Money.PreferredAssetId,
 		};
 	}
 
@@ -43,38 +44,38 @@ public class AccountFacts : EntityTestBase
 	}
 
 	[Fact]
-	public void GetBalance_AcrossTransactions()
+	public void GetBalances_AcrossTransactions()
 	{
 		this.Money.Insert(this.account);
 
 		decimal expected = 0;
-		Assert.Equal(expected, this.Money.GetBalance(this.account));
+		Assert.Empty(this.Money.GetBalances(this.account));
 
-		this.Money.Insert(this.account.Deposit(5));
+		this.Money.Insert(this.account.Deposit(new Amount(5, this.account.CurrencyAssetId!.Value)));
 		expected += 5;
-		Assert.Equal(expected, this.Money.GetBalance(this.account));
+		Assert.Equal(expected, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 
-		this.Money.Insert(this.account.Withdraw(2.5m));
+		this.Money.Insert(this.account.Withdraw(new Amount(2.5m, this.account.CurrencyAssetId!.Value)));
 		expected -= 2.5m;
-		Assert.Equal(expected, this.Money.GetBalance(this.account));
+		Assert.Equal(expected, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 	}
 
 	[Fact]
-	public void GetBalance_AcrossAccounts()
+	public void GetBalances_AcrossAccounts()
 	{
-		var account2 = new Account { Name = "test2" };
+		var account2 = new Account { Name = "test2", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(this.account);
 		this.Money.Insert(account2);
 
-		this.Money.Insert(this.account.Deposit(5));
-		this.Money.Insert(this.account.Transfer(account2, 2.2m));
+		this.Money.Insert(this.account.Deposit(new Amount(5, this.account.CurrencyAssetId!.Value)));
+		this.Money.Insert(this.account.Transfer(account2, new Amount(2.2m, this.account.CurrencyAssetId!.Value)));
 
-		Assert.Equal(2.8m, this.Money.GetBalance(this.account));
-		Assert.Equal(2.2m, this.Money.GetBalance(account2));
+		Assert.Equal(2.8m, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
+		Assert.Equal(2.2m, this.Money.GetBalances(account2)[this.account.CurrencyAssetId!.Value]);
 
-		this.Money.Insert(account2.Transfer(this.account, 0.4m));
+		this.Money.Insert(account2.Transfer(this.account, new Amount(0.4m, this.account.CurrencyAssetId!.Value)));
 
-		Assert.Equal(3.2m, this.Money.GetBalance(this.account));
-		Assert.Equal(1.8m, this.Money.GetBalance(account2));
+		Assert.Equal(3.2m, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
+		Assert.Equal(1.8m, this.Money.GetBalances(account2)[this.account.CurrencyAssetId!.Value]);
 	}
 }

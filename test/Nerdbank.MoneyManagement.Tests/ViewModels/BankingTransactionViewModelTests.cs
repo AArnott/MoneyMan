@@ -1,13 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
-
-public class TransactionViewModelTests : MoneyTestBase
+public class BankingTransactionViewModelTests : MoneyTestBase
 {
 	private BankingAccountViewModel account;
 	private BankingAccountViewModel otherAccount;
@@ -26,7 +20,7 @@ public class TransactionViewModelTests : MoneyTestBase
 
 	private ClearedState cleared = ClearedState.None;
 
-	public TransactionViewModelTests(ITestOutputHelper logger)
+	public BankingTransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
 		Account thisAccountModel = this.Money.Insert(new Account { Name = "this" });
@@ -101,19 +95,22 @@ public class TransactionViewModelTests : MoneyTestBase
 		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
 		Assert.Equal(-50, this.viewModel.Amount);
 		Assert.Equal(-50, split1.Amount);
-		Assert.Equal(0, this.viewModel.Model!.Amount);
+		Assert.Null(this.viewModel.Model!.CreditAmount);
+		Assert.Null(this.viewModel.Model!.DebitAmount);
 
 		split1.Amount = -40;
 		Assert.Equal(-40, this.viewModel.Amount);
 		Assert.Equal(-40, split1.Amount);
-		Assert.Equal(0, this.viewModel.Model!.Amount);
+		Assert.Null(this.viewModel.Model!.CreditAmount);
+		Assert.Null(this.viewModel.Model!.DebitAmount);
 
 		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
 		Assert.Equal(-40, this.viewModel.Amount);
 		Assert.Equal(-40, split1.Amount);
 		split2.Amount = -30;
 		Assert.Equal(-70, this.viewModel.Amount);
-		Assert.Equal(0, this.viewModel.Model!.Amount);
+		Assert.Null(this.viewModel.Model!.CreditAmount);
+		Assert.Null(this.viewModel.Model!.DebitAmount);
 
 		this.ReloadViewModel();
 		Assert.Equal(-70, this.viewModel.Amount);
@@ -502,14 +499,15 @@ public class TransactionViewModelTests : MoneyTestBase
 		viewModel.Cleared = this.cleared;
 		viewModel.ApplyTo(transaction);
 
-		Assert.Equal(this.account.Id, transaction.CreditAccountId);
+		Assert.Null(transaction.DebitAmount);
 		Assert.Null(transaction.DebitAccountId);
+		Assert.Equal(this.account.Id, transaction.CreditAccountId);
+		Assert.Equal(this.amount, transaction.CreditAmount);
 		Assert.Equal(this.payee, transaction.Payee);
-		Assert.Equal(this.amount, transaction.Amount);
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(this.memo, transaction.Memo);
 		Assert.Equal(this.checkNumber, transaction.CheckNumber);
-		Assert.Equal(this.cleared, transaction.Cleared);
+		Assert.Equal(this.cleared, transaction.CreditCleared);
 
 		// Test auto-save behavior.
 		viewModel.Memo = "bonus";
@@ -517,8 +515,9 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		// Test negative amount.
 		viewModel.Amount *= -1;
-		Assert.Equal(transaction.Amount, this.amount);
+		Assert.Equal(this.amount, transaction.DebitAmount);
 		Assert.Equal(this.account.Id, transaction.DebitAccountId);
+		Assert.Null(transaction.CreditAmount);
 		Assert.Null(transaction.CreditAccountId);
 
 		// Test a money transfer.
@@ -536,17 +535,17 @@ public class TransactionViewModelTests : MoneyTestBase
 		split2.Amount = 4;
 
 		Assert.Equal(6, this.viewModel.Amount);
-		Assert.Equal(0, this.viewModel.Model!.Amount);
+		Assert.Null(this.viewModel.Model!.CreditAmount);
 		Assert.Equal(Category.Split, this.viewModel.Model.CategoryId);
 
 		Transaction splitModel1 = this.Money.Transactions.First(s => s.Id == split1.Id);
-		Assert.Equal(split1.Amount, splitModel1.Amount);
+		Assert.Equal(split1.Amount, splitModel1.CreditAmount);
 		Assert.Equal(this.viewModel.Id, splitModel1.ParentTransactionId);
 		Assert.Equal(this.viewModel.ThisAccount.Id, splitModel1.CreditAccountId);
 		Assert.Null(splitModel1.DebitAccountId);
 
 		Transaction splitModel2 = this.Money.Transactions.First(s => s.Id == split2.Id);
-		Assert.Equal(split2.Amount, splitModel2.Amount);
+		Assert.Equal(split2.Amount, splitModel2.CreditAmount);
 	}
 
 	[Fact]
@@ -569,22 +568,22 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		Transaction transaction = this.viewModel.Model!;
 		transaction.Payee = this.payee;
-		transaction.Amount = this.amount;
 		transaction.When = this.when;
 		transaction.Memo = this.memo;
 		transaction.CheckNumber = this.checkNumber;
-		transaction.Cleared = this.cleared;
+		transaction.CreditCleared = this.cleared;
 		transaction.CategoryId = categoryViewModel.Id;
-		transaction.DebitAccountId = this.account.Id;
+		transaction.CreditAmount = this.amount;
+		transaction.CreditAccountId = this.account.Id;
 
 		this.viewModel.CopyFrom(transaction);
 
 		Assert.Equal(transaction.Payee, this.viewModel.Payee);
-		Assert.Equal(-transaction.Amount, this.viewModel.Amount);
+		Assert.Equal(transaction.CreditAmount, this.viewModel.Amount);
 		Assert.Equal(transaction.When, this.viewModel.When);
 		Assert.Equal(transaction.Memo, this.viewModel.Memo);
 		Assert.Equal(transaction.CheckNumber, this.viewModel.CheckNumber);
-		Assert.Equal(transaction.Cleared, this.viewModel.Cleared);
+		Assert.Equal(transaction.CreditCleared, this.viewModel.Cleared);
 		Assert.Equal(categoryViewModel.Id, Assert.IsType<CategoryViewModel>(this.viewModel.CategoryOrTransfer).Id);
 
 		// Test auto-save behavior.
@@ -600,14 +599,16 @@ public class TransactionViewModelTests : MoneyTestBase
 	public void CopyFrom_TransferToAccount()
 	{
 		Transaction transaction = this.viewModel.Model!;
-		transaction.Amount = this.amount;
+		transaction.CreditAmount = this.amount;
+		transaction.DebitAmount = this.amount;
 		transaction.CreditAccountId = this.account.Id;
 		transaction.DebitAccountId = this.otherAccount.Id;
 		this.Money.Insert(transaction);
 
 		this.viewModel.CopyFrom(transaction);
 
-		Assert.Equal(transaction.Amount, this.viewModel.Amount);
+		Assert.Equal(transaction.CreditAmount, this.viewModel.Amount);
+		Assert.Equal(transaction.DebitAmount, this.viewModel.Amount);
 		Assert.Equal(this.otherAccount.Id, Assert.IsType<BankingAccountViewModel>(this.viewModel.CategoryOrTransfer).Id);
 	}
 
@@ -616,14 +617,15 @@ public class TransactionViewModelTests : MoneyTestBase
 	{
 		Transaction transaction = new Transaction
 		{
-			Amount = this.amount,
+			CreditAmount = this.amount - 1,
 			CreditAccountId = this.otherAccount.Id,
+			DebitAmount = this.amount,
 			DebitAccountId = this.account.Id,
 		};
 
 		this.viewModel.CopyFrom(transaction);
 
-		Assert.Equal(-transaction.Amount, this.viewModel.Amount);
+		Assert.Equal(-transaction.DebitAmount, this.viewModel.Amount);
 		Assert.Equal(this.otherAccount.Id, Assert.IsType<BankingAccountViewModel>(this.viewModel.CategoryOrTransfer).Id);
 	}
 
@@ -637,9 +639,9 @@ public class TransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		Transaction split1 = new() { Amount = 3, CreditAccountId = this.account.Id, ParentTransactionId = transaction.Id };
+		Transaction split1 = new() { CreditAmount = 3, CreditAccountId = this.account.Id, ParentTransactionId = transaction.Id };
 		this.Money.Insert(split1);
-		Transaction split2 = new() { Amount = 7, CreditAccountId = this.account.Id, ParentTransactionId = transaction.Id };
+		Transaction split2 = new() { CreditAmount = 7, CreditAccountId = this.account.Id, ParentTransactionId = transaction.Id };
 		this.Money.Insert(split2);
 
 		this.ReloadViewModel();
@@ -649,8 +651,8 @@ public class TransactionViewModelTests : MoneyTestBase
 		Assert.Equal(10, this.viewModel.Amount);
 		Assert.Same(SplitCategoryPlaceholder.Singleton, this.viewModel.CategoryOrTransfer);
 		Assert.Equal(3, this.viewModel.Splits.Count);
-		Assert.Single(this.viewModel.Splits, s => s.Amount == split1.Amount);
-		Assert.Single(this.viewModel.Splits, s => s.Amount == split2.Amount);
+		Assert.Single(this.viewModel.Splits, s => s.Amount == split1.CreditAmount);
+		Assert.Single(this.viewModel.Splits, s => s.Amount == split2.CreditAmount);
 	}
 
 	[Fact]

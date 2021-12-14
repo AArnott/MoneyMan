@@ -70,18 +70,18 @@ public class MoneyFileTests : IDisposable
 	}
 
 	[Fact]
-	public void GetBalance()
+	public void GetBalances()
 	{
 		using MoneyFile money = this.Load();
-		Assert.Throws<ArgumentNullException>(() => money.GetBalance(null!));
-		Assert.Throws<ArgumentException>(() => money.GetBalance(new Account()));
+		Assert.Throws<ArgumentNullException>(() => money.GetBalances(null!));
+		Assert.Throws<ArgumentException>(() => money.GetBalances(new Account()));
 
-		Account account = new() { Name = "Checking" };
+		Account account = new() { Name = "Checking", CurrencyAssetId = money.PreferredAssetId };
 		money.Insert(account);
-		Assert.Equal(0, money.GetBalance(account));
-		Transaction tx = new() { CreditAccountId = account.Id, Amount = 3 };
+		Assert.Empty(money.GetBalances(account));
+		Transaction tx = new() { CreditAccountId = account.Id, CreditAmount = 3, CreditAssetId = account.CurrencyAssetId };
 		money.Insert(tx);
-		Assert.Equal(3, money.GetBalance(account));
+		Assert.Equal(3, money.GetBalances(account)[account.CurrencyAssetId!.Value]);
 	}
 
 	[Fact]
@@ -89,17 +89,17 @@ public class MoneyFileTests : IDisposable
 	{
 		using (MoneyFile? money = this.Load())
 		{
-			var acct1 = new Account { Name = "first" };
-			var acct2 = new Account { Name = "second" };
+			var acct1 = new Account { Name = "first", CurrencyAssetId = money.PreferredAssetId };
+			var acct2 = new Account { Name = "second", CurrencyAssetId = money.PreferredAssetId };
 
 			money.InsertAll(acct1, acct2);
-			money.Insert(new Transaction { CreditAccountId = acct1.Id, When = DateTime.Parse("1/1/2015"), Amount = 7 });
-			money.Insert(new Transaction { CreditAccountId = acct2.Id, When = DateTime.Parse("1/1/2016"), Amount = 3 });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016"), Amount = 2.5m });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, CreditAccountId = acct2.Id, When = DateTime.Parse("2/1/2016"), Amount = 1 });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016 11:59 PM"), Amount = 1.3m });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2016"), Amount = 4m });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2222"), Amount = 0.3m });
+			money.Insert(new Transaction { CreditAccountId = acct1.Id, When = DateTime.Parse("1/1/2015"), CreditAmount = 7, CreditAssetId = acct1.CurrencyAssetId });
+			money.Insert(new Transaction { CreditAccountId = acct2.Id, When = DateTime.Parse("1/1/2016"), CreditAmount = 3, CreditAssetId = acct2.CurrencyAssetId });
+			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016"), DebitAmount = 2.5m, DebitAssetId = acct1.CurrencyAssetId });
+			money.Insert(new Transaction { DebitAccountId = acct1.Id, CreditAccountId = acct2.Id, When = DateTime.Parse("2/1/2016"), CreditAmount = 1, CreditAssetId = acct2.CurrencyAssetId, DebitAmount = 1, DebitAssetId = acct1.CurrencyAssetId });
+			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016 11:59 PM"), DebitAmount = 1.3m, DebitAssetId = acct1.CurrencyAssetId });
+			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2016"), DebitAmount = 4m, DebitAssetId = acct1.CurrencyAssetId });
+			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2222"), DebitAmount = 0.3m, DebitAssetId = acct1.CurrencyAssetId });
 
 			Assert.Equal(6.2m, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Parse("2/1/2016") }));
 			Assert.Equal(1.9m, money.GetNetWorth());
@@ -111,12 +111,12 @@ public class MoneyFileTests : IDisposable
 	{
 		using (MoneyFile? money = this.Load())
 		{
-			var openAccount = new Account { Name = "first" };
-			var closedAccount = new Account { Name = "second", IsClosed = true };
+			var openAccount = new Account { Name = "first", Type = Account.AccountType.Banking, CurrencyAssetId = money.PreferredAssetId };
+			var closedAccount = new Account { Name = "second", Type = Account.AccountType.Banking, CurrencyAssetId = money.PreferredAssetId, IsClosed = true };
 
 			money.InsertAll(openAccount, closedAccount);
-			money.Insert(openAccount.Deposit(7));
-			money.Insert(closedAccount.Deposit(3));
+			money.Insert(openAccount.Deposit(new Amount(7, openAccount.CurrencyAssetId.Value)));
+			money.Insert(closedAccount.Deposit(new Amount(3, closedAccount.CurrencyAssetId.Value)));
 
 			Assert.Equal(7, money.GetNetWorth());
 			Assert.Equal(10, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { IncludeClosedAccounts = true }));
@@ -198,7 +198,7 @@ public class MoneyFileTests : IDisposable
 		Assert.Throws<ObjectDisposedException>(() => money.InsertOrReplace(new Account { Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Delete(new Account { Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.GetNetWorth());
-		Assert.Throws<ObjectDisposedException>(() => money.GetBalance(new Account { Id = 3, Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.GetBalances(new Account { Id = 3, Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Categories);
 		Assert.Throws<ObjectDisposedException>(() => money.Accounts);
 		Assert.Throws<ObjectDisposedException>(() => money.Transactions);

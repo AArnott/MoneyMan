@@ -15,8 +15,9 @@ public static class TemplateData
 		{
 			new Category { Name = "Groceries" },
 			new Category { Name = "Entertainment" },
-			new Account { Name = "Checking", CurrencyAssetId = 1 },
-			new Account { Name = "Savings", CurrencyAssetId = 1 },
+			new Category { Name = "Salary" },
+			new Account { Name = "Checking", CurrencyAssetId = moneyFile.PreferredAssetId },
+			new Account { Name = "Savings", CurrencyAssetId = moneyFile.PreferredAssetId },
 		});
 	}
 }

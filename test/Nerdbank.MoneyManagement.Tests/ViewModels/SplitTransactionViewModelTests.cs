@@ -74,7 +74,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 		this.viewModel.Memo = this.memo;
 		this.viewModel.ApplyToModel();
 
-		Assert.Equal(this.amount, this.viewModel.Model!.Amount);
+		Assert.Equal(this.amount, this.viewModel.Model!.CreditAmount);
 		Assert.Equal(this.memo, this.viewModel.Model.Memo);
 	}
 
@@ -85,7 +85,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 
 		Transaction splitTransaction = new Transaction
 		{
-			Amount = this.amount,
+			CreditAmount = this.amount,
 			Memo = this.memo,
 			CategoryId = this.spendingCategory.Id,
 			CreditAccountId = this.checkingAccount.Id,
@@ -93,7 +93,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 
 		this.viewModel.CopyFrom(splitTransaction);
 
-		Assert.Equal(splitTransaction.Amount, this.viewModel.Amount);
+		Assert.Equal(splitTransaction.CreditAmount, this.viewModel.Amount);
 		Assert.Equal(splitTransaction.Memo, this.viewModel.Memo);
 		Assert.Equal(this.spendingCategory.Id, ((CategoryViewModel?)this.viewModel.CategoryOrTransfer)?.Id);
 

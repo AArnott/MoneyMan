@@ -406,7 +406,7 @@ public class BankingTransactionViewModel : EntityViewModel<Transaction>
 		transaction.When = this.When;
 		transaction.Memo = this.Memo;
 		transaction.CheckNumber = this.CheckNumber;
-		transaction.Cleared = this.Cleared;
+
 		if (this.ContainsSplits)
 		{
 			transaction.CategoryId = Category.Split;
@@ -419,22 +419,52 @@ public class BankingTransactionViewModel : EntityViewModel<Transaction>
 			// and always have their own Amount set to 0.
 			transaction.CreditAccountId = this.ThisAccount.Id;
 			transaction.DebitAccountId = this.ThisAccount.Id;
-			transaction.Amount = 0;
+			transaction.CreditAmount = null;
+			transaction.DebitAmount = null;
+			transaction.CreditAssetId = null;
+			transaction.DebitAssetId = null;
 		}
 		else
 		{
-			transaction.Amount = Math.Abs(this.Amount);
 			transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
 			if (this.Amount < 0)
 			{
+				transaction.DebitCleared = this.Cleared;
 				transaction.DebitAccountId = this.ThisAccount.Id;
-				transaction.CreditAccountId = (this.CategoryOrTransfer as BankingAccountViewModel)?.Id;
+				transaction.DebitAmount = -this.Amount;
+				transaction.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
+				if (this.CategoryOrTransfer is AccountViewModel xfer)
+				{
+					transaction.CreditAccountId = xfer.Id;
+					transaction.CreditAmount = -this.Amount;
+					transaction.Action = TransactionAction.Transfer;
+				}
+				else
+				{
+					transaction.CreditAccountId = null;
+					transaction.CreditAmount = null;
+					transaction.Action = TransactionAction.Withdraw;
+				}
 			}
 			else
 			{
+				transaction.CreditCleared = this.Cleared;
 				transaction.CreditAccountId = this.ThisAccount.Id;
-				transaction.DebitAccountId = (this.CategoryOrTransfer as BankingAccountViewModel)?.Id;
+				transaction.CreditAmount = this.Amount;
+				transaction.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
+				if (this.CategoryOrTransfer is AccountViewModel xfer)
+				{
+					transaction.DebitAccountId = xfer.Id;
+					transaction.DebitAmount = this.Amount;
+					transaction.Action = TransactionAction.Transfer;
+				}
+				else
+				{
+					transaction.DebitAccountId = null;
+					transaction.DebitAmount = null;
+					transaction.Action = TransactionAction.Deposit;
+				}
 			}
 		}
 	}
@@ -447,7 +477,7 @@ public class BankingTransactionViewModel : EntityViewModel<Transaction>
 		this.SetProperty(ref this.when, transaction.When, nameof(this.When));
 		this.Memo = transaction.Memo;
 		this.CheckNumber = transaction.CheckNumber;
-		this.Cleared = transaction.Cleared;
+		this.Cleared = transaction.CreditAccountId == this.ThisAccount.Id ? transaction.CreditCleared : transaction.DebitCleared;
 
 		if (transaction.CategoryId is int categoryId)
 		{
@@ -487,7 +517,11 @@ public class BankingTransactionViewModel : EntityViewModel<Transaction>
 		}
 		else
 		{
-			this.SetProperty(ref this.amount, transaction.CreditAccountId == this.ThisAccount.Id ? transaction.Amount : -transaction.Amount, nameof(this.Amount));
+			decimal amount =
+				transaction.CreditAccountId == this.ThisAccount.Id ? (transaction.CreditAmount ?? 0) :
+				transaction.DebitAccountId == this.ThisAccount.Id ? (-transaction.DebitAmount ?? 0) :
+				0;
+			this.SetProperty(ref this.amount, amount, nameof(this.Amount));
 		}
 	}
 

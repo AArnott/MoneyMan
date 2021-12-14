@@ -9,7 +9,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 
 public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 {
-	private decimal balance;
+	private decimal value;
 	private string name = string.Empty;
 	private bool isClosed;
 	private Account.AccountType type;
@@ -57,10 +57,17 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 
 	public bool TypeIsReadOnly => !this.IsEmpty;
 
-	public decimal Balance
+	/// <summary>
+	/// Gets or sets the value of this account, measured in the user's preferred currency.
+	/// </summary>
+	/// <remarks>
+	/// For ordinary banking accounts, this is simply the balance on the account (converted to the user's preferred currency as appropriate).
+	/// For investment accounts, this so the net value of all positions held in that account.
+	/// </remarks>
+	public decimal Value
 	{
-		get => this.balance;
-		set => this.SetProperty(ref this.balance, value);
+		get => this.value;
+		set => this.SetProperty(ref this.value, value);
 	}
 
 	protected internal DocumentViewModel DocumentViewModel { get; }
@@ -69,6 +76,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	/// Gets a value indicating whether the account is empty, and therefore able to change to another type.
 	/// </summary>
 	protected abstract bool IsEmpty { get; }
+
+	protected abstract bool IsPopulated { get; }
 
 	protected string? DebuggerDisplay => this.Name;
 
@@ -95,6 +104,26 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 
 		return newViewModel;
 	}
+
+	internal virtual void NotifyTransactionDeleted(Transaction transaction)
+	{
+		if (!this.IsPopulated)
+		{
+			// Nothing to refresh.
+			return;
+		}
+
+		if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
+		{
+			this.RemoveTransactionFromViewModel(transactionViewModel);
+		}
+	}
+
+	internal abstract void NotifyTransactionChanged(Transaction transaction);
+
+	internal abstract EntityViewModel<Transaction>? FindTransaction(int id);
+
+	protected abstract void RemoveTransactionFromViewModel(EntityViewModel<Transaction> transaction);
 
 	protected override void ApplyToCore(Account account)
 	{

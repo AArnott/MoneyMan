@@ -6,10 +6,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public class InvestingTransactionViewModel : EntityViewModel<InvestingTransaction>
+public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 {
 	private DateTime when;
-	private InvestmentAction? action;
+	private TransactionAction? action;
 	private AccountViewModel? creditAccount;
 	private AccountViewModel? debitAccount;
 	private AssetViewModel? creditAsset;
@@ -17,7 +17,7 @@ public class InvestingTransactionViewModel : EntityViewModel<InvestingTransactio
 	private decimal? creditAmount;
 	private decimal? debitAmount;
 
-	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, InvestingTransaction? transaction)
+	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, Transaction? transaction)
 		: base(thisAccount.MoneyFile)
 	{
 		this.ThisAccount = thisAccount;
@@ -29,16 +29,16 @@ public class InvestingTransactionViewModel : EntityViewModel<InvestingTransactio
 		}
 	}
 
-	/// <inheritdoc cref="InvestingTransaction.When"/>
+	/// <inheritdoc cref="Transaction.When"/>
 	public DateTime When
 	{
 		get => this.when;
 		set => this.SetProperty(ref this.when, value);
 	}
 
-	/// <inheritdoc cref="InvestingTransaction.Action"/>
+	/// <inheritdoc cref="Transaction.Action"/>
 	[Required]
-	public InvestmentAction? Action
+	public TransactionAction? Action
 	{
 		get => this.action;
 		set
@@ -50,23 +50,23 @@ public class InvestingTransactionViewModel : EntityViewModel<InvestingTransactio
 				{
 					switch (value.Value)
 					{
-						case InvestmentAction.Buy:
+						case TransactionAction.Buy:
 							break;
-						case InvestmentAction.Sell:
+						case TransactionAction.Sell:
 							break;
-						case InvestmentAction.Exchange:
+						case TransactionAction.Exchange:
 							break;
-						case InvestmentAction.Remove:
-						case InvestmentAction.Withdraw:
+						case TransactionAction.Remove:
+						case TransactionAction.Withdraw:
 							this.CreditAccount = null;
 							this.DebitAccount = this.ThisAccount;
 							break;
-						case InvestmentAction.AdjustShareBalance:
+						case TransactionAction.AdjustShareBalance:
 							break;
-						case InvestmentAction.Interest:
-						case InvestmentAction.Add:
-						case InvestmentAction.Deposit:
-						case InvestmentAction.Dividend:
+						case TransactionAction.Interest:
+						case TransactionAction.Add:
+						case TransactionAction.Deposit:
+						case TransactionAction.Dividend:
 							this.CreditAccount = this.ThisAccount;
 							this.DebitAccount = null;
 							break;
@@ -77,21 +77,21 @@ public class InvestingTransactionViewModel : EntityViewModel<InvestingTransactio
 	}
 
 	/// <summary>
-	/// Gets a collection of <see cref="InvestmentAction"/> that may be set to <see cref="Action"/>,
+	/// Gets a collection of <see cref="TransactionAction"/> that may be set to <see cref="Action"/>,
 	/// with human-readable captions.
 	/// </summary>
-	public ReadOnlyCollection<EnumValueViewModel<InvestmentAction>> Actions { get; } = new ReadOnlyCollection<EnumValueViewModel<InvestmentAction>>(new EnumValueViewModel<InvestmentAction>[]
+	public ReadOnlyCollection<EnumValueViewModel<TransactionAction>> Actions { get; } = new ReadOnlyCollection<EnumValueViewModel<TransactionAction>>(new EnumValueViewModel<TransactionAction>[]
 	{
-		new(InvestmentAction.Buy, nameof(InvestmentAction.Buy)),
-		new(InvestmentAction.Sell, nameof(InvestmentAction.Sell)),
-		new(InvestmentAction.Exchange, nameof(InvestmentAction.Exchange)),
-		new(InvestmentAction.Dividend, nameof(InvestmentAction.Dividend)),
-		new(InvestmentAction.Interest, nameof(InvestmentAction.Interest)),
-		new(InvestmentAction.Add, nameof(InvestmentAction.Add)),
-		new(InvestmentAction.Remove, nameof(InvestmentAction.Remove)),
-		new(InvestmentAction.AdjustShareBalance, nameof(InvestmentAction.AdjustShareBalance)),
-		new(InvestmentAction.Deposit, nameof(InvestmentAction.Deposit)),
-		new(InvestmentAction.Withdraw, nameof(InvestmentAction.Withdraw)),
+		new(TransactionAction.Buy, nameof(TransactionAction.Buy)),
+		new(TransactionAction.Sell, nameof(TransactionAction.Sell)),
+		new(TransactionAction.Exchange, nameof(TransactionAction.Exchange)),
+		new(TransactionAction.Dividend, nameof(TransactionAction.Dividend)),
+		new(TransactionAction.Interest, nameof(TransactionAction.Interest)),
+		new(TransactionAction.Add, nameof(TransactionAction.Add)),
+		new(TransactionAction.Remove, nameof(TransactionAction.Remove)),
+		new(TransactionAction.AdjustShareBalance, nameof(TransactionAction.AdjustShareBalance)),
+		new(TransactionAction.Deposit, nameof(TransactionAction.Deposit)),
+		new(TransactionAction.Withdraw, nameof(TransactionAction.Withdraw)),
 	});
 
 	/// <summary>
@@ -135,7 +135,7 @@ public class InvestingTransactionViewModel : EntityViewModel<InvestingTransactio
 		set => this.SetProperty(ref this.debitAccount, value);
 	}
 
-	protected override void ApplyToCore(InvestingTransaction model)
+	protected override void ApplyToCore(Transaction model)
 	{
 		model.When = this.When;
 		model.Action = this.Action!.Value;
@@ -149,7 +149,7 @@ public class InvestingTransactionViewModel : EntityViewModel<InvestingTransactio
 		model.DebitAmount = this.DebitAmount;
 	}
 
-	protected override void CopyFromCore(InvestingTransaction model)
+	protected override void CopyFromCore(Transaction model)
 	{
 		this.When = model.When;
 		this.Action = model.Action;

@@ -31,9 +31,9 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	{
 		TestUtilities.AssertPropertyChangedEvent(
 			this.viewModel,
-			() => this.viewModel.Action = InvestmentAction.Withdraw,
+			() => this.viewModel.Action = TransactionAction.Withdraw,
 			nameof(this.viewModel.Action));
-		Assert.Equal(InvestmentAction.Withdraw, this.viewModel.Action);
+		Assert.Equal(TransactionAction.Withdraw, this.viewModel.Action);
 	}
 
 	[Fact]
@@ -45,15 +45,15 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
-		InvestingTransaction transaction = new();
+		Transaction transaction = new();
 		InvestingTransactionViewModel viewModel = new(this.account, null);
 
 		viewModel.When = this.when;
-		viewModel.Action = InvestmentAction.Sell;
+		viewModel.Action = TransactionAction.Sell;
 		viewModel.ApplyTo(transaction);
 
 		Assert.Equal(this.when, transaction.When);
-		Assert.Equal(InvestmentAction.Sell, transaction.Action);
+		Assert.Equal(TransactionAction.Sell, transaction.Action);
 	}
 
 	[Fact]
@@ -65,13 +65,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void CopyFrom()
 	{
-		InvestingTransaction transaction = this.viewModel.Model!;
+		Transaction transaction = this.viewModel.Model!;
 		transaction.When = this.when;
-		transaction.Action = InvestmentAction.Sell;
+		transaction.Action = TransactionAction.Sell;
 
 		this.viewModel.CopyFrom(transaction);
 
 		Assert.Equal(this.when, this.viewModel.When);
-		Assert.Equal(InvestmentAction.Sell, this.viewModel.Action);
+		Assert.Equal(TransactionAction.Sell, this.viewModel.Action);
 	}
 }

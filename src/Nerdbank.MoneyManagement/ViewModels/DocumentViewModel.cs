@@ -19,7 +19,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 	private readonly SortedObservableCollection<ITransactionTarget> transactionTargets = new(TransactionTargetSort.Instance);
 	private decimal netWorth;
 	private IList? selectedTransactions;
-	private object? selectedTransaction;
+	private EntityViewModel<Transaction>? selectedTransaction;
 	private SelectableViews selectedViewIndex;
 
 	public DocumentViewModel()
@@ -104,7 +104,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public AssetViewModel? DefaultCurrency => this.AssetsPanel.FindAsset("USD");
 
-	public object? SelectedTransaction
+	public EntityViewModel<Transaction>? SelectedTransaction
 	{
 		get => this.selectedTransaction;
 		set => this.SetProperty(ref this.selectedTransaction, value);
@@ -221,6 +221,13 @@ public class DocumentViewModel : BindableBase, IDisposable
 			this.AssetsPanel.ClearViewModel();
 			this.AccountsPanel.ClearViewModel();
 			this.BankingPanel.ClearViewModel();
+
+			foreach (Asset asset in this.MoneyFile.Assets)
+			{
+				AssetViewModel viewModel = new(asset, this.MoneyFile);
+				this.AssetsPanel.Add(viewModel);
+			}
+
 			foreach (Account account in this.MoneyFile.Accounts)
 			{
 				AccountViewModel viewModel = AccountViewModel.Create(account, this);
@@ -233,12 +240,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 			{
 				CategoryViewModel viewModel = new(category, this.MoneyFile);
 				this.CategoriesPanel.Categories.Add(viewModel);
-			}
-
-			foreach (Asset asset in this.MoneyFile.Assets)
-			{
-				AssetViewModel viewModel = new(asset, this.MoneyFile);
-				this.AssetsPanel.Add(viewModel);
 			}
 
 			this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
@@ -277,11 +278,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 		SearchForImpactedAccounts(e.Inserted);
 		SearchForImpactedAccounts(e.Deleted);
 		SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
-		foreach (BankingAccountViewModel accountViewModel in this.BankingPanel.BankingAccounts)
+		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 		{
 			if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
 			{
-				accountViewModel.Balance = this.MoneyFile.GetBalance(accountViewModel.Model);
+				accountViewModel.Value = this.MoneyFile.GetValue(accountViewModel.Model);
 
 				foreach (ModelBase model in e.Inserted)
 				{
@@ -379,12 +380,9 @@ public class DocumentViewModel : BindableBase, IDisposable
 					if (account is object)
 					{
 						this.BankingPanel.SelectedAccount = account;
-						if (account is BankingAccountViewModel bankingAccount)
+						if (account.FindTransaction(transaction.Id) is { } transactionViewModel)
 						{
-							if (bankingAccount.FindTransaction(transaction.Id) is BankingTransactionViewModel transactionViewModel)
-							{
-								this.SelectedTransaction = transactionViewModel;
-							}
+							this.SelectedTransaction = transactionViewModel;
 						}
 					}
 				}

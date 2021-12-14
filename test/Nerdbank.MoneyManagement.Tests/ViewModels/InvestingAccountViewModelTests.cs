@@ -31,7 +31,7 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 	{
 		InvestingTransactionViewModel tx = this.brokerage.Transactions[^1];
 		tx.When = DateTime.Now;
-		tx.Action = InvestmentAction.Buy;
+		tx.Action = TransactionAction.Buy;
 		Assert.Equal(2, this.brokerage.Transactions.Count);
 	}
 
@@ -40,8 +40,8 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 	{
 		this.Money.InsertAll(new ModelBase[]
 		{
-			new InvestingTransaction { Action = InvestmentAction.Add, CreditAccountId = this.brokerage.Id },
-			new InvestingTransaction { Action = InvestmentAction.Remove, DebitAccountId = this.brokerage.Id },
+			new Transaction { Action = TransactionAction.Add, CreditAccountId = this.brokerage.Id },
+			new Transaction { Action = TransactionAction.Remove, DebitAccountId = this.brokerage.Id },
 		});
 		this.brokerage = new InvestingAccountViewModel(this.brokerage.Model, this.DocumentViewModel);
 		Assert.Equal(2, this.brokerage.Transactions.Count(t => t.IsPersisted));
@@ -52,7 +52,7 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 	{
 		InvestingTransactionViewModel tx = this.brokerage.Transactions[^1];
 		tx.When = DateTime.Now;
-		tx.Action = InvestmentAction.Interest;
+		tx.Action = TransactionAction.Interest;
 		this.ReloadViewModel();
 		Assert.Equal(2, this.brokerage.Transactions.Count);
 	}
@@ -66,7 +66,7 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		checkingTx.CategoryOrTransfer = this.brokerage;
 		Assert.Equal(2, this.brokerage.Transactions.Count);
 		InvestingTransactionViewModel investingTx = this.brokerage.Transactions[0];
-		Assert.Equal(InvestmentAction.Deposit, investingTx.Action);
+		Assert.Equal(TransactionAction.Transfer, investingTx.Action);
 		Assert.Equal(this.checking, investingTx.DebitAccount);
 		Assert.Equal(this.brokerage, investingTx.CreditAccount);
 	}
@@ -75,11 +75,13 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 	public void DepositMadeFromInvestingContext()
 	{
 		InvestingTransactionViewModel investingTx = this.brokerage.Transactions[^1];
-		investingTx.Action = InvestmentAction.Deposit;
-		Assert.Equal(this.brokerage, investingTx.CreditAccount);
+		investingTx.Action = TransactionAction.Transfer;
 		investingTx.DebitAccount = this.checking;
-		investingTx.CreditAmount = 10;
 		investingTx.DebitAmount = 10;
+		investingTx.DebitAsset = this.checking.CurrencyAsset;
+		investingTx.CreditAmount = 10;
+		investingTx.CreditAccount = this.brokerage;
+		investingTx.CreditAsset = this.checking.CurrencyAsset;
 
 		Assert.Equal(2, this.checking.Transactions.Count);
 		BankingTransactionViewModel checkingTx = this.checking.Transactions[0];

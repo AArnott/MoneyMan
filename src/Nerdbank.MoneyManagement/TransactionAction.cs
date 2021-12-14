@@ -6,8 +6,28 @@ namespace Nerdbank.MoneyManagement;
 /// <summary>
 /// The kinds of investment transactions.
 /// </summary>
-public enum InvestmentAction
+public enum TransactionAction
 {
+	/// <summary>
+	/// Unspecified.
+	/// </summary>
+	Unspecified = 0,
+
+	/// <summary>
+	/// Deposit novel assets or cash into the database.
+	/// </summary>
+	Deposit,
+
+	/// <summary>
+	/// Withdraw assets or cash from tracking in the database.
+	/// </summary>
+	Withdraw,
+
+	/// <summary>
+	/// Transfers cash or assets across accounts.
+	/// </summary>
+	Transfer,
+
 	/// <summary>
 	/// Shares bought with cash.
 	/// </summary>
@@ -47,14 +67,4 @@ public enum InvestmentAction
 	/// Adjust share balance (usually to forcibly reconcile local records with those at a bank).
 	/// </summary>
 	AdjustShareBalance,
-
-	/// <summary>
-	/// Deposit cash.
-	/// </summary>
-	Deposit,
-
-	/// <summary>
-	/// Withdraw cash.
-	/// </summary>
-	Withdraw,
 }

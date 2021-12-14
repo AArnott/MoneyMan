@@ -27,8 +27,8 @@ public class InvestingAccountViewModel : AccountViewModel
 				this.transactions = new(TransactionSort.Instance);
 				if (this.MoneyFile is object && this.Id.HasValue)
 				{
-					List<InvestingTransaction> transactions = this.MoneyFile.GetTopLevelInvestingTransactionsFor(this.Id.Value);
-					foreach (InvestingTransaction transaction in transactions)
+					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id.Value);
+					foreach (Transaction transaction in transactions)
 					{
 						InvestingTransactionViewModel transactionViewModel = new(this, transaction);
 						this.transactions.Add(transactionViewModel);
@@ -49,10 +49,74 @@ public class InvestingAccountViewModel : AccountViewModel
 
 	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
 
+	protected override bool IsPopulated => this.transactions is object;
+
+	internal override InvestingTransactionViewModel? FindTransaction(int id)
+	{
+		foreach (InvestingTransactionViewModel transactionViewModel in this.Transactions)
+		{
+			if (transactionViewModel.Model?.Id == id)
+			{
+				return transactionViewModel;
+			}
+		}
+
+		return null;
+	}
+
+	internal override void NotifyTransactionChanged(Transaction transaction)
+	{
+		if (this.transactions is null)
+		{
+			// Nothing to refresh.
+			return;
+		}
+
+		// This transaction may have added or dropped our account as a transfer
+		bool removedFromAccount = transaction.CreditAccountId != this.Id && transaction.DebitAccountId != this.Id;
+		if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
+		{
+			if (removedFromAccount)
+			{
+				this.transactions.Remove(transactionViewModel);
+			}
+			else
+			{
+				transactionViewModel.CopyFrom(transaction);
+				int index = this.transactions.IndexOf(transactionViewModel);
+				if (index >= 0)
+				{
+					this.UpdateBalances(index);
+				}
+			}
+		}
+		else if (!removedFromAccount)
+		{
+			// This may be a new transaction we need to add. Only add top-level transactions or foreign splits.
+			if (transaction.ParentTransactionId is null || this.FindTransaction(transaction.ParentTransactionId.Value) is null)
+			{
+				this.transactions.Add(new InvestingTransactionViewModel(this, transaction));
+			}
+		}
+	}
+
 	protected override void ApplyToCore(Account account)
 	{
 		base.ApplyToCore(account);
 		account.CurrencyAssetId = null;
+	}
+
+	protected override void RemoveTransactionFromViewModel(EntityViewModel<Transaction> transactionViewModel)
+	{
+		if (this.transactions is null)
+		{
+			// Nothing to remove when the collection isn't initialized.
+			return;
+		}
+
+		int index = this.transactions.IndexOf((InvestingTransactionViewModel)transactionViewModel);
+		this.transactions.RemoveAt(index);
+		this.UpdateBalances(index);
 	}
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -82,7 +146,7 @@ public class InvestingAccountViewModel : AccountViewModel
 	{
 		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
 		_ = this.Transactions;
-		var volatileModel = new InvestingTransaction()
+		Transaction volatileModel = new()
 		{
 			When = DateTime.Today,
 		};

@@ -63,13 +63,13 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NetWorth()
 	{
-		Account account = new() { Name = "Checking" };
+		Account account = new() { Name = "Checking", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(account);
-		Transaction tx1 = new() { When = DateTime.Now, CreditAccountId = account.Id, Amount = 10 };
+		Transaction tx1 = new() { When = DateTime.Now, CreditAccountId = account.Id, CreditAmount = 10, CreditAssetId = account.CurrencyAssetId };
 		this.Money.Insert(tx1);
 		Assert.Equal(10, this.DocumentViewModel.NetWorth);
 
-		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, Amount = 3 };
+		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, DebitAmount = 3, DebitAssetId = account.CurrencyAssetId };
 		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Insert(tx2), nameof(this.DocumentViewModel.NetWorth));
 		Assert.Equal(7, this.DocumentViewModel.NetWorth);
 
