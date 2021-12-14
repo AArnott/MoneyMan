@@ -36,6 +36,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		this.AssetsPanel = new(this);
 		this.CategoriesPanel = new(this);
 		this.AccountsPanel = new(this);
+		this.ConfigurationPanel = new(this);
 
 		// Keep targets collection in sync with the two collections that make it up.
 		this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
@@ -74,6 +75,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 		/// The categories tab.
 		/// </summary>
 		Categories,
+
+		/// <summary>
+		/// The Configuration tab.
+		/// </summary>
+		Configuration,
 	}
 
 	public bool IsFileOpen => this.MoneyFile is object;
@@ -93,6 +99,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public AccountsPanelViewModel AccountsPanel { get; }
 
 	public CategoriesPanelViewModel CategoriesPanel { get; }
+
+	public ConfigurationPanelViewModel ConfigurationPanel { get; }
 
 	public SelectableViews SelectedViewIndex
 	{

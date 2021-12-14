@@ -26,8 +26,6 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	/// </summary>
 	private readonly Stack<(string SavepointName, string Activity, ModelBase? Model)> undoStack = new();
 
-	private int preferredAssetId;
-
 	private bool inUndoableTransaction;
 
 	/// <summary>
@@ -39,7 +37,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Requires.NotNull(connection, nameof(connection));
 		this.connection = connection;
 
-		this.preferredAssetId = this.connection.ExecuteScalar<int>("SELECT [PreferredAssetId] FROM [Configuration] LIMIT 1");
+		this.CurrentConfiguration = this.connection.Table<Configuration>().First();
 	}
 
 	/// <summary>
@@ -89,21 +87,11 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
-	public int PreferredAssetId
-	{
-		get => this.preferredAssetId;
-		set
-		{
-			if (this.connection.Execute("UPDATE [Configuration] SET [PreferredAssetId] = ?", value) != 1)
-			{
-				throw new InvalidOperationException("Failure writing configuration.");
-			}
-
-			this.preferredAssetId = value;
-		}
-	}
+	public int PreferredAssetId => this.CurrentConfiguration.PreferredAssetId;
 
 	public bool IsDisposed => this.connection.Handle is null;
+
+	internal Configuration CurrentConfiguration { get; }
 
 	internal IEnumerable<(string Savepoint, string Activity, ModelBase? Model)> UndoStack => this.undoStack;
 

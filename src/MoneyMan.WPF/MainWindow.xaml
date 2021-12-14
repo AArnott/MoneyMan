@@ -553,6 +553,15 @@
 					</ListView>
 				</DockPanel>
 			</TabItem>
+			<TabItem Header="{Binding Title}" DataContext="{Binding ConfigurationPanel}">
+				<StackPanel>
+					<Label Content="{Binding PreferredAssetLabel}" Target="{Binding ElementName=PreferredAssetPicker}" />
+					<ComboBox Name="PreferredAssetPicker"
+							  ItemsSource="{Binding Document.AssetsPanel.Assets, Source={StaticResource viewModel}}"
+							  SelectedItem="{Binding PreferredAsset}"
+							  DisplayMemberPath="Name"/>
+				</StackPanel>
+			</TabItem>
 		</TabControl>
 	</DockPanel>
 </Window>
