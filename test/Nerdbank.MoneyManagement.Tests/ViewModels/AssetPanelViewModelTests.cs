@@ -158,4 +158,38 @@ public class AssetPanelViewModelTests : MoneyTestBase
 		this.ReloadViewModel();
 		Assert.Contains(this.ViewModel.Assets, a => a.Id == asset1.Id);
 	}
+
+	[Fact]
+	public void IsPricesGridVisible()
+	{
+		AssetViewModel someAsset = this.ViewModel.NewAsset(SomeAssetName);
+		this.ViewModel.SelectedAsset = someAsset;
+		Assert.True(this.ViewModel.IsPricesGridVisible);
+
+		this.ViewModel.SelectedAsset = this.DocumentViewModel.DefaultCurrency;
+		Assert.False(this.ViewModel.IsPricesGridVisible);
+		this.ViewModel.SelectedAsset = null;
+		Assert.False(this.ViewModel.IsPricesGridVisible);
+	}
+
+	[Fact]
+	public void SelectedAssetPrices()
+	{
+		AssetViewModel someAsset = this.ViewModel.NewAsset(SomeAssetName);
+		Assert.Empty(this.ViewModel.SelectedAssetPrices);
+		this.Money.Insert(new AssetPrice
+		{
+			AssetId = someAsset.Id!.Value,
+			When = DateTime.Now,
+			ReferenceAssetId = this.Money.PreferredAssetId,
+			PriceInReferenceAsset = 10,
+		});
+		this.ViewModel.SelectedAsset = null;
+		this.ViewModel.SelectedAsset = someAsset;
+		AssetPriceViewModel price = Assert.Single(this.ViewModel.SelectedAssetPrices);
+		Assert.Equal(10, price.Price);
+
+		this.ViewModel.SelectedAsset = null;
+		Assert.Empty(this.ViewModel.SelectedAssetPrices);
+	}
 }

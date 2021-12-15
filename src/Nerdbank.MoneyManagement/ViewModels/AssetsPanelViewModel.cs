@@ -9,11 +9,13 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class AssetsPanelViewModel : BindableBase
 {
 	private readonly SortedObservableCollection<AssetViewModel> assets = new(AssetSort.Instance);
+	private readonly SortedObservableCollection<AssetPriceViewModel> assetPrices = new(AssetPriceSort.Instance);
 	private readonly DocumentViewModel documentViewModel;
 	private AssetViewModel? selectedAsset;
 
 	public AssetsPanelViewModel(DocumentViewModel documentViewModel)
 	{
+		this.RegisterDependentProperty(nameof(this.SelectedAsset), nameof(this.IsPricesGridVisible));
 		this.AddCommand = new AddCommandImpl(this);
 		this.DeleteCommand = new DeleteCommandImpl(this);
 		this.documentViewModel = documentViewModel;
@@ -40,16 +42,31 @@ public class AssetsPanelViewModel : BindableBase
 
 	public string TypeLabel => "T_ype";
 
+	public string PriceGridWhenColumnHeader => "Date";
+
+	public string PriceGridPriceColumnHeader => "Price";
+
 	/// <summary>
 	/// Gets or sets the selected asset.
 	/// </summary>
 	public AssetViewModel? SelectedAsset
 	{
 		get => this.selectedAsset;
-		set => this.SetProperty(ref this.selectedAsset, value);
+		set
+		{
+			if (this.selectedAsset != value)
+			{
+				this.SetProperty(ref this.selectedAsset, value);
+				this.FillAssetPrices();
+			}
+		}
 	}
 
+	public bool IsPricesGridVisible => this.SelectedAsset is object && this.SelectedAsset.Id != this.documentViewModel.MoneyFile?.PreferredAssetId;
+
 	public IReadOnlyList<AssetViewModel> Assets => this.assets;
+
+	public IReadOnlyCollection<AssetPriceViewModel> SelectedAssetPrices => this.assetPrices;
 
 	internal AssetViewModel? AddingAsset { get; set; }
 
@@ -124,6 +141,20 @@ public class AssetsPanelViewModel : BindableBase
 		this.assets.Clear();
 	}
 
+	private void FillAssetPrices()
+	{
+		this.assetPrices.Clear();
+		if (this.selectedAsset is object && this.documentViewModel.MoneyFile is object)
+		{
+			IEnumerable<AssetPriceViewModel> prices =
+				from assetPriceViewModel in this.documentViewModel.MoneyFile.AssetPrices
+				where assetPriceViewModel.AssetId == this.selectedAsset.Id && assetPriceViewModel.ReferenceAssetId == this.documentViewModel.MoneyFile.PreferredAssetId
+				orderby assetPriceViewModel.When descending
+				select new AssetPriceViewModel(this.documentViewModel, assetPriceViewModel);
+			this.assetPrices.AddRange(prices);
+		}
+	}
+
 	private class AssetSort : IComparer<AssetViewModel>
 	{
 		internal static readonly AssetSort Instance = new AssetSort();
@@ -150,6 +181,35 @@ public class AssetsPanelViewModel : BindableBase
 			}
 
 			return StringComparer.CurrentCultureIgnoreCase.Compare(x.Name, y.Name);
+		}
+	}
+
+	private class AssetPriceSort : IComparer<AssetPriceViewModel>
+	{
+		internal static readonly AssetPriceSort Instance = new AssetPriceSort();
+
+		private AssetPriceSort()
+		{
+		}
+
+		public int Compare(AssetPriceViewModel? x, AssetPriceViewModel? y)
+		{
+			if (x is null)
+			{
+				return y is null ? 0 : -1;
+			}
+			else if (y is null)
+			{
+				return 1;
+			}
+
+			int order = Utilities.CompareNullOrZeroComesLast(x.Id, y.Id);
+			if (order != 0)
+			{
+				return order;
+			}
+
+			return -StringComparer.CurrentCultureIgnoreCase.Compare(x.When, y.When);
 		}
 	}
 

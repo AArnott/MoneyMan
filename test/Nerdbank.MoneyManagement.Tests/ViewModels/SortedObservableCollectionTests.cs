@@ -6,10 +6,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft;
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
 
 public class SortedObservableCollectionTests : TestBase
 {
@@ -59,6 +55,65 @@ public class SortedObservableCollectionTests : TestBase
 		IList collection = this.collection;
 		collection.Add(5);
 		Assert.Equal(5, Assert.Single(collection));
+	}
+
+	[Fact]
+	public void AddRange()
+	{
+		NotifyCollectionChangedEventArgs args = TestUtilities.AssertCollectionChangedEvent(this.collection, () => TestUtilities.AssertPropertyChangedEvent(this.collection, () => this.collection.AddRange(new[] { 1, 5, 3 }), nameof(this.collection.Count)));
+		Assert.Equal(NotifyCollectionChangedAction.Add, args.Action);
+		Assert.Null(args.OldItems);
+		Assert.Equal(new[] { 5, 3, 1 }, args.NewItems);
+		Assert.Equal(0, args.NewStartingIndex);
+
+		Assert.Equal(new[] { 5, 3, 1 }, this.collection);
+	}
+
+	[Fact]
+	public void AddRange_ToNonEmptyCollection()
+	{
+		this.collection.Add(7);
+
+		List<NotifyCollectionChangedEventArgs> collectionEvents = new();
+		this.collection.CollectionChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+			Assert.Null(e.OldItems);
+
+			// As we save it, copy the NewItems collection because its content is only guaranteed while raising the event.
+			collectionEvents.Add(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, e.NewItems?.Cast<int>().ToArray(), e.NewStartingIndex));
+		};
+		List<PropertyChangedEventArgs> propertyEvents = new();
+		this.collection.PropertyChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			propertyEvents.Add(e);
+		};
+
+		this.collection.AddRange(new[] { 1, 9, 3 });
+		Assert.Equal(nameof(this.collection.Count), Assert.Single(propertyEvents).PropertyName);
+		Assert.Equal(3, collectionEvents.Count);
+		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems));
+		Assert.Equal(9, Assert.Single(collectionEvents[1].NewItems));
+		Assert.Equal(3, Assert.Single(collectionEvents[2].NewItems));
+		Assert.Equal(1, collectionEvents[0].NewStartingIndex);
+		Assert.Equal(0, collectionEvents[1].NewStartingIndex);
+		Assert.Equal(2, collectionEvents[2].NewStartingIndex);
+
+		Assert.Equal(new[] { 9, 7, 3, 1 }, this.collection);
+	}
+
+	[Fact]
+	public void AddRange_EmptyInput()
+	{
+		TestUtilities.AssertNoCollectionChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()));
+		TestUtilities.AssertPropertyChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()), invertExpectation: true, nameof(this.collection.Count));
+		Assert.Empty(this.collection);
+
+		this.collection.Add(3);
+		TestUtilities.AssertNoCollectionChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()));
+		TestUtilities.AssertPropertyChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()), invertExpectation: true, nameof(this.collection.Count));
 	}
 
 	[Fact]
