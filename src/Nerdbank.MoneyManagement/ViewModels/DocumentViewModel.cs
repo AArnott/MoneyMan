@@ -110,7 +110,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
 
-	public AssetViewModel? DefaultCurrency => this.AssetsPanel.FindAsset("USD");
+	public AssetViewModel? DefaultCurrency => this.MoneyFile is object ? this.AssetsPanel.FindAsset(this.MoneyFile.PreferredAssetId) : null;
 
 	public EntityViewModel<Transaction>? SelectedTransaction
 	{

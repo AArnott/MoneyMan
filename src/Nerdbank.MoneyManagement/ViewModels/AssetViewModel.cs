@@ -12,6 +12,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class AssetViewModel : EntityViewModel<Asset>
 {
 	private string name = string.Empty;
+	private string tickerSymbol = string.Empty;
 	private Asset.AssetType type;
 	private decimal currentPrice;
 	private bool? typeIsReadOnly;
@@ -42,6 +43,13 @@ public class AssetViewModel : EntityViewModel<Asset>
 			Requires.NotNull(value, nameof(value));
 			this.SetProperty(ref this.name, value);
 		}
+	}
+
+	/// <inheritdoc cref="Asset.TickerSymbol"/>
+	public string TickerSymbol
+	{
+		get => this.tickerSymbol;
+		set => this.SetProperty(ref this.tickerSymbol, value);
 	}
 
 	/// <inheritdoc cref="Asset.Type"/>
@@ -91,12 +99,14 @@ public class AssetViewModel : EntityViewModel<Asset>
 	protected override void ApplyToCore(Asset model)
 	{
 		model.Name = this.Name;
+		model.TickerSymbol = string.IsNullOrWhiteSpace(this.TickerSymbol) ? null : this.TickerSymbol;
 		model.Type = this.Type;
 	}
 
 	protected override void CopyFromCore(Asset model)
 	{
 		this.Name = model.Name;
+		this.TickerSymbol = model.TickerSymbol ?? string.Empty;
 		this.Type = model.Type;
 	}
 }

@@ -31,6 +31,17 @@ public class AssetViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void TickerSymbol()
+	{
+		Assert.Equal(string.Empty, this.viewModel.TickerSymbol);
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.TickerSymbol = "foo",
+			nameof(this.viewModel.TickerSymbol));
+		Assert.Equal("foo", this.viewModel.TickerSymbol);
+	}
+
+	[Fact]
 	public void Type()
 	{
 		Assert.Equal(Asset.AssetType.Security, this.viewModel.Type);
@@ -108,11 +119,17 @@ public class AssetViewModelTests : MoneyTestBase
 		Asset? asset = this.viewModel.Model!;
 
 		this.viewModel.Name = "some name";
+		this.viewModel.TickerSymbol = "ticker";
 		this.viewModel.Type = Asset.AssetType.Security;
 
 		this.viewModel.ApplyTo(asset);
 		Assert.Equal(this.viewModel.Name, asset.Name);
+		Assert.Equal(this.viewModel.TickerSymbol, asset.TickerSymbol);
 		Assert.Equal(this.viewModel.Type, asset.Type);
+
+		this.viewModel.TickerSymbol = " ";
+		this.viewModel.ApplyTo(asset);
+		Assert.Null(asset.TickerSymbol);
 
 		// Test auto-save behavior.
 		this.viewModel.Name = "another name";
@@ -131,6 +148,7 @@ public class AssetViewModelTests : MoneyTestBase
 		{
 			Id = 5,
 			Name = "some name",
+			TickerSymbol = "ticker",
 			Type = Asset.AssetType.Security,
 		};
 
@@ -138,6 +156,7 @@ public class AssetViewModelTests : MoneyTestBase
 
 		Assert.Equal(asset.Id, this.viewModel.Id);
 		Assert.Equal(asset.Name, this.viewModel.Name);
+		Assert.Equal(asset.TickerSymbol, this.viewModel.TickerSymbol);
 		Assert.Equal(asset.Type, this.viewModel.Type);
 	}
 }

@@ -16,7 +16,7 @@ public class AssetPanelViewModelTests : MoneyTestBase
 	public void InitialState()
 	{
 		AssetViewModel asset = Assert.Single(this.ViewModel.Assets);
-		Assert.Equal("USD", asset.Name);
+		Assert.Equal("USD", asset.TickerSymbol);
 		Assert.Null(this.ViewModel.SelectedAsset);
 	}
 

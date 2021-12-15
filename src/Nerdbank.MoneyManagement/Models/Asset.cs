@@ -30,6 +30,11 @@ public class Asset : ModelBase
 	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
+	/// Gets or sets the ticker symbol for this asset.
+	/// </summary>
+	public string? TickerSymbol { get; set; }
+
+	/// <summary>
 	/// Gets or sets the type of asset.
 	/// </summary>
 	public AssetType Type { get; set; }

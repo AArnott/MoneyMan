@@ -47,13 +47,13 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void CurrencyAssets()
 	{
-		Assert.Contains(this.checking.CurrencyAssets, asset => asset.Name == "USD");
+		Assert.Contains(this.checking.CurrencyAssets, asset => asset.TickerSymbol == "USD");
 	}
 
 	[Fact]
 	public void CurrencyAsset()
 	{
-		AssetViewModel? usd = this.DocumentViewModel.AssetsPanel.FindAsset("USD");
+		AssetViewModel? usd = this.DocumentViewModel.AssetsPanel.FindAsset("United States Dollar");
 		Assumes.NotNull(usd);
 		Assert.Same(usd, this.checking.CurrencyAsset);
 		Assert.False(this.checking.CurrencyAssetIsReadOnly);

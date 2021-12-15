@@ -34,7 +34,11 @@ public class AssetsPanelViewModel : BindableBase
 
 	public int NameMaxLength => 50;
 
-	public string TypeLabel => "_Type";
+	public string TickerSymbolLabel => "_Ticker";
+
+	public int TickerSymbolMaxLength => 50;
+
+	public string TypeLabel => "T_ype";
 
 	/// <summary>
 	/// Gets or sets the selected asset.

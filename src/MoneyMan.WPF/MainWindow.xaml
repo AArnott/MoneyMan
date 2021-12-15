@@ -390,7 +390,7 @@
 				<Grid>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="1*" />
-						<ColumnDefinition Width="3*" />
+						<ColumnDefinition Width="2*" />
 						<ColumnDefinition Width="1*" />
 					</Grid.ColumnDefinitions>
 					<DockPanel>
@@ -440,6 +440,11 @@
 								 MaxLength="{Binding Document.AssetsPanel.NameMaxLength, Source={StaticResource viewModel}}"
 								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+						<Label Content="{Binding Document.AssetsPanel.TickerSymbolLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AssetTickerSymbol}" />
+						<TextBox Name="AssetTickerSymbol"
+								 MaxLength="{Binding Document.AssetsPanel.TickerSymbolMaxLength, Source={StaticResource viewModel}}"
+								 Style="{StaticResource textBoxInError}"
+								 Text="{Binding TickerSymbol, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 						<Label Content="{Binding Document.AssetsPanel.TypeLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AssetType}" />
 						<ComboBox Name="AssetType"
 						          ItemsSource="{Binding Types}"

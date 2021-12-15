@@ -3,17 +3,20 @@
 
 public class ConfigurationPanelViewModelTests : MoneyTestBase
 {
-	private ConfigurationPanelViewModel viewModel;
-
 	public ConfigurationPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.viewModel = this.DocumentViewModel.ConfigurationPanel;
 	}
+
+	protected ConfigurationPanelViewModel ViewModel => this.DocumentViewModel.ConfigurationPanel;
 
 	[Fact]
 	public void PreferredCurrency()
 	{
-		Assert.NotNull(this.viewModel.PreferredAsset);
+		Assert.NotNull(this.ViewModel.PreferredAsset);
+
+		this.ViewModel.PreferredAsset = this.DocumentViewModel.AssetsPanel.NewAsset("new");
+		this.ReloadViewModel();
+		Assert.Equal("new", this.ViewModel.PreferredAsset.Name);
 	}
 }
