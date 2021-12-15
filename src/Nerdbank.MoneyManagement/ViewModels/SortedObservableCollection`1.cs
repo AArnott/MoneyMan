@@ -112,46 +112,26 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 	{
 		Requires.NotNull(items, nameof(items));
 
-		if (this.Count == 0)
+		// WPF cannot handle adding more than one item at once, so we raise the events individually even if the collection is currently empty.
+		// There's not a good way to raise a collection change event when the items added are not contiguous.
+		// So rather than try hard to detect continuities among the set of added items, just raise the collection events for each item.
+		bool added = false;
+		T[]? itemsAdded = this.CollectionChanged is object ? new T[1] : null;
+		foreach (T item in items)
 		{
-			bool added = false;
-			foreach (T item in items)
-			{
-				added = true;
-				this.AddHelper(item);
-			}
+			added = true;
+			int index = this.AddHelper(item);
 
-			if (added)
+			if (itemsAdded is object)
 			{
-				this.OnPropertyChanged(nameof(this.Count));
-				if (this.CollectionChanged is object)
-				{
-					this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, this, 0));
-				}
+				itemsAdded[0] = item;
+				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, itemsAdded, index));
 			}
 		}
-		else
+
+		if (added)
 		{
-			// There's not a good way to raise a collection change event when the items added are not contiguous.
-			// So rather than try hard to detect continuities among the set of added items, just raise the collection events for each item.
-			bool added = false;
-			T[]? itemsAdded = this.CollectionChanged is object ? new T[1] : null;
-			foreach (T item in items)
-			{
-				added = true;
-				int index = this.AddHelper(item);
-
-				if (itemsAdded is object)
-				{
-					itemsAdded[0] = item;
-					this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, itemsAdded, index));
-				}
-			}
-
-			if (added)
-			{
-				this.OnPropertyChanged(nameof(this.Count));
-			}
+			this.OnPropertyChanged(nameof(this.Count));
 		}
 	}
 

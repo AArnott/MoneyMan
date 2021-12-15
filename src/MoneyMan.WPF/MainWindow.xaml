@@ -78,13 +78,24 @@
 								</DockPanel.Resources>
 								<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 								<DataGrid Name="TransactionDataGrid"
-								          AlternatingRowBackground="LightBlue"
 								          AlternationCount="2" 
 								          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
 								          ItemsSource="{Binding Source={StaticResource transactions}}"
 								          IsSynchronizedWithCurrentItem="True"
 								          SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
 								          AutoGenerateColumns="False">
+									<DataGrid.RowStyle>
+										<Style TargetType="DataGridRow">
+											<Style.Triggers>
+												<Trigger Property="AlternationIndex" Value="0">
+													<Setter Property="Background" Value="LightBlue" />
+												</Trigger>
+												<DataTrigger Binding="{Binding IsPersisted}" Value="False">
+													<Setter Property="Background" Value="LightYellow" />
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</DataGrid.RowStyle>
 									<DataGrid.Columns>
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
@@ -200,16 +211,28 @@
 									</DataGrid.Columns>
 									<DataGrid.RowDetailsTemplate>
 										<DataTemplate>
-											<DataGrid AlternatingRowBackground="LightGreen"
-									          AlternationCount="2"
-									          Margin="5,0,0,0"
-									          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
-									          ItemsSource="{Binding Splits}"
-									          IsSynchronizedWithCurrentItem="True"
-									          SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
-									          SelectionMode="Single"
-									          Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
-									          AutoGenerateColumns="False">
+											<DataGrid
+												AlternationCount="2"
+												Margin="5,0,0,0"
+												PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+												ItemsSource="{Binding Splits}"
+												IsSynchronizedWithCurrentItem="True"
+												SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
+												SelectionMode="Single"
+												Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
+												AutoGenerateColumns="False">
+												<DataGrid.RowStyle>
+													<Style TargetType="DataGridRow">
+														<Style.Triggers>
+															<Trigger Property="AlternationIndex" Value="0">
+																<Setter Property="Background" Value="LightGreen" />
+															</Trigger>
+															<DataTrigger Binding="{Binding IsPersisted}" Value="False">
+																<Setter Property="Background" Value="LightYellow" />
+															</DataTrigger>
+														</Style.Triggers>
+													</Style>
+												</DataGrid.RowStyle>
 												<DataGrid.ContextMenu>
 													<ContextMenu>
 														<MenuItem Header="{Binding DeleteSplitCommandCaption}" 
@@ -282,13 +305,24 @@
 								</DockPanel.Resources>
 								<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
 								<DataGrid Name="TransactionDataGrid"
-								          AlternatingRowBackground="LightBlue"
 								          AlternationCount="2" 
 								          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
 								          ItemsSource="{Binding Source={StaticResource transactions}}"
 								          IsSynchronizedWithCurrentItem="True"
 								          SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
 								          AutoGenerateColumns="False">
+									<DataGrid.RowStyle>
+										<Style TargetType="DataGridRow">
+											<Style.Triggers>
+												<Trigger Property="AlternationIndex" Value="0">
+													<Setter Property="Background" Value="LightBlue" />
+												</Trigger>
+												<DataTrigger Binding="{Binding IsPersisted}" Value="False">
+													<Setter Property="Background" Value="LightYellow" />
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</DataGrid.RowStyle>
 									<DataGrid.Columns>
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
@@ -429,11 +463,22 @@
 					<DockPanel Grid.Column="1"
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
 						<DataGrid ItemsSource="{Binding SelectedAssetPrices}"
-						          AlternatingRowBackground="LightBlue"
 						          AlternationCount="2"
 						          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
 						          AutoGenerateColumns="False"
 						          Visibility="{Binding IsPricesGridVisible, Converter={StaticResource boolToVisibilityConverter}}">
+							<DataGrid.RowStyle>
+								<Style TargetType="DataGridRow">
+									<Style.Triggers>
+										<Trigger Property="AlternationIndex" Value="0">
+											<Setter Property="Background" Value="LightBlue" />
+										</Trigger>
+										<DataTrigger Binding="{Binding IsPersisted}" Value="False">
+											<Setter Property="Background" Value="LightYellow" />
+										</DataTrigger>
+									</Style.Triggers>
+								</Style>
+							</DataGrid.RowStyle>
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="{Binding Document.AssetsPanel.PriceGridWhenColumnHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>

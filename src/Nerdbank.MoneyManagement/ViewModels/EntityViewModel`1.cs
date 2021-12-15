@@ -151,6 +151,7 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 		this.ApplyToModel();
 		if (this.MoneyFile is { IsDisposed: false })
 		{
+			bool wasPersisted = this.IsPersisted;
 			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this.Model);
 
 			this.Model ??= new();
@@ -160,6 +161,11 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 			this.Id = this.Model.Id;
 
 			this.Saved?.Invoke(this, EventArgs.Empty);
+
+			if (!wasPersisted)
+			{
+				this.OnPropertyChanged(nameof(this.IsPersisted));
+			}
 		}
 	}
 

@@ -60,13 +60,32 @@ public class SortedObservableCollectionTests : TestBase
 	[Fact]
 	public void AddRange()
 	{
-		NotifyCollectionChangedEventArgs args = TestUtilities.AssertCollectionChangedEvent(this.collection, () => TestUtilities.AssertPropertyChangedEvent(this.collection, () => this.collection.AddRange(new[] { 1, 5, 3 }), nameof(this.collection.Count)));
-		Assert.Equal(NotifyCollectionChangedAction.Add, args.Action);
-		Assert.Null(args.OldItems);
-		Assert.Equal(new[] { 5, 3, 1 }, args.NewItems);
-		Assert.Equal(0, args.NewStartingIndex);
+		List<NotifyCollectionChangedEventArgs> collectionEvents = new();
+		this.collection.CollectionChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+			Assert.Null(e.OldItems);
 
-		Assert.Equal(new[] { 5, 3, 1 }, this.collection);
+			// As we save it, copy the NewItems collection because its content is only guaranteed while raising the event.
+			collectionEvents.Add(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, e.NewItems?.Cast<int>().ToArray(), e.NewStartingIndex));
+		};
+		List<PropertyChangedEventArgs> propertyEvents = new();
+		this.collection.PropertyChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			propertyEvents.Add(e);
+		};
+
+		this.collection.AddRange(new[] { 1, 5 });
+		Assert.Equal(nameof(this.collection.Count), Assert.Single(propertyEvents).PropertyName);
+		Assert.Equal(2, collectionEvents.Count);
+		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems));
+		Assert.Equal(5, Assert.Single(collectionEvents[1].NewItems));
+		Assert.Equal(0, collectionEvents[0].NewStartingIndex);
+		Assert.Equal(0, collectionEvents[1].NewStartingIndex);
+
+		Assert.Equal(new[] { 5, 1 }, this.collection);
 	}
 
 	[Fact]

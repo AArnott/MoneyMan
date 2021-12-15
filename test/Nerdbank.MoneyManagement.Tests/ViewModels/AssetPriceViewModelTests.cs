@@ -12,9 +12,23 @@ public class AssetPriceViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void AssetPriceNotValidWithoutPrice()
+	{
+		AssetPriceViewModel viewModel = new AssetPriceViewModel(this.DocumentViewModel, new AssetPrice())
+		{
+			Asset = this.msft,
+			When = DateTime.Now,
+			ReferenceAsset = this.DocumentViewModel.GetAsset(this.Money.PreferredAssetId),
+		};
+		Assert.False(string.IsNullOrEmpty(viewModel.Error));
+		viewModel.Price = 10;
+		Assert.Equal(string.Empty, viewModel.Error);
+	}
+
+	[Fact]
 	public void ApplyTo()
 	{
-		AssetPriceViewModel price = new AssetPriceViewModel(this.DocumentViewModel, new AssetPrice())
+		AssetPriceViewModel viewModel = new AssetPriceViewModel(this.DocumentViewModel, new AssetPrice())
 		{
 			Asset = this.msft,
 			When = DateTime.Now,
@@ -23,11 +37,11 @@ public class AssetPriceViewModelTests : MoneyTestBase
 		};
 
 		this.ReloadViewModel();
-		AssetPrice priceModel = this.Money.AssetPrices.First(ap => ap.Id == price.Id);
-		Assert.Equal(price.Asset.Id, priceModel.AssetId);
-		Assert.Equal(price.When, priceModel.When);
-		Assert.Equal(price.ReferenceAsset.Id, priceModel.ReferenceAssetId);
-		Assert.Equal(price.Price, priceModel.PriceInReferenceAsset);
+		AssetPrice priceModel = this.Money.AssetPrices.First(ap => ap.Id == viewModel.Id);
+		Assert.Equal(viewModel.Asset.Id, priceModel.AssetId);
+		Assert.Equal(viewModel.When, priceModel.When);
+		Assert.Equal(viewModel.ReferenceAsset.Id, priceModel.ReferenceAssetId);
+		Assert.Equal(viewModel.Price, priceModel.PriceInReferenceAsset);
 	}
 
 	[Fact]

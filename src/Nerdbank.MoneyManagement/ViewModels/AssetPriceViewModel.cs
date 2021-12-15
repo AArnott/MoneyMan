@@ -45,6 +45,7 @@ public class AssetPriceViewModel : EntityViewModel<AssetPrice>
 		set => this.SetProperty(ref this.referenceAsset, value);
 	}
 
+	[NonZero]
 	public decimal Price
 	{
 		get => this.priceInReferenceAsset;
