@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System.Windows.Input;
+using Microsoft;
 using PCLCommandBase;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -66,7 +66,7 @@ public class AssetsPanelViewModel : BindableBase
 
 	public IReadOnlyList<AssetViewModel> Assets => this.assets;
 
-	public IReadOnlyCollection<AssetPriceViewModel> SelectedAssetPrices => this.assetPrices;
+	public IReadOnlyList<AssetPriceViewModel> SelectedAssetPrices => this.assetPrices;
 
 	internal AssetViewModel? AddingAsset { get; set; }
 
@@ -86,7 +86,6 @@ public class AssetsPanelViewModel : BindableBase
 		};
 
 		this.assets.Add(newAssetViewModel);
-		this.SelectedAsset = newAssetViewModel;
 		if (string.IsNullOrEmpty(name))
 		{
 			this.AddingAsset = newAssetViewModel;
@@ -103,6 +102,7 @@ public class AssetsPanelViewModel : BindableBase
 			newAssetViewModel.Name = name;
 		}
 
+		this.SelectedAsset = newAssetViewModel;
 		return newAssetViewModel;
 	}
 
@@ -152,7 +152,52 @@ public class AssetsPanelViewModel : BindableBase
 				orderby assetPriceViewModel.When descending
 				select new AssetPriceViewModel(this.documentViewModel, assetPriceViewModel);
 			this.assetPrices.AddRange(prices);
+
+			// Add the placeholder row for manual entry of a new price point.
+			if (this.selectedAsset.IsPersisted)
+			{
+				this.CreateVolatilePricePoint();
+			}
+			else
+			{
+				this.selectedAsset.Saved += this.SelectedAsset_Saved;
+			}
 		}
+	}
+
+	private void SelectedAsset_Saved(object? sender, EventArgs e)
+	{
+		if (sender is object && sender == this.SelectedAsset)
+		{
+			this.SelectedAsset.Saved -= this.SelectedAsset_Saved;
+			this.CreateVolatilePricePoint();
+		}
+	}
+
+	private void CreateVolatilePricePoint()
+	{
+		Verify.Operation(this.SelectedAsset is object && this.documentViewModel.MoneyFile is object, "Cannot generate volatile row without a selected asset.");
+
+		// Always add one more "volatile" pricepoint as a placeholder to add new data.
+		var volatileModel = new AssetPrice
+		{
+			When = DateTime.Today,
+			AssetId = this.SelectedAsset.Id ?? 0,
+			ReferenceAssetId = this.documentViewModel.MoneyFile.PreferredAssetId,
+		};
+		AssetPriceViewModel volatileViewModel = new(this.documentViewModel, volatileModel);
+		this.assetPrices.Add(volatileViewModel);
+		volatileViewModel.Saved += this.VolatileAssetPrice_Saved;
+	}
+
+	private void VolatileAssetPrice_Saved(object? sender, EventArgs e)
+	{
+		AssetPriceViewModel? volatilePrice = (AssetPriceViewModel?)sender;
+		Assumes.NotNull(volatilePrice);
+		volatilePrice.Saved -= this.VolatileAssetPrice_Saved;
+
+		// We need a new volatile row.
+		this.CreateVolatilePricePoint();
 	}
 
 	private class AssetSort : IComparer<AssetViewModel>
@@ -203,7 +248,7 @@ public class AssetsPanelViewModel : BindableBase
 				return 1;
 			}
 
-			int order = Utilities.CompareNullOrZeroComesLast(x.Id, y.Id);
+			int order = -Utilities.CompareNullOrZeroComesLast(x.Id, y.Id);
 			if (order != 0)
 			{
 				return order;

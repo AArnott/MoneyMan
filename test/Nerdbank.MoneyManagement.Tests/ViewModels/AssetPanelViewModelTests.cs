@@ -176,7 +176,7 @@ public class AssetPanelViewModelTests : MoneyTestBase
 	public void SelectedAssetPrices()
 	{
 		AssetViewModel someAsset = this.ViewModel.NewAsset(SomeAssetName);
-		Assert.Empty(this.ViewModel.SelectedAssetPrices);
+		Assert.Single(this.ViewModel.SelectedAssetPrices);
 		this.Money.Insert(new AssetPrice
 		{
 			AssetId = someAsset.Id!.Value,
@@ -186,10 +186,39 @@ public class AssetPanelViewModelTests : MoneyTestBase
 		});
 		this.ViewModel.SelectedAsset = null;
 		this.ViewModel.SelectedAsset = someAsset;
-		AssetPriceViewModel price = Assert.Single(this.ViewModel.SelectedAssetPrices);
+		AssetPriceViewModel price = this.ViewModel.SelectedAssetPrices[1];
 		Assert.Equal(10, price.Price);
 
 		this.ViewModel.SelectedAsset = null;
 		Assert.Empty(this.ViewModel.SelectedAssetPrices);
+	}
+
+	[Fact]
+	public void PlaceholderPrice()
+	{
+		AssetViewModel someAsset = this.ViewModel.NewAsset(SomeAssetName);
+		AssetPriceViewModel placeholder = this.ViewModel.SelectedAssetPrices[0];
+		Assert.False(placeholder.IsPersisted);
+		Assert.Same(someAsset, placeholder.Asset);
+		Assert.Equal(DateTime.Today, placeholder.When);
+		Assert.Same(this.DocumentViewModel.DefaultCurrency, placeholder.ReferenceAsset);
+	}
+
+	[Fact]
+	public async Task AddAssetPrice()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+
+		// Prices cannot exist nor be added before the selected asset has been persisted.
+		Assert.False(this.ViewModel.SelectedAsset?.IsPersisted);
+		Assert.Empty(this.ViewModel.SelectedAssetPrices);
+		this.ViewModel.SelectedAsset!.Name = SomeAssetName;
+		Assert.NotEmpty(this.ViewModel.SelectedAssetPrices);
+
+		AssetPriceViewModel placeholder = this.ViewModel.SelectedAssetPrices[0];
+		placeholder.Price = 10;
+		Assert.Equal(2, this.ViewModel.SelectedAssetPrices.Count);
+		Assert.Same(placeholder, this.ViewModel.SelectedAssetPrices[1]);
+		Assert.False(this.ViewModel.SelectedAssetPrices[0].IsPersisted);
 	}
 }

@@ -431,6 +431,7 @@
 						<DataGrid ItemsSource="{Binding SelectedAssetPrices}"
 						          AlternatingRowBackground="LightBlue"
 						          AlternationCount="2"
+						          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
 						          AutoGenerateColumns="False"
 						          Visibility="{Binding IsPricesGridVisible, Converter={StaticResource boolToVisibilityConverter}}">
 							<DataGrid.Columns>
