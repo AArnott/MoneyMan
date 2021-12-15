@@ -67,6 +67,15 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	public TableQuery<AssetPrice> AssetPrices
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<AssetPrice>();
+		}
+	}
+
 	public TableQuery<Transaction> Transactions
 	{
 		get
