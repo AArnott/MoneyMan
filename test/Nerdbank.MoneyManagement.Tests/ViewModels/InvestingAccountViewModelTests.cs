@@ -106,6 +106,22 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		});
 	}
 
+	[Fact]
+	public void Value_UpdatesWithAssetPriceUpdates()
+	{
+		AssetViewModel msft = this.DocumentViewModel.AssetsPanel.NewAsset("MSFT");
+
+		DateTime when = DateTime.Today.AddDays(-1);
+		this.Money.InsertAll(new ModelBase[]
+		{
+			new Transaction { CreditAmount = 2, CreditAccountId = this.brokerage.Id, CreditAssetId = msft.Id!.Value, When = when },
+			new AssetPrice { AssetId = msft.Id!.Value, ReferenceAssetId = this.Money.PreferredAssetId, When = when, PriceInReferenceAsset = 10 },
+		});
+		Assert.Equal(20, this.brokerage.Value);
+		this.Money.Insert(new AssetPrice { AssetId = msft.Id!.Value, ReferenceAssetId = this.Money.PreferredAssetId, When = when.AddDays(1), PriceInReferenceAsset = 12 });
+		Assert.Equal(24, this.brokerage.Value);
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();

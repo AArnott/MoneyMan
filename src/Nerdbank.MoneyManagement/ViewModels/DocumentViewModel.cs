@@ -337,6 +337,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 						impactedAccountIds.Add(debitId);
 					}
 				}
+
+				if (model is AssetPrice)
+				{
+					impactedAccountIds.UnionWith(this.BankingPanel.Accounts.Where(a => a.Type == Account.AccountType.Investing && a.IsPersisted).Select(a => a.Id!.Value));
+				}
 			}
 		}
 
