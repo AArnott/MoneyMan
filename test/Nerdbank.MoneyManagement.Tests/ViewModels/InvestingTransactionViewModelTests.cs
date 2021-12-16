@@ -231,6 +231,8 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
 		Assert.Equal(-250, balances[this.Money.PreferredAssetId]);
 		Assert.Equal(2, balances[this.msft.Id!.Value]);
+
+		this.ReloadViewModel();
 	}
 
 	[Fact]

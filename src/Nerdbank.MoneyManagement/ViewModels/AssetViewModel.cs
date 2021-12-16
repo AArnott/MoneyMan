@@ -107,6 +107,10 @@ public class AssetViewModel : EntityViewModel<Asset>
 	{
 		this.Name = model.Name;
 		this.TickerSymbol = model.TickerSymbol ?? string.Empty;
-		this.Type = model.Type;
+		if (this.type != model.Type)
+		{
+			this.type = model.Type;
+			this.OnPropertyChanged(nameof(this.Type));
+		}
 	}
 }
