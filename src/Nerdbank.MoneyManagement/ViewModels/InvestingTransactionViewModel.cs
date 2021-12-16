@@ -3,6 +3,7 @@
 
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
@@ -20,6 +21,14 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, Transaction? transaction)
 		: base(thisAccount.MoneyFile)
 	{
+		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimpleAmount));
+		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimpleAmount));
+		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.SimpleAsset));
+		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.SimpleAsset));
+		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimplePrice));
+		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
+
 		this.ThisAccount = thisAccount;
 		this.AutoSave = true;
 
@@ -156,6 +165,89 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 		set => this.SetProperty(ref this.debitAccount, value);
 	}
 
+	public decimal? SimpleAmount
+	{
+		get => this.IsCreditOperation ? this.CreditAmount : this.IsDebitOperation ? this.DebitAmount : null;
+		set
+		{
+			if (this.IsCreditOperation)
+			{
+				this.CreditAmount = value;
+			}
+			else if (this.IsDebitOperation)
+			{
+				this.DebitAmount = value;
+			}
+			else
+			{
+				ThrowNotSimpleAction();
+			}
+		}
+	}
+
+	public AssetViewModel? SimpleAsset
+	{
+		get => this.IsCreditOperation ? this.CreditAsset : this.IsDebitOperation ? this.DebitAsset : null;
+		set
+		{
+			if (this.IsCreditOperation)
+			{
+				this.CreditAsset = value;
+			}
+			else if (this.IsDebitOperation)
+			{
+				this.DebitAsset = value;
+			}
+			else
+			{
+				ThrowNotSimpleAction();
+			}
+		}
+	}
+
+	public decimal? SimplePrice
+	{
+		get
+		{
+			if (this.Action is TransactionAction.Add or TransactionAction.Buy)
+			{
+				return this.CreditAmount != 0 && this.DebitAmount != 0 ? this.DebitAmount / this.CreditAmount : null;
+			}
+			else if (this.Action is TransactionAction.Sell)
+			{
+				return this.CreditAmount != 0 && this.DebitAmount != 0 ? this.CreditAmount / this.DebitAmount : null;
+			}
+			else
+			{
+				return null;
+			}
+		}
+
+		set
+		{
+			if (this.Action is TransactionAction.Add or TransactionAction.Buy)
+			{
+				this.DebitAmount = value * this.CreditAmount;
+			}
+			else if (this.Action is TransactionAction.Sell)
+			{
+				this.CreditAmount = value * this.DebitAmount;
+			}
+			else
+			{
+				throw ThrowNotSimpleAction();
+			}
+		}
+	}
+
+	public IEnumerable<AssetViewModel> Assets => this.ThisAccount.DocumentViewModel.AssetsPanel.Assets.Where(a => this.IsCashTransaction == (a.Type == Asset.AssetType.Currency));
+
+	private bool IsCreditOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend;
+
+	private bool IsDebitOperation => this.Action is TransactionAction.Sell or TransactionAction.Remove or TransactionAction.Withdraw;
+
+	private bool IsCashTransaction => this.Action is TransactionAction.Deposit or TransactionAction.Withdraw;
+
 	protected override void ApplyToCore(Transaction model)
 	{
 		model.When = this.When;
@@ -173,7 +265,11 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 	protected override void CopyFromCore(Transaction model)
 	{
 		this.When = model.When;
-		this.Action = model.Action;
+		if (this.action != model.Action)
+		{
+			this.action = model.Action;
+			this.OnPropertyChanged(nameof(this.Action));
+		}
 
 		this.CreditAccount = this.ThisAccount.DocumentViewModel.GetAccount(model.CreditAccountId);
 		this.CreditAmount = model.CreditAmount;
@@ -183,4 +279,9 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 		this.DebitAsset = this.ThisAccount.DocumentViewModel.GetAsset(model.DebitAssetId);
 		this.DebitAmount = model.DebitAmount;
 	}
+
+	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount));
+
+	[DoesNotReturn]
+	private static Exception ThrowNotSimpleAction() => throw new InvalidOperationException("Not a simple operation.");
 }

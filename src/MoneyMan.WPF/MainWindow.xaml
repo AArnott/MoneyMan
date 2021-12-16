@@ -345,9 +345,48 @@
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
 													<ComboBox ItemsSource="{Binding Actions}"
-															  SelectedValue="{Binding Action}"
+															  SelectedValue="{Binding Action, UpdateSourceTrigger=PropertyChanged}"
 															  SelectedValuePath="Value"
 															  DisplayMemberPath="Caption" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentAssetHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Text="{Binding SimpleAsset.Name}" Margin="3pt" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<ComboBox
+														ItemsSource="{Binding Assets}"
+														SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
+														DisplayMemberPath="Name"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Text="{Binding SimpleAmount}" Margin="3pt" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<TextBox Text="{Binding SimpleAmount}" InputScope="Number" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentPriceHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Text="{Binding SimplePrice, StringFormat=C}" Margin="3pt" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<TextBox Text="{Binding SimplePrice}" InputScope="Number" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
@@ -552,12 +591,6 @@
 						<StackPanel.Resources>
 							<DataTemplate DataType="{x:Type vm:BankingAccountViewModel}">
 								<StackPanel>
-									<Label Content="{Binding CurrencyAssetLabel}" Target="{Binding ElementName=CurrencyAsset}" />
-									<ComboBox Name="CurrencyAsset"
-											  ItemsSource="{Binding CurrencyAssets}"
-											  IsEnabled="{Binding CurrencyAssetIsReadOnly, Converter={StaticResource boolInvertingConverter}}"
-											  SelectedItem="{Binding CurrencyAsset}"
-											  DisplayMemberPath="Name" />
 								</StackPanel>
 							</DataTemplate>
 							<DataTemplate DataType="{x:Type vm:InvestingAccountViewModel}">
@@ -577,6 +610,12 @@
 						          SelectedValuePath="Value" />
 						<CheckBox IsChecked="{Binding IsClosed}" Content="{Binding Document.AccountsPanel.IsClosedLabel, Source={StaticResource viewModel}}" Margin="0,15,0,0" />
 						<TextBlock Text="{Binding Document.AccountsPanel.IsClosedExplanation, Source={StaticResource viewModel}}" TextWrapping="Wrap" />
+						<Label Content="{Binding CurrencyAssetLabel}" Target="{Binding ElementName=CurrencyAsset}" />
+						<ComboBox Name="CurrencyAsset"
+						          ItemsSource="{Binding CurrencyAssets}"
+						          IsEnabled="{Binding CurrencyAssetIsReadOnly, Converter={StaticResource boolInvertingConverter}}"
+						          SelectedItem="{Binding CurrencyAsset}"
+						          DisplayMemberPath="Name" />
 						<ContentControl Content="{Binding Path=Document.AccountsPanel.SelectedAccount, Source={StaticResource viewModel}}" />
 					</StackPanel>
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />

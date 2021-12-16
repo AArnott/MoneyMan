@@ -29,6 +29,10 @@ public class BankingPanelViewModel : BindableBase
 
 	public string InvestmentActionHeader => "Action";
 
+	public string InvestmentAssetHeader => "Asset";
+
+	public string InvestmentPriceHeader => "Price";
+
 	public string PayeeHeader => "Payee";
 
 	public string CategoryHeader => "Category";
