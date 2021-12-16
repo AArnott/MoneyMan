@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using PCLCommandBase;
@@ -16,6 +15,8 @@ namespace Nerdbank.MoneyManagement;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class MoneyFile : BindableBase, IDisposableObservable
 {
+	private const string TEMPTableModifier = "TEMP";
+
 	/// <summary>
 	/// The SQLite database connection.
 	/// </summary>
@@ -235,39 +236,37 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 
+		options.AsOfDate ??= DateTime.Today;
 		this.RefreshBalances(options);
+		this.RefreshAssetValues(options.AsOfDate.Value);
 
 		string closedAccountFilter = options.IncludeClosedAccounts ? string.Empty : "WHERE [Account].[IsClosed] = 0";
 
 		string sql = $@"
-SELECT [Balances].[AssetId], TOTAL([Balances].[Balance]) AS [Balance]
+SELECT SUM([Balances].[Balance] * [AssetValue].[Value])
 FROM [Balances]
-INNER JOIN [Asset] ON [Asset].[Id] = [Balances].[AssetId]
+INNER JOIN [AssetValue] ON [AssetValue].[AssetId] = [Balances].[AssetId]
 INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
 {closedAccountFilter}
-GROUP BY [AssetId]";
+";
 
-		// When we have a table of historical values for each asset, we can look up each asset's value
-		// as of the given date to multiply by the count of the asset
-		// to find out the worth of each held asset.
-		// TODO: code here
-
-		List<BalancesRow> balances = this.connection.Query<BalancesRow>(sql);
-		return balances.Sum(b => b.Balance);
+		decimal netWorth = this.connection.ExecuteScalar<decimal>(sql);
+		return netWorth;
 	}
 
 	/// <summary>
 	/// Gets the balance of each asset held in this account.
 	/// </summary>
 	/// <param name="account">The account to query.</param>
+	/// <param name="asOfDate">When specified, considers the value of the <paramref name="account"/> as of the specified date.</param>
 	/// <returns>A map of asset IDs and the balance held of that asset in the <paramref name="account"/>.</returns>
-	public IReadOnlyDictionary<int, decimal> GetBalances(Account account)
+	public IReadOnlyDictionary<int, decimal> GetBalances(Account account, DateTime? asOfDate = null)
 	{
 		Requires.NotNull(account, nameof(account));
 		Requires.Argument(account.IsPersisted, nameof(account), "Account must be saved to the database first.");
 		Verify.NotDisposed(this);
 
-		this.RefreshBalances();
+		this.RefreshBalances(new NetWorthQueryOptions { AsOfDate = asOfDate });
 		string sql = "SELECT [AssetId], TOTAL([Balance]) AS [Balance] FROM [Balances] WHERE [AccountId] = ? AND [AssetId] IS NOT NULL GROUP BY [AssetId]";
 		List<BalancesRow> balances = this.connection.Query<BalancesRow>(sql, account.Id);
 		return balances.ToDictionary(b => b.AssetId, b => b.Balance);
@@ -278,13 +277,22 @@ GROUP BY [AssetId]";
 	/// The value is the sum of all assets held in the account after multiplying their count by their individual value relative to the user's preferred asset.
 	/// </summary>
 	/// <param name="account">The account to query.</param>
+	/// <param name="asOfDate">When specified, considers the value of the <paramref name="account"/> as of the specified date.</param>
 	/// <returns>The value of the account, measured in the user's preferred units.</returns>
-	public decimal GetValue(Account account)
+	public decimal GetValue(Account account, DateTime? asOfDate = null)
 	{
-		IReadOnlyDictionary<int, decimal> balances = this.GetBalances(account);
+		asOfDate ??= DateTime.Now;
+		this.RefreshBalances(new NetWorthQueryOptions { AsOfDate = asOfDate });
+		this.RefreshAssetValues(asOfDate.Value);
 
-		// TODO: Consider all assets.
-		return balances.TryGetValue(this.PreferredAssetId, out decimal value) ? value : 0m;
+		string sql = @"
+SELECT SUM([Balances].[Balance] * [AssetValue].[Value])
+FROM [Balances]
+INNER JOIN [AssetValue] ON [AssetValue].[AssetId] = [Balances].[AssetId]
+WHERE [Balances].[AccountId] = ?
+";
+		decimal value = this.ExecuteScalar<decimal>(sql, account.Id);
+		return value;
 	}
 
 	/// <inheritdoc/>
@@ -385,6 +393,8 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 
 	private static string SqlWhere(string condition) => string.IsNullOrEmpty(condition) ? string.Empty : $" WHERE {condition}";
 
+	private static DateTime GetSqlBeforeDateOperand(DateTime asOfDate) => asOfDate.AddDays(1).Date;
+
 	private TableMapping GetTableMapping(ModelBase model)
 	{
 		return this.connection.TableMappings.Single(tm => tm.TableName == model.GetType().Name);
@@ -415,8 +425,8 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 
 		string sql = "DROP TABLE IF EXISTS [Balances]";
 		this.connection.Execute(sql);
-		sql = @"
-CREATE TEMP TABLE [Balances] (
+		sql = $@"
+CREATE {TEMPTableModifier} TABLE [Balances] (
   [AccountId] INTEGER,
   [AssetId] INTEGER,
   [Balance] REAL
@@ -436,6 +446,39 @@ FROM [Transaction]
 WHERE [DebitAccountId] IS NOT NULL {dateFilter}
 GROUP BY [DebitAccountId], [DebitAssetId]";
 		this.connection.Execute(sql, argsArray);
+	}
+
+	private void RefreshAssetValues(DateTime asOfDate)
+	{
+		string sql = $@"
+DROP TABLE IF EXISTS [AssetValue];
+
+CREATE {TEMPTableModifier} TABLE [AssetValue] (
+	[AssetId] INTEGER UNIQUE,
+	[Value] REAL
+);";
+		this.ExecuteSql(sql);
+
+		sql = "INSERT INTO [AssetValue] VALUES (?, 1)";
+		this.connection.Execute(sql, this.PreferredAssetId);
+
+		sql = @"
+INSERT INTO [AssetValue]
+SELECT
+	[Id] AS [AssetId],
+	(
+		SELECT [PriceInReferenceAsset]
+		FROM [AssetPrice]
+		WHERE [a].[Id] = [AssetId] AND [When] < ? AND [ReferenceAssetId] = ?
+		ORDER BY [When] DESC
+		LIMIT 1
+	) AS [Value]
+FROM [Asset] a
+WHERE [Id] != ?
+";
+
+		DateTime when = GetSqlBeforeDateOperand(asOfDate);
+		this.connection.Execute(sql, when, this.PreferredAssetId, this.PreferredAssetId);
 	}
 
 	private void ExecuteSql(string sql)
@@ -469,7 +512,7 @@ GROUP BY [DebitAccountId], [DebitAssetId]";
 		/// Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
 		/// add a whole day, then drop the time component. We'll look for transactions that happened before that.
 		/// </remarks>
-		internal DateTime? BeforeDate => this.AsOfDate?.AddDays(1).Date;
+		internal DateTime? BeforeDate => this.AsOfDate.HasValue ? GetSqlBeforeDateOperand(this.AsOfDate.Value) : null;
 	}
 
 	public class EntitiesChangedEventArgs : EventArgs
@@ -499,6 +542,15 @@ GROUP BY [DebitAccountId], [DebitAssetId]";
 		public int AssetId { get; set; }
 
 		public decimal Balance { get; set; }
+#pragma warning restore CS0649
+	}
+
+	private class AccountValueRow
+	{
+#pragma warning disable CS0649 // unset fields will be set by sqlite-pcl
+		public int AccountId { get; set; }
+
+		public decimal Value { get; set; }
 #pragma warning restore CS0649
 	}
 }
