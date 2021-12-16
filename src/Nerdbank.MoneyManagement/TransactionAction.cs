@@ -62,9 +62,4 @@ public enum TransactionAction
 	/// Shares removed.
 	/// </summary>
 	Remove,
-
-	/// <summary>
-	/// Adjust share balance (usually to forcibly reconcile local records with those at a bank).
-	/// </summary>
-	AdjustShareBalance,
 }

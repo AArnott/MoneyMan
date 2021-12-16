@@ -14,6 +14,14 @@ internal class NonZeroAttribute : ValidationAttribute
 
 	public override bool IsValid(object? value)
 	{
+		if (value is Enum)
+		{
+			if (Enum.GetUnderlyingType(value.GetType()) == typeof(int))
+			{
+				value = (int)value;
+			}
+		}
+
 		return value switch
 		{
 			int num => num != 0,

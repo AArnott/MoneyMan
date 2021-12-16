@@ -2,13 +2,13 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
 {
+	private AssetViewModel? currencyAsset;
 	private decimal value;
 	private string name = string.Empty;
 	private bool isClosed;
@@ -56,6 +56,27 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	}
 
 	public bool TypeIsReadOnly => !this.IsEmpty;
+
+	public string CurrencyAssetLabel => "Currency";
+
+	public AssetViewModel? CurrencyAsset
+	{
+		get => this.currencyAsset;
+		set
+		{
+			if (this.currencyAsset != value)
+			{
+				AssetViewModel? before = this.currencyAsset;
+				this.SetProperty(ref this.currencyAsset, value);
+				before?.NotifyUseChange();
+				value?.NotifyUseChange();
+			}
+		}
+	}
+
+	public IEnumerable<AssetViewModel> CurrencyAssets => this.DocumentViewModel.AssetsPanel.Assets.Where(a => a.Type == Asset.AssetType.Currency);
+
+	public bool CurrencyAssetIsReadOnly => !this.IsEmpty;
 
 	/// <summary>
 	/// Gets or sets the value of this account, measured in the user's preferred currency.
@@ -132,6 +153,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		account.Name = this.name;
 		account.IsClosed = this.IsClosed;
 		account.Type = this.Type;
+		account.CurrencyAssetId = this.CurrencyAsset?.Id;
 	}
 
 	protected override void CopyFromCore(Account account)
@@ -143,6 +165,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 			this.type = account.Type;
 			this.OnPropertyChanged(nameof(this.Type));
 		}
+
+		this.CurrencyAsset = this.DocumentViewModel.GetAsset(account.CurrencyAssetId);
 	}
 
 	private static AccountViewModel Create(Account? model, Account.AccountType type, DocumentViewModel documentViewModel)

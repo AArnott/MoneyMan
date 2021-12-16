@@ -1,11 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
-
 public class AccountsPanelViewModelTests : MoneyTestBase
 {
 	public AccountsPanelViewModelTests(ITestOutputHelper logger)
@@ -23,7 +18,7 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void NewAccount()
+	public void NewBankingAccount()
 	{
 		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
 
@@ -37,6 +32,27 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 
 		newAccount.Name = "cat";
 		Assert.Equal("cat", Assert.Single(this.Money.Accounts).Name);
+
+		Assert.Same(this.DocumentViewModel.DefaultCurrency, newAccount.CurrencyAsset);
+	}
+
+	[Fact]
+	public void NewInvestingAccount()
+	{
+		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
+
+		TestUtilities.AssertRaises(
+			h => this.ViewModel.AddingNewAccount += h,
+			h => this.ViewModel.AddingNewAccount -= h,
+			() => this.ViewModel.NewInvestingAccount());
+		AccountViewModel newAccount = Assert.Single(this.ViewModel.Accounts);
+		Assert.Same(newAccount, this.ViewModel.SelectedAccount);
+		Assert.Equal(string.Empty, newAccount.Name);
+
+		newAccount.Name = "cat";
+		Assert.Equal("cat", Assert.Single(this.Money.Accounts).Name);
+
+		Assert.Same(this.DocumentViewModel.DefaultCurrency, newAccount.CurrencyAsset);
 	}
 
 	[Fact]

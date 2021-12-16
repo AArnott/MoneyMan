@@ -9,7 +9,6 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class BankingAccountViewModel : AccountViewModel
 {
-	private AssetViewModel? currencyAsset;
 	private SortedObservableCollection<BankingTransactionViewModel>? transactions;
 
 	public BankingAccountViewModel(Account? model, DocumentViewModel documentViewModel)
@@ -18,27 +17,6 @@ public class BankingAccountViewModel : AccountViewModel
 		this.Type = Account.AccountType.Banking;
 		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.CurrencyAssetIsReadOnly));
 	}
-
-	public string CurrencyAssetLabel => "Currency";
-
-	public AssetViewModel? CurrencyAsset
-	{
-		get => this.currencyAsset;
-		set
-		{
-			if (this.currencyAsset != value)
-			{
-				AssetViewModel? before = this.currencyAsset;
-				this.SetProperty(ref this.currencyAsset, value);
-				before?.NotifyUseChange();
-				value?.NotifyUseChange();
-			}
-		}
-	}
-
-	public IEnumerable<AssetViewModel> CurrencyAssets => this.DocumentViewModel.AssetsPanel.Assets.Where(a => a.Type == Asset.AssetType.Currency);
-
-	public bool CurrencyAssetIsReadOnly => !this.IsEmpty;
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)] // It's lazily initialized, and we don't want the debugger to trip over it.
 	public IReadOnlyList<BankingTransactionViewModel> Transactions
@@ -230,8 +208,6 @@ public class BankingAccountViewModel : AccountViewModel
 	{
 		base.CopyFromCore(account);
 
-		this.CurrencyAsset = this.DocumentViewModel.GetAsset(account.CurrencyAssetId);
-
 		if (this.MoneyFile is object && account.IsPersisted)
 		{
 			this.Value = this.MoneyFile.GetValue(account);
@@ -239,12 +215,6 @@ public class BankingAccountViewModel : AccountViewModel
 
 		// Force reinitialization.
 		this.transactions = null;
-	}
-
-	protected override void ApplyToCore(Account account)
-	{
-		base.ApplyToCore(account);
-		account.CurrencyAssetId = this.CurrencyAsset?.Id;
 	}
 
 	protected override void RemoveTransactionFromViewModel(EntityViewModel<Transaction> transactionViewModel)

@@ -168,9 +168,9 @@ public class AccountsPanelViewModel : BindableBase
 			this.documentViewModel.MoneyFile?.Delete(accountViewModel.Model);
 }
 
-		if (accountViewModel is BankingAccountViewModel { CurrencyAsset: not null } bankingAccount)
+		if (accountViewModel.CurrencyAsset is object)
 		{
-			bankingAccount.CurrencyAsset.NotifyUseChange();
+			accountViewModel.CurrencyAsset.NotifyUseChange();
 		}
 
 		if (this.SelectedAccount == accountViewModel)

@@ -37,7 +37,7 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 	}
 
 	/// <inheritdoc cref="Transaction.Action"/>
-	[Required]
+	[Required, NonZero]
 	public TransactionAction? Action
 	{
 		get => this.action;
@@ -51,24 +51,46 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 					switch (value.Value)
 					{
 						case TransactionAction.Buy:
+							this.CreditAccount ??= this.ThisAccount;
+							this.DebitAccount ??= this.ThisAccount;
+							this.DebitAsset ??= this.ThisAccount.CurrencyAsset;
 							break;
 						case TransactionAction.Sell:
+							this.CreditAccount ??= this.ThisAccount;
+							this.DebitAccount ??= this.ThisAccount;
+							this.CreditAsset ??= this.ThisAccount.CurrencyAsset;
 							break;
 						case TransactionAction.Exchange:
+							this.CreditAccount ??= this.ThisAccount;
+							this.DebitAccount ??= this.ThisAccount;
 							break;
 						case TransactionAction.Remove:
-						case TransactionAction.Withdraw:
 							this.CreditAccount = null;
+							this.CreditAmount = null;
+							this.CreditAsset = null;
 							this.DebitAccount = this.ThisAccount;
 							break;
-						case TransactionAction.AdjustShareBalance:
+						case TransactionAction.Withdraw:
+							this.CreditAccount = null;
+							this.CreditAmount = null;
+							this.CreditAsset = null;
+							this.DebitAccount = this.ThisAccount;
+							this.DebitAsset = this.ThisAccount.CurrencyAsset;
 							break;
 						case TransactionAction.Interest:
-						case TransactionAction.Add:
 						case TransactionAction.Deposit:
+							this.CreditAccount = this.ThisAccount;
+							this.CreditAsset = this.ThisAccount.CurrencyAsset;
+							this.DebitAccount = null;
+							this.DebitAmount = null;
+							this.DebitAsset = null;
+							break;
+						case TransactionAction.Add:
 						case TransactionAction.Dividend:
 							this.CreditAccount = this.ThisAccount;
 							this.DebitAccount = null;
+							this.DebitAmount = null;
+							this.DebitAsset = null;
 							break;
 					}
 				}
@@ -89,7 +111,6 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 		new(TransactionAction.Interest, nameof(TransactionAction.Interest)),
 		new(TransactionAction.Add, nameof(TransactionAction.Add)),
 		new(TransactionAction.Remove, nameof(TransactionAction.Remove)),
-		new(TransactionAction.AdjustShareBalance, nameof(TransactionAction.AdjustShareBalance)),
 		new(TransactionAction.Deposit, nameof(TransactionAction.Deposit)),
 		new(TransactionAction.Withdraw, nameof(TransactionAction.Withdraw)),
 	});
