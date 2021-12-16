@@ -250,6 +250,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 				this.CategoriesPanel.Categories.Add(viewModel);
 			}
 
+			this.ConfigurationPanel.CopyFrom(this.MoneyFile.CurrentConfiguration);
 			this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 	}
@@ -407,6 +408,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 			case Asset asset:
 				this.SelectedViewIndex = SelectableViews.Assets;
 				this.AssetsPanel.SelectedAsset = this.AssetsPanel.FindAsset(asset.Id);
+				break;
+			case AssetPrice assetPrice:
+				this.SelectedViewIndex = SelectableViews.Assets;
+				this.AssetsPanel.SelectedAsset = this.GetAsset(assetPrice.AssetId);
+				this.AssetsPanel.SelectedAssetPrice = this.AssetsPanel.AssetPrices.FirstOrDefault(ap => ap.When == assetPrice.When);
 				break;
 		}
 	}

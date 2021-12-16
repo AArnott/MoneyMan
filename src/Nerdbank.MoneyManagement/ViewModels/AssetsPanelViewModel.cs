@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Collections;
+using System.Collections.Specialized;
 using Microsoft;
 using PCLCommandBase;
 
@@ -12,12 +14,15 @@ public class AssetsPanelViewModel : BindableBase
 	private readonly SortedObservableCollection<AssetPriceViewModel> assetPrices = new(AssetPriceSort.Instance);
 	private readonly DocumentViewModel documentViewModel;
 	private AssetViewModel? selectedAsset;
+	private AssetPriceViewModel? selectedAssetPrice;
+	private IList? selectedAssetPrices;
 
 	public AssetsPanelViewModel(DocumentViewModel documentViewModel)
 	{
 		this.RegisterDependentProperty(nameof(this.SelectedAsset), nameof(this.IsPricesGridVisible));
-		this.AddCommand = new AddCommandImpl(this);
-		this.DeleteCommand = new DeleteCommandImpl(this);
+		this.AddAssetCommand = new AddAssetCommandImpl(this);
+		this.DeleteAssetCommand = new DeleteAssetCommandImpl(this);
+		this.DeletePriceCommand = new DeletePriceCommandImpl(this);
 		this.documentViewModel = documentViewModel;
 	}
 
@@ -28,9 +33,11 @@ public class AssetsPanelViewModel : BindableBase
 
 	public string Title => "Assets";
 
-	public CommandBase AddCommand { get; }
+	public CommandBase AddAssetCommand { get; }
 
-	public CommandBase DeleteCommand { get; }
+	public CommandBase DeleteAssetCommand { get; }
+
+	public CommandBase DeletePriceCommand { get; }
 
 	public string NameLabel => "_Name";
 
@@ -66,7 +73,29 @@ public class AssetsPanelViewModel : BindableBase
 
 	public IReadOnlyList<AssetViewModel> Assets => this.assets;
 
-	public IReadOnlyList<AssetPriceViewModel> SelectedAssetPrices => this.assetPrices;
+	/// <summary>
+	/// Gets the prices of the <see cref="SelectedAsset"/>.
+	/// </summary>
+	public IReadOnlyList<AssetPriceViewModel> AssetPrices => this.assetPrices;
+
+	public AssetPriceViewModel? SelectedAssetPrice
+	{
+		get => this.selectedAssetPrice;
+		set => this.SetProperty(ref this.selectedAssetPrice, value);
+	}
+
+	/// <summary>
+	/// Gets or sets a collection of selected asset prices.
+	/// </summary>
+	/// <remarks>
+	/// This is optional. When set, the <see cref="DeletePriceCommand"/> will use this collection as the set of prices to delete.
+	/// When not set, the <see cref="SelectedAssetPrice"/> will be used by the <see cref="DeletePriceCommand"/>.
+	/// </remarks>
+	public IList? SelectedAssetPrices
+	{
+		get => this.selectedAssetPrices;
+		set => this.SetProperty(ref this.selectedAssetPrices, value);
+	}
 
 	internal AssetViewModel? AddingAsset { get; set; }
 
@@ -131,6 +160,21 @@ public class AssetsPanelViewModel : BindableBase
 
 	public AssetViewModel? FindAsset(string name) => this.assets?.FirstOrDefault(a => a.Name == name);
 
+	public void DeletePrice(AssetPriceViewModel value)
+	{
+		Requires.Argument(value.IsPersisted, nameof(value), "Cannot delete the volatile price.");
+		this.assetPrices.Remove(value);
+		if (value.Model is object)
+		{
+			this.documentViewModel.MoneyFile?.Delete(value.Model);
+		}
+
+		if (value == this.SelectedAssetPrice)
+		{
+			this.SelectedAssetPrice = null;
+		}
+	}
+
 	internal void Add(AssetViewModel asset)
 	{
 		this.assets.Add(asset);
@@ -139,6 +183,9 @@ public class AssetsPanelViewModel : BindableBase
 	internal void ClearViewModel()
 	{
 		this.assets.Clear();
+		this.SelectedAsset = null;
+		this.SelectedAssetPrice = null;
+		this.SelectedAssetPrices?.Clear();
 	}
 
 	private void FillAssetPrices()
@@ -258,11 +305,11 @@ public class AssetsPanelViewModel : BindableBase
 		}
 	}
 
-	private class AddCommandImpl : CommandBase
+	private class AddAssetCommandImpl : CommandBase
 	{
 		private readonly AssetsPanelViewModel viewModel;
 
-		internal AddCommandImpl(AssetsPanelViewModel viewModel)
+		internal AddAssetCommandImpl(AssetsPanelViewModel viewModel)
 		{
 			this.viewModel = viewModel;
 		}
@@ -276,11 +323,11 @@ public class AssetsPanelViewModel : BindableBase
 		}
 	}
 
-	private class DeleteCommandImpl : CommandBase
+	private class DeleteAssetCommandImpl : CommandBase
 	{
 		private readonly AssetsPanelViewModel viewModel;
 
-		internal DeleteCommandImpl(AssetsPanelViewModel viewModel)
+		internal DeleteAssetCommandImpl(AssetsPanelViewModel viewModel)
 		{
 			this.viewModel = viewModel;
 			viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
@@ -305,5 +352,72 @@ public class AssetsPanelViewModel : BindableBase
 				this.OnCanExecuteChanged();
 			}
 		}
+	}
+
+	private class DeletePriceCommandImpl : CommandBase
+	{
+		private readonly AssetsPanelViewModel viewModel;
+		private INotifyCollectionChanged? subscribedSelectedPrices;
+
+		internal DeletePriceCommandImpl(AssetsPanelViewModel viewModel)
+		{
+			this.viewModel = viewModel;
+			this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
+			this.SubscribeToSelectionChanged();
+		}
+
+		public string Caption => "Delete";
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && (this.viewModel.SelectedAssetPrice is { IsPersisted: true } || this.viewModel.SelectedAssetPrices?.Count > 0);
+
+		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+		{
+			if (this.viewModel.SelectedAssetPrices is object)
+			{
+				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile?.UndoableTransaction($"Deleting {this.viewModel.SelectedAssetPrices.Count} prices for \"{this.viewModel.SelectedAsset?.Name}\".", this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().FirstOrDefault()?.Model);
+				foreach (AssetPriceViewModel pricepoint in this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().ToList())
+				{
+					if (pricepoint.IsPersisted)
+					{
+						this.viewModel.DeletePrice(pricepoint);
+					}
+				}
+			}
+			else if (this.viewModel.SelectedAssetPrice is { IsPersisted: true })
+			{
+				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile?.UndoableTransaction($"Deleting \"{this.viewModel.SelectedAsset?.Name}\" price for {this.viewModel.SelectedAssetPrice.When}.", this.viewModel.SelectedAssetPrice.Model);
+				this.viewModel.DeletePrice(this.viewModel.SelectedAssetPrice);
+			}
+
+			return Task.CompletedTask;
+		}
+
+		private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName is nameof(this.viewModel.SelectedAssetPrices))
+			{
+				this.SubscribeToSelectionChanged();
+			}
+			else if (e.PropertyName is nameof(this.viewModel.SelectedAssetPrice))
+			{
+				this.OnCanExecuteChanged();
+			}
+		}
+
+		private void SubscribeToSelectionChanged()
+		{
+			if (this.subscribedSelectedPrices is object)
+			{
+				this.subscribedSelectedPrices.CollectionChanged -= this.SelectedPrices_Changed;
+			}
+
+			this.subscribedSelectedPrices = this.viewModel.SelectedAssetPrices as INotifyCollectionChanged;
+			if (this.subscribedSelectedPrices is object)
+			{
+				this.subscribedSelectedPrices.CollectionChanged += this.SelectedPrices_Changed;
+			}
+		}
+
+		private void SelectedPrices_Changed(object? sender, NotifyCollectionChangedEventArgs e) => this.OnCanExecuteChanged();
 	}
 }

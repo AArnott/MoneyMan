@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.ComponentModel.DataAnnotations;
+
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
@@ -23,6 +25,7 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 
 	public string PreferredAssetLabel => "Default _asset";
 
+	[Required]
 	public AssetViewModel? PreferredAsset
 	{
 		get => this.documentViewModel.GetAsset(this.preferredAssetId);
@@ -37,5 +40,6 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 	protected override void CopyFromCore(Configuration model)
 	{
 		this.preferredAssetId = model.PreferredAssetId;
+		this.OnPropertyChanged(nameof(this.PreferredAsset));
 	}
 }

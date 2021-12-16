@@ -428,14 +428,14 @@
 						<ColumnDefinition Width="1*" />
 					</Grid.ColumnDefinitions>
 					<DockPanel>
-						<Button DockPanel.Dock="Bottom" Content="{Binding AddCommand.Caption}" Command="{Binding AddCommand}" />
+						<Button DockPanel.Dock="Bottom" Content="{Binding AddAssetCommand.Caption}" Command="{Binding AddAssetCommand}" />
 						<ListView ItemsSource="{Binding Source={StaticResource assets}}" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedAsset}" HorizontalContentAlignment="Stretch" SelectionMode="Single">
 							<ListView.ItemContainerStyle>
 								<Style TargetType="ListBoxItem">
 									<Setter Property="ContextMenu">
 										<Setter.Value>
 											<ContextMenu DataContext="{Binding Document.AssetsPanel, Source={StaticResource viewModel}}">
-												<MenuItem Header="{Binding DeleteCommand.Caption}" Command="{Binding DeleteCommand}" />
+												<MenuItem Header="{Binding DeleteAssetCommand.Caption}" Command="{Binding DeleteAssetCommand}" />
 											</ContextMenu>
 										</Setter.Value>
 									</Setter>
@@ -462,9 +462,12 @@
 					</DockPanel>
 					<DockPanel Grid.Column="1"
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
-						<DataGrid ItemsSource="{Binding SelectedAssetPrices}"
+						<DataGrid Name="AssetPricesGrid"
+						          ItemsSource="{Binding AssetPrices}"
 						          AlternationCount="2"
 						          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+						          SelectedItem="{Binding SelectedAssetPrice}"
+						          SelectionMode="Extended"
 						          AutoGenerateColumns="False"
 						          Visibility="{Binding IsPricesGridVisible, Converter={StaticResource boolToVisibilityConverter}}">
 							<DataGrid.RowStyle>
@@ -479,6 +482,11 @@
 									</Style.Triggers>
 								</Style>
 							</DataGrid.RowStyle>
+							<DataGrid.ContextMenu>
+								<ContextMenu>
+									<MenuItem Header="{Binding Document.AssetsPanel.DeletePriceCommand.Caption, Source={StaticResource viewModel}}" Command="{Binding Document.AssetsPanel.DeletePriceCommand, Source={StaticResource viewModel}}" />
+								</ContextMenu>
+							</DataGrid.ContextMenu>
 							<DataGrid.Columns>
 								<DataGridTemplateColumn Header="{Binding Document.AssetsPanel.PriceGridWhenColumnHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>

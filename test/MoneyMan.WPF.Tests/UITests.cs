@@ -25,11 +25,20 @@ public class UITests : UITestBase
 	[WpfFact]
 	public void CreateInvestmentAccount()
 	{
-		this.DocumentViewModel.SelectedViewIndex = Nerdbank.MoneyManagement.ViewModels.DocumentViewModel.SelectableViews.Accounts;
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
 		this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		this.DocumentViewModel.AccountsPanel.SelectedAccount!.Name = "Brokerage";
 		this.DocumentViewModel.AccountsPanel.SelectedAccount!.Type = Account.AccountType.Investing;
-		this.DocumentViewModel.SelectedViewIndex = Nerdbank.MoneyManagement.ViewModels.DocumentViewModel.SelectableViews.Banking;
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.DocumentViewModel.AccountsPanel.SelectedAccount;
+	}
+
+	[WpfFact]
+	public async Task Undo()
+	{
+		this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		Assert.NotNull(this.DocumentViewModel.ConfigurationPanel.PreferredAsset);
+		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
+		Assert.NotNull(this.DocumentViewModel.ConfigurationPanel.PreferredAsset);
 	}
 }
