@@ -289,22 +289,18 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void Value()
 	{
-		var account = new Account
-		{
-			Name = "some account",
-			CurrencyAssetId = this.Money.PreferredAssetId,
-		};
-		this.Money.Insert(account);
-		this.checking = new BankingAccountViewModel(account, this.DocumentViewModel);
 		Assert.Equal(0m, this.checking.Value);
 
 		this.Money.InsertAll(new ModelBase[]
 		{
-			new Transaction { CreditAmount = 10, CreditAccountId = account.Id, CreditAssetId = account.CurrencyAssetId },
-			new Transaction { DebitAmount = 2, DebitAccountId = account.Id, DebitAssetId = account.CurrencyAssetId },
+			new Transaction { CreditAmount = 10, CreditAccountId = this.checking.Id, CreditAssetId = this.checking.CurrencyAsset!.Id!.Value },
+			new Transaction { DebitAmount = 2, DebitAccountId = this.checking.Id, DebitAssetId = this.checking.CurrencyAsset!.Id!.Value },
 		});
-		this.checking = new BankingAccountViewModel(account, this.DocumentViewModel);
-		Assert.Equal(8m, this.checking.Value);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Equal(8m, this.checking.Value);
+		});
 	}
 
 	[Fact]

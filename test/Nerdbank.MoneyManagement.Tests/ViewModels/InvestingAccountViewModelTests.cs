@@ -90,6 +90,22 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		checkingTx.CategoryOrTransfer = this.brokerage;
 	}
 
+	[Fact]
+	public void Value()
+	{
+		Assert.Equal(0m, this.brokerage.Value);
+
+		this.Money.InsertAll(new ModelBase[]
+		{
+			new Transaction { CreditAmount = 10, CreditAccountId = this.brokerage.Id, CreditAssetId = this.brokerage.CurrencyAsset!.Id!.Value },
+			new Transaction { DebitAmount = 2, DebitAccountId = this.brokerage.Id, DebitAssetId = this.brokerage.CurrencyAsset!.Id!.Value },
+		});
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Equal(8m, this.brokerage.Value);
+		});
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();

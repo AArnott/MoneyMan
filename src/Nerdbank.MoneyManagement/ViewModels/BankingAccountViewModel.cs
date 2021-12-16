@@ -208,11 +208,6 @@ public class BankingAccountViewModel : AccountViewModel
 	{
 		base.CopyFromCore(account);
 
-		if (this.MoneyFile is object && account.IsPersisted)
-		{
-			this.Value = this.MoneyFile.GetValue(account);
-		}
-
 		// Force reinitialization.
 		this.transactions = null;
 	}
