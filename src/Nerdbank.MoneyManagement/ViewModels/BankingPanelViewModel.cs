@@ -33,6 +33,8 @@ public class BankingPanelViewModel : BindableBase
 
 	public string InvestmentPriceHeader => "Price";
 
+	public string InvestmentCashAmtHeader => "Cash Amt";
+
 	public string PayeeHeader => "Payee";
 
 	public string CategoryHeader => "Category";

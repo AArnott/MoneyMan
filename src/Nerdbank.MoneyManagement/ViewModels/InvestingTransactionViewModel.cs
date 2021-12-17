@@ -25,6 +25,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimpleAmount));
 		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.SimpleAsset));
 		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.SimpleAsset));
+		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimpleCurrencyImpact));
+		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimpleCurrencyImpact));
+		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.SimpleCurrencyImpact));
+		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.SimpleCurrencyImpact));
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
@@ -237,6 +241,25 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
+	public decimal? SimpleCurrencyImpact
+	{
+		get
+		{
+			decimal impact = 0;
+			if (this.DebitAsset == this.ThisAccount.CurrencyAsset && this.DebitAmount.HasValue)
+			{
+				impact -= this.DebitAmount.Value;
+			}
+
+			if (this.CreditAsset == this.ThisAccount.CurrencyAsset && this.CreditAmount.HasValue)
+			{
+				impact += this.CreditAmount.Value;
+			}
+
+			return impact;
+		}
+	}
+
 	public IEnumerable<AssetViewModel> Assets => this.ThisAccount.DocumentViewModel.AssetsPanel.Assets.Where(a => this.IsCashTransaction == (a.Type == Asset.AssetType.Currency));
 
 	private bool IsCreditOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend;
@@ -277,7 +300,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.DebitAmount = model.DebitAmount;
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount));
+	protected override bool IsPersistedProperty(string propertyName) =>
+		base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact));
 
 	[DoesNotReturn]
 	private static Exception ThrowNotSimpleAction() => throw new InvalidOperationException("Not a simple operation.");

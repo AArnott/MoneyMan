@@ -381,7 +381,7 @@
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentPriceHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate>
-													<TextBlock Text="{Binding SimplePrice, StringFormat=C}" Margin="3pt" />
+													<TextBlock Text="{Binding SimplePrice, StringFormat=C}" Margin="3pt" HorizontalAlignment="Right" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
@@ -389,6 +389,13 @@
 													<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentCashAmtHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Text="{Binding SimpleCurrencyImpact, StringFormat=C}" Margin="3pt" HorizontalAlignment="Right" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
 									</DataGrid.Columns>
 									<DataGrid.ContextMenu>
