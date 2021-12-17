@@ -95,7 +95,7 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 		{
 			var validationResults = new List<ValidationResult>();
 
-			PropertyInfo? property = this.GetType().GetProperty(columnName);
+			PropertyInfo? property = this.GetType().GetProperties().FirstOrDefault(p => p.Name == columnName);
 			Requires.Argument(property is not null, nameof(columnName), "No property by that name.");
 
 			ValidationContext validationContext = new(this)

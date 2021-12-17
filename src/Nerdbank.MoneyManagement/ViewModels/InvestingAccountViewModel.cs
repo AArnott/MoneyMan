@@ -51,6 +51,30 @@ public class InvestingAccountViewModel : AccountViewModel
 
 	protected override bool IsPopulated => this.transactions is object;
 
+	public override void DeleteTransaction(TransactionViewModel transaction)
+	{
+		Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
+		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
+		var investingTransaction = (InvestingTransactionViewModel)transaction;
+
+		if (this.MoneyFile is object && investingTransaction.Model is object)
+		{
+			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction.Model);
+
+			if (!this.MoneyFile.Delete(investingTransaction.Model))
+			{
+				// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
+				this.RemoveTransactionFromViewModel(investingTransaction);
+			}
+		}
+
+		if (!investingTransaction.IsPersisted)
+		{
+			// We deleted the volatile transaction (new row placeholder). Recreate it.
+			this.CreateVolatileTransaction();
+		}
+	}
+
 	internal override InvestingTransactionViewModel? FindTransaction(int id)
 	{
 		foreach (InvestingTransactionViewModel transactionViewModel in this.Transactions)
@@ -106,7 +130,7 @@ public class InvestingAccountViewModel : AccountViewModel
 		account.CurrencyAssetId = null;
 	}
 
-	protected override void RemoveTransactionFromViewModel(EntityViewModel<Transaction> transactionViewModel)
+	protected override void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
 	{
 		if (this.transactions is null)
 		{

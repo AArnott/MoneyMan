@@ -19,7 +19,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 	private readonly SortedObservableCollection<ITransactionTarget> transactionTargets = new(TransactionTargetSort.Instance);
 	private decimal netWorth;
 	private IList? selectedTransactions;
-	private EntityViewModel<Transaction>? selectedTransaction;
+	private TransactionViewModel? selectedTransaction;
 	private SelectableViews selectedViewIndex;
 
 	public DocumentViewModel()
@@ -112,7 +112,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public AssetViewModel? DefaultCurrency => this.MoneyFile is object ? this.AssetsPanel.FindAsset(this.MoneyFile.PreferredAssetId) : null;
 
-	public EntityViewModel<Transaction>? SelectedTransaction
+	public TransactionViewModel? SelectedTransaction
 	{
 		get => this.selectedTransaction;
 		set => this.SetProperty(ref this.selectedTransaction, value);
@@ -519,7 +519,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			foreach (object item in transactionViewModels)
 			{
-				if (item is BankingTransactionViewModel { IsSplitInForeignAccount: false })
+				if (item is TransactionViewModel and not BankingTransactionViewModel { IsSplitInForeignAccount: true })
 				{
 					return true;
 				}
@@ -530,8 +530,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
 		{
-			using IDisposable? undo = this.ViewModel.MoneyFile?.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<BankingTransactionViewModel>().FirstOrDefault()?.Model);
-			foreach (BankingTransactionViewModel transaction in transactionViewModels.OfType<BankingTransactionViewModel>().ToList())
+			using IDisposable? undo = this.ViewModel.MoneyFile?.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<TransactionViewModel>().FirstOrDefault()?.Model);
+			foreach (TransactionViewModel transaction in transactionViewModels.OfType<TransactionViewModel>().ToList())
 			{
 				transaction.ThisAccount.DeleteTransaction(transaction);
 			}

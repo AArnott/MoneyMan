@@ -11,14 +11,14 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 /// as it is represented in its "home" account, such that it only appears nested under the parent transaction.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class SplitTransactionViewModel : EntityViewModel<Transaction>
+public class SplitTransactionViewModel : TransactionViewModel
 {
 	private decimal amount;
 	private string? memo;
 	private ITransactionTarget? categoryOrTransfer;
 
 	public SplitTransactionViewModel(BankingTransactionViewModel parent, Transaction? splitTransaction)
-		: base(parent.MoneyFile)
+		: base(parent.ThisAccount)
 	{
 		this.ParentTransaction = parent;
 		this.AutoSave = true;
@@ -29,10 +29,8 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 		}
 	}
 
-	/// <summary>
-	/// Gets the account this transaction was created to be displayed within.
-	/// </summary>
-	public BankingAccountViewModel ThisAccount => this.ParentTransaction.ThisAccount;
+	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
+	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
 
 	public BankingTransactionViewModel ParentTransaction { get; }
 

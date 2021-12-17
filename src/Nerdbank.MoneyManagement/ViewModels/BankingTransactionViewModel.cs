@@ -11,7 +11,7 @@ using Validation;
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class BankingTransactionViewModel : EntityViewModel<Transaction>
+public class BankingTransactionViewModel : TransactionViewModel
 {
 	private static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new ClearedStateViewModel[]
 	{
@@ -32,9 +32,8 @@ public class BankingTransactionViewModel : EntityViewModel<Transaction>
 	private SplitTransactionViewModel? selectedSplit;
 
 	public BankingTransactionViewModel(BankingAccountViewModel thisAccount, Transaction? transaction)
-		: base(thisAccount.MoneyFile)
+		: base(thisAccount)
 	{
-		this.ThisAccount = thisAccount;
 		this.AutoSave = true;
 
 		if (transaction is object)
@@ -232,10 +231,8 @@ public class BankingTransactionViewModel : EntityViewModel<Transaction>
 		set => this.SetProperty(ref this.balance, value);
 	}
 
-	/// <summary>
-	/// Gets the account this transaction was created to be displayed within.
-	/// </summary>
-	public BankingAccountViewModel ThisAccount { get; }
+	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
+	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
 
 	private string DebuggerDisplay => $"Transaction ({this.Id}): {this.When} {this.Payee} {this.Amount}";
 

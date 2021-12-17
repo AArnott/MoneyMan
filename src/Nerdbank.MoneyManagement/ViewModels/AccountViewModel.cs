@@ -102,6 +102,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 
 	protected string? DebuggerDisplay => this.Name;
 
+	public abstract void DeleteTransaction(TransactionViewModel transaction);
+
 	internal static AccountViewModel Create(Account model, DocumentViewModel documentViewModel)
 	{
 		AccountViewModel accountViewModel = Create(model, model.Type, documentViewModel);
@@ -142,9 +144,9 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 
 	internal abstract void NotifyTransactionChanged(Transaction transaction);
 
-	internal abstract EntityViewModel<Transaction>? FindTransaction(int id);
+	internal abstract TransactionViewModel? FindTransaction(int id);
 
-	protected abstract void RemoveTransactionFromViewModel(EntityViewModel<Transaction> transaction);
+	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);
 
 	protected override void ApplyToCore(Account account)
 	{

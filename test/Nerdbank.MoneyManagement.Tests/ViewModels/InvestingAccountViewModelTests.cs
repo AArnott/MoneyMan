@@ -122,6 +122,40 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		Assert.Equal(24, this.brokerage.Value);
 	}
 
+	[Fact]
+	public async Task DeleteTransaction()
+	{
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 5 });
+		InvestingTransactionViewModel txViewModel = this.brokerage.Transactions[0];
+		this.DocumentViewModel.SelectedTransaction = txViewModel;
+		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
+		Assert.Empty(this.Money.Transactions);
+	}
+
+	[Fact]
+	public void DeleteVolatileTransaction()
+	{
+		InvestingTransactionViewModel tx = this.brokerage.Transactions[^1];
+		tx.CreditAmount = 5;
+		this.brokerage.DeleteTransaction(tx);
+		Assert.NotEmpty(this.brokerage.Transactions);
+		tx = this.brokerage.Transactions[^1];
+		Assert.Null(tx.CreditAmount);
+	}
+
+	[Fact]
+	public async Task DeleteTransactions()
+	{
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 5 });
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 12 });
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 15 });
+		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
+		this.DocumentViewModel.SelectedTransactions = this.brokerage.Transactions.Where(t => t.CreditAmount != 12).ToArray();
+		Assert.True(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
+		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
+		Assert.Equal(12, Assert.Single(this.Money.Transactions).CreditAmount);
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();

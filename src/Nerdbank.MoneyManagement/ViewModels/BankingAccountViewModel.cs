@@ -72,16 +72,17 @@ public class BankingAccountViewModel : AccountViewModel
 		return viewModel;
 	}
 
-	public void DeleteTransaction(BankingTransactionViewModel transaction)
+	public override void DeleteTransaction(TransactionViewModel transaction)
 	{
 		Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
 		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
-		transaction.ThrowIfSplitInForeignAccount();
+		var bankingTransaction = (BankingTransactionViewModel)transaction;
+		bankingTransaction.ThrowIfSplitInForeignAccount();
 
-		if (this.MoneyFile is object && transaction.Model is object)
+		if (this.MoneyFile is object && bankingTransaction.Model is object)
 		{
-			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {transaction.When.Date}", transaction.Model);
-			foreach (SplitTransactionViewModel split in transaction.Splits)
+			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction.Model);
+			foreach (SplitTransactionViewModel split in bankingTransaction.Splits)
 			{
 				if (split.Model is object)
 				{
@@ -89,14 +90,14 @@ public class BankingAccountViewModel : AccountViewModel
 				}
 			}
 
-			if (!this.MoneyFile.Delete(transaction.Model))
+			if (!this.MoneyFile.Delete(bankingTransaction.Model))
 			{
 				// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
-				this.RemoveTransactionFromViewModel(transaction);
+				this.RemoveTransactionFromViewModel(bankingTransaction);
 			}
 		}
 
-		if (!transaction.IsPersisted)
+		if (!bankingTransaction.IsPersisted)
 		{
 			// We deleted the volatile transaction (new row placeholder). Recreate it.
 			this.CreateVolatileTransaction();
@@ -212,7 +213,7 @@ public class BankingAccountViewModel : AccountViewModel
 		this.transactions = null;
 	}
 
-	protected override void RemoveTransactionFromViewModel(EntityViewModel<Transaction> transactionViewModel)
+	protected override void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
 	{
 		if (this.transactions is null)
 		{

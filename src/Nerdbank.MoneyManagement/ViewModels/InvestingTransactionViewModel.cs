@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public class InvestingTransactionViewModel : EntityViewModel<Transaction>
+public class InvestingTransactionViewModel : TransactionViewModel
 {
 	private DateTime when;
 	private TransactionAction? action;
@@ -19,7 +19,7 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 	private decimal? debitAmount;
 
 	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, Transaction? transaction)
-		: base(thisAccount.MoneyFile)
+		: base(thisAccount)
 	{
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimpleAmount));
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimpleAmount));
@@ -29,7 +29,6 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
 
-		this.ThisAccount = thisAccount;
 		this.AutoSave = true;
 
 		if (transaction is object)
@@ -124,10 +123,8 @@ public class InvestingTransactionViewModel : EntityViewModel<Transaction>
 		new(TransactionAction.Withdraw, nameof(TransactionAction.Withdraw)),
 	});
 
-	/// <summary>
-	/// Gets the account this transaction was created to be displayed within.
-	/// </summary>
-	public InvestingAccountViewModel ThisAccount { get; }
+	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
+	public new InvestingAccountViewModel ThisAccount => (InvestingAccountViewModel)base.ThisAccount;
 
 	public AssetViewModel? CreditAsset
 	{
