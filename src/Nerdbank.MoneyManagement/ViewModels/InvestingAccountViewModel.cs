@@ -124,12 +124,6 @@ public class InvestingAccountViewModel : AccountViewModel
 		}
 	}
 
-	protected override void ApplyToCore(Account account)
-	{
-		base.ApplyToCore(account);
-		account.CurrencyAssetId = null;
-	}
-
 	protected override void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
 	{
 		if (this.transactions is null)
