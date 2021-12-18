@@ -99,7 +99,7 @@ public class AssetsPanelViewModel : BindableBase
 
 	internal AssetViewModel? AddingAsset { get; set; }
 
-	public AssetViewModel NewAsset(string name = "")
+	public AssetViewModel NewAsset(string name = "", string tickerSymbol = "")
 	{
 		this.AddingNewAsset?.Invoke(this, EventArgs.Empty);
 		if (this.AddingAsset is object)
@@ -131,6 +131,7 @@ public class AssetsPanelViewModel : BindableBase
 			newAssetViewModel.Name = name;
 		}
 
+		newAssetViewModel.TickerSymbol = tickerSymbol;
 		this.SelectedAsset = newAssetViewModel;
 		return newAssetViewModel;
 	}

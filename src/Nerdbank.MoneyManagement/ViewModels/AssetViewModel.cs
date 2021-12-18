@@ -25,6 +25,9 @@ public class AssetViewModel : EntityViewModel<Asset>
 	public AssetViewModel(Asset? model, MoneyFile? moneyFile)
 		: base(moneyFile)
 	{
+		this.RegisterDependentProperty(nameof(this.TickerSymbol), nameof(this.TickerOrName));
+		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TickerOrName));
+
 		this.AutoSave = true;
 
 		if (model is object)
@@ -51,6 +54,11 @@ public class AssetViewModel : EntityViewModel<Asset>
 		get => this.tickerSymbol;
 		set => this.SetProperty(ref this.tickerSymbol, value);
 	}
+
+	/// <summary>
+	/// Gets the value of <see cref="TickerSymbol"/> if non-empty; otherwise the value of <see cref="Name"/>.
+	/// </summary>
+	public string TickerOrName => string.IsNullOrEmpty(this.TickerSymbol) ? this.Name : this.TickerSymbol;
 
 	/// <inheritdoc cref="Asset.Type"/>
 	public Asset.AssetType Type
@@ -94,7 +102,7 @@ public class AssetViewModel : EntityViewModel<Asset>
 		}
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.TypeIsReadOnly);
+	protected override bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.TypeIsReadOnly) or nameof(this.TickerOrName));
 
 	protected override void ApplyToCore(Asset model)
 	{

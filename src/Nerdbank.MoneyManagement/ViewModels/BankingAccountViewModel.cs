@@ -104,6 +104,19 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
+	public override BankingTransactionViewModel? FindTransaction(int id)
+	{
+		foreach (BankingTransactionViewModel transactionViewModel in this.Transactions)
+		{
+			if (transactionViewModel.Model?.Id == id)
+			{
+				return transactionViewModel;
+			}
+		}
+
+		return null;
+	}
+
 	internal override void NotifyTransactionChanged(Transaction transaction)
 	{
 		if (this.transactions is null)
@@ -151,19 +164,6 @@ public class BankingAccountViewModel : AccountViewModel
 				this.transactions.Add(new BankingTransactionViewModel(this, transaction));
 			}
 		}
-	}
-
-	internal override BankingTransactionViewModel? FindTransaction(int id)
-	{
-		foreach (BankingTransactionViewModel transactionViewModel in this.Transactions)
-		{
-			if (transactionViewModel.Model?.Id == id)
-			{
-				return transactionViewModel;
-			}
-		}
-
-		return null;
 	}
 
 	internal void NotifyAmountChangedOnSplitTransaction(BankingTransactionViewModel transaction)

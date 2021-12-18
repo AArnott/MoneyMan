@@ -34,6 +34,9 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.SimplePriceApplicable));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.Description));
 
 		this.AutoSave = true;
 
@@ -287,6 +290,27 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			}
 
 			return impact;
+		}
+	}
+
+	public string Description
+	{
+		get
+		{
+			return this.Action switch
+			{
+				TransactionAction.Add => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName}",
+				TransactionAction.Remove => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName}",
+				TransactionAction.Interest => $"+{this.CreditAmount:C}",
+				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.CreditAmount:C}",
+				TransactionAction.Sell => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} @ {this.SimplePrice:C}",
+				TransactionAction.Buy => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName} @ {this.SimplePrice:C}",
+				TransactionAction.Transfer => this.ThisAccount == this.CreditAccount ? $"+{this.CreditAmount} {this.CreditAsset?.TickerOrName}" : $"-{this.DebitAmount} {this.DebitAsset?.TickerOrName}",
+				TransactionAction.Deposit => $"{this.CreditAmount:C}",
+				TransactionAction.Withdraw => $"{this.DebitAmount:C}",
+				TransactionAction.Exchange => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} -> {this.CreditAmount} {this.CreditAsset?.TickerOrName}",
+				_ => string.Empty,
+			};
 		}
 	}
 

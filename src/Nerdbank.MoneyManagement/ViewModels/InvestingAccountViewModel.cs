@@ -75,7 +75,7 @@ public class InvestingAccountViewModel : AccountViewModel
 		}
 	}
 
-	internal override InvestingTransactionViewModel? FindTransaction(int id)
+	public override InvestingTransactionViewModel? FindTransaction(int id)
 	{
 		foreach (InvestingTransactionViewModel transactionViewModel in this.Transactions)
 		{
