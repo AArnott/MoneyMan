@@ -15,6 +15,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private AccountViewModel? debitAccount;
 	private AssetViewModel? creditAsset;
 	private AssetViewModel? debitAsset;
+	private AssetViewModel? relatedAsset;
 	private decimal? creditAmount;
 	private decimal? debitAmount;
 
@@ -32,6 +33,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.SimplePriceApplicable));
 
 		this.AutoSave = true;
 
@@ -98,8 +100,14 @@ public class InvestingTransactionViewModel : TransactionViewModel
 							this.DebitAsset = null;
 							break;
 						case TransactionAction.Add:
+							this.CreditAccount = this.ThisAccount;
+							this.DebitAccount = null;
+							this.DebitAmount = null;
+							this.DebitAsset = null;
+							break;
 						case TransactionAction.Dividend:
 							this.CreditAccount = this.ThisAccount;
+							this.CreditAsset = this.ThisAccount.CurrencyAsset;
 							this.DebitAccount = null;
 							this.DebitAmount = null;
 							this.DebitAsset = null;
@@ -166,6 +174,13 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.debitAccount, value);
 	}
 
+	/// <inheritdoc cref="Transaction.RelatedAssetId"/>
+	public AssetViewModel? RelatedAsset
+	{
+		get => this.relatedAsset;
+		set => this.SetProperty(ref this.relatedAsset, value);
+	}
+
 	public decimal? SimpleAmount
 	{
 		get => this.IsCreditOperation ? this.CreditAmount : this.IsDebitOperation ? this.DebitAmount : null;
@@ -188,10 +203,18 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public AssetViewModel? SimpleAsset
 	{
-		get => this.IsCreditOperation ? this.CreditAsset : this.IsDebitOperation ? this.DebitAsset : null;
+		get =>
+			this.Action == TransactionAction.Dividend ? this.RelatedAsset :
+			this.IsCreditOperation ? this.CreditAsset :
+			this.IsDebitOperation ? this.DebitAsset :
+			null;
 		set
 		{
-			if (this.IsCreditOperation)
+			if (this.Action == TransactionAction.Dividend)
+			{
+				this.RelatedAsset = value;
+			}
+			else if (this.IsCreditOperation)
 			{
 				this.CreditAsset = value;
 			}
@@ -241,10 +264,17 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
+	public bool SimplePriceApplicable => this.Action is TransactionAction.Add or TransactionAction.Buy or TransactionAction.Sell;
+
 	public decimal? SimpleCurrencyImpact
 	{
 		get
 		{
+			if (this.Action == TransactionAction.Dividend && this.CreditAsset == this.ThisAccount.CurrencyAsset)
+			{
+				return this.CreditAmount;
+			}
+
 			decimal impact = 0;
 			if (this.DebitAsset == this.ThisAccount.CurrencyAsset && this.DebitAmount.HasValue)
 			{
@@ -280,16 +310,14 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		model.DebitAccountId = this.DebitAccount?.Id;
 		model.DebitAssetId = this.DebitAsset?.Id;
 		model.DebitAmount = this.DebitAmount;
+
+		model.RelatedAssetId = this.RelatedAsset?.Id;
 	}
 
 	protected override void CopyFromCore(Transaction model)
 	{
 		this.When = model.When;
-		if (this.action != model.Action)
-		{
-			this.action = model.Action;
-			this.OnPropertyChanged(nameof(this.Action));
-		}
+		this.SetProperty(ref this.action, model.Action, nameof(this.Action));
 
 		this.CreditAccount = this.ThisAccount.DocumentViewModel.GetAccount(model.CreditAccountId);
 		this.CreditAmount = model.CreditAmount;
@@ -298,6 +326,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.DebitAccount = this.ThisAccount.DocumentViewModel.GetAccount(model.DebitAccountId);
 		this.DebitAsset = this.ThisAccount.DocumentViewModel.GetAsset(model.DebitAssetId);
 		this.DebitAmount = model.DebitAmount;
+
+		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(model.RelatedAssetId);
 	}
 
 	protected override bool IsPersistedProperty(string propertyName) =>

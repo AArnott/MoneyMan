@@ -154,12 +154,12 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		exchange.Action = TransactionAction.Dividend;
 		Assert.Same(this.account, exchange.CreditAccount);
+		Assert.Same(this.account.CurrencyAsset, exchange.CreditAsset);
 
 		Assert.Null(exchange.DebitAccount);
 		Assert.Null(exchange.DebitAmount);
 		Assert.Null(exchange.DebitAsset);
 		Assert.Null(exchange.CreditAmount);
-		Assert.Null(exchange.CreditAsset);
 	}
 
 	[Fact]
@@ -259,6 +259,26 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Dividend()
+	{
+		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
+		exchange.Action = TransactionAction.Dividend;
+		exchange.SimpleAsset = this.msft;
+		exchange.SimpleAmount = 15; // $15 dividend in cash
+		Assert.False(exchange.SimplePriceApplicable);
+		Assert.Equal(15, exchange.SimpleCurrencyImpact);
+
+		this.ReloadViewModel();
+		exchange = this.account.Transactions[0];
+
+		Assert.Equal(TransactionAction.Dividend, exchange.Action);
+		Assert.Same(this.msft, exchange.SimpleAsset);
+		Assert.Equal(15, exchange.SimpleAmount);
+		Assert.False(exchange.SimplePriceApplicable);
+		Assert.Equal(15, exchange.SimpleCurrencyImpact);
+	}
+
+	[Fact]
 	public void ApplyTo_Null()
 	{
 		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
@@ -272,10 +292,12 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		viewModel.When = this.when;
 		viewModel.Action = TransactionAction.Sell;
+		viewModel.RelatedAsset = this.msft;
 		viewModel.ApplyTo(transaction);
 
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(TransactionAction.Sell, transaction.Action);
+		Assert.Equal(this.msft.Id, transaction.RelatedAssetId);
 	}
 
 	[Fact]
@@ -290,16 +312,19 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Transaction transaction = this.viewModel.Model!;
 		transaction.When = this.when;
 		transaction.Action = TransactionAction.Sell;
+		transaction.RelatedAssetId = this.msft.Id;
 
 		this.viewModel.CopyFrom(transaction);
 
 		Assert.Equal(this.when, this.viewModel.When);
 		Assert.Equal(TransactionAction.Sell, this.viewModel.Action);
+		Assert.Same(this.msft, this.viewModel.RelatedAsset);
 	}
 
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();
+		this.account = (InvestingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.account.Id!.Value)!;
 		this.msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
 		this.appl = this.DocumentViewModel.AssetsPanel.FindAsset("Apple") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
 	}

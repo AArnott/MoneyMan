@@ -386,7 +386,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+													<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" IsEnabled="{Binding SimplePriceApplicable}" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>

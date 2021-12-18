@@ -116,6 +116,13 @@ public class Transaction : ModelBase
 	public ClearedState DebitCleared { get; set; }
 
 	/// <summary>
+	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset" /> that is related to this transaction
+	/// but not directly a credited or debited asset.
+	/// For example this may be the asset that produced a <see cref="TransactionAction.Dividend"/>.
+	/// </summary>
+	public int? RelatedAssetId { get; set; }
+
+	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of a <em>split</em> <see cref="Transaction"/>
 	/// that this transaction is a member of.
 	/// </summary>
