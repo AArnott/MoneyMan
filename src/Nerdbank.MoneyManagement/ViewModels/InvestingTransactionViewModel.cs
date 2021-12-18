@@ -249,7 +249,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 		set
 		{
-			if (this.Action is TransactionAction.Add or TransactionAction.Buy)
+			if (this.Action is TransactionAction.Buy)
 			{
 				this.DebitAmount = value * this.CreditAmount;
 			}
@@ -264,7 +264,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	public bool SimplePriceApplicable => this.Action is TransactionAction.Add or TransactionAction.Buy or TransactionAction.Sell;
+	public bool SimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell;
 
 	public decimal? SimpleCurrencyImpact
 	{

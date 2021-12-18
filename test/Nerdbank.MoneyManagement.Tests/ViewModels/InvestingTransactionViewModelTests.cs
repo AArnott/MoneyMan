@@ -265,17 +265,36 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		exchange.Action = TransactionAction.Dividend;
 		exchange.SimpleAsset = this.msft;
 		exchange.SimpleAmount = 15; // $15 dividend in cash
-		Assert.False(exchange.SimplePriceApplicable);
-		Assert.Equal(15, exchange.SimpleCurrencyImpact);
 
-		this.ReloadViewModel();
-		exchange = this.account.Transactions[0];
+		this.AssertNowAndAfterReload(delegate
+		{
+			exchange = this.account.Transactions[0];
+			Assert.Equal(TransactionAction.Dividend, exchange.Action);
+			Assert.Same(this.msft, exchange.SimpleAsset);
+			Assert.Equal(15, exchange.SimpleAmount);
+			Assert.False(exchange.SimplePriceApplicable);
+			Assert.Throws<InvalidOperationException>(() => exchange.SimplePrice = 10);
+			Assert.Equal(15, exchange.SimpleCurrencyImpact);
+		});
+	}
 
-		Assert.Equal(TransactionAction.Dividend, exchange.Action);
-		Assert.Same(this.msft, exchange.SimpleAsset);
-		Assert.Equal(15, exchange.SimpleAmount);
-		Assert.False(exchange.SimplePriceApplicable);
-		Assert.Equal(15, exchange.SimpleCurrencyImpact);
+	[Fact]
+	public void Add()
+	{
+		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
+		exchange.Action = TransactionAction.Add;
+		exchange.SimpleAsset = this.msft;
+		exchange.SimpleAmount = 2; // 2 shares
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			exchange = this.account.Transactions[0];
+			Assert.Same(this.msft, exchange.SimpleAsset);
+			Assert.Equal(2, exchange.SimpleAmount);
+			Assert.False(exchange.SimplePriceApplicable);
+			Assert.Throws<InvalidOperationException>(() => exchange.SimplePrice = 10);
+			Assert.Equal(0, exchange.SimpleCurrencyImpact);
+		});
 	}
 
 	[Fact]
