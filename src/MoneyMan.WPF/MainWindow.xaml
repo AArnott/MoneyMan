@@ -357,25 +357,127 @@
 													<TextBlock Text="{Binding Description}" Margin="3pt" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<Grid>
-														<Grid.ColumnDefinitions>
-															<ColumnDefinition Width="30pt" />
-															<ColumnDefinition Width="3*" />
-															<ColumnDefinition Width="1*" />
-														</Grid.ColumnDefinitions>
-														<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
-														<ComboBox
-															Grid.Column="1"
-															ItemsSource="{Binding Assets}"
-															SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
-															DisplayMemberPath="Name"
-															Visibility="{Binding IsSimpleAssetApplicable, Converter={StaticResource boolToVisibilityConverter}}"/>
-														<TextBox Grid.Column="2" Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" Visibility="{Binding IsSimplePriceApplicable, Converter={StaticResource boolToVisibilityConverter}}" />
-													</Grid>
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
+											<DataGridTemplateColumn.CellEditingTemplateSelector>
+												<local:InvestingTransactionEditingSelector>
+													<local:InvestingTransactionEditingSelector.BuySellShares>
+														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
+															<Grid>
+																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="3*" />
+																	<ColumnDefinition Width="1*" />
+																</Grid.ColumnDefinitions>
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<ComboBox
+																	Grid.Column="1"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
+																<TextBox Grid.Column="2" Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" Visibility="{Binding IsSimplePriceApplicable, Converter={StaticResource boolToVisibilityConverter}}" />
+															</Grid>
+														</DataTemplate>
+													</local:InvestingTransactionEditingSelector.BuySellShares>
+													<local:InvestingTransactionEditingSelector.CashOnly>
+														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
+															<TextBox Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+														</DataTemplate>
+													</local:InvestingTransactionEditingSelector.CashOnly>
+													<local:InvestingTransactionEditingSelector.AddShares>
+														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
+															<Grid>
+																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="*" />
+																</Grid.ColumnDefinitions>
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<ComboBox
+																	Grid.Column="1"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
+															</Grid>
+														</DataTemplate>
+													</local:InvestingTransactionEditingSelector.AddShares>
+													<local:InvestingTransactionEditingSelector.RemoveShares>
+														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
+															<Grid>
+																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="*" />
+																</Grid.ColumnDefinitions>
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<ComboBox
+																	Grid.Column="1"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
+															</Grid>
+														</DataTemplate>
+													</local:InvestingTransactionEditingSelector.RemoveShares>
+													<local:InvestingTransactionEditingSelector.Dividend>
+														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
+															<Grid>
+																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="*" />
+																</Grid.ColumnDefinitions>
+																<ComboBox
+																	Grid.Column="1"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+															</Grid>
+														</DataTemplate>
+													</local:InvestingTransactionEditingSelector.Dividend>
+													<local:InvestingTransactionEditingSelector.Exchange>
+														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
+															<Grid>
+																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="*" />
+																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="*" />
+																</Grid.ColumnDefinitions>
+																<TextBox Grid.Column="0" Text="{Binding DebitAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<ComboBox
+																	Grid.Column="1"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding DebitAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
+																<TextBox Grid.Column="2" Text="{Binding CreditAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<ComboBox
+																	Grid.Column="3"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding CreditAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
+															</Grid>
+														</DataTemplate>
+													</local:InvestingTransactionEditingSelector.Exchange>
+													<local:InvestingTransactionEditingSelector.Transfer>
+														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
+															<Grid>
+																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="*" />
+																	<ColumnDefinition Width="*" />
+																</Grid.ColumnDefinitions>
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<ComboBox
+																	Grid.Column="1"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding DebitAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
+																<!--<ComboBox
+																	Grid.Column="3"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding SimpleAccount, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />-->
+															</Grid>
+														</DataTemplate>
+													</local:InvestingTransactionEditingSelector.Transfer>
+												</local:InvestingTransactionEditingSelector>
+											</DataGridTemplateColumn.CellEditingTemplateSelector>
 										</DataGridTemplateColumn>
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentCashAmtHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
