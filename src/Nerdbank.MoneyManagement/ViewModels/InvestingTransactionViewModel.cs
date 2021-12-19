@@ -18,6 +18,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private AssetViewModel? relatedAsset;
 	private decimal? creditAmount;
 	private decimal? debitAmount;
+	private string? memo;
 
 	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, Transaction? transaction)
 		: base(thisAccount)
@@ -296,6 +297,12 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
+	public string? Memo
+	{
+		get => this.memo;
+		set => this.SetProperty(ref this.memo, value);
+	}
+
 	public string Description
 	{
 		get
@@ -328,6 +335,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	protected override void ApplyToCore(Transaction model)
 	{
 		model.When = this.When;
+		model.Memo = this.Memo;
 		model.Action = this.Action!.Value;
 
 		model.CreditAccountId = this.CreditAccount?.Id;
@@ -344,6 +352,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	protected override void CopyFromCore(Transaction model)
 	{
 		this.When = model.When;
+		this.Memo = model.Memo;
 		this.SetProperty(ref this.action, model.Action, nameof(this.Action));
 
 		this.CreditAccount = this.ThisAccount.DocumentViewModel.GetAccount(model.CreditAccountId);

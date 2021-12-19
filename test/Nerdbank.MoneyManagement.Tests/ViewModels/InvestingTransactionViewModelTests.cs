@@ -456,11 +456,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel viewModel = new(this.account, null);
 
 		viewModel.When = this.when;
+		viewModel.Memo = "my memo";
 		viewModel.Action = TransactionAction.Sell;
 		viewModel.RelatedAsset = this.msft;
 		viewModel.ApplyTo(transaction);
 
 		Assert.Equal(this.when, transaction.When);
+		Assert.Equal(viewModel.Memo, transaction.Memo);
 		Assert.Equal(TransactionAction.Sell, transaction.Action);
 		Assert.Equal(this.msft.Id, transaction.RelatedAssetId);
 	}
@@ -476,12 +478,14 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	{
 		Transaction transaction = this.viewModel.Model!;
 		transaction.When = this.when;
+		transaction.Memo = "my memo";
 		transaction.Action = TransactionAction.Sell;
 		transaction.RelatedAssetId = this.msft.Id;
 
 		this.viewModel.CopyFrom(transaction);
 
 		Assert.Equal(this.when, this.viewModel.When);
+		Assert.Equal(transaction.Memo, this.viewModel.Memo);
 		Assert.Equal(TransactionAction.Sell, this.viewModel.Action);
 		Assert.Same(this.msft, this.viewModel.RelatedAsset);
 	}

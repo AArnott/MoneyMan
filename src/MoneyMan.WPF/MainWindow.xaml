@@ -479,6 +479,18 @@
 												</local:InvestingTransactionEditingSelector>
 											</DataGridTemplateColumn.CellEditingTemplateSelector>
 										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentCashAmtHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate>
