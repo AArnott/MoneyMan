@@ -351,42 +351,29 @@
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentAssetHeader, Source={StaticResource viewModel}}">
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentDetailsHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate>
-													<TextBlock Text="{Binding SimpleAsset.Name}" Margin="3pt" />
+													<TextBlock Text="{Binding Description}" Margin="3pt" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<ComboBox
-														ItemsSource="{Binding Assets}"
-														SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
-														DisplayMemberPath="Name"/>
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Text="{Binding SimpleAmount}" Margin="3pt" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<TextBox Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentPriceHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Text="{Binding SimplePrice, StringFormat=C}" Margin="3pt" HorizontalAlignment="Right" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" IsEnabled="{Binding SimplePriceApplicable}" />
+													<Grid>
+														<Grid.ColumnDefinitions>
+															<ColumnDefinition Width="30pt" />
+															<ColumnDefinition Width="3*" />
+															<ColumnDefinition Width="1*" />
+														</Grid.ColumnDefinitions>
+														<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+														<ComboBox
+															Grid.Column="1"
+															ItemsSource="{Binding Assets}"
+															SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
+															DisplayMemberPath="Name"
+															Visibility="{Binding IsSimpleAssetApplicable, Converter={StaticResource boolToVisibilityConverter}}"/>
+														<TextBox Grid.Column="2" Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" Visibility="{Binding IsSimplePriceApplicable, Converter={StaticResource boolToVisibilityConverter}}" />
+													</Grid>
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>

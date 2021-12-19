@@ -33,7 +33,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
-		this.RegisterDependentProperty(nameof(this.Action), nameof(this.SimplePriceApplicable));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimplePriceApplicable));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimpleAssetApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.Description));
@@ -217,11 +218,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				this.RelatedAsset = value;
 			}
-			else if (this.IsCreditOperation)
+			else if (this.Action is TransactionAction.Buy or TransactionAction.Add)
 			{
 				this.CreditAsset = value;
 			}
-			else if (this.IsDebitOperation)
+			else if (this.Action is TransactionAction.Sell or TransactionAction.Remove)
 			{
 				this.DebitAsset = value;
 			}
@@ -231,6 +232,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			}
 		}
 	}
+
+	public bool IsSimpleAssetApplicable => this.Action is TransactionAction.Dividend or TransactionAction.Buy or TransactionAction.Sell or TransactionAction.Add or TransactionAction.Remove;
 
 	public decimal? SimplePrice
 	{
@@ -267,7 +270,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	public bool SimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell;
+	public bool IsSimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell;
 
 	public decimal? SimpleCurrencyImpact
 	{

@@ -248,6 +248,8 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			Assert.Same(this.account, tx.CreditAccount);
 			Assert.Same(this.account.CurrencyAsset, tx.CreditAsset);
 			Assert.Equal("$3.00", tx.Description);
+			Assert.False(tx.IsSimpleAssetApplicable);
+			Assert.False(tx.IsSimplePriceApplicable);
 		});
 	}
 
@@ -265,17 +267,19 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			Assert.Same(this.account, tx.DebitAccount);
 			Assert.Same(this.account.CurrencyAsset, tx.DebitAsset);
 			Assert.Equal("$3.00", tx.Description);
+			Assert.False(tx.IsSimpleAssetApplicable);
+			Assert.False(tx.IsSimplePriceApplicable);
 		});
 	}
 
 	[Fact]
 	public void Buy()
 	{
-		InvestingTransactionViewModel buy = this.account.Transactions[^1];
-		buy.Action = TransactionAction.Buy;
-		buy.SimpleAsset = this.msft;
-		buy.SimpleAmount = 2; // 2 shares
-		buy.SimplePrice = 125; // $250 total
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Buy;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 2; // 2 shares
+		tx.SimplePrice = 125; // $250 total
 
 		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
 		Assert.Equal(-250, balances[this.Money.PreferredAssetId]);
@@ -283,23 +287,25 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			buy = this.account.Transactions[0];
-			Assert.Equal(TransactionAction.Buy, buy.Action);
-			Assert.Same(this.msft, buy.CreditAsset);
-			Assert.Equal(2, buy.CreditAmount);
-			Assert.Equal(250, buy.DebitAmount);
-			Assert.Equal("2 MSFT @ $125.00", buy.Description);
+			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.Equal(TransactionAction.Buy, tx.Action);
+			Assert.True(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimpleAssetApplicable);
+			Assert.Same(this.msft, tx.CreditAsset);
+			Assert.Equal(2, tx.CreditAmount);
+			Assert.Equal(250, tx.DebitAmount);
+			Assert.Equal("2 MSFT @ $125.00", tx.Description);
 		});
 	}
 
 	[Fact]
 	public void Sell()
 	{
-		InvestingTransactionViewModel sell = this.account.Transactions[^1];
-		sell.Action = TransactionAction.Sell;
-		sell.SimpleAsset = this.msft;
-		sell.SimpleAmount = 2;
-		sell.SimplePrice = 125;
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Sell;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 2;
+		tx.SimplePrice = 125;
 
 		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
 		Assert.Equal(250, balances[this.Money.PreferredAssetId]);
@@ -307,11 +313,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			sell = this.account.Transactions[0];
-			Assert.Equal(250, sell.CreditAmount);
-			Assert.Equal(2, sell.DebitAmount);
-			Assert.Same(this.msft, sell.DebitAsset);
-			Assert.Equal("2 MSFT @ $125.00", sell.Description);
+			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.True(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimpleAssetApplicable);
+			Assert.Equal(250, tx.CreditAmount);
+			Assert.Equal(2, tx.DebitAmount);
+			Assert.Same(this.msft, tx.DebitAsset);
+			Assert.Equal("2 MSFT @ $125.00", tx.Description);
 		});
 	}
 
@@ -327,63 +335,66 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void Dividend()
 	{
-		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
-		exchange.Action = TransactionAction.Dividend;
-		exchange.SimpleAsset = this.msft;
-		exchange.SimpleAmount = 15; // $15 dividend in cash
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Dividend;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 15; // $15 dividend in cash
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			exchange = this.account.Transactions[0];
-			Assert.Equal(TransactionAction.Dividend, exchange.Action);
-			Assert.Same(this.msft, exchange.SimpleAsset);
-			Assert.Equal(15, exchange.SimpleAmount);
-			Assert.False(exchange.SimplePriceApplicable);
-			Assert.Throws<InvalidOperationException>(() => exchange.SimplePrice = 10);
-			Assert.Equal(15, exchange.SimpleCurrencyImpact);
-			Assert.Equal("MSFT +$15.00", exchange.Description);
+			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.Equal(TransactionAction.Dividend, tx.Action);
+			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Equal(15, tx.SimpleAmount);
+			Assert.False(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimpleAssetApplicable);
+			Assert.Throws<InvalidOperationException>(() => tx.SimplePrice = 10);
+			Assert.Equal(15, tx.SimpleCurrencyImpact);
+			Assert.Equal("MSFT +$15.00", tx.Description);
 		});
 	}
 
 	[Fact]
 	public void Add()
 	{
-		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
-		exchange.Action = TransactionAction.Add;
-		exchange.SimpleAsset = this.msft;
-		exchange.SimpleAmount = 2; // 2 shares
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Add;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 2; // 2 shares
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			exchange = this.account.Transactions[0];
-			Assert.Equal(TransactionAction.Add, exchange.Action);
-			Assert.Same(this.msft, exchange.SimpleAsset);
-			Assert.Equal(2, exchange.SimpleAmount);
-			Assert.False(exchange.SimplePriceApplicable);
-			Assert.Throws<InvalidOperationException>(() => exchange.SimplePrice = 10);
-			Assert.Equal(0, exchange.SimpleCurrencyImpact);
-			Assert.Equal($"2 MSFT", exchange.Description); // add " @ $220.00 USD" when we track tax lots
+			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.Equal(TransactionAction.Add, tx.Action);
+			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Equal(2, tx.SimpleAmount);
+			Assert.False(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimpleAssetApplicable);
+			Assert.Throws<InvalidOperationException>(() => tx.SimplePrice = 10);
+			Assert.Equal(0, tx.SimpleCurrencyImpact);
+			Assert.Equal($"2 MSFT", tx.Description); // add " @ $220.00 USD" when we track tax lots
 		});
 	}
 
 	[Fact]
 	public void Remove()
 	{
-		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
-		exchange.Action = TransactionAction.Remove;
-		exchange.SimpleAsset = this.msft;
-		exchange.SimpleAmount = 2; // 2 shares
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Remove;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 2; // 2 shares
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			exchange = this.account.Transactions[0];
-			Assert.Equal(TransactionAction.Remove, exchange.Action);
-			Assert.Same(this.msft, exchange.SimpleAsset);
-			Assert.Equal(2, exchange.SimpleAmount);
-			Assert.False(exchange.SimplePriceApplicable);
-			Assert.Throws<InvalidOperationException>(() => exchange.SimplePrice = 10);
-			Assert.Equal(0, exchange.SimpleCurrencyImpact);
-			Assert.Equal($"2 MSFT", exchange.Description); // add " @ $220.00 USD" when we track tax lots
+			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.Equal(TransactionAction.Remove, tx.Action);
+			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Equal(2, tx.SimpleAmount);
+			Assert.False(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimpleAssetApplicable);
+			Assert.Throws<InvalidOperationException>(() => tx.SimplePrice = 10);
+			Assert.Equal(0, tx.SimpleCurrencyImpact);
+			Assert.Equal($"2 MSFT", tx.Description); // add " @ $220.00 USD" when we track tax lots
 		});
 	}
 
@@ -399,7 +410,8 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			exchange = this.account.Transactions[0];
 			Assert.Equal(TransactionAction.Interest, exchange.Action);
 			Assert.Equal(2, exchange.SimpleAmount);
-			Assert.False(exchange.SimplePriceApplicable);
+			Assert.False(exchange.IsSimplePriceApplicable);
+			Assert.False(exchange.IsSimpleAssetApplicable);
 			Assert.Throws<InvalidOperationException>(() => exchange.SimplePrice = 10);
 			Assert.Equal(2, exchange.SimpleCurrencyImpact);
 			Assert.Equal($"+$2.00", exchange.Description); // add " @ $220.00 USD" when we track tax lots
