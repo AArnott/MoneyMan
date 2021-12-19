@@ -39,6 +39,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.CreditAccount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.DebitAccount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.RelatedAsset), nameof(this.Description));
 
 		this.AutoSave = true;
 

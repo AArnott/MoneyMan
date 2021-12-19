@@ -373,7 +373,10 @@
 																	ItemsSource="{Binding Assets}"
 																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
-																<TextBox Grid.Column="2" Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" Visibility="{Binding IsSimplePriceApplicable, Converter={StaticResource boolToVisibilityConverter}}" />
+																<StackPanel Grid.Column="2" Orientation="Horizontal">
+																	<TextBlock Text="@" Margin="3,3,3,0" />
+																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" MinWidth="30pt" />
+																</StackPanel>
 															</Grid>
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.BuySellShares>
@@ -418,15 +421,15 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
-																	<ColumnDefinition Width="30pt" />
 																	<ColumnDefinition Width="*" />
+																	<ColumnDefinition Width="30pt" />
 																</Grid.ColumnDefinitions>
+																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
 																<ComboBox
-																	Grid.Column="1"
+																	Grid.Column="0"
 																	ItemsSource="{Binding Assets}"
 																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
 															</Grid>
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.Dividend>

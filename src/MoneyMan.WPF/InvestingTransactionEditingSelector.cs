@@ -59,7 +59,7 @@ internal class InvestingTransactionEditingSelector : DataTemplateSelector
 			TransactionAction.Dividend => this.Dividend,
 			TransactionAction.Exchange => this.Exchange,
 			TransactionAction.Transfer => this.Transfer,
-			_ => null,
+			_ => new DataTemplate(),
 		};
 	}
 }
