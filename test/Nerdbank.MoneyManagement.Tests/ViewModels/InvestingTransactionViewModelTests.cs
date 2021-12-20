@@ -439,6 +439,20 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Null(exchange.Model?.DebitAmount);
 	}
 
+	[Theory]
+	[InlineData(TransactionAction.Buy)]
+	[InlineData(TransactionAction.Sell)]
+	public void SimplePrice_CannotBeNegative(TransactionAction action)
+	{
+		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
+		exchange.Action = action;
+		exchange.SimpleAmount = 1;
+		exchange.SimplePrice = -1;
+		Assert.Equal(-1, exchange.SimplePrice);
+		Assert.False(string.IsNullOrEmpty(exchange.Error));
+		this.Logger.WriteLine(exchange.Error);
+	}
+
 	[Fact]
 	public void Transfer()
 	{

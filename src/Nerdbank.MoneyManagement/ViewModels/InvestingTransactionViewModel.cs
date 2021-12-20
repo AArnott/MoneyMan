@@ -244,11 +244,12 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public bool IsSimpleAssetApplicable => this.Action is TransactionAction.Dividend or TransactionAction.Buy or TransactionAction.Sell or TransactionAction.Add or TransactionAction.Remove;
 
+	[Range(0, int.MaxValue, ErrorMessage = "Must not be a negative number.")]
 	public decimal? SimplePrice
 	{
 		get
 		{
-			if (this.Action is TransactionAction.Add or TransactionAction.Buy)
+			if (this.Action is TransactionAction.Buy)
 			{
 				return this.CreditAmount != 0 && this.DebitAmount != 0 ? this.DebitAmount / this.CreditAmount : null;
 			}

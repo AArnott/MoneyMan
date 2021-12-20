@@ -17,7 +17,7 @@
 		<converters:BooleanToVisibilityConverter x:Key="boolToVisibilityConverter" />
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
 		<converters:TypeToVisibilityConverter x:Key="typeToVisibilityConverter" />
-		<Style x:Key="textBoxInError" TargetType="{x:Type TextBox}">
+		<Style TargetType="{x:Type TextBox}">
 			<Style.Triggers>
 				<Trigger Property="Validation.HasError" Value="True">
 					<Setter Property="Background" Value="Pink" />
@@ -133,7 +133,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+													<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
 											         IsReadOnly="{Binding PayeeIsReadOnly}"/>
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
@@ -172,7 +172,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+													<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
@@ -184,7 +184,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number"
+													<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number"
 											         IsReadOnly="{Binding AmountIsReadOnly}"/>
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
@@ -197,7 +197,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" InputScope="Number" />
+													<TextBox Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
@@ -282,7 +282,7 @@
 														</DataGridTemplateColumn.CellTemplate>
 														<DataGridTemplateColumn.CellEditingTemplate>
 															<DataTemplate>
-																<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+																<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 															</DataTemplate>
 														</DataGridTemplateColumn.CellEditingTemplate>
 													</DataGridTemplateColumn>
@@ -294,7 +294,7 @@
 														</DataGridTemplateColumn.CellTemplate>
 														<DataGridTemplateColumn.CellEditingTemplate>
 															<DataTemplate>
-																<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 															</DataTemplate>
 														</DataGridTemplateColumn.CellEditingTemplate>
 													</DataGridTemplateColumn>
@@ -385,7 +385,7 @@
 																	<ColumnDefinition Width="3*" />
 																	<ColumnDefinition Width="1*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
@@ -393,7 +393,7 @@
 																	DisplayMemberPath="Name" />
 																<StackPanel Grid.Column="2" Orientation="Horizontal">
 																	<TextBlock Text="@" Margin="3,3,3,0" />
-																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus}" InputScope="Number" MinWidth="30pt" />
+																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="30pt" />
 																</StackPanel>
 															</Grid>
 														</DataTemplate>
@@ -401,7 +401,6 @@
 													<local:InvestingTransactionEditingSelector.CashOnly>
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<TextBox Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
-																	 Style="{StaticResource textBoxInError}"
 																	 InputScope="Number" />
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.CashOnly>
@@ -412,7 +411,7 @@
 																	<ColumnDefinition Width="30pt" />
 																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
@@ -428,7 +427,7 @@
 																	<ColumnDefinition Width="30pt" />
 																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
@@ -444,7 +443,7 @@
 																	<ColumnDefinition Width="*" />
 																	<ColumnDefinition Width="30pt" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
 																	Grid.Column="0"
 																	ItemsSource="{Binding Assets}"
@@ -462,13 +461,13 @@
 																	<ColumnDefinition Width="30pt" />
 																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding DebitAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding DebitAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
 																	SelectedItem="{Binding DebitAsset, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
-																<TextBox Grid.Column="2" Text="{Binding CreditAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Grid.Column="2" Text="{Binding CreditAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
 																	Grid.Column="3"
 																	ItemsSource="{Binding Assets}"
@@ -485,7 +484,7 @@
 																	<ColumnDefinition Width="*" />
 																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
@@ -510,7 +509,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+													<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
@@ -678,7 +677,7 @@
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>
 										<DataTemplate>
-											<TextBox Text="{Binding Price, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+											<TextBox Text="{Binding Price, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellEditingTemplate>
 								</DataGridTemplateColumn>
@@ -692,12 +691,10 @@
 						<Label Content="{Binding Document.AssetsPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AssetName}" />
 						<TextBox Name="AssetName"
 								 MaxLength="{Binding Document.AssetsPanel.NameMaxLength, Source={StaticResource viewModel}}"
-								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 						<Label Content="{Binding Document.AssetsPanel.TickerSymbolLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AssetTickerSymbol}" />
 						<TextBox Name="AssetTickerSymbol"
 								 MaxLength="{Binding Document.AssetsPanel.TickerSymbolMaxLength, Source={StaticResource viewModel}}"
-								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding TickerSymbol, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 						<Label Content="{Binding Document.AssetsPanel.TypeLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AssetType}" />
 						<ComboBox Name="AssetType"
@@ -730,7 +727,6 @@
 						<Label Content="{Binding Document.AccountsPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountName}" />
 						<TextBox Name="AccountName"
 						         MaxLength="100"
-						         Style="{StaticResource textBoxInError}"
 						         Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 						<Label Content="{Binding Document.AccountsPanel.TypeLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=AccountType}" />
 						<ComboBox Name="AccountType"
@@ -788,7 +784,6 @@
 						<Label Content="{Binding Document.CategoriesPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
 								 MaxLength="{Binding Document.CategoriesPanel.NameMaxLength, Source={StaticResource viewModel}}"
-								 Style="{StaticResource textBoxInError}"
 								 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 					</StackPanel>
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
