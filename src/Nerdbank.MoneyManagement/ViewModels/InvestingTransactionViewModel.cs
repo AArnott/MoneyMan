@@ -154,6 +154,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.creditAsset, value);
 	}
 
+	[Range(0, int.MaxValue, ErrorMessage = "Must not be a negative number.")]
 	public decimal? CreditAmount
 	{
 		get => this.creditAmount;
@@ -172,6 +173,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.debitAsset, value);
 	}
 
+	[Range(0, int.MaxValue, ErrorMessage = "Must not be a negative number.")]
 	public decimal? DebitAmount
 	{
 		get => this.debitAmount;
@@ -191,6 +193,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.relatedAsset, value);
 	}
 
+	[Range(0, int.MaxValue, ErrorMessage = "Must not be a negative number.")]
 	public decimal? SimpleAmount
 	{
 		get => this.IsCreditOperation ? this.CreditAmount : this.IsDebitOperation ? this.DebitAmount : null;

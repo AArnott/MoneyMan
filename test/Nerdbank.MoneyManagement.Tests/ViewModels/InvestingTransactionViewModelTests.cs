@@ -418,6 +418,27 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		});
 	}
 
+	[Theory]
+	[InlineData(TransactionAction.Interest)]
+	[InlineData(TransactionAction.Dividend)]
+	[InlineData(TransactionAction.Buy)]
+	[InlineData(TransactionAction.Sell)]
+	[InlineData(TransactionAction.Add)]
+	[InlineData(TransactionAction.Remove)]
+	[InlineData(TransactionAction.Deposit)]
+	[InlineData(TransactionAction.Withdraw)]
+	public void SimpleAmount_CannotBeNegative(TransactionAction action)
+	{
+		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
+		exchange.Action = action;
+		exchange.SimpleAmount = -1;
+		Assert.Equal(-1, exchange.SimpleAmount);
+		Assert.False(string.IsNullOrEmpty(exchange.Error));
+		this.Logger.WriteLine(exchange.Error);
+		Assert.Null(exchange.Model?.CreditAmount);
+		Assert.Null(exchange.Model?.DebitAmount);
+	}
+
 	[Fact]
 	public void Transfer()
 	{

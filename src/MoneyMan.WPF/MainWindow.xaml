@@ -26,6 +26,21 @@
 				</Trigger>
 			</Style.Triggers>
 		</Style>
+		<Style TargetType="DataGrid">
+			<Setter Property="RowValidationErrorTemplate">
+				<Setter.Value>
+					<ControlTemplate>
+						<Grid Margin="0,-2,0,-2" ToolTip="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGridRow}}, Path=(Validation.Errors)[0].ErrorContent}">
+							<Ellipse StrokeThickness="0"
+							         Fill="Red"
+							         Width="{TemplateBinding FontSize}"
+							         Height="{TemplateBinding FontSize}" />
+							<TextBlock Text="!" FontSize="{TemplateBinding FontSize}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="4" />
+						</Grid>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
 	</Window.Resources>
 	<Window.InputBindings>
 		<KeyBinding Command="{Binding Document.SaveCommand, Source={StaticResource viewModel}}" Key="S" Modifiers="Ctrl" />
@@ -320,6 +335,9 @@
 												<DataTrigger Binding="{Binding IsPersisted}" Value="False">
 													<Setter Property="Background" Value="LightYellow" />
 												</DataTrigger>
+												<Trigger Property="Validation.HasError" Value="True">
+													<Setter Property="Background" Value="LightPink" />
+												</Trigger>
 											</Style.Triggers>
 										</Style>
 									</DataGrid.RowStyle>
@@ -382,7 +400,9 @@
 													</local:InvestingTransactionEditingSelector.BuySellShares>
 													<local:InvestingTransactionEditingSelector.CashOnly>
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
-															<TextBox Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus}" InputScope="Number" />
+															<TextBox Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
+																	 Style="{StaticResource textBoxInError}"
+																	 InputScope="Number" />
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.CashOnly>
 													<local:InvestingTransactionEditingSelector.AddShares>
