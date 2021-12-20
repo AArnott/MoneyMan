@@ -89,16 +89,16 @@ public class InvestingTransactionViewModel : TransactionViewModel
 							this.DebitAccount ??= this.ThisAccount;
 							break;
 						case TransactionAction.Remove:
+							this.DebitAccount = this.ThisAccount;
 							this.CreditAccount = null;
 							this.CreditAmount = null;
 							this.CreditAsset = null;
-							this.DebitAccount = this.ThisAccount;
 							break;
 						case TransactionAction.Withdraw:
+							this.DebitAccount = this.ThisAccount;
 							this.CreditAccount = null;
 							this.CreditAmount = null;
 							this.CreditAsset = null;
-							this.DebitAccount = this.ThisAccount;
 							this.DebitAsset = this.ThisAccount.CurrencyAsset;
 							break;
 						case TransactionAction.Interest:
