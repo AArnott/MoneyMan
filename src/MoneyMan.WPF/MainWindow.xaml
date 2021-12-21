@@ -703,6 +703,29 @@
 						          SelectedValuePath="Value"
 						          DisplayMemberPath="Caption"
 						          SelectedValue="{Binding Type}" />
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="auto"/>
+								<ColumnDefinition Width="20pt" />
+							</Grid.ColumnDefinitions>
+							<Grid.RowDefinitions>
+								<RowDefinition/>
+								<RowDefinition/>
+							</Grid.RowDefinitions>
+							<Label Content="{Binding Document.AssetsPanel.CurrencySymbolLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CurrencySymbol}" />
+							<TextBox Name="CurrencySymbol"
+									 Grid.Column="1"
+									 MaxLength="1"
+									 Text="{Binding CurrencySymbol, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+							<Label Content="{Binding Document.AssetsPanel.CurrencyDecimalDigitsLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CurrencyDecimalDigits}" 
+								   Grid.Row="1" />
+							<TextBox Name="CurrencyDecimalDigits"
+									 Grid.Row="1"
+									 Grid.Column="1"
+									 MaxLength="2"
+									 Text="{Binding CurrencyDecimalDigits, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
+									 InputScope="Number"/>
+						</Grid>
 					</StackPanel>
 				</Grid>
 			</TabItem>

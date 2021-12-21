@@ -4,6 +4,8 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -16,6 +18,9 @@ public class AssetViewModel : EntityViewModel<Asset>
 	private Asset.AssetType type;
 	private decimal currentPrice;
 	private bool? typeIsReadOnly;
+	private int? currencyDecimalDigits;
+	private string? currencySymbol;
+	private NumberFormatInfo? numberFormat;
 
 	public AssetViewModel()
 		: this(null, null)
@@ -27,6 +32,8 @@ public class AssetViewModel : EntityViewModel<Asset>
 	{
 		this.RegisterDependentProperty(nameof(this.TickerSymbol), nameof(this.TickerOrName));
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TickerOrName));
+		this.RegisterDependentProperty(nameof(this.CurrencySymbol), nameof(this.NumberFormat));
+		this.RegisterDependentProperty(nameof(this.CurrencyDecimalDigits), nameof(this.NumberFormat));
 
 		this.AutoSave = true;
 
@@ -79,6 +86,34 @@ public class AssetViewModel : EntityViewModel<Asset>
 	/// </summary>
 	public bool TypeIsReadOnly => this.typeIsReadOnly ??= this.Id is not null && this.MoneyFile?.IsAssetInUse(this.Id.Value) is true;
 
+	/// <inheritdoc cref="Asset.CurrencySymbol"/>
+	public string? CurrencySymbol
+	{
+		get => this.currencySymbol;
+		set
+		{
+			if (this.currencySymbol != value)
+			{
+				this.SetProperty(ref this.currencySymbol, value);
+				this.numberFormat = null;
+			}
+		}
+	}
+
+	/// <inheritdoc cref="Asset.CurrencyDecimalDigits"/>
+	public int? CurrencyDecimalDigits
+	{
+		get => this.currencyDecimalDigits;
+		set
+		{
+			if (this.currencyDecimalDigits != value)
+			{
+				this.SetProperty(ref this.currencyDecimalDigits, value);
+				this.numberFormat = null;
+			}
+		}
+	}
+
 	public ReadOnlyCollection<EnumValueViewModel<Asset.AssetType>> Types { get; } = new ReadOnlyCollection<EnumValueViewModel<Asset.AssetType>>(new EnumValueViewModel<Asset.AssetType>[]
 	{
 		new(Asset.AssetType.Currency, "Currency"),
@@ -91,7 +126,32 @@ public class AssetViewModel : EntityViewModel<Asset>
 		set => this.SetProperty(ref this.currentPrice, value);
 	}
 
+	internal NumberFormatInfo NumberFormat
+	{
+		get
+		{
+			if (this.numberFormat is { } format)
+			{
+				return format;
+			}
+
+			NumberFormatInfo numberFormat = (NumberFormatInfo)NumberFormatInfo.CurrentInfo.Clone();
+			if (this.CurrencySymbol is object)
+			{
+				numberFormat.CurrencySymbol = this.CurrencySymbol;
+			}
+
+			numberFormat.CurrencyDecimalDigits = this.CurrencyDecimalDigits ?? 0;
+			numberFormat.NumberDecimalDigits = this.CurrencyDecimalDigits ?? 0;
+
+			return this.numberFormat = numberFormat;
+		}
+	}
+
 	protected string? DebuggerDisplay => this.Name;
+
+	[return: NotNullIfNotNull("value")]
+	public string? Format(decimal? value) => value?.ToString(this.Type == Asset.AssetType.Currency ? "C" : "N", this.NumberFormat);
 
 	internal void NotifyUseChange()
 	{
@@ -109,16 +169,16 @@ public class AssetViewModel : EntityViewModel<Asset>
 		model.Name = this.Name;
 		model.TickerSymbol = string.IsNullOrWhiteSpace(this.TickerSymbol) ? null : this.TickerSymbol;
 		model.Type = this.Type;
+		model.CurrencySymbol = this.CurrencySymbol;
+		model.CurrencyDecimalDigits = this.CurrencyDecimalDigits;
 	}
 
 	protected override void CopyFromCore(Asset model)
 	{
 		this.Name = model.Name;
 		this.TickerSymbol = model.TickerSymbol ?? string.Empty;
-		if (this.type != model.Type)
-		{
-			this.type = model.Type;
-			this.OnPropertyChanged(nameof(this.Type));
-		}
+		this.SetProperty(ref this.type, model.Type);
+		this.CurrencySymbol = model.CurrencySymbol;
+		this.CurrencyDecimalDigits = model.CurrencyDecimalDigits;
 	}
 }

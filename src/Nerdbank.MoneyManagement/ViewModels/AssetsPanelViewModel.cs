@@ -49,6 +49,10 @@ public class AssetsPanelViewModel : BindableBase
 
 	public string TypeLabel => "T_ype";
 
+	public string CurrencySymbolLabel => "Currency symbol";
+
+	public string CurrencyDecimalDigitsLabel => "Decimal digits";
+
 	public string PriceGridWhenColumnHeader => "Date";
 
 	public string PriceGridPriceColumnHeader => "Price";

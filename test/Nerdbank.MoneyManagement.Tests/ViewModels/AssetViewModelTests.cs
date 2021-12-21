@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Globalization;
+
 public class AssetViewModelTests : MoneyTestBase
 {
 	private AssetViewModel viewModel;
@@ -47,6 +49,22 @@ public class AssetViewModelTests : MoneyTestBase
 		Assert.Equal(Asset.AssetType.Security, this.viewModel.Type);
 		this.viewModel.Type = Asset.AssetType.Currency;
 		Assert.Equal(Asset.AssetType.Currency, this.viewModel.Type);
+	}
+
+	[Fact]
+	public void CurrencySymbol()
+	{
+		Assert.Null(this.viewModel.CurrencySymbol);
+		this.viewModel.CurrencySymbol = "ⓩ";
+		Assert.Equal("ⓩ", this.viewModel.CurrencySymbol);
+	}
+
+	[Fact]
+	public void CurrencyDecimalDigits()
+	{
+		Assert.Null(this.viewModel.CurrencyDecimalDigits);
+		this.viewModel.CurrencyDecimalDigits = 8;
+		Assert.Equal(8, this.viewModel.CurrencyDecimalDigits);
 	}
 
 	[Fact]
@@ -112,6 +130,31 @@ public class AssetViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Format()
+	{
+		this.viewModel.Type = Asset.AssetType.Currency;
+		var controlled = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+		controlled.NumberFormat.CurrencyDecimalDigits = 2;
+		controlled.NumberFormat.CurrencySymbol = "$";
+		CultureInfo previous = CultureInfo.CurrentCulture;
+		try
+		{
+			CultureInfo.CurrentCulture = controlled;
+			Assert.Equal("$2,345", this.viewModel.Format(2345.123m));
+			this.viewModel.CurrencyDecimalDigits = 4;
+			this.viewModel.CurrencySymbol = "ⓩ";
+			Assert.Equal("ⓩ2,345.1230", this.viewModel.Format(2345.123m));
+
+			this.viewModel.Type = Asset.AssetType.Security;
+			Assert.Equal("2,345.1230", this.viewModel.Format(2345.123m));
+		}
+		finally
+		{
+			CultureInfo.CurrentCulture = previous;
+		}
+	}
+
+	[Fact]
 	public void ApplyTo()
 	{
 		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
@@ -121,11 +164,15 @@ public class AssetViewModelTests : MoneyTestBase
 		this.viewModel.Name = "some name";
 		this.viewModel.TickerSymbol = "ticker";
 		this.viewModel.Type = Asset.AssetType.Security;
+		this.viewModel.CurrencySymbol = "ⓩ";
+		this.viewModel.CurrencyDecimalDigits = 8;
 
 		this.viewModel.ApplyTo(asset);
 		Assert.Equal(this.viewModel.Name, asset.Name);
 		Assert.Equal(this.viewModel.TickerSymbol, asset.TickerSymbol);
 		Assert.Equal(this.viewModel.Type, asset.Type);
+		Assert.Equal(this.viewModel.CurrencySymbol, asset.CurrencySymbol);
+		Assert.Equal(this.viewModel.CurrencyDecimalDigits, asset.CurrencyDecimalDigits);
 
 		this.viewModel.TickerSymbol = " ";
 		this.viewModel.ApplyTo(asset);
@@ -150,6 +197,8 @@ public class AssetViewModelTests : MoneyTestBase
 			Name = "some name",
 			TickerSymbol = "ticker",
 			Type = Asset.AssetType.Security,
+			CurrencySymbol = "ⓩ",
+			CurrencyDecimalDigits = 8,
 		};
 
 		this.viewModel.CopyFrom(asset);
@@ -158,5 +207,7 @@ public class AssetViewModelTests : MoneyTestBase
 		Assert.Equal(asset.Name, this.viewModel.Name);
 		Assert.Equal(asset.TickerSymbol, this.viewModel.TickerSymbol);
 		Assert.Equal(asset.Type, this.viewModel.Type);
+		Assert.Equal(asset.CurrencySymbol, this.viewModel.CurrencySymbol);
+		Assert.Equal(asset.CurrencyDecimalDigits, this.viewModel.CurrencyDecimalDigits);
 	}
 }

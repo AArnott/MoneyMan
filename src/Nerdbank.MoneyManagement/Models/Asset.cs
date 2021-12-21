@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Nerdbank.MoneyManagement;
 
@@ -38,6 +39,18 @@ public class Asset : ModelBase
 	/// Gets or sets the type of asset.
 	/// </summary>
 	public AssetType Type { get; set; }
+
+	/// <summary>
+	/// Gets or sets the value to use for <see cref="NumberFormatInfo.CurrencySymbol"/>.
+	/// Applicable when <see cref="Type"/> is set to <see cref="AssetType.Currency"/>.
+	/// </summary>
+	public string? CurrencySymbol { get; set; }
+
+	/// <summary>
+	/// Gets or sets the value to use for <see cref="NumberFormatInfo.CurrencyDecimalDigits"/>.
+	/// Applicable when <see cref="Type"/> is set to <see cref="AssetType.Currency"/>.
+	/// </summary>
+	public int? CurrencyDecimalDigits { get; set; }
 
 	private string? DebuggerDisplay => this.Name;
 }

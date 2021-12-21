@@ -2,13 +2,15 @@
 	"Id"   INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	"Name" TEXT NOT NULL UNIQUE,
 	"TickerSymbol" TEXT,
-	"Type" INTEGER NOT NULL DEFAULT(1)
+	"Type" INTEGER NOT NULL DEFAULT(1),
+	"CurrencySymbol" TEXT,
+	"CurrencyDecimalDigits" INTEGER
 );
 
 -- We normally wouldn't insert novel data into the database in an upgrade step, but
 -- all transactions inserted in prior versions made an assumption about the currency
 -- and now the database records it explicitly, so we have to explicitly encode the assumption.
-INSERT INTO "Asset" VALUES(1, "United States Dollar", "USD", 0);
+INSERT INTO "Asset" VALUES(1, "United States Dollar", "USD", 0, "$", 2);
 
 ALTER TABLE "Account" ADD "Type" INTEGER NOT NULL DEFAULT(0);
 

@@ -17,14 +17,20 @@ public class AssetFacts : EntityTestBase
 		{
 			Name = name,
 			Type = Asset.AssetType.Security,
+			CurrencySymbol = "ⓩ",
+			CurrencyDecimalDigits = 8,
 		};
 
 		Assert.Equal(name, p.Name);
 		Assert.Equal(Asset.AssetType.Security, p.Type);
+		Assert.Equal("ⓩ", p.CurrencySymbol);
+		Assert.Equal(8, p.CurrencyDecimalDigits);
 
 		Asset? p2 = this.SaveAndReload(p);
 
 		Assert.Equal(name, p2.Name);
 		Assert.Equal(p.Type, p2.Type);
+		Assert.Equal(p.CurrencySymbol, p2.CurrencySymbol);
+		Assert.Equal(p.CurrencyDecimalDigits, p2.CurrencyDecimalDigits);
 	}
 }

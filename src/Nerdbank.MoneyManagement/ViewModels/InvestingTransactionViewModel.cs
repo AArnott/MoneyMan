@@ -47,6 +47,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.DebitAccount), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.RelatedAsset), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.CreditAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.CreditAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.DebitAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.DebitAmountFormatted));
 
 		this.AutoSave = true;
 
@@ -396,18 +400,24 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				TransactionAction.Add => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName}",
 				TransactionAction.Remove => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName}",
-				TransactionAction.Interest => $"+{this.CreditAmount:C}",
-				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.CreditAmount:C}",
-				TransactionAction.Sell => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} @ {this.SimplePrice:C}",
-				TransactionAction.Buy => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName} @ {this.SimplePrice:C}",
-				TransactionAction.Transfer => this.ThisAccount == this.CreditAccount ? $"{this.DebitAccount?.Name} -> {FormatAmount(this.CreditAmount, this.CreditAsset)} {this.CreditAsset?.TickerOrName}" : $"{this.CreditAccount?.Name} <- {FormatAmount(this.DebitAmount, this.DebitAsset)} {this.DebitAsset?.TickerOrName}",
-				TransactionAction.Deposit => $"{this.CreditAmount:C}",
-				TransactionAction.Withdraw => $"{this.DebitAmount:C}",
+				TransactionAction.Interest => $"+{this.CreditAmountFormatted}",
+				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.CreditAmountFormatted}",
+				TransactionAction.Sell => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
+				TransactionAction.Buy => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
+				TransactionAction.Transfer => this.ThisAccount == this.CreditAccount ? $"{this.DebitAccount?.Name} -> {this.CreditAmountFormatted} {this.CreditAsset?.TickerOrName}" : $"{this.CreditAccount?.Name} <- {this.DebitAmountFormatted} {this.DebitAsset?.TickerOrName}",
+				TransactionAction.Deposit => $"{this.CreditAmountFormatted}",
+				TransactionAction.Withdraw => $"{this.DebitAmountFormatted}",
 				TransactionAction.Exchange => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} -> {this.CreditAmount} {this.CreditAsset?.TickerOrName}",
 				_ => string.Empty,
 			};
 		}
 	}
+
+	public string? CreditAmountFormatted => this.CreditAsset?.Format(this.CreditAmount);
+
+	public string? DebitAmountFormatted => this.DebitAsset?.Format(this.DebitAmount);
+
+	public string? SimplePriceFormatted => this.ThisAccount.CurrencyAsset?.Format(this.SimplePrice);
 
 	public IEnumerable<AssetViewModel> Assets => this.ThisAccount.DocumentViewModel.AssetsPanel.Assets.Where(a => (this.Action == TransactionAction.Transfer && (this.SimpleAccount is not BankingAccountViewModel || (a.Type == Asset.AssetType.Currency))) || (this.Action != TransactionAction.Transfer && this.IsCashTransaction == (a.Type == Asset.AssetType.Currency)));
 
@@ -455,13 +465,6 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	protected override bool IsPersistedProperty(string propertyName) =>
 		base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact));
-
-	private static string? FormatAmount(decimal? amount, AssetViewModel? asset)
-	{
-		return asset?.Type == Asset.AssetType.Currency
-			? amount?.ToString("C", CultureInfo.CurrentCulture)
-			: amount?.ToString(CultureInfo.CurrentCulture);
-	}
 
 	[DoesNotReturn]
 	private static Exception ThrowNotSimpleAction() => throw new InvalidOperationException("Not a simple operation.");
