@@ -1,1 +1,0 @@
-﻿ALTER TABLE "Transaction" ADD [RelatedAssetId] INTEGER REFERENCES "Asset"("Id") ON DELETE CASCADE;

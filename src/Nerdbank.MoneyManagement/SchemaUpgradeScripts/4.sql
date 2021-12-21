@@ -44,6 +44,8 @@ CREATE TABLE "Transaction_new" (
 	"DebitAssetId"        INTEGER REFERENCES "Asset"("Id")           ON DELETE RESTRICT,
 	"DebitCleared"        INTEGER NOT NULL DEFAULT(0),
 
+	"RelatedAssetId"      INTEGER REFERENCES "Asset"("Id") ON DELETE CASCADE,
+
 	"ParentTransactionId" INTEGER REFERENCES "Transaction_new"("Id") ON DELETE CASCADE
 );
 
@@ -60,7 +62,7 @@ FROM [Transaction]
 WHERE [CreditAccountId] IS NULL AND [DebitAccountId] IS NOT NULL;
 
 INSERT INTO "Transaction_new"
-SELECT [Id], [When], 3 AS [Action], [CheckNumber], [Memo], [Payee], [CategoryId], [CreditAccountId], [Amount] AS [CreditAmount], 1 AS [CreditAssetId], [Cleared] AS [CreditCleared], [DebitAccountId], [Amount] AS [DebitAmount], 1 AS [DebitAssetId], [Cleared] AS [DebitCleared], [ParentTransactionId]
+SELECT [Id], [When], 3 AS [Action], [CheckNumber], [Memo], [Payee], [CategoryId], [CreditAccountId], [Amount] AS [CreditAmount], 1 AS [CreditAssetId], [Cleared] AS [CreditCleared], [DebitAccountId], [Amount] AS [DebitAmount], 1 AS [DebitAssetId], [Cleared] AS [DebitCleared], NULL AS [RelatedAssetId], [ParentTransactionId]
 FROM [Transaction]
 WHERE [CreditAccountId] IS NOT NULL AND [DebitAccountId] IS NOT NULL;
 
@@ -76,3 +78,13 @@ CREATE INDEX "Transaction_CreditAssetId" ON [Transaction]("CreditAssetId");
 CREATE INDEX "Transaction_DebitAssetId" ON [Transaction]("DebitAssetId");
 CREATE INDEX "Transaction_CategoryId" ON [Transaction]("CategoryId");
 CREATE INDEX "Transaction_ParentTransactionId" ON [Transaction]("ParentTransactionId");
+
+CREATE TABLE "AssetPrice" (
+	"Id"                    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	"AssetId"               INTEGER          REFERENCES "Asset"("Id")  ON DELETE CASCADE,
+	"When"                  INTEGER NOT NULL,
+	"ReferenceAssetId"      INTEGER NOT NULL REFERENCES "Asset"("Id")  ON DELETE CASCADE,
+	"PriceInReferenceAsset" REAL    NOT NULL
+);
+
+CREATE UNIQUE INDEX "AssetPrice_AssetId" ON [AssetPrice]("AssetId", "When" DESC);
