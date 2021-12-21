@@ -11,14 +11,14 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 /// as it is represented in its "home" account, such that it only appears nested under the parent transaction.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class SplitTransactionViewModel : EntityViewModel<Transaction>
+public class SplitTransactionViewModel : TransactionViewModel
 {
 	private decimal amount;
 	private string? memo;
 	private ITransactionTarget? categoryOrTransfer;
 
-	public SplitTransactionViewModel(TransactionViewModel parent, Transaction? splitTransaction)
-		: base(parent.MoneyFile)
+	public SplitTransactionViewModel(BankingTransactionViewModel parent, Transaction? splitTransaction)
+		: base(parent.ThisAccount)
 	{
 		this.ParentTransaction = parent;
 		this.AutoSave = true;
@@ -29,12 +29,10 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 		}
 	}
 
-	/// <summary>
-	/// Gets the account this transaction was created to be displayed within.
-	/// </summary>
-	public AccountViewModel ThisAccount => this.ParentTransaction.ThisAccount;
+	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
+	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
 
-	public TransactionViewModel ParentTransaction { get; }
+	public BankingTransactionViewModel ParentTransaction { get; }
 
 	public decimal Amount
 	{
@@ -63,19 +61,44 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 		Requires.NotNull(split, nameof(split));
 
 		split.ParentTransactionId = this.ParentTransaction.Id ?? throw new InvalidOperationException("Cannot save a split before its parent transaction.");
-		split.Amount = Math.Abs(this.Amount);
 		split.Memo = this.Memo;
 		split.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
 		if (this.Amount < 0)
 		{
 			split.DebitAccountId = this.ThisAccount.Id;
-			split.CreditAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+			split.DebitAmount = -this.Amount;
+			split.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
+			if (this.CategoryOrTransfer is AccountViewModel xfer)
+			{
+				split.CreditAccountId = xfer.Id;
+				split.CreditAmount = -this.Amount;
+				split.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
+			}
+			else
+			{
+				split.CreditAccountId = null;
+				split.CreditAmount = null;
+				split.CreditAssetId = null;
+			}
 		}
 		else
 		{
 			split.CreditAccountId = this.ThisAccount.Id;
-			split.DebitAccountId = (this.CategoryOrTransfer as AccountViewModel)?.Id;
+			split.CreditAmount = this.Amount;
+			split.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
+			if (this.CategoryOrTransfer is AccountViewModel xfer)
+			{
+				split.DebitAccountId = xfer.Id;
+				split.DebitAmount = this.Amount;
+				split.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
+			}
+			else
+			{
+				split.DebitAccountId = null;
+				split.DebitAmount = null;
+				split.DebitAssetId = null;
+			}
 		}
 	}
 
@@ -83,7 +106,10 @@ public class SplitTransactionViewModel : EntityViewModel<Transaction>
 	{
 		Requires.NotNull(split, nameof(split));
 
-		this.Amount = split.CreditAccountId == this.ThisAccount.Id ? split.Amount : -split.Amount;
+		this.Amount =
+			split.CreditAccountId == this.ThisAccount.Id ? (split.CreditAmount ?? 0) :
+			split.DebitAccountId == this.ThisAccount.Id ? (-split.DebitAmount ?? 0) :
+			0;
 		this.Memo = split.Memo;
 
 		if (split.CategoryId is int categoryId)

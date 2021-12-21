@@ -1,7 +1,11 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Xunit.Abstractions;
+global using Nerdbank.MoneyManagement;
+global using Nerdbank.MoneyManagement.Tests;
+global using Nerdbank.MoneyManagement.ViewModels;
+global using Xunit;
+global using Xunit.Abstractions;
 
 public abstract class TestBase : IDisposable
 {

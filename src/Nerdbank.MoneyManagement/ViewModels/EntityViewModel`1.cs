@@ -66,14 +66,17 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 	{
 		get
 		{
-			PropertyInfo[] propertyInfos = this.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+			PropertyInfo[] propertyInfos = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
 			foreach (PropertyInfo propertyInfo in propertyInfos)
 			{
-				var errorMsg = this[propertyInfo.Name];
-				if (errorMsg?.Length > 0)
+				if (propertyInfo.DeclaringType?.IsAssignableFrom(typeof(EntityViewModel<TEntity>)) is false)
 				{
-					return errorMsg;
+					var errorMsg = this[propertyInfo.Name];
+					if (errorMsg?.Length > 0)
+					{
+						return errorMsg;
+					}
 				}
 			}
 
@@ -92,7 +95,7 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 		{
 			var validationResults = new List<ValidationResult>();
 
-			PropertyInfo? property = this.GetType().GetProperty(columnName);
+			PropertyInfo? property = this.GetType().GetProperties().FirstOrDefault(p => p.Name == columnName);
 			Requires.Argument(property is not null, nameof(columnName), "No property by that name.");
 
 			ValidationContext validationContext = new(this)
@@ -148,6 +151,7 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 		this.ApplyToModel();
 		if (this.MoneyFile is { IsDisposed: false })
 		{
+			bool wasPersisted = this.IsPersisted;
 			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this.Model);
 
 			this.Model ??= new();
@@ -157,6 +161,11 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 			this.Id = this.Model.Id;
 
 			this.Saved?.Invoke(this, EventArgs.Empty);
+
+			if (!wasPersisted)
+			{
+				this.OnPropertyChanged(nameof(this.IsPersisted));
+			}
 		}
 	}
 

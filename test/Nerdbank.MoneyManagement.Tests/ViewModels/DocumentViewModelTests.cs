@@ -63,13 +63,13 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NetWorth()
 	{
-		Account account = new() { Name = "Checking" };
+		Account account = new() { Name = "Checking", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(account);
-		Transaction tx1 = new() { When = DateTime.Now, CreditAccountId = account.Id, Amount = 10 };
+		Transaction tx1 = new() { When = DateTime.Now, CreditAccountId = account.Id, CreditAmount = 10, CreditAssetId = account.CurrencyAssetId };
 		this.Money.Insert(tx1);
 		Assert.Equal(10, this.DocumentViewModel.NetWorth);
 
-		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, Amount = 3 };
+		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, DebitAmount = 3, DebitAssetId = account.CurrencyAssetId };
 		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Insert(tx2), nameof(this.DocumentViewModel.NetWorth));
 		Assert.Equal(7, this.DocumentViewModel.NetWorth);
 
@@ -80,26 +80,26 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NewAccount()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
 	}
 
-	[Fact]
-	public void AddedAccountAddsToTransactionTargets()
+	[Theory, PairwiseData]
+	public void AddedAccountAddsToTransactionTargets(Account.AccountType type)
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
-	[Fact]
-	public void DeletedAccountRemovesFromTransactionTargets()
+	[Theory, PairwiseData]
+	public void DeletedAccountRemovesFromTransactionTargets(Account.AccountType type)
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
 		accountViewModel.Name = "some new account";
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 
@@ -129,7 +129,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransactionTargets_DoesNotIncludeVolatileAccounts()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		Assert.DoesNotContain(accountViewModel, this.DocumentViewModel.TransactionTargets);
 		accountViewModel.Name = "Checking";
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
@@ -142,7 +142,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransactionTargetsIncludesClosedAccounts()
 	{
-		AccountViewModel closed = this.DocumentViewModel.AccountsPanel.NewAccount("ToBeClosed");
+		AccountViewModel closed = this.DocumentViewModel.AccountsPanel.NewBankingAccount("ToBeClosed");
 		Assert.Contains(closed, this.DocumentViewModel.TransactionTargets);
 		closed.IsClosed = true;
 		Assert.Contains(closed, this.DocumentViewModel.TransactionTargets);
@@ -159,8 +159,8 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransactionTargets_IsSorted()
 	{
-		AccountViewModel accountG = this.DocumentViewModel.AccountsPanel.NewAccount("g");
-		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewAccount("a");
+		AccountViewModel accountG = this.DocumentViewModel.AccountsPanel.NewBankingAccount("g");
+		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewBankingAccount("a");
 		CategoryViewModel categoryA = this.DocumentViewModel.CategoriesPanel.NewCategory("a");
 		CategoryViewModel categoryG = this.DocumentViewModel.CategoriesPanel.NewCategory("g");
 		Assert.Equal<ITransactionTarget>(
@@ -171,7 +171,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void Reset()
 	{
-		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewAccount("checking");
+		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewBankingAccount("checking");
 		this.DocumentViewModel.Reset();
 		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
 		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == account.Name);

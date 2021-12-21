@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using PCLCommandBase;
@@ -16,6 +15,8 @@ namespace Nerdbank.MoneyManagement;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class MoneyFile : BindableBase, IDisposableObservable
 {
+	private const string TEMPTableModifier = "TEMP";
+
 	/// <summary>
 	/// The SQLite database connection.
 	/// </summary>
@@ -36,6 +37,8 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Requires.NotNull(connection, nameof(connection));
 		this.connection = connection;
+
+		this.CurrentConfiguration = this.connection.Table<Configuration>().First();
 	}
 
 	/// <summary>
@@ -53,6 +56,24 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		{
 			Verify.NotDisposed(this);
 			return this.connection.Table<Account>();
+		}
+	}
+
+	public TableQuery<Asset> Assets
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<Asset>();
+		}
+	}
+
+	public TableQuery<AssetPrice> AssetPrices
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<AssetPrice>();
 		}
 	}
 
@@ -76,7 +97,11 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	public int PreferredAssetId => this.CurrentConfiguration.PreferredAssetId;
+
 	public bool IsDisposed => this.connection.Handle is null;
+
+	internal Configuration CurrentConfiguration { get; }
 
 	internal IEnumerable<(string Savepoint, string Activity, ModelBase? Model)> UndoStack => this.undoStack;
 
@@ -211,52 +236,63 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 
-		ImmutableList<string> constraints = ImmutableList<string>.Empty;
-		ImmutableList<object> args = ImmutableList<object>.Empty;
-		if (options.BeforeDate.HasValue)
-		{
-			constraints = constraints.Add($@"""{nameof(Transaction.When)}"" < ?");
-			args = args.Add(options.BeforeDate);
-		}
+		options.AsOfDate ??= DateTime.Today;
+		this.RefreshBalances(options);
+		this.RefreshAssetValues(options.AsOfDate.Value);
 
-		if (!options.IncludeClosedAccounts)
-		{
-			constraints = constraints.Add($@"a.""{nameof(Account.IsClosed)}"" = 0");
-		}
+		string closedAccountFilter = options.IncludeClosedAccounts ? string.Empty : "WHERE [Account].[IsClosed] = 0";
 
-		string netCreditConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NOT NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NULL";
-		string netDebitConstraint = $@"""{nameof(Transaction.CreditAccountId)}"" IS NULL AND ""{nameof(Transaction.DebitAccountId)}"" IS NOT NULL";
+		string sql = $@"
+SELECT SUM([Balances].[Balance] * [AssetValue].[Value])
+FROM [Balances]
+INNER JOIN [AssetValue] ON [AssetValue].[AssetId] = [Balances].[AssetId]
+INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
+{closedAccountFilter}
+";
 
-		string sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
-			+ $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.CreditAccountId)}"""
-			+ SqlWhere(SqlAnd(constraints.Add(netCreditConstraint)));
-		decimal credits = this.ExecuteScalar<decimal>(sql, args.ToArray());
-
-		sql = $@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}"""
-			+ $@" INNER JOIN {nameof(Account)} a ON a.""{nameof(Account.Id)}"" = ""{nameof(Transaction.DebitAccountId)}"""
-			+ SqlWhere(SqlAnd(constraints.Add(netDebitConstraint)));
-		decimal debits = this.ExecuteScalar<decimal>(sql, args.ToArray());
-
-		decimal sum = credits - debits;
-		return sum;
+		decimal netWorth = this.connection.ExecuteScalar<decimal>(sql);
+		return netWorth;
 	}
 
-	public decimal GetBalance(Account account)
+	/// <summary>
+	/// Gets the balance of each asset held in this account.
+	/// </summary>
+	/// <param name="account">The account to query.</param>
+	/// <param name="asOfDate">When specified, considers the value of the <paramref name="account"/> as of the specified date.</param>
+	/// <returns>A map of asset IDs and the balance held of that asset in the <paramref name="account"/>.</returns>
+	public IReadOnlyDictionary<int, decimal> GetBalances(Account account, DateTime? asOfDate = null)
 	{
 		Requires.NotNull(account, nameof(account));
 		Requires.Argument(account.IsPersisted, nameof(account), "Account must be saved to the database first.");
 		Verify.NotDisposed(this);
 
-		decimal credits = this.ExecuteScalar<decimal>(
-			$@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
-                WHERE ""{nameof(Transaction.CreditAccountId)}"" = ?",
-			account.Id);
-		decimal debits = this.ExecuteScalar<decimal>(
-			$@"SELECT TOTAL(""{nameof(Transaction.Amount)}"") FROM ""{nameof(Transaction)}""
-                WHERE ""{nameof(Transaction.DebitAccountId)}"" = ?",
-			account.Id);
-		decimal sum = credits - debits;
-		return sum;
+		this.RefreshBalances(new NetWorthQueryOptions { AsOfDate = asOfDate });
+		string sql = "SELECT [AssetId], TOTAL([Balance]) AS [Balance] FROM [Balances] WHERE [AccountId] = ? AND [AssetId] IS NOT NULL GROUP BY [AssetId]";
+		List<BalancesRow> balances = this.connection.Query<BalancesRow>(sql, account.Id);
+		return balances.ToDictionary(b => b.AssetId, b => b.Balance);
+	}
+
+	/// <summary>
+	/// Gets the value held in this account.
+	/// The value is the sum of all assets held in the account after multiplying their count by their individual value relative to the user's preferred asset.
+	/// </summary>
+	/// <param name="account">The account to query.</param>
+	/// <param name="asOfDate">When specified, considers the value of the <paramref name="account"/> as of the specified date.</param>
+	/// <returns>The value of the account, measured in the user's preferred units.</returns>
+	public decimal GetValue(Account account, DateTime? asOfDate = null)
+	{
+		asOfDate ??= DateTime.Now;
+		this.RefreshBalances(new NetWorthQueryOptions { AsOfDate = asOfDate });
+		this.RefreshAssetValues(asOfDate.Value);
+
+		string sql = @"
+SELECT SUM([Balances].[Balance] * [AssetValue].[Value])
+FROM [Balances]
+INNER JOIN [AssetValue] ON [AssetValue].[AssetId] = [Balances].[AssetId]
+WHERE [Balances].[AccountId] = ?
+";
+		decimal value = this.ExecuteScalar<decimal>(sql, account.Id);
+		return value;
 	}
 
 	/// <inheritdoc/>
@@ -289,7 +325,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 		string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
-			+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND t.[{nameof(Transaction.Amount)}] != 0";
+			+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND (t.[{nameof(Transaction.CreditAmount)}] != 0 OR t.[{nameof(Transaction.DebitAmount)}] != 0)";
 
 		foreach (Transaction badSplit in this.connection.Query<Transaction>(sql))
 		{
@@ -302,6 +338,23 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CategoryId)}"" == ?";
 		return this.ExecuteScalar<int>(sql, categoryId) > 0;
+	}
+
+	internal bool IsAssetInUse(int assetId)
+	{
+		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Account)}"" WHERE ""{nameof(Account.CurrencyAssetId)}"" == ? LIMIT 1";
+		if (this.ExecuteScalar<int>(sql, assetId) > 0)
+		{
+			return true;
+		}
+
+		sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CreditAssetId)}"" == ? OR ""{nameof(Transaction.DebitAssetId)}"" == ? LIMIT 1";
+		if (this.ExecuteScalar<int>(sql, assetId, assetId) > 0)
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	internal void ReassignCategory(IEnumerable<int> oldCategoryIds, int? newId)
@@ -340,6 +393,8 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 
 	private static string SqlWhere(string condition) => string.IsNullOrEmpty(condition) ? string.Empty : $" WHERE {condition}";
 
+	private static DateTime GetSqlBeforeDateOperand(DateTime asOfDate) => asOfDate.AddDays(1).Date;
+
 	private TableMapping GetTableMapping(ModelBase model)
 	{
 		return this.connection.TableMappings.Single(tm => tm.TableName == model.GetType().Name);
@@ -354,6 +409,86 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		}
 
 		return this.connection.ExecuteScalar<T>(query, args);
+	}
+
+	private void RefreshBalances(NetWorthQueryOptions options = default(NetWorthQueryOptions))
+	{
+		List<object> args = new();
+		string dateFilter = string.Empty;
+		if (options.BeforeDate.HasValue)
+		{
+			dateFilter = "AND [When] < ?";
+			args.Add(options.BeforeDate.Value);
+		}
+
+		object[] argsArray = args.ToArray();
+
+		string sql = "DROP TABLE IF EXISTS [Balances]";
+		this.connection.Execute(sql);
+		sql = $@"
+CREATE {TEMPTableModifier} TABLE [Balances] (
+  [AccountId] INTEGER,
+  [AssetId] INTEGER,
+  [Balance] REAL
+)";
+		this.connection.Execute(sql);
+		sql = $@"
+INSERT INTO [Balances]
+SELECT [CreditAccountId] AS [AccountId], [CreditAssetId] AS [AssetId], TOTAL([CreditAmount]) AS [Amount]
+FROM [Transaction]
+WHERE [CreditAccountId] IS NOT NULL {dateFilter}
+GROUP BY [CreditAccountId], [CreditAssetId]";
+		this.connection.Execute(sql, argsArray);
+
+		sql = $@"INSERT INTO [Balances]
+SELECT [DebitAccountId] AS [AccountId], [DebitAssetId] AS [AssetId], -TOTAL([DebitAmount]) AS [Amount]
+FROM [Transaction]
+WHERE [DebitAccountId] IS NOT NULL {dateFilter}
+GROUP BY [DebitAccountId], [DebitAssetId]";
+		this.connection.Execute(sql, argsArray);
+	}
+
+	private void RefreshAssetValues(DateTime asOfDate)
+	{
+		string sql = $@"
+DROP TABLE IF EXISTS [AssetValue];
+
+CREATE {TEMPTableModifier} TABLE [AssetValue] (
+	[AssetId] INTEGER UNIQUE,
+	[Value] REAL
+);";
+		this.ExecuteSql(sql);
+
+		sql = "INSERT INTO [AssetValue] VALUES (?, 1)";
+		this.connection.Execute(sql, this.PreferredAssetId);
+
+		sql = @"
+INSERT INTO [AssetValue]
+SELECT
+	[Id] AS [AssetId],
+	(
+		SELECT [PriceInReferenceAsset]
+		FROM [AssetPrice]
+		WHERE [a].[Id] = [AssetId] AND [When] < ? AND [ReferenceAssetId] = ?
+		ORDER BY [When] DESC
+		LIMIT 1
+	) AS [Value]
+FROM [Asset] a
+WHERE [Id] != ?
+";
+
+		DateTime when = GetSqlBeforeDateOperand(asOfDate);
+		this.connection.Execute(sql, when, this.PreferredAssetId, this.PreferredAssetId);
+	}
+
+	private void ExecuteSql(string sql)
+	{
+		int result = SQLitePCL.raw.sqlite3_exec(this.connection.Handle, sql);
+		if (result is not SQLitePCL.raw.SQLITE_OK or SQLitePCL.raw.SQLITE_DONE)
+		{
+			string errMsg = SQLitePCL.raw.sqlite3_errmsg(this.connection.Handle).utf8_to_string();
+			throw new Exception(errMsg);
+		}
 	}
 
 	public struct NetWorthQueryOptions
@@ -377,7 +512,7 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		/// Because we want to consider transaction no matter what *time* of day they came in on the "as of date",
 		/// add a whole day, then drop the time component. We'll look for transactions that happened before that.
 		/// </remarks>
-		internal DateTime? BeforeDate => this.AsOfDate?.AddDays(1).Date;
+		internal DateTime? BeforeDate => this.AsOfDate.HasValue ? GetSqlBeforeDateOperand(this.AsOfDate.Value) : null;
 	}
 
 	public class EntitiesChangedEventArgs : EventArgs
@@ -397,5 +532,25 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		public IReadOnlyCollection<(ModelBase Before, ModelBase After)> Changed { get; }
 
 		public IReadOnlyCollection<ModelBase> Deleted { get; }
+	}
+
+	private class BalancesRow
+	{
+#pragma warning disable CS0649 // unset fields will be set by sqlite-pcl
+		public int AccountId { get; set; }
+
+		public int AssetId { get; set; }
+
+		public decimal Balance { get; set; }
+#pragma warning restore CS0649
+	}
+
+	private class AccountValueRow
+	{
+#pragma warning disable CS0649 // unset fields will be set by sqlite-pcl
+		public int AccountId { get; set; }
+
+		public decimal Value { get; set; }
+#pragma warning restore CS0649
 	}
 }

@@ -260,7 +260,7 @@ public class CategoriesPanelViewModel : BindableBase
 				}
 
 				// Also update the live view models.
-				foreach (AccountViewModel account in this.viewModel.documentViewModel.BankingPanel.Accounts)
+				foreach (BankingAccountViewModel account in this.viewModel.documentViewModel.BankingPanel.BankingAccounts)
 				{
 					account.NotifyReassignCategory(inUse, redirectedCategory);
 				}

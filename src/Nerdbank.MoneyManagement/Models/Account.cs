@@ -13,6 +13,23 @@ namespace Nerdbank.MoneyManagement;
 public class Account : ModelBase
 {
 	/// <summary>
+	/// Enumerates the kinds of accounts.
+	/// </summary>
+	public enum AccountType
+	{
+		/// <summary>
+		/// The default account type, which deals with a single fiat currency with deposits, withdrawals and transfers.
+		/// </summary>
+		Banking = 0,
+
+		/// <summary>
+		/// An account that may hold any number of assets of various kinds.
+		/// E.g. a brokerage, 401k or cryptocurrency wallet.
+		/// </summary>
+		Investing = 1,
+	}
+
+	/// <summary>
 	/// Gets or sets the name of this account.
 	/// </summary>
 	public string Name { get; set; } = string.Empty;
@@ -25,6 +42,17 @@ public class Account : ModelBase
 	/// </remarks>
 	public bool IsClosed { get; set; }
 
+	/// <summary>
+	/// Gets or sets the type of this account.
+	/// </summary>
+	public AccountType Type { get; set; }
+
+	/// <summary>
+	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> used as the currency for this account,
+	/// when <see cref="Type"/> is set to <see cref="AccountType.Banking"/>.
+	/// </summary>
+	public int? CurrencyAssetId { get; set; }
+
 	private string? DebuggerDisplay => this.Name;
 
 	/// <summary>
@@ -32,14 +60,16 @@ public class Account : ModelBase
 	/// </summary>
 	/// <param name="amount">The amount to withdraw.</param>
 	/// <returns>The created transaction that has not yet been added to the database.</returns>
-	public Transaction Withdraw(decimal amount)
+	public Transaction Withdraw(Amount amount)
 	{
 		Verify.Operation(this.Id != 0, "This account has not been saved yet.");
 		return new Transaction
 		{
+			Action = TransactionAction.Withdraw,
 			When = DateTime.Now,
 			DebitAccountId = this.Id,
-			Amount = amount,
+			DebitAmount = amount.Value,
+			DebitAssetId = amount.AssetId,
 		};
 	}
 
@@ -48,14 +78,16 @@ public class Account : ModelBase
 	/// </summary>
 	/// <param name="amount">The amount to deposit.</param>
 	/// <returns>The created transaction that has not yet been added to the database.</returns>
-	public Transaction Deposit(decimal amount)
+	public Transaction Deposit(Amount amount)
 	{
 		Verify.Operation(this.Id != 0, "This account has not been saved yet.");
 		return new Transaction
 		{
+			Action = TransactionAction.Deposit,
 			When = DateTime.Now,
 			CreditAccountId = this.Id,
-			Amount = amount,
+			CreditAmount = amount.Value,
+			CreditAssetId = amount.AssetId,
 		};
 	}
 
@@ -65,13 +97,20 @@ public class Account : ModelBase
 	/// <param name="receivingAccount">The account to receive funds from this account.</param>
 	/// <param name="amount">The amount to transfer.</param>
 	/// <returns>The created transaction that has not yet been added to the database.</returns>
-	public Transaction Transfer(Account receivingAccount, decimal amount)
+	public Transaction Transfer(Account receivingAccount, Amount amount)
 	{
 		Requires.NotNull(receivingAccount, nameof(receivingAccount));
-		Requires.Range(amount >= 0, nameof(amount), "Must be a non-negative amount.");
 
-		Transaction? transaction = this.Withdraw(amount);
-		transaction.CreditAccountId = receivingAccount.Id;
-		return transaction;
+		return new Transaction
+		{
+			Action = TransactionAction.Transfer,
+			When = DateTime.Now,
+			DebitAccountId = this.Id,
+			DebitAmount = amount.Value,
+			DebitAssetId = amount.AssetId,
+			CreditAccountId = receivingAccount.Id,
+			CreditAmount = amount.Value,
+			CreditAssetId = amount.AssetId,
+		};
 	}
 }

@@ -17,6 +17,8 @@ public class BankingPanelViewModel : BindableBase
 
 	public IReadOnlyList<AccountViewModel> Accounts => this.accounts;
 
+	public IEnumerable<BankingAccountViewModel> BankingAccounts => this.accounts.OfType<BankingAccountViewModel>();
+
 	public AccountViewModel? SelectedAccount
 	{
 		get => this.selectedAccount;
@@ -24,6 +26,16 @@ public class BankingPanelViewModel : BindableBase
 	}
 
 	public string WhenHeader => "Date";
+
+	public string InvestmentActionHeader => "Action";
+
+	public string InvestmentDetailsHeader => "Details";
+
+	public string InvestmentAssetHeader => "Asset";
+
+	public string InvestmentPriceHeader => "Price";
+
+	public string InvestmentCashAmtHeader => "Cash Amt";
 
 	public string PayeeHeader => "Payee";
 
@@ -63,6 +75,17 @@ public class BankingPanelViewModel : BindableBase
 		}
 
 		account.PropertyChanged -= this.Account_PropertyChanged;
+	}
+
+	internal void Replace(AccountViewModel before, AccountViewModel after)
+	{
+		AccountViewModel? selected = this.SelectedAccount;
+		this.Remove(before);
+		this.Add(after);
+		if (selected == before)
+		{
+			this.SelectedAccount = after;
+		}
 	}
 
 	/// <summary>

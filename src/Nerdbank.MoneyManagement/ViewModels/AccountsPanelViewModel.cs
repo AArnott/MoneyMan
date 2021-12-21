@@ -2,14 +2,22 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Microsoft;
 using PCLCommandBase;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 public class AccountsPanelViewModel : BindableBase
 {
+	private static readonly ReadOnlyCollection<EnumValueViewModel<Account.AccountType>> SharedAccountTypes = new(new EnumValueViewModel<Account.AccountType>[]
+	{
+		new(Account.AccountType.Banking, "Banking"),
+		new(Account.AccountType.Investing, "Investing"),
+	});
+
 	private readonly DocumentViewModel documentViewModel;
 	private readonly SortedObservableCollection<AccountViewModel> accounts = new(AccountSort.Instance);
 	private AccountViewModel? selectedAccount;
@@ -23,7 +31,7 @@ public class AccountsPanelViewModel : BindableBase
 	}
 
 	/// <summary>
-	/// Occurs when <see cref="NewAccount(string)"/> is called or the <see cref="AddCommand" /> command is invoked.
+	/// Occurs when <see cref="NewBankingAccount(string)"/> is called or the <see cref="AddCommand" /> command is invoked.
 	/// </summary>
 	/// <remarks>
 	/// Views are expected to set focus on the Name text field in response to this event.
@@ -37,6 +45,10 @@ public class AccountsPanelViewModel : BindableBase
 	public string AddCommandCaption => "_Add new";
 
 	public string NameLabel => "_Name";
+
+	public string TypeLabel => "_Type";
+
+	public ReadOnlyCollection<EnumValueViewModel<Account.AccountType>> AccountTypes => SharedAccountTypes;
 
 	public string IsClosedLabel => "Account closed";
 
@@ -74,32 +86,46 @@ public class AccountsPanelViewModel : BindableBase
 
 	internal AccountViewModel? AddingAccount { get; set; }
 
-	public void Add(AccountViewModel accountViewModel)
-	{
-		this.accounts.Add(accountViewModel);
-		this.documentViewModel.AddTransactionTarget(accountViewModel);
-	}
+	/// <summary>
+	/// Creates a new <see cref="Account"/> and <see cref="BankingAccountViewModel"/>.
+	/// The <see cref="BankingAccountViewModel"/> is added to the view model collection,
+	/// but the <see cref="Account"/> will only be added to the database when a property on it has changed.
+	/// </summary>
+	/// <param name="name">The name for the new account.</param>
+	/// <returns>The new <see cref="BankingAccountViewModel"/>.</returns>
+	public BankingAccountViewModel NewBankingAccount(string name = "") => (BankingAccountViewModel)this.NewAccount(Account.AccountType.Banking, name);
+
+	/// <summary>
+	/// Creates a new <see cref="Account"/> and <see cref="InvestingAccountViewModel"/>.
+	/// The <see cref="InvestingAccountViewModel"/> is added to the view model collection,
+	/// but the <see cref="Account"/> will only be added to the database when a property on it has changed.
+	/// </summary>
+	/// <param name="name">The name for the new account.</param>
+	/// <returns>The new <see cref="InvestingAccountViewModel"/>.</returns>
+	public InvestingAccountViewModel NewInvestingAccount(string name = "") => (InvestingAccountViewModel)this.NewAccount(Account.AccountType.Investing, name);
 
 	/// <summary>
 	/// Creates a new <see cref="Account"/> and <see cref="AccountViewModel"/>.
 	/// The <see cref="AccountViewModel"/> is added to the view model collection,
 	/// but the <see cref="Account"/> will only be added to the database when a property on it has changed.
 	/// </summary>
+	/// <param name="type">The type of account to be created.</param>
 	/// <param name="name">The name for the new account.</param>
 	/// <returns>The new <see cref="AccountViewModel"/>.</returns>
-	public AccountViewModel NewAccount(string name = "")
+	public AccountViewModel NewAccount(Account.AccountType type, string name = "")
 	{
 		this.AddingNewAccount?.Invoke(this, EventArgs.Empty);
 		if (this.AddingAccount is object)
 		{
+			Verify.Operation(this.AddingAccount.Type == type, "An account of another type is already being added.");
 			this.SelectedAccount = this.AddingAccount;
 			return this.AddingAccount;
 		}
 
-		AccountViewModel newAccountViewModel = new(null, this.documentViewModel)
-		{
-			Model = new(),
-		};
+		AccountViewModel newAccountViewModel = AccountViewModel.Create(
+			new Account { Type = type, CurrencyAssetId = this.documentViewModel.DefaultCurrency?.Id },
+			this.documentViewModel);
+		newAccountViewModel.PropertyChanged += this.AccountViewModel_PropertyChanged;
 
 		this.accounts.Add(newAccountViewModel);
 		this.SelectedAccount = newAccountViewModel;
@@ -140,6 +166,11 @@ public class AccountsPanelViewModel : BindableBase
 		{
 			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted account \"{accountViewModel.Name}\"", accountViewModel.Model);
 			this.documentViewModel.MoneyFile?.Delete(accountViewModel.Model);
+}
+
+		if (accountViewModel.CurrencyAsset is object)
+		{
+			accountViewModel.CurrencyAsset.NotifyUseChange();
 		}
 
 		if (this.SelectedAccount == accountViewModel)
@@ -155,6 +186,13 @@ public class AccountsPanelViewModel : BindableBase
 
 	public AccountViewModel? FindAccount(int id) => this.Accounts.FirstOrDefault(acct => acct.Id == id);
 
+	internal void Add(AccountViewModel accountViewModel)
+	{
+		accountViewModel.PropertyChanged += this.AccountViewModel_PropertyChanged;
+		this.accounts.Add(accountViewModel);
+		this.documentViewModel.AddTransactionTarget(accountViewModel);
+	}
+
 	/// <summary>
 	/// Clears the view model without deleting anything from the database.
 	/// </summary>
@@ -163,6 +201,29 @@ public class AccountsPanelViewModel : BindableBase
 		this.accounts.Clear();
 		this.selectedAccount = null;
 		this.selectedAccounts?.Clear();
+	}
+
+	private void AccountViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName == nameof(AccountViewModel.Type))
+		{
+			AccountViewModel before = (AccountViewModel)sender!;
+			AccountViewModel after = before.Recreate();
+			AccountViewModel? selectedAccount = this.SelectedAccount;
+			this.accounts.Remove(before);
+			before.PropertyChanged -= this.AccountViewModel_PropertyChanged;
+			this.accounts.Add(after);
+			after.PropertyChanged += this.AccountViewModel_PropertyChanged;
+			if (selectedAccount == before)
+			{
+				this.SelectedAccount = after;
+			}
+
+			this.documentViewModel.BankingPanel.Replace(before, after);
+
+			this.documentViewModel.RemoveTransactionTarget(before);
+			this.documentViewModel.AddTransactionTarget(after);
+		}
 	}
 
 	private class AddAccountCommand : CommandBase
@@ -176,7 +237,7 @@ public class AccountsPanelViewModel : BindableBase
 
 		protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
 		{
-			this.viewModel.NewAccount();
+			this.viewModel.NewAccount(this.viewModel.AddingAccount?.Type ?? Account.AccountType.Banking);
 			return Task.CompletedTask;
 		}
 	}

@@ -1,11 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
-
 public class AccountsPanelViewModelTests : MoneyTestBase
 {
 	public AccountsPanelViewModelTests(ITestOutputHelper logger)
@@ -23,20 +18,41 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void NewAccount()
+	public void NewBankingAccount()
 	{
 		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
 
 		TestUtilities.AssertRaises(
 			h => this.ViewModel.AddingNewAccount += h,
 			h => this.ViewModel.AddingNewAccount -= h,
-			() => this.ViewModel.NewAccount());
+			() => this.ViewModel.NewBankingAccount());
 		AccountViewModel newAccount = Assert.Single(this.ViewModel.Accounts);
 		Assert.Same(newAccount, this.ViewModel.SelectedAccount);
 		Assert.Equal(string.Empty, newAccount.Name);
 
 		newAccount.Name = "cat";
 		Assert.Equal("cat", Assert.Single(this.Money.Accounts).Name);
+
+		Assert.Same(this.DocumentViewModel.DefaultCurrency, newAccount.CurrencyAsset);
+	}
+
+	[Fact]
+	public void NewInvestingAccount()
+	{
+		Assert.True(this.ViewModel.AddCommand.CanExecute(null));
+
+		TestUtilities.AssertRaises(
+			h => this.ViewModel.AddingNewAccount += h,
+			h => this.ViewModel.AddingNewAccount -= h,
+			() => this.ViewModel.NewInvestingAccount());
+		AccountViewModel newAccount = Assert.Single(this.ViewModel.Accounts);
+		Assert.Same(newAccount, this.ViewModel.SelectedAccount);
+		Assert.Equal(string.Empty, newAccount.Name);
+
+		newAccount.Name = "cat";
+		Assert.Equal("cat", Assert.Single(this.Money.Accounts).Name);
+
+		Assert.Same(this.DocumentViewModel.DefaultCurrency, newAccount.CurrencyAsset);
 	}
 
 	[Fact]
@@ -56,6 +72,80 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		Assert.Equal("cat", Assert.Single(this.Money.Accounts).Name);
 	}
 
+	[Theory, PairwiseData]
+	public async Task AddCommand_SwitchToInvestingAccount(bool setNameFirst)
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel newAccount = this.ViewModel.SelectedAccount!;
+		Assert.Equal(Account.AccountType.Banking, newAccount.Type);
+		Assert.IsType<BankingAccountViewModel>(newAccount);
+		if (setNameFirst)
+		{
+			newAccount.Name = "test";
+		}
+
+		// Changing the type must do something very peculiar.
+		// The view model itself is replaced by another instance of the new type.
+		newAccount.Type = Account.AccountType.Investing;
+		Assert.NotSame(newAccount, this.ViewModel.SelectedAccount);
+		newAccount = this.ViewModel.SelectedAccount!;
+		Assert.Equal(Account.AccountType.Investing, newAccount.Type);
+		Assert.IsType<InvestingAccountViewModel>(newAccount);
+		if (setNameFirst)
+		{
+			Assert.Equal("test", newAccount.Name);
+		}
+	}
+
+	[Fact]
+	public async Task SwitchAccountType_ReflectedInBankingPanel()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel bankingAccount = this.ViewModel.SelectedAccount!;
+		bankingAccount.Name = "test";
+		Assert.Contains(bankingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+		this.DocumentViewModel.BankingPanel.SelectedAccount = bankingAccount;
+
+		bankingAccount.Type = Account.AccountType.Investing;
+		AccountViewModel investingAccount = this.ViewModel.SelectedAccount!;
+
+		Assert.DoesNotContain(bankingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+		Assert.Contains(investingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+		Assert.Same(investingAccount, this.DocumentViewModel.BankingPanel.SelectedAccount);
+	}
+
+	[Fact]
+	public async Task SwitchAccountType_ReflectedInTransferTargets()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel bankingAccount = this.ViewModel.SelectedAccount!;
+		bankingAccount.Name = "test";
+		Assert.Contains(bankingAccount, this.DocumentViewModel.BankingPanel.Accounts);
+
+		bankingAccount.Type = Account.AccountType.Investing;
+		AccountViewModel investingAccount = this.ViewModel.SelectedAccount!;
+
+		Assert.DoesNotContain(bankingAccount, this.DocumentViewModel.TransactionTargets);
+		Assert.Contains(investingAccount, this.DocumentViewModel.TransactionTargets);
+	}
+
+	[Fact]
+	public async Task SwitchAccountType_AndBackAgain()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel? newAccount = this.ViewModel.SelectedAccount;
+		Assert.NotNull(newAccount);
+		newAccount!.Name = "test";
+
+		newAccount!.Type = Account.AccountType.Investing;
+		newAccount = this.ViewModel.SelectedAccount;
+		Assert.IsType<InvestingAccountViewModel>(newAccount);
+
+		newAccount!.Type = Account.AccountType.Banking;
+		newAccount = this.ViewModel.SelectedAccount;
+		Assert.IsType<BankingAccountViewModel>(newAccount);
+	}
+
 	[Fact]
 	public async Task AddCommand_Twice()
 	{
@@ -70,6 +160,23 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		newAccount!.Name = "dog";
 
 		Assert.Equal(2, this.Money.Accounts.Count());
+	}
+
+	[Fact]
+	public async Task AddCommand_SwitchToInvesting_AddAgain()
+	{
+		int accountCount = this.ViewModel.Accounts.Count;
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		AccountViewModel? newAccount = this.ViewModel.SelectedAccount;
+		Assert.NotNull(newAccount);
+		newAccount!.Type = Account.AccountType.Investing;
+		Assert.Equal(accountCount + 1, this.ViewModel.Accounts.Count);
+
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		newAccount = this.ViewModel.SelectedAccount;
+		Assert.NotNull(newAccount);
+		Assert.Equal(Account.AccountType.Investing, newAccount!.Type);
+		Assert.Equal(accountCount + 1, this.ViewModel.Accounts.Count);
 	}
 
 	[Fact]
@@ -92,7 +199,7 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	public async Task DeleteCommand_Undo()
 	{
 		const string name = "name";
-		AccountViewModel account = this.ViewModel.NewAccount(name);
+		AccountViewModel account = this.ViewModel.NewBankingAccount(name);
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.DoesNotContain(this.ViewModel.Accounts, acct => acct.Name == name);
 		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
@@ -107,7 +214,7 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	[Theory, PairwiseData]
 	public async Task DeleteCommand(bool saveFirst)
 	{
-		AccountViewModel viewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel viewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		if (saveFirst)
 		{
 			viewModel.Name = "cat";
@@ -123,9 +230,9 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task DeleteCommand_Multiple()
 	{
-		var cat1 = this.DocumentViewModel.AccountsPanel.NewAccount("cat1");
-		var cat2 = this.DocumentViewModel.AccountsPanel.NewAccount("cat2");
-		var cat3 = this.DocumentViewModel.AccountsPanel.NewAccount("cat3");
+		var cat1 = this.DocumentViewModel.AccountsPanel.NewBankingAccount("cat1");
+		var cat2 = this.DocumentViewModel.AccountsPanel.NewBankingAccount("cat2");
+		var cat3 = this.DocumentViewModel.AccountsPanel.NewBankingAccount("cat3");
 
 		this.ViewModel.SelectedAccounts = new[] { cat1, cat3 };
 		Assert.True(this.ViewModel.DeleteCommand.CanExecute());
@@ -171,13 +278,13 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 	[Fact]
 	public void AccountListIsSorted()
 	{
-		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewAccount("Checking");
-		AccountViewModel savings = this.DocumentViewModel.AccountsPanel.NewAccount("Savings");
+		AccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		AccountViewModel savings = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
 		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
 		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[1]);
 
 		// Insert one new account that should sort to the top.
-		AccountViewModel anotherChecking = this.DocumentViewModel.AccountsPanel.NewAccount("Another checking");
+		AccountViewModel anotherChecking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Another checking");
 		Assert.Same(anotherChecking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
 		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[1]);
 		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[2]);
@@ -187,5 +294,19 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		Assert.Same(anotherChecking, this.DocumentViewModel.AccountsPanel.Accounts[0]);
 		Assert.Same(savings, this.DocumentViewModel.AccountsPanel.Accounts[1]);
 		Assert.Same(checking, this.DocumentViewModel.AccountsPanel.Accounts[2]);
+	}
+
+	[Fact]
+	public async Task AccountTypeChangeDisallowedWhenNonEmpty()
+	{
+		await this.ViewModel.AddCommand.ExecuteAsync();
+		BankingAccountViewModel newAccount = (BankingAccountViewModel)this.ViewModel.SelectedAccount!;
+		newAccount.Name = "some account";
+		BankingTransactionViewModel transaction = newAccount.NewTransaction();
+		transaction.When = DateTime.Now;
+		transaction.Payee = "test";
+
+		Assert.Throws<InvalidOperationException>(() => newAccount.Type = Account.AccountType.Investing);
+		Assert.Equal(Account.AccountType.Banking, newAccount.Type);
 	}
 }

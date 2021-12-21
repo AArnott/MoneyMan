@@ -7,9 +7,13 @@
     <EmbeddedResource Include="SchemaUpgradeScripts\*.sql" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="SchemaUpgradeScripts\*.sql" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.0.63" />
     <PackageReference Include="PCLCommandBase" Version="0.4.9-alpha" />
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.0.7" />
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
     <PackageReference Include="Validation" Version="2.5.42" />
   </ItemGroup>

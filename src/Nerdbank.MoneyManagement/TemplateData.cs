@@ -13,10 +13,11 @@ public static class TemplateData
 
 		moneyFile.InsertAll(new ModelBase[]
 		{
-				new Category { Name = "Groceries" },
-				new Category { Name = "Entertainment" },
-				new Account { Name = "Checking" },
-				new Account { Name = "Savings" },
+			new Category { Name = "Groceries" },
+			new Category { Name = "Entertainment" },
+			new Category { Name = "Salary" },
+			new Account { Name = "Checking", CurrencyAssetId = moneyFile.PreferredAssetId },
+			new Account { Name = "Savings", CurrencyAssetId = moneyFile.PreferredAssetId },
 		});
 	}
 }

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -95,18 +96,7 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 	/// <returns>The index of the item's position in the list.</returns>
 	public int Add(T item)
 	{
-		// Before we resort to a binary search, see if it goes at the end of the list in case our input is already sorted.
-		int index = (this.Count == 0 || this.comparer.Compare(item, this.list[^1]) > 0) ? this.Count : this.list.BinarySearch(item, this.comparer);
-		if (index < 0)
-		{
-			index = ~index;
-		}
-
-		this.list.Insert(index, item);
-		if (item is INotifyPropertyChanged observableItem)
-		{
-			observableItem.PropertyChanged += this.Item_PropertyChanged;
-		}
+		var index = this.AddHelper(item);
 
 		this.OnPropertyChanged(nameof(this.Count));
 		if (this.CollectionChanged is object)
@@ -115,6 +105,34 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 		}
 
 		return index;
+	}
+
+	/// <inheritdoc cref="List{T}.AddRange(IEnumerable{T})"/>
+	public void AddRange(IEnumerable<T> items)
+	{
+		Requires.NotNull(items, nameof(items));
+
+		// WPF cannot handle adding more than one item at once, so we raise the events individually even if the collection is currently empty.
+		// There's not a good way to raise a collection change event when the items added are not contiguous.
+		// So rather than try hard to detect continuities among the set of added items, just raise the collection events for each item.
+		bool added = false;
+		T[]? itemsAdded = this.CollectionChanged is object ? new T[1] : null;
+		foreach (T item in items)
+		{
+			added = true;
+			int index = this.AddHelper(item);
+
+			if (itemsAdded is object)
+			{
+				itemsAdded[0] = item;
+				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, itemsAdded, index));
+			}
+		}
+
+		if (added)
+		{
+			this.OnPropertyChanged(nameof(this.Count));
+		}
 	}
 
 	/// <inheritdoc/>
@@ -191,7 +209,7 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 	public bool Contains(T item) => this.IndexOf(item) >= 0;
 
 	/// <inheritdoc/>
-	bool IList.Contains(object? value) => this.Contains((T)value!);
+	bool IList.Contains(object? value) => value is T item ? this.Contains(item) : value is null && !typeof(T).IsValueType ? this.Contains(default!) : false;
 
 	/// <inheritdoc/>
 	bool ICollection<T>.Remove(T item) => this.Remove(item) >= 0;
@@ -285,6 +303,24 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 	/// <param name="args">The arguments to pass to the handlers.</param>
 	protected void OnCollectionChanged(NotifyCollectionChangedEventArgs args) => this.CollectionChanged?.Invoke(this, args);
 
+	private int AddHelper(T item)
+	{
+		// Before we resort to a binary search, see if it goes at the end of the list in case our input is already sorted.
+		int index = (this.Count == 0 || this.comparer.Compare(item, this.list[^1]) > 0) ? this.Count : this.list.BinarySearch(item, this.comparer);
+		if (index < 0)
+		{
+			index = ~index;
+		}
+
+		this.list.Insert(index, item);
+		if (item is INotifyPropertyChanged observableItem)
+		{
+			observableItem.PropertyChanged += this.Item_PropertyChanged;
+		}
+
+		return index;
+	}
+
 	private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 	{
 		T? item = (T?)sender;
@@ -294,7 +330,13 @@ public class SortedObservableCollection<T> : ICollection<T>, IEnumerable<T>, IEn
 		{
 			// Consider whether this item should be repositioned in the list.
 			(int OldIndex, int NewIndex) positions = this.list.UpdateSortPosition(item, this.comparer);
-			Requires.Argument(positions.OldIndex >= 0, nameof(sender), "Must belong to this collection.");
+			if (positions.OldIndex < 0)
+			{
+				// The item no longer belongs to this collection.
+				// Our event handler may be later in the chain than another that removed the item given its change.
+				return;
+			}
+
 			if (positions.OldIndex != positions.NewIndex && this.CollectionChanged is object)
 			{
 				this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, item, positions.NewIndex, positions.OldIndex));

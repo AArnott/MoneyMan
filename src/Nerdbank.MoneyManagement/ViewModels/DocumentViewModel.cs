@@ -28,12 +28,16 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public DocumentViewModel(MoneyFile? moneyFile, bool ownsMoneyFile = true)
 	{
+		this.RegisterDependentProperty(nameof(this.NetWorth), nameof(this.NetWorthFormatted));
+
 		this.MoneyFile = moneyFile;
 		this.ownsMoneyFile = ownsMoneyFile;
 
 		this.BankingPanel = new();
+		this.AssetsPanel = new(this);
 		this.CategoriesPanel = new(this);
 		this.AccountsPanel = new(this);
+		this.ConfigurationPanel = new(this);
 
 		// Keep targets collection in sync with the two collections that make it up.
 		this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
@@ -54,19 +58,29 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public enum SelectableViews
 	{
 		/// <summary>
-		/// The banking tab, where transactions are managed.
+		/// The banking tab.
 		/// </summary>
 		Banking = 0,
 
 		/// <summary>
-		/// The accounts tab, where accounts may be created or deleted.
+		/// The assets tax.
+		/// </summary>
+		Assets,
+
+		/// <summary>
+		/// The accounts tab.
 		/// </summary>
 		Accounts,
 
 		/// <summary>
-		/// The categories tab, where categories may be created or deleted.
+		/// The categories tab.
 		/// </summary>
 		Categories,
+
+		/// <summary>
+		/// The Configuration tab.
+		/// </summary>
+		Configuration,
 	}
 
 	public bool IsFileOpen => this.MoneyFile is object;
@@ -79,11 +93,17 @@ public class DocumentViewModel : BindableBase, IDisposable
 		set => this.SetProperty(ref this.netWorth, value);
 	}
 
+	public string? NetWorthFormatted => this.DefaultCurrency?.Format(this.NetWorth);
+
 	public BankingPanelViewModel BankingPanel { get; }
+
+	public AssetsPanelViewModel AssetsPanel { get; }
 
 	public AccountsPanelViewModel AccountsPanel { get; }
 
 	public CategoriesPanelViewModel CategoriesPanel { get; }
+
+	public ConfigurationPanelViewModel ConfigurationPanel { get; }
 
 	public SelectableViews SelectedViewIndex
 	{
@@ -92,6 +112,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 	}
 
 	public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
+
+	public AssetViewModel? DefaultCurrency => this.MoneyFile is object ? this.AssetsPanel.FindAsset(this.MoneyFile.PreferredAssetId) : null;
 
 	public TransactionViewModel? SelectedTransaction
 	{
@@ -185,7 +207,13 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
+	[return: NotNullIfNotNull("accountId")]
+	public AccountViewModel? GetAccount(int? accountId) => accountId is null ? null : this.GetAccount(accountId.Value);
+
 	public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? throw new ArgumentException("No match found.");
+
+	[return: NotNullIfNotNull("assetId")]
+	public AssetViewModel? GetAsset(int? assetId) => assetId is null ? null : this.AssetsPanel.FindAsset(assetId.Value);
 
 	public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
 
@@ -201,11 +229,19 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		if (this.MoneyFile is object)
 		{
+			this.AssetsPanel.ClearViewModel();
 			this.AccountsPanel.ClearViewModel();
 			this.BankingPanel.ClearViewModel();
+
+			foreach (Asset asset in this.MoneyFile.Assets)
+			{
+				AssetViewModel viewModel = new(asset, this);
+				this.AssetsPanel.Add(viewModel);
+			}
+
 			foreach (Account account in this.MoneyFile.Accounts)
 			{
-				AccountViewModel viewModel = new(account, this);
+				AccountViewModel viewModel = AccountViewModel.Create(account, this);
 				this.AccountsPanel.Add(viewModel);
 				this.BankingPanel.Add(viewModel);
 			}
@@ -217,6 +253,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 				this.CategoriesPanel.Categories.Add(viewModel);
 			}
 
+			this.ConfigurationPanel.CopyFrom(this.MoneyFile.CurrentConfiguration);
 			this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
 		}
 	}
@@ -257,7 +294,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
 			{
-				accountViewModel.Balance = this.MoneyFile.GetBalance(accountViewModel.Model);
+				accountViewModel.Value = this.MoneyFile.GetValue(accountViewModel.Model);
 
 				foreach (ModelBase model in e.Inserted)
 				{
@@ -302,6 +339,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 					{
 						impactedAccountIds.Add(debitId);
 					}
+				}
+
+				if (model is AssetPrice)
+				{
+					impactedAccountIds.UnionWith(this.BankingPanel.Accounts.Where(a => a.Type == Account.AccountType.Investing && a.IsPersisted).Select(a => a.Id!.Value));
 				}
 			}
 		}
@@ -355,8 +397,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 					if (account is object)
 					{
 						this.BankingPanel.SelectedAccount = account;
-						TransactionViewModel? transactionViewModel = account.FindTransaction(transaction.Id);
-						if (transactionViewModel is object)
+						if (account.FindTransaction(transaction.Id) is { } transactionViewModel)
 						{
 							this.SelectedTransaction = transactionViewModel;
 						}
@@ -371,6 +412,15 @@ public class DocumentViewModel : BindableBase, IDisposable
 			case Account account:
 				this.SelectedViewIndex = SelectableViews.Accounts;
 				this.AccountsPanel.SelectedAccount = this.AccountsPanel.FindAccount(account.Id);
+				break;
+			case Asset asset:
+				this.SelectedViewIndex = SelectableViews.Assets;
+				this.AssetsPanel.SelectedAsset = this.AssetsPanel.FindAsset(asset.Id);
+				break;
+			case AssetPrice assetPrice:
+				this.SelectedViewIndex = SelectableViews.Assets;
+				this.AssetsPanel.SelectedAsset = this.GetAsset(assetPrice.AssetId);
+				this.AssetsPanel.SelectedAssetPrice = this.AssetsPanel.AssetPrices.FirstOrDefault(ap => ap.When == assetPrice.When);
 				break;
 		}
 	}
@@ -406,7 +456,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.CanExecute(new TransactionViewModel[] { this.ViewModel.SelectedTransaction });
+				return this.CanExecute(new object[] { this.ViewModel.SelectedTransaction });
 			}
 
 			return false;
@@ -423,7 +473,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			if (this.ViewModel.SelectedTransaction is object)
 			{
-				return this.ExecuteCoreAsync(new TransactionViewModel[] { this.ViewModel.SelectedTransaction }, cancellationToken);
+				return this.ExecuteCoreAsync(new object[] { this.ViewModel.SelectedTransaction }, cancellationToken);
 			}
 
 			return Task.CompletedTask;
@@ -472,7 +522,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			foreach (object item in transactionViewModels)
 			{
-				if (item is TransactionViewModel { IsSplitInForeignAccount: false })
+				if (item is TransactionViewModel and not BankingTransactionViewModel { IsSplitInForeignAccount: true })
 				{
 					return true;
 				}
@@ -502,12 +552,12 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override bool CanExecute(IList transactionViewModels)
 		{
-			return transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true };
+			return transactionViewModels is { Count: 1 } && transactionViewModels[0] is BankingTransactionViewModel { IsSplitInForeignAccount: true };
 		}
 
 		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
 		{
-			if (transactionViewModels is { Count: 1 } && transactionViewModels[0] is TransactionViewModel { IsSplitInForeignAccount: true } tx)
+			if (transactionViewModels is { Count: 1 } && transactionViewModels[0] is BankingTransactionViewModel { IsSplitInForeignAccount: true } tx)
 			{
 				tx.JumpToSplitParent();
 			}

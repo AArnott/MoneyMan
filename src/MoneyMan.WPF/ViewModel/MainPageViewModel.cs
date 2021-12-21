@@ -17,10 +17,16 @@ public class MainPageViewModel : MainPageViewModelBase
 		base.ReplaceViewModel(documentViewModel);
 
 		this.Document.UserNotification = new UserNotification(this.MainWindow);
+		this.Document.AssetsPanel.AddingNewAsset += this.AssetsPanel_AddingNewAsset;
 		this.Document.AccountsPanel.AddingNewAccount += this.AccountsPanel_AddingNewAccount;
 		this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
 		this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.CategoriesListView.SelectedItems;
-		this.Document.SelectedTransactions = this.MainWindow.TransactionDataGrid.SelectedItems;
+		this.Document.AssetsPanel.SelectedAssetPrices = this.MainWindow.AssetPricesGrid.SelectedItems;
+	}
+
+	private void AssetsPanel_AddingNewAsset(object? sender, EventArgs e)
+	{
+		this.MainWindow.AssetName.Focus();
 	}
 
 	private void AccountsPanel_AddingNewAccount(object? sender, EventArgs e)
