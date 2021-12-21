@@ -6,6 +6,6 @@
 	},
 	"msbuild-sdks": {
 		"Microsoft.Build.NoTargets": "3.2.14",
-		"Microsoft.Build.Traversal": "3.0.23"
+		"Microsoft.Build.Traversal": "3.0.54"
 	}
 }
