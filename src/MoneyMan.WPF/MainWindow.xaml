@@ -480,21 +480,21 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="*" />
 																	<ColumnDefinition Width="30pt" />
 																	<ColumnDefinition Width="*" />
-																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
-																	Grid.Column="1"
-																	ItemsSource="{Binding Assets}"
-																	SelectedItem="{Binding DebitAsset, UpdateSourceTrigger=PropertyChanged}"
-																	DisplayMemberPath="Name" />
-																<!--<ComboBox
-																	Grid.Column="3"
-																	ItemsSource="{Binding Assets}"
+																	Grid.Column="0"
+																	ItemsSource="{Binding Accounts}"
 																	SelectedItem="{Binding SimpleAccount, UpdateSourceTrigger=PropertyChanged}"
-																	DisplayMemberPath="Name" />-->
+																	DisplayMemberPath="Name" />
+																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<ComboBox
+																	Grid.Column="2"
+																	ItemsSource="{Binding Assets}"
+																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
+																	DisplayMemberPath="Name" />
 															</Grid>
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.Transfer>

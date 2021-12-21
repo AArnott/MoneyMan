@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
@@ -34,6 +35,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
+		this.RegisterDependentProperty(nameof(this.SimpleAccount), nameof(this.Assets));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Accounts));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimplePriceApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimpleAssetApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Description));
@@ -137,6 +140,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		new(TransactionAction.Buy, nameof(TransactionAction.Buy)),
 		new(TransactionAction.Sell, nameof(TransactionAction.Sell)),
 		new(TransactionAction.Exchange, nameof(TransactionAction.Exchange)),
+		new(TransactionAction.Transfer, nameof(TransactionAction.Transfer)),
 		new(TransactionAction.Dividend, nameof(TransactionAction.Dividend)),
 		new(TransactionAction.Interest, nameof(TransactionAction.Interest)),
 		new(TransactionAction.Add, nameof(TransactionAction.Add)),
@@ -193,10 +197,29 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.relatedAsset, value);
 	}
 
-	[Range(0, int.MaxValue, ErrorMessage = "Must not be a negative number.")]
+	[NonNegativeTransactionAmount]
 	public decimal? SimpleAmount
 	{
-		get => this.IsCreditOperation ? this.CreditAmount : this.IsDebitOperation ? this.DebitAmount : null;
+		get
+		{
+			if (this.IsCreditOperation)
+			{
+				return this.CreditAmount;
+			}
+			else if (this.IsDebitOperation)
+			{
+				return this.DebitAmount;
+			}
+			else if (this.Action == TransactionAction.Transfer)
+			{
+				return this.CreditAccount == this.ThisAccount ? this.CreditAmount : -this.DebitAmount;
+			}
+			else
+			{
+				return null;
+			}
+		}
+
 		set
 		{
 			if (this.IsCreditOperation)
@@ -207,10 +230,34 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				this.DebitAmount = value;
 			}
+			else if (this.Action == TransactionAction.Transfer)
+			{
+				this.DebitAmount = this.CreditAmount = value.HasValue ? Math.Abs(value.Value) : null;
+				if (value > 0)
+				{
+					AccountViewModel? other = this.CreditAccount;
+					this.CreditAccount = this.ThisAccount;
+					if (other != this.ThisAccount && other is not null)
+					{
+						this.DebitAccount = other;
+					}
+				}
+				else
+				{
+					AccountViewModel? other = this.DebitAccount;
+					this.DebitAccount = this.ThisAccount;
+					if (other != this.ThisAccount && other is not null)
+					{
+						this.CreditAccount = other;
+					}
+				}
+			}
 			else
 			{
 				ThrowNotSimpleAction();
 			}
+
+			this.OnPropertyChanged();
 		}
 	}
 
@@ -220,6 +267,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			this.Action == TransactionAction.Dividend ? this.RelatedAsset :
 			this.IsCreditOperation ? this.CreditAsset :
 			this.IsDebitOperation ? this.DebitAsset :
+			this.Action == TransactionAction.Transfer && this.CreditAsset == this.DebitAsset ? this.CreditAsset :
 			null;
 		set
 		{
@@ -235,10 +283,16 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				this.DebitAsset = value;
 			}
+			else if (this.Action == TransactionAction.Transfer)
+			{
+				this.DebitAsset = this.CreditAsset = value;
+			}
 			else
 			{
 				ThrowNotSimpleAction();
 			}
+
+			this.OnPropertyChanged();
 		}
 	}
 
@@ -277,10 +331,32 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				throw ThrowNotSimpleAction();
 			}
+
+			this.OnPropertyChanged();
 		}
 	}
 
 	public bool IsSimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell;
+
+	public AccountViewModel? SimpleAccount
+	{
+		get => this.SimpleAmount > 0 ? this.DebitAccount : this.CreditAccount;
+		set
+		{
+			if (this.SimpleAmount > 0)
+			{
+				this.CreditAccount = this.ThisAccount;
+				this.DebitAccount = value;
+			}
+			else
+			{
+				this.DebitAccount = this.ThisAccount;
+				this.CreditAccount = value;
+			}
+
+			this.OnPropertyChanged();
+		}
+	}
 
 	public decimal? SimpleCurrencyImpact
 	{
@@ -324,7 +400,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.CreditAmount:C}",
 				TransactionAction.Sell => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} @ {this.SimplePrice:C}",
 				TransactionAction.Buy => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName} @ {this.SimplePrice:C}",
-				TransactionAction.Transfer => this.ThisAccount == this.CreditAccount ? $"+{this.CreditAmount} {this.CreditAsset?.TickerOrName}" : $"-{this.DebitAmount} {this.DebitAsset?.TickerOrName}",
+				TransactionAction.Transfer => this.ThisAccount == this.CreditAccount ? $"{this.DebitAccount?.Name} -> {FormatAmount(this.CreditAmount, this.CreditAsset)} {this.CreditAsset?.TickerOrName}" : $"{this.CreditAccount?.Name} <- {FormatAmount(this.DebitAmount, this.DebitAsset)} {this.DebitAsset?.TickerOrName}",
 				TransactionAction.Deposit => $"{this.CreditAmount:C}",
 				TransactionAction.Withdraw => $"{this.DebitAmount:C}",
 				TransactionAction.Exchange => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} -> {this.CreditAmount} {this.CreditAsset?.TickerOrName}",
@@ -333,7 +409,9 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	public IEnumerable<AssetViewModel> Assets => this.ThisAccount.DocumentViewModel.AssetsPanel.Assets.Where(a => this.IsCashTransaction == (a.Type == Asset.AssetType.Currency));
+	public IEnumerable<AssetViewModel> Assets => this.ThisAccount.DocumentViewModel.AssetsPanel.Assets.Where(a => (this.Action == TransactionAction.Transfer && (this.SimpleAccount is not BankingAccountViewModel || (a.Type == Asset.AssetType.Currency))) || (this.Action != TransactionAction.Transfer && this.IsCashTransaction == (a.Type == Asset.AssetType.Currency)));
+
+	public IEnumerable<AccountViewModel> Accounts => this.ThisAccount.DocumentViewModel.AccountsPanel.Accounts.Where(a => a != this.ThisAccount);
 
 	private bool IsCreditOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend;
 
@@ -377,6 +455,13 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	protected override bool IsPersistedProperty(string propertyName) =>
 		base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact));
+
+	private static string? FormatAmount(decimal? amount, AssetViewModel? asset)
+	{
+		return asset?.Type == Asset.AssetType.Currency
+			? amount?.ToString("C", CultureInfo.CurrentCulture)
+			: amount?.ToString(CultureInfo.CurrentCulture);
+	}
 
 	[DoesNotReturn]
 	private static Exception ThrowNotSimpleAction() => throw new InvalidOperationException("Not a simple operation.");

@@ -5,6 +5,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 {
 	private InvestingAccountViewModel account;
 	private InvestingAccountViewModel otherAccount;
+	private BankingAccountViewModel checking;
 	private InvestingTransactionViewModel viewModel;
 	private DateTime when = DateTime.Now - TimeSpan.FromDays(3);
 	private AssetViewModel msft;
@@ -17,6 +18,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Account otherAccountModel = this.Money.Insert(new Account { Name = "other", Type = Account.AccountType.Investing, CurrencyAssetId = this.Money.PreferredAssetId });
 		this.account = (InvestingAccountViewModel)this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = (InvestingAccountViewModel)this.DocumentViewModel.GetAccount(otherAccountModel.Id);
+		this.checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
 		this.viewModel = this.account.Transactions[^1];
 		this.msft = this.DocumentViewModel.AssetsPanel.NewAsset("Microsoft", "MSFT");
@@ -444,37 +446,96 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	[InlineData(TransactionAction.Sell)]
 	public void SimplePrice_CannotBeNegative(TransactionAction action)
 	{
-		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
-		exchange.Action = action;
-		exchange.SimpleAmount = 1;
-		exchange.SimplePrice = -1;
-		Assert.Equal(-1, exchange.SimplePrice);
-		Assert.False(string.IsNullOrEmpty(exchange.Error));
-		this.Logger.WriteLine(exchange.Error);
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = action;
+		tx.SimpleAmount = 1;
+		tx.SimplePrice = -1;
+		Assert.Equal(-1, tx.SimplePrice);
+		Assert.False(string.IsNullOrEmpty(tx.Error));
+		this.Logger.WriteLine(tx.Error);
 	}
 
 	[Fact]
-	public void Transfer()
+	public void Transfer_BringAssetsIn()
 	{
 		InvestingTransactionViewModel tx = this.account.Transactions[^1];
 		tx.Action = TransactionAction.Transfer;
-		tx.CreditAmount = 2;
-		tx.CreditAsset = this.msft;
-		tx.CreditAccount = this.account;
-		tx.DebitAmount = 2.1m;
-		tx.DebitAsset = this.msft;
-		tx.DebitAccount = this.otherAccount;
+		tx.SimpleAccount = this.otherAccount;
+		tx.SimpleAmount = 2;
+		tx.SimpleAsset = this.msft;
 
 		this.AssertNowAndAfterReload(delegate
 		{
 			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.Equal(string.Empty, tx.Error);
+
+			Assert.Equal(2, tx.SimpleAmount);
+			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Same(this.otherAccount, tx.SimpleAccount);
+
 			Assert.Equal(2, tx.CreditAmount);
 			Assert.Same(this.msft, tx.CreditAsset);
 			Assert.Same(this.account, tx.CreditAccount);
-			Assert.Equal(2.1m, tx.DebitAmount);
+			Assert.Equal(2, tx.DebitAmount);
 			Assert.Same(this.msft, tx.DebitAsset);
 			Assert.Same(this.otherAccount, tx.DebitAccount);
-			Assert.Equal("+2 MSFT", tx.Description);
+			Assert.Equal($"{this.otherAccount.Name} -> 2 MSFT", tx.Description);
+		});
+	}
+
+	[Fact]
+	public void Transfer_SendAssetsAway()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Transfer;
+		tx.SimpleAccount = this.otherAccount;
+		tx.SimpleAmount = -2;
+		tx.SimpleAsset = this.msft;
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.Equal(string.Empty, tx.Error);
+
+			Assert.Equal(-2, tx.SimpleAmount);
+			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Same(this.otherAccount, tx.SimpleAccount);
+
+			Assert.Equal(2, tx.CreditAmount);
+			Assert.Same(this.msft, tx.CreditAsset);
+			Assert.Same(this.otherAccount, tx.CreditAccount);
+			Assert.Equal(2, tx.DebitAmount);
+			Assert.Same(this.msft, tx.DebitAsset);
+			Assert.Same(this.account, tx.DebitAccount);
+			Assert.Equal($"{this.otherAccount.Name} <- 2 MSFT", tx.Description);
+		});
+	}
+
+	[Fact]
+	public void Transfer_CurrencyFrom()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Transfer;
+		tx.SimpleAccount = this.checking;
+		tx.SimpleAmount = 2;
+		tx.SimpleAsset = this.account.CurrencyAsset;
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			Assert.Equal(string.Empty, tx.Error);
+
+			Assert.Equal(2, tx.SimpleAmount);
+			Assert.Same(this.account.CurrencyAsset, tx.SimpleAsset);
+			Assert.Same(this.checking, tx.SimpleAccount);
+
+			Assert.Equal(2, tx.CreditAmount);
+			Assert.Same(this.account.CurrencyAsset, tx.CreditAsset);
+			Assert.Same(this.account, tx.CreditAccount);
+			Assert.Equal(2, tx.DebitAmount);
+			Assert.Same(this.account.CurrencyAsset, tx.DebitAsset);
+			Assert.Same(this.checking, tx.DebitAccount);
+			Assert.Equal($"{this.checking.Name} -> $2.00 USD", tx.Description);
 		});
 	}
 
@@ -530,6 +591,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		base.ReloadViewModel();
 		this.account = (InvestingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.account.Id!.Value)!;
 		this.otherAccount = (InvestingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.otherAccount.Id!.Value)!;
+		this.checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.checking.Id!.Value)!;
 		this.msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
 		this.appl = this.DocumentViewModel.AssetsPanel.FindAsset("Apple") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
 	}
