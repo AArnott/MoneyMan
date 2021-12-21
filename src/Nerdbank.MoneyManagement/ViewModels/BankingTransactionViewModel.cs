@@ -48,6 +48,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.CategoryOrTransferIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.SplitCommandToolTip));
 		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
+		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
+		this.RegisterDependentProperty(nameof(this.Balance), nameof(this.BalanceFormatted));
 	}
 
 	/// <summary>
@@ -108,6 +110,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 			this.SetProperty(ref this.amount, value);
 		}
 	}
+
+	public string? AmountFormatted => this.ThisAccount.CurrencyAsset?.Format(this.Amount);
 
 	/// <summary>
 	/// Gets a value indicating whether the <see cref="Amount"/> property should be considered readonly.
@@ -230,6 +234,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 		get => this.balance;
 		set => this.SetProperty(ref this.balance, value);
 	}
+
+	public string? BalanceFormatted => this.ThisAccount.CurrencyAsset?.Format(this.Balance);
 
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
@@ -529,7 +535,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 			return false;
 		}
 
-		if (propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip"))
+		if (propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted"))
 		{
 			return false;
 		}

@@ -13,6 +13,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class AssetViewModel : EntityViewModel<Asset>
 {
+	private readonly DocumentViewModel? documentViewModel;
 	private string name = string.Empty;
 	private string tickerSymbol = string.Empty;
 	private Asset.AssetType type;
@@ -27,13 +28,14 @@ public class AssetViewModel : EntityViewModel<Asset>
 	{
 	}
 
-	public AssetViewModel(Asset? model, MoneyFile? moneyFile)
-		: base(moneyFile)
+	public AssetViewModel(Asset? model, DocumentViewModel? documentViewModel)
+		: base(documentViewModel?.MoneyFile)
 	{
 		this.RegisterDependentProperty(nameof(this.TickerSymbol), nameof(this.TickerOrName));
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TickerOrName));
 		this.RegisterDependentProperty(nameof(this.CurrencySymbol), nameof(this.NumberFormat));
 		this.RegisterDependentProperty(nameof(this.CurrencyDecimalDigits), nameof(this.NumberFormat));
+		this.RegisterDependentProperty(nameof(this.CurrentPrice), nameof(this.CurrentPriceFormatted));
 
 		this.AutoSave = true;
 
@@ -41,6 +43,8 @@ public class AssetViewModel : EntityViewModel<Asset>
 		{
 			this.CopyFrom(model);
 		}
+
+		this.documentViewModel = documentViewModel;
 	}
 
 	/// <inheritdoc cref="Asset.Name"/>
@@ -125,6 +129,8 @@ public class AssetViewModel : EntityViewModel<Asset>
 		get => this.currentPrice;
 		set => this.SetProperty(ref this.currentPrice, value);
 	}
+
+	public string? CurrentPriceFormatted => this.documentViewModel?.DefaultCurrency?.Format(this.CurrentPrice);
 
 	internal NumberFormatInfo NumberFormat
 	{

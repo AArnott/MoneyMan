@@ -203,7 +203,15 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.Value) or nameof(this.TransferTargetName));
+	protected override bool IsPersistedProperty(string propertyName)
+	{
+		if (propertyName is nameof(this.Value) or nameof(this.TransferTargetName))
+		{
+			return false;
+		}
+
+		return base.IsPersistedProperty(propertyName);
+	}
 
 	protected override void CopyFromCore(Account account)
 	{

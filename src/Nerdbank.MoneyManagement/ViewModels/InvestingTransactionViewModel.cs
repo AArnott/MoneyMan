@@ -51,6 +51,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.CreditAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.DebitAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.DebitAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
 
 		this.AutoSave = true;
 
@@ -386,6 +387,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
+	public string? SimpleCurrencyImpactFormatted => this.ThisAccount.CurrencyAsset?.Format(this.SimpleCurrencyImpact);
+
 	public string? Memo
 	{
 		get => this.memo;
@@ -463,8 +466,15 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(model.RelatedAssetId);
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) =>
-		base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact));
+	protected override bool IsPersistedProperty(string propertyName)
+	{
+		if (propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted"))
+		{
+			return false;
+		}
+
+		return base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact));
+	}
 
 	[DoesNotReturn]
 	private static Exception ThrowNotSimpleAction() => throw new InvalidOperationException("Not a simple operation.");

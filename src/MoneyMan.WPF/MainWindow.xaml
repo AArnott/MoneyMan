@@ -179,7 +179,7 @@
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate>
-													<TextBlock Margin="3pt" Text="{Binding Amount, StringFormat=C}" HorizontalAlignment="Right" />
+													<TextBlock Margin="3pt" Text="{Binding AmountFormatted}" HorizontalAlignment="Right" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
@@ -219,7 +219,7 @@
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.BalanceHeader, Source={StaticResource viewModel}}" IsReadOnly="True">
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate>
-													<TextBlock Margin="3pt" Text="{Binding Balance, StringFormat=C}" HorizontalAlignment="Right" />
+													<TextBlock Margin="3pt" Text="{Binding BalanceFormatted}" HorizontalAlignment="Right" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
@@ -289,7 +289,7 @@
 													<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
 														<DataGridTemplateColumn.CellTemplate>
 															<DataTemplate>
-																<TextBlock Margin="3pt" Text="{Binding Amount, StringFormat=C}" HorizontalAlignment="Right" />
+																<TextBlock Margin="3pt" Text="{Binding AmountFormatted}" HorizontalAlignment="Right" />
 															</DataTemplate>
 														</DataGridTemplateColumn.CellTemplate>
 														<DataGridTemplateColumn.CellEditingTemplate>
@@ -516,7 +516,7 @@
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.InvestmentCashAmtHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate>
-													<TextBlock Text="{Binding SimpleCurrencyImpact, StringFormat=C}" Margin="3pt" HorizontalAlignment="Right" />
+													<TextBlock Text="{Binding SimpleCurrencyImpactFormatted}" Margin="3pt" HorizontalAlignment="Right" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
@@ -539,7 +539,7 @@
 					</Grid.ColumnDefinitions>
 					<DockPanel Grid.Column="0">
 						<DockPanel DockPanel.Dock="Bottom" Margin="5">
-							<TextBlock DockPanel.Dock="Right" Text="{Binding Source={StaticResource viewModel}, Path=Document.NetWorth, StringFormat=C}" FontWeight="Bold" />
+							<TextBlock DockPanel.Dock="Right" Text="{Binding Source={StaticResource viewModel}, Path=Document.NetWorthFormatted}" FontWeight="Bold" />
 							<TextBlock Text="{Binding NetWorthCaption}" FontWeight="Bold" />
 						</DockPanel>
 						<ListView Name="BankingAccountsListView"
@@ -572,7 +572,7 @@
 							<ListView.ItemTemplate>
 								<DataTemplate>
 									<DockPanel>
-										<TextBlock Text="{Binding Value, StringFormat=C}" DockPanel.Dock="Right" />
+										<TextBlock Text="{Binding ValueFormatted}" DockPanel.Dock="Right" />
 										<TextBlock Text="{Binding Name}" />
 									</DockPanel>
 								</DataTemplate>
@@ -613,7 +613,7 @@
 							<ListView.ItemTemplate>
 								<DataTemplate>
 									<DockPanel>
-										<TextBlock Text="{Binding CurrentPrice, StringFormat=C}" DockPanel.Dock="Right" />
+										<TextBlock Text="{Binding CurrentPriceFormatted}" DockPanel.Dock="Right" />
 										<TextBlock Text="{Binding Name}" />
 									</DockPanel>
 								</DataTemplate>
@@ -672,7 +672,7 @@
 								<DataGridTemplateColumn Header="{Binding Document.AssetsPanel.PriceGridPriceColumnHeader, Source={StaticResource viewModel}}">
 									<DataGridTemplateColumn.CellTemplate>
 										<DataTemplate>
-											<TextBlock Margin="3pt" Text="{Binding Price, StringFormat=C}" HorizontalAlignment="Right" />
+											<TextBlock Margin="3pt" Text="{Binding PriceFormatted}" HorizontalAlignment="Right" />
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 									<DataGridTemplateColumn.CellEditingTemplate>

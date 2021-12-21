@@ -19,6 +19,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
 		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.TypeIsReadOnly));
+		this.RegisterDependentProperty(nameof(this.Value), nameof(this.ValueFormatted));
+
 		this.AutoSave = true;
 
 		this.DocumentViewModel = documentViewModel;
@@ -91,6 +93,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		set => this.SetProperty(ref this.value, value);
 	}
 
+	public string? ValueFormatted => this.DocumentViewModel.DefaultCurrency?.Format(this.Value);
+
 	protected internal DocumentViewModel DocumentViewModel { get; }
 
 	/// <summary>
@@ -147,6 +151,16 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	internal abstract void NotifyTransactionChanged(Transaction transaction);
 
 	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);
+
+	protected override bool IsPersistedProperty(string propertyName)
+	{
+		if (propertyName.EndsWith("Formatted"))
+		{
+			return false;
+		}
+
+		return base.IsPersistedProperty(propertyName);
+	}
 
 	protected override void ApplyToCore(Account account)
 	{

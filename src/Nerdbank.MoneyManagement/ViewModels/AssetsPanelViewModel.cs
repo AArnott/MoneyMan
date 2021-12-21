@@ -112,7 +112,7 @@ public class AssetsPanelViewModel : BindableBase
 			return this.AddingAsset;
 		}
 
-		AssetViewModel newAssetViewModel = new(null, this.documentViewModel.MoneyFile)
+		AssetViewModel newAssetViewModel = new(null, this.documentViewModel)
 		{
 			Model = new(),
 			Type = Asset.AssetType.Security,

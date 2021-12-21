@@ -16,6 +16,8 @@ public class AssetPriceViewModel : EntityViewModel<AssetPrice>
 	public AssetPriceViewModel(DocumentViewModel documentViewModel, AssetPrice? model)
 		: base(documentViewModel.MoneyFile)
 	{
+		this.RegisterDependentProperty(nameof(this.Price), nameof(this.PriceFormatted));
+
 		this.AutoSave = true;
 		this.Model = model;
 		this.documentViewModel = documentViewModel;
@@ -50,6 +52,18 @@ public class AssetPriceViewModel : EntityViewModel<AssetPrice>
 	{
 		get => this.priceInReferenceAsset;
 		set => this.SetProperty(ref this.priceInReferenceAsset, value);
+	}
+
+	public string? PriceFormatted => this.documentViewModel.DefaultCurrency?.Format(this.Price);
+
+	protected override bool IsPersistedProperty(string propertyName)
+	{
+		if (propertyName.EndsWith("Formatted"))
+		{
+			return false;
+		}
+
+		return base.IsPersistedProperty(propertyName);
 	}
 
 	protected override void ApplyToCore(AssetPrice model)

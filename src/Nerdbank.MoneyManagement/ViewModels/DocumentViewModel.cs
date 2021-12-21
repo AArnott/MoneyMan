@@ -6,7 +6,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Microsoft;
 using PCLCommandBase;
 
@@ -29,6 +28,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public DocumentViewModel(MoneyFile? moneyFile, bool ownsMoneyFile = true)
 	{
+		this.RegisterDependentProperty(nameof(this.NetWorth), nameof(this.NetWorthFormatted));
+
 		this.MoneyFile = moneyFile;
 		this.ownsMoneyFile = ownsMoneyFile;
 
@@ -91,6 +92,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 		get => this.netWorth;
 		set => this.SetProperty(ref this.netWorth, value);
 	}
+
+	public string? NetWorthFormatted => this.DefaultCurrency?.Format(this.NetWorth);
 
 	public BankingPanelViewModel BankingPanel { get; }
 
@@ -232,7 +235,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			foreach (Asset asset in this.MoneyFile.Assets)
 			{
-				AssetViewModel viewModel = new(asset, this.MoneyFile);
+				AssetViewModel viewModel = new(asset, this);
 				this.AssetsPanel.Add(viewModel);
 			}
 
