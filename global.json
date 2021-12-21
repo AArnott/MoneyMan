@@ -5,7 +5,7 @@
 		"allowPrerelease": false
 	},
 	"msbuild-sdks": {
-		"Microsoft.Build.NoTargets": "3.1.0",
+		"Microsoft.Build.NoTargets": "3.2.14",
 		"Microsoft.Build.Traversal": "3.0.23"
 	}
 }
