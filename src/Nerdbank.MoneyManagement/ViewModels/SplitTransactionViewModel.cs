@@ -20,6 +20,8 @@ public class SplitTransactionViewModel : TransactionViewModel
 	public SplitTransactionViewModel(BankingTransactionViewModel parent, Transaction? splitTransaction)
 		: base(parent.ThisAccount)
 	{
+		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
+
 		this.ParentTransaction = parent;
 		this.AutoSave = true;
 
@@ -39,6 +41,8 @@ public class SplitTransactionViewModel : TransactionViewModel
 		get => this.amount;
 		set => this.SetProperty(ref this.amount, value);
 	}
+
+	public string? AmountFormatted => this.ThisAccount?.CurrencyAsset?.Format(this.Amount);
 
 	public string? Memo
 	{
