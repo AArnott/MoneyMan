@@ -166,6 +166,20 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
+	internal override void NotifyAccountDeleted(ICollection<Account> accounts)
+	{
+		if (this.transactions is object)
+		{
+			foreach (BankingTransactionViewModel transaction in this.transactions)
+			{
+				if (transaction.CategoryOrTransfer is AccountViewModel { Model: Account transferAccount } && accounts.Contains(transferAccount))
+				{
+					transaction.CategoryOrTransfer = null;
+				}
+			}
+		}
+	}
+
 	internal void NotifyAmountChangedOnSplitTransaction(BankingTransactionViewModel transaction)
 	{
 		Requires.Argument(transaction.ContainsSplits, nameof(transaction), "Only split transactions should be raising this.");

@@ -124,6 +124,24 @@ public class InvestingAccountViewModel : AccountViewModel
 		}
 	}
 
+	internal override void NotifyAccountDeleted(ICollection<Account> accounts)
+	{
+		if (this.transactions is object)
+		{
+			foreach (InvestingTransactionViewModel transaction in this.transactions)
+			{
+				if (transaction.CreditAccount is AccountViewModel { Model: Account creditAccount } && accounts.Contains(creditAccount))
+				{
+					transaction.CreditAccount = null;
+				}
+				else if (transaction.DebitAccount is AccountViewModel { Model: Account debitAccount } && accounts.Contains(debitAccount))
+				{
+					transaction.DebitAccount = null;
+				}
+			}
+		}
+	}
+
 	protected override void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
 	{
 		if (this.transactions is null)

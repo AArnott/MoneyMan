@@ -7,7 +7,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 {
 	private AssetViewModel alternateCurrency;
 	private BankingAccountViewModel checking;
-	private BankingAccountViewModel savings;
+	private BankingAccountViewModel? savings;
 
 	public BankingAccountViewModelTests(ITestOutputHelper logger)
 		: base(logger)
@@ -419,10 +419,10 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		txViewModel.CategoryOrTransfer = this.savings;
 		Assert.Equal(-10, this.checking.Value);
 
-		Assert.Equal(10, this.savings.Value);
+		Assert.Equal(10, this.savings!.Value);
 
 		txViewModel.Amount = -5;
-		Assert.Equal(5, this.savings.Value);
+		Assert.Equal(5, this.savings!.Value);
 	}
 
 	[Fact]
@@ -433,7 +433,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		tx1.CategoryOrTransfer = this.savings;
 
 		// An counterpart transfer view model should have been added to the savings account.
-		BankingTransactionViewModel tx2 = Assert.Single(this.savings.Transactions, t => t.IsPersisted);
+		BankingTransactionViewModel tx2 = Assert.Single(this.savings!.Transactions, t => t.IsPersisted);
 		Assert.Same(this.checking, tx2.CategoryOrTransfer);
 		Assert.Equal(-tx1.Amount, tx2.Amount);
 	}
@@ -447,7 +447,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		tx1.CategoryOrTransfer = this.savings;
 
 		// A counterpart transfer view model should have been added to the savings account.
-		BankingTransactionViewModel tx2 = Assert.Single(this.savings.Transactions, t => t.IsPersisted);
+		BankingTransactionViewModel tx2 = Assert.Single(this.savings!.Transactions, t => t.IsPersisted);
 		Assert.Same(this.checking, tx2.CategoryOrTransfer);
 		Assert.Equal(-tx1.Amount, tx2.Amount);
 	}
@@ -459,10 +459,26 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;
 
-		BankingTransactionViewModel tx2 = this.savings.Transactions[0];
+		BankingTransactionViewModel tx2 = this.savings!.Transactions[0];
 
 		this.checking.DeleteTransaction(tx1);
-		Assert.Empty(this.savings.Transactions.Where(tx => tx.IsPersisted));
+		Assert.Empty(this.savings!.Transactions.Where(tx => tx.IsPersisted));
+	}
+
+	[Fact]
+	public void TransferBecomesOrdinaryWhenOneAccountIsDeleted()
+	{
+		BankingTransactionViewModel tx1 = this.checking.NewTransaction();
+		tx1.Amount = -10;
+		tx1.CategoryOrTransfer = this.savings;
+
+		this.DocumentViewModel.AccountsPanel.DeleteAccount(this.savings!);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			Assert.Null(tx1.CategoryOrTransfer);
+			Assert.Null(tx1.Model!.CreditAccountId);
+		});
 	}
 
 	[Fact]
@@ -474,9 +490,9 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;
 
-		Assert.Single(this.savings.Transactions.Where(t => t.IsPersisted));
+		Assert.Single(this.savings!.Transactions.Where(t => t.IsPersisted));
 		tx1.CategoryOrTransfer = cat;
-		Assert.Empty(this.savings.Transactions.Where(t => t.IsPersisted));
+		Assert.Empty(this.savings!.Transactions.Where(t => t.IsPersisted));
 		Assert.Contains(tx1, this.checking.Transactions);
 	}
 
@@ -488,7 +504,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		tx1.Amount = -10;
 		tx1.CategoryOrTransfer = this.savings;
 
-		BankingTransactionViewModel tx2 = this.savings.Transactions[0];
+		BankingTransactionViewModel tx2 = this.savings!.Transactions[0];
 		tx1.Memo = "memo 1";
 		Assert.Equal(tx1.Memo, tx2.Memo);
 		tx1.Amount = 5;
@@ -506,9 +522,9 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			BankingTransactionViewModel txSavings = this.savings.Transactions[0];
+			BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
 			Assert.Equal(40, txSavings.Amount);
-			Assert.Equal(40, this.savings.Value);
+			Assert.Equal(40, this.savings!.Value);
 			Assert.Equal(tx.When, txSavings.When);
 			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		});
@@ -519,7 +535,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 
-		BankingTransactionViewModel txSavings = this.savings.Transactions[0];
+		BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
 		Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		Assert.False(txSavings.ContainsSplits);
 		Assert.Throws<InvalidOperationException>(() => txSavings.NewSplit());
@@ -542,11 +558,11 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			BankingTransactionViewModel txSavings5 = Assert.Single(this.savings.Transactions, t => t.Amount == 5);
-			BankingTransactionViewModel txSavings40 = Assert.Single(this.savings.Transactions, t => t.Amount == 40);
+			BankingTransactionViewModel txSavings5 = Assert.Single(this.savings!.Transactions, t => t.Amount == 5);
+			BankingTransactionViewModel txSavings40 = Assert.Single(this.savings!.Transactions, t => t.Amount == 40);
 			Assert.Equal(40, txSavings40.Amount);
 			Assert.Equal(5, txSavings5.Amount);
-			Assert.Equal(45, this.savings.Value);
+			Assert.Equal(45, this.savings!.Value);
 			Assert.True(txSavings5.IsSplitMemberOfParentTransaction);
 			Assert.True(txSavings40.IsSplitMemberOfParentTransaction);
 		});
@@ -563,8 +579,8 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 		Assert.Equal(tx.GetSplitTotal(), this.checking.Value);
 
-		BankingTransactionViewModel txSavings = this.savings.Transactions[0];
-		Assert.Throws<InvalidOperationException>(() => this.savings.DeleteTransaction(txSavings));
+		BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
+		Assert.Throws<InvalidOperationException>(() => this.savings!.DeleteTransaction(txSavings));
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.savings;
 		this.DocumentViewModel.SelectedTransaction = txSavings;
 		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
@@ -575,7 +591,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 
-		BankingTransactionViewModel txSavings = this.savings.Transactions[0];
+		BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
 
 		// Disallow changes to amount, since that can upset the balance on the overall transaction.
 		Assert.Throws<InvalidOperationException>(() => txSavings.Amount += 1);
@@ -619,7 +635,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			BankingTransactionViewModel txSavings = this.savings.Transactions[0];
+			BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
 			Assert.Same(this.checking.Transactions.Single(t => t.Id == tx.Id), txSavings.GetSplitParent());
 		});
 	}
@@ -635,7 +651,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	public void JumpToSplitParent_FromTransactionSynthesizedFromSplit()
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
-		BankingTransactionViewModel txSavings = this.savings.Transactions[0];
+		BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
 		txSavings.JumpToSplitParent();
 		Assert.Same(this.checking, this.DocumentViewModel.BankingPanel.SelectedAccount);
 		Assert.Same(tx, this.DocumentViewModel.SelectedTransaction);
@@ -645,12 +661,12 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	public void DeletingSplitTransferAlsoRemovesTransactionsFromOtherAccounts()
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
-		Assert.NotEmpty(this.savings.Transactions);
+		Assert.NotEmpty(this.savings!.Transactions);
 		tx.DeleteSplit(tx.Splits.Single(s => s.CategoryOrTransfer is BankingAccountViewModel));
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			Assert.False(Assert.Single(this.savings.Transactions).IsPersisted);
+			Assert.False(Assert.Single(this.savings!.Transactions).IsPersisted);
 		});
 	}
 
@@ -658,12 +674,12 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	public void DeletingSplitTransactionWithTransfersAlsoRemovesTransactionsFromOtherAccounts()
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
-		Assert.NotEmpty(this.savings.Transactions);
+		Assert.NotEmpty(this.savings!.Transactions);
 		this.checking.DeleteTransaction(tx);
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			Assert.Empty(this.savings.Transactions.Where(tx => tx.IsPersisted));
+			Assert.Empty(this.savings!.Transactions.Where(tx => tx.IsPersisted));
 		});
 	}
 
@@ -671,13 +687,13 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	public async Task NewTransaction_Undo()
 	{
 		const string memo = "some memo";
-		this.savings.Transactions[^1].Memo = memo;
+		this.savings!.Transactions[^1].Memo = memo;
 		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
 
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		this.RefetchViewModels();
-		Assert.DoesNotContain(this.savings.Transactions, t => t.Memo == memo);
-		Assert.False(this.savings.Transactions[^1].IsPersisted);
+		Assert.DoesNotContain(this.savings!.Transactions, t => t.Memo == memo);
+		Assert.False(this.savings!.Transactions[^1].IsPersisted);
 
 		Assert.Equal(DocumentViewModel.SelectableViews.Banking, this.DocumentViewModel.SelectedViewIndex);
 		Assert.Same(this.savings, this.DocumentViewModel.BankingPanel.SelectedAccount);
@@ -688,21 +704,21 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	public async Task DeleteTransaction_Undo()
 	{
 		const string memo = "some memo";
-		this.DocumentViewModel.SelectedTransaction = this.savings.Transactions[0];
-		this.savings.Transactions[0].Memo = memo;
+		this.DocumentViewModel.SelectedTransaction = this.savings!.Transactions[0];
+		this.savings!.Transactions[0].Memo = memo;
 		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
-		Assert.Null(this.savings.Transactions[0].Memo);
+		Assert.Null(this.savings!.Transactions[0].Memo);
 		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
 
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		this.RefetchViewModels();
-		Assert.Equal(memo, this.savings.Transactions[0].Memo);
-		Assert.True(this.savings.Transactions[0].IsPersisted);
-		Assert.False(this.savings.Transactions[^1].IsPersisted);
+		Assert.Equal(memo, this.savings!.Transactions[0].Memo);
+		Assert.True(this.savings!.Transactions[0].IsPersisted);
+		Assert.False(this.savings!.Transactions[^1].IsPersisted);
 
 		Assert.Equal(DocumentViewModel.SelectableViews.Banking, this.DocumentViewModel.SelectedViewIndex);
 		Assert.Same(this.savings, this.DocumentViewModel.BankingPanel.SelectedAccount);
-		Assert.Same(this.savings.Transactions[0], this.DocumentViewModel.SelectedTransaction);
+		Assert.Same(this.savings!.Transactions[0], this.DocumentViewModel.SelectedTransaction);
 	}
 
 	protected override void ReloadViewModel()
@@ -715,7 +731,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	private void RefetchViewModels()
 	{
 		this.checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Checking");
-		this.savings = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Savings");
+		this.savings = (BankingAccountViewModel?)this.DocumentViewModel.AccountsPanel.Accounts.SingleOrDefault(a => a.Name == "Savings");
 	}
 
 	private BankingTransactionViewModel CreateSplitWithCategoryAndTransfer()
