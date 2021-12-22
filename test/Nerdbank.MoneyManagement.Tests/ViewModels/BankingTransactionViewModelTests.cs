@@ -117,18 +117,19 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void Balance_OnSplitTransactions()
+	public async Task Balance_OnSplitTransactions()
 	{
 		this.viewModel.Save();
 		this.viewModel.Amount = -50;
 		Assert.Equal(-50, this.viewModel.Balance);
-		SplitTransactionViewModel split1 = this.viewModel.NewSplit();
+		await this.viewModel.SplitCommand.ExecuteAsync();
+		SplitTransactionViewModel split1 = this.viewModel.Splits[0];
 		Assert.Equal(-50, this.viewModel.Balance);
 
 		split1.Amount = -40;
 		Assert.Equal(-40, this.viewModel.Balance);
 
-		SplitTransactionViewModel split2 = this.viewModel.NewSplit();
+		SplitTransactionViewModel split2 = this.viewModel.Splits[^1];
 		split2.Amount = -30;
 		Assert.Equal(-70, this.viewModel.Balance);
 

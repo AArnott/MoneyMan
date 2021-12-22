@@ -572,6 +572,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		SplitTransactionViewModel volatileViewModel = new(this, volatileModel);
 		this.splits!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileSplitTransaction_Saved;
+		volatileViewModel.PropertyChanged += this.Splits_PropertyChanged;
 		return volatileViewModel;
 	}
 
