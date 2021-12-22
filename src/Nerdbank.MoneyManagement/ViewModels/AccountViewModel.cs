@@ -150,6 +150,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 
 	internal abstract void NotifyTransactionChanged(Transaction transaction);
 
+	internal abstract void NotifyAccountDeleted(ICollection<Account> accounts);
+
 	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);
 
 	protected override bool IsPersistedProperty(string propertyName)
