@@ -509,6 +509,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 			BankingTransactionViewModel txSavings = this.savings.Transactions[0];
 			Assert.Equal(40, txSavings.Amount);
 			Assert.Equal(40, this.savings.Value);
+			Assert.Equal(tx.When, txSavings.When);
 			Assert.True(txSavings.IsSplitMemberOfParentTransaction);
 		});
 	}
@@ -725,7 +726,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		SplitTransactionViewModel split1 = tx.NewSplit();
 		split1.Amount = 100; // gross
 		split1.CategoryOrTransfer = cat1;
-		SplitTransactionViewModel split2 = tx.NewSplit();
+		SplitTransactionViewModel split2 = tx.Splits[^1];
 		split2.Amount = -40; // send $40 of the $100 to savings
 		split2.CategoryOrTransfer = this.savings;
 		tx.Amount = split1.Amount + split2.Amount;
