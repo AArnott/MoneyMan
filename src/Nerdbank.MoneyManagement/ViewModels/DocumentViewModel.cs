@@ -294,7 +294,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().ToHashSet());
 
-			if (accountViewModel.Model is object && accountViewModel.Id.HasValue && impactedAccountIds.Contains(accountViewModel.Id.Value))
+			if (accountViewModel.Model is object && accountViewModel.IsPersisted && impactedAccountIds.Contains(accountViewModel.Id))
 			{
 				accountViewModel.Value = this.MoneyFile.GetValue(accountViewModel.Model);
 
@@ -345,7 +345,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 				if (model is AssetPrice)
 				{
-					impactedAccountIds.UnionWith(this.BankingPanel.Accounts.Where(a => a.Type == Account.AccountType.Investing && a.IsPersisted).Select(a => a.Id!.Value));
+					impactedAccountIds.UnionWith(this.BankingPanel.Accounts.Where(a => a.Type == Account.AccountType.Investing && a.IsPersisted).Select(a => a.Id));
 				}
 			}
 		}

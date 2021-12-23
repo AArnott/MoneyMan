@@ -33,9 +33,9 @@ internal class AccountSort : IOptimizedComparer<AccountViewModel>
 			return order;
 		}
 
-		order = x.Id is null
-			? (y.Id is null ? 0 : -1)
-			: (y.Id is null) ? 1 : 0;
+		order = x.Id == 0
+			? (y.Id == 0 ? 0 : -1)
+			: (y.Id == 0) ? 1 : 0;
 		if (order != 0)
 		{
 			return order;

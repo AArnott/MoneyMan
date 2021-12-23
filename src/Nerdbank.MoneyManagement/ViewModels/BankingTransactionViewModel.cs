@@ -188,7 +188,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 			if (this.splits is null)
 			{
 				this.splits = new();
-				if (this.MoneyFile is object && this.Id.HasValue)
+				if (this.MoneyFile is object && this.IsPersisted)
 				{
 					SQLite.TableQuery<Transaction> splits = this.MoneyFile.Transactions
 						.Where(tx => tx.ParentTransactionId == this.Id);
@@ -540,7 +540,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 			return false;
 		}
 
-		if (this.ContainsSplits && propertyName == nameof(this.Amount))
+		if (propertyName == nameof(this.Amount) && this.ContainsSplits)
 		{
 			return false;
 		}

@@ -25,7 +25,7 @@ public class TransactionFacts : EntityTestBase
 		const decimal creditAmount = 5.2398345m;
 		const decimal debitAmount = 5.2498345m;
 		const string payee = "Them";
-		int categoryId = cat.Id!.Value;
+		int categoryId = cat.Id;
 		const string memo = "Some memo";
 		const ClearedState creditCleared = ClearedState.Reconciled;
 		const ClearedState debitCleared = ClearedState.Cleared;

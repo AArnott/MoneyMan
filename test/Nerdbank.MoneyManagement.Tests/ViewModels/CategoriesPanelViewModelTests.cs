@@ -323,7 +323,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Equal(category.Id, this.DocumentViewModel.CategoriesPanel.SelectedCategory?.Id);
 
 		// Verify that transaction assignments were also restored.
-		BankingTransactionViewModel refreshedTransaction = ((BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(checking.Id!.Value)!).Transactions[0];
+		BankingTransactionViewModel refreshedTransaction = ((BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(checking.Id)!).Transactions[0];
 		Assert.Equal(transaction.Memo, refreshedTransaction.Memo);
 		Assert.Equal(category.Id, refreshedTransaction.CategoryOrTransfer?.Id);
 	}

@@ -234,7 +234,7 @@ public class AssetsPanelViewModel : BindableBase
 		var volatileModel = new AssetPrice
 		{
 			When = DateTime.Today,
-			AssetId = this.SelectedAsset.Id ?? 0,
+			AssetId = this.SelectedAsset.Id,
 			ReferenceAssetId = this.documentViewModel.MoneyFile.PreferredAssetId,
 		};
 		AssetPriceViewModel volatileViewModel = new(this.documentViewModel, volatileModel);

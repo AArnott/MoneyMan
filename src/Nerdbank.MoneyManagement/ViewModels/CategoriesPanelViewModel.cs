@@ -256,13 +256,13 @@ public class CategoriesPanelViewModel : BindableBase
 				// Update every transaction in the database, including those for which no view model has been created.
 				if (this.viewModel.documentViewModel.MoneyFile is object)
 				{
-					this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.Id.HasValue).Select(cat => cat.Id!.Value), redirectedCategory.Id);
+					this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory.Id);
 				}
 
 				// Also update the live view models.
 				foreach (BankingAccountViewModel account in this.viewModel.documentViewModel.BankingPanel.BankingAccounts)
 				{
-					account.NotifyReassignCategory(inUse, redirectedCategory);
+					account.NotifyReassignCategory(inUse, redirectedCategory.Id == 0 ? null : redirectedCategory);
 				}
 
 				// Now actually delete the categories.
