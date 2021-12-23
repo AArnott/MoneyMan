@@ -15,10 +15,7 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 	{
 		this.documentViewModel = documentViewModel;
 		this.AutoSave = true;
-		if (documentViewModel.MoneyFile is object)
-		{
-			this.CopyFrom(documentViewModel.MoneyFile.CurrentConfiguration);
-		}
+		this.CopyFrom(documentViewModel.MoneyFile.CurrentConfiguration);
 	}
 
 	public string Title => "Configuration";

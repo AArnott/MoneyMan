@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit.Abstractions;
-
 public class MoneyTestBase : TestBase
 {
 	private readonly Lazy<MoneyFile> money;

@@ -113,8 +113,8 @@ public class CategoriesPanelViewModel : BindableBase
 		this.categories.Remove(categoryViewModel);
 		if (categoryViewModel.Model is object)
 		{
-			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel.Model);
-			this.documentViewModel.MoneyFile?.Delete(categoryViewModel.Model);
+			using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel.Model);
+			this.documentViewModel.MoneyFile.Delete(categoryViewModel.Model);
 		}
 
 		if (this.SelectedCategory == categoryViewModel)
@@ -203,12 +203,12 @@ public class CategoriesPanelViewModel : BindableBase
 
 		private async Task ExecuteCoreAsync(IList categoryViewModels, CancellationToken cancellationToken)
 		{
-			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryViewModel>().FirstOrDefault()?.Model);
+			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryViewModel>().FirstOrDefault()?.Model);
 			IEnumerable<CategoryViewModel> categories = categoryViewModels.OfType<CategoryViewModel>();
 			List<CategoryViewModel> inUse = new(), notInUse = new();
 			foreach (CategoryViewModel category in categories)
 			{
-				if (category.Id is int id && this.viewModel.documentViewModel.MoneyFile?.IsCategoryInUse(id) is true)
+				if (category.Id is int id && this.viewModel.documentViewModel.MoneyFile.IsCategoryInUse(id) is true)
 				{
 					inUse.Add(category);
 				}
@@ -254,10 +254,7 @@ public class CategoriesPanelViewModel : BindableBase
 				}
 
 				// Update every transaction in the database, including those for which no view model has been created.
-				if (this.viewModel.documentViewModel.MoneyFile is object)
-				{
-					this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory.Id);
-				}
+				this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory.Id);
 
 				// Also update the live view models.
 				foreach (BankingAccountViewModel account in this.viewModel.documentViewModel.BankingPanel.BankingAccounts)

@@ -73,7 +73,7 @@ public class AssetsPanelViewModel : BindableBase
 		}
 	}
 
-	public bool IsPricesGridVisible => this.SelectedAsset is object && this.SelectedAsset.Id != this.documentViewModel.MoneyFile?.PreferredAssetId;
+	public bool IsPricesGridVisible => this.SelectedAsset is object && this.SelectedAsset.Id != this.documentViewModel.MoneyFile.PreferredAssetId;
 
 	public IReadOnlyList<AssetViewModel> Assets => this.assets;
 
@@ -146,8 +146,8 @@ public class AssetsPanelViewModel : BindableBase
 
 		if (asset.Model is object)
 		{
-			using IDisposable? transaction = this.documentViewModel.MoneyFile?.UndoableTransaction($"Deleted asset \"{asset.Name}\".", asset.Model);
-			this.documentViewModel.MoneyFile?.Delete(asset.Model);
+			using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted asset \"{asset.Name}\".", asset.Model);
+			this.documentViewModel.MoneyFile.Delete(asset.Model);
 		}
 
 		if (this.SelectedAsset == asset)
@@ -171,7 +171,7 @@ public class AssetsPanelViewModel : BindableBase
 		this.assetPrices.Remove(value);
 		if (value.Model is object)
 		{
-			this.documentViewModel.MoneyFile?.Delete(value.Model);
+			this.documentViewModel.MoneyFile.Delete(value.Model);
 		}
 
 		if (value == this.SelectedAssetPrice)
@@ -196,7 +196,7 @@ public class AssetsPanelViewModel : BindableBase
 	private void FillAssetPrices()
 	{
 		this.assetPrices.Clear();
-		if (this.selectedAsset is object && this.documentViewModel.MoneyFile is object)
+		if (this.selectedAsset is object)
 		{
 			IEnumerable<AssetPriceViewModel> prices =
 				from assetPriceViewModel in this.documentViewModel.MoneyFile.AssetPrices
@@ -228,7 +228,7 @@ public class AssetsPanelViewModel : BindableBase
 
 	private void CreateVolatilePricePoint()
 	{
-		Verify.Operation(this.SelectedAsset is object && this.documentViewModel.MoneyFile is object, "Cannot generate volatile row without a selected asset.");
+		Verify.Operation(this.SelectedAsset is object, "Cannot generate volatile row without a selected asset.");
 
 		// Always add one more "volatile" pricepoint as a placeholder to add new data.
 		var volatileModel = new AssetPrice
@@ -379,7 +379,7 @@ public class AssetsPanelViewModel : BindableBase
 		{
 			if (this.viewModel.SelectedAssetPrices is object)
 			{
-				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile?.UndoableTransaction($"Deleting {this.viewModel.SelectedAssetPrices.Count} prices for \"{this.viewModel.SelectedAsset?.Name}\".", this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().FirstOrDefault()?.Model);
+				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleting {this.viewModel.SelectedAssetPrices.Count} prices for \"{this.viewModel.SelectedAsset?.Name}\".", this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().FirstOrDefault()?.Model);
 				foreach (AssetPriceViewModel pricepoint in this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().ToList())
 				{
 					if (pricepoint.IsPersisted)
@@ -390,7 +390,7 @@ public class AssetsPanelViewModel : BindableBase
 			}
 			else if (this.viewModel.SelectedAssetPrice is { IsPersisted: true })
 			{
-				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile?.UndoableTransaction($"Deleting \"{this.viewModel.SelectedAsset?.Name}\" price for {this.viewModel.SelectedAssetPrice.When}.", this.viewModel.SelectedAssetPrice.Model);
+				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleting \"{this.viewModel.SelectedAsset?.Name}\" price for {this.viewModel.SelectedAssetPrice.When}.", this.viewModel.SelectedAssetPrice.Model);
 				this.viewModel.DeletePrice(this.viewModel.SelectedAssetPrice);
 			}
 
