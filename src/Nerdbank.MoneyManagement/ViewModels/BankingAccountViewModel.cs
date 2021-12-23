@@ -163,11 +163,7 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 		else if (!removedFromAccount)
 		{
-			// This may be a new transaction we need to add. Only add top-level transactions or foreign splits.
-			if (this.FindTransaction(transaction.ParentTransactionId) is null)
-			{
-				this.transactions.Add(new BankingTransactionViewModel(this, transaction));
-			}
+			this.transactions.Add(new BankingTransactionViewModel(this, transaction));
 		}
 	}
 
