@@ -14,7 +14,7 @@ public class SplitCategoryPlaceholder : ITransactionTarget
 	{
 	}
 
-	public int? Id => Category.Split;
+	public int Id => Category.Split;
 
 	public string Name => "--split--";
 

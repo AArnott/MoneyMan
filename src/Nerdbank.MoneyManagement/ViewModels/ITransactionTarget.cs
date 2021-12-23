@@ -10,7 +10,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 /// </summary>
 public interface ITransactionTarget
 {
-	int? Id { get; }
+	int Id { get; }
 
 	string? Name { get; }
 }

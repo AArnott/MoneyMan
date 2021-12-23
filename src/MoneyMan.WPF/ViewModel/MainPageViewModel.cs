@@ -9,19 +9,25 @@ public class MainPageViewModel : MainPageViewModelBase
 {
 	internal MainWindow MainWindow { get; set; } = null!;
 
-	public override void ReplaceViewModel(DocumentViewModel documentViewModel)
+	public override void ReplaceViewModel(DocumentViewModel? documentViewModel)
 	{
-		this.Document.AccountsPanel.AddingNewAccount -= this.AccountsPanel_AddingNewAccount;
-		this.Document.CategoriesPanel.AddingNewCategory -= this.CategoriesPanel_AddingNewCategory;
+		if (this.Document is not null)
+		{
+			this.Document.AccountsPanel.AddingNewAccount -= this.AccountsPanel_AddingNewAccount;
+			this.Document.CategoriesPanel.AddingNewCategory -= this.CategoriesPanel_AddingNewCategory;
+		}
 
 		base.ReplaceViewModel(documentViewModel);
 
-		this.Document.UserNotification = new UserNotification(this.MainWindow);
-		this.Document.AssetsPanel.AddingNewAsset += this.AssetsPanel_AddingNewAsset;
-		this.Document.AccountsPanel.AddingNewAccount += this.AccountsPanel_AddingNewAccount;
-		this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
-		this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.CategoriesListView.SelectedItems;
-		this.Document.AssetsPanel.SelectedAssetPrices = this.MainWindow.AssetPricesGrid.SelectedItems;
+		if (this.Document is not null)
+		{
+			this.Document.UserNotification = new UserNotification(this.MainWindow);
+			this.Document.AssetsPanel.AddingNewAsset += this.AssetsPanel_AddingNewAsset;
+			this.Document.AccountsPanel.AddingNewAccount += this.AccountsPanel_AddingNewAccount;
+			this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
+			this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.CategoriesListView.SelectedItems;
+			this.Document.AssetsPanel.SelectedAssetPrices = this.MainWindow.AssetPricesGrid.SelectedItems;
+		}
 	}
 
 	private void AssetsPanel_AddingNewAsset(object? sender, EventArgs e)

@@ -179,7 +179,7 @@ public class AssetPanelViewModelTests : MoneyTestBase
 		Assert.Single(this.ViewModel.AssetPrices);
 		this.Money.Insert(new AssetPrice
 		{
-			AssetId = someAsset.Id!.Value,
+			AssetId = someAsset.Id,
 			When = DateTime.Now,
 			ReferenceAssetId = this.Money.PreferredAssetId,
 			PriceInReferenceAsset = 10,

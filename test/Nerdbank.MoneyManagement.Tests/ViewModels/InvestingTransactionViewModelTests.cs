@@ -220,12 +220,12 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		exchange.CreditAmount = 2;
 
 		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
-		Assert.Equal(2, balances[this.appl.Id!.Value]);
-		Assert.Equal(-3, balances[this.msft.Id!.Value]);
+		Assert.Equal(2, balances[this.appl.Id]);
+		Assert.Equal(-3, balances[this.msft.Id]);
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			exchange = this.account.FindTransaction(exchange.Id!.Value)!;
+			exchange = this.account.FindTransaction(exchange.Id)!;
 			Assert.Same(this.msft, exchange.DebitAsset);
 			Assert.Equal(3, exchange.DebitAmount);
 			Assert.Same(this.account, exchange.CreditAccount);
@@ -245,7 +245,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(3, tx.CreditAmount);
 			Assert.Same(this.account, tx.CreditAccount);
 			Assert.Same(this.account.CurrencyAsset, tx.CreditAsset);
@@ -264,7 +264,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(3, tx.DebitAmount);
 			Assert.Same(this.account, tx.DebitAccount);
 			Assert.Same(this.account.CurrencyAsset, tx.DebitAsset);
@@ -285,11 +285,11 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
 		Assert.Equal(-250, balances[this.Money.PreferredAssetId]);
-		Assert.Equal(2, balances[this.msft.Id!.Value]);
+		Assert.Equal(2, balances[this.msft.Id]);
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(TransactionAction.Buy, tx.Action);
 			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
@@ -311,11 +311,11 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
 		Assert.Equal(250, balances[this.Money.PreferredAssetId]);
-		Assert.Equal(-2, balances[this.msft.Id!.Value]);
+		Assert.Equal(-2, balances[this.msft.Id]);
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
 			Assert.Equal(250, tx.CreditAmount);
@@ -344,7 +344,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(TransactionAction.Dividend, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(15, tx.SimpleAmount);
@@ -366,7 +366,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(TransactionAction.Add, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(2, tx.SimpleAmount);
@@ -388,7 +388,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(TransactionAction.Remove, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(2, tx.SimpleAmount);
@@ -466,7 +466,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(string.Empty, tx.Error);
 
 			Assert.Equal(2, tx.SimpleAmount);
@@ -494,7 +494,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(string.Empty, tx.Error);
 
 			Assert.Equal(-2, tx.SimpleAmount);
@@ -522,7 +522,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id!.Value)!;
+			tx = this.account.FindTransaction(tx.Id)!;
 			Assert.Equal(string.Empty, tx.Error);
 
 			Assert.Equal(2, tx.SimpleAmount);
@@ -589,9 +589,9 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();
-		this.account = (InvestingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.account.Id!.Value)!;
-		this.otherAccount = (InvestingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.otherAccount.Id!.Value)!;
-		this.checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.checking.Id!.Value)!;
+		this.account = (InvestingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.account.Id)!;
+		this.otherAccount = (InvestingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.otherAccount.Id)!;
+		this.checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.checking.Id)!;
 		this.msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
 		this.appl = this.DocumentViewModel.AssetsPanel.FindAsset("Apple") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
 	}

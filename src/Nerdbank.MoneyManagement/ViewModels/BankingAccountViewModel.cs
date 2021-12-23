@@ -26,9 +26,9 @@ public class BankingAccountViewModel : AccountViewModel
 			if (this.transactions is null)
 			{
 				this.transactions = new(TransactionSort.Instance);
-				if (this.MoneyFile is object && this.Id.HasValue)
+				if (this.MoneyFile is object && this.IsPersisted)
 				{
-					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id.Value);
+					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id);
 					foreach (Transaction transaction in transactions)
 					{
 						BankingTransactionViewModel transactionViewModel = new(this, transaction);
@@ -104,8 +104,13 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	public override BankingTransactionViewModel? FindTransaction(int id)
+	public override BankingTransactionViewModel? FindTransaction(int? id)
 	{
+		if (id is null or 0)
+		{
+			return null;
+		}
+
 		foreach (BankingTransactionViewModel transactionViewModel in this.Transactions)
 		{
 			if (transactionViewModel.Model?.Id == id)
@@ -143,7 +148,7 @@ public class BankingAccountViewModel : AccountViewModel
 				}
 			}
 		}
-		else if (transaction.ParentTransactionId.HasValue && this.FindTransaction(transaction.ParentTransactionId.Value) is { } parentTransactionViewModel)
+		else if (this.FindTransaction(transaction.ParentTransactionId) is { } parentTransactionViewModel)
 		{
 			SplitTransactionViewModel? splitViewModel = parentTransactionViewModel.Splits.FirstOrDefault(s => s.Id == transaction.Id);
 			if (splitViewModel is object)
@@ -158,11 +163,7 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 		else if (!removedFromAccount)
 		{
-			// This may be a new transaction we need to add. Only add top-level transactions or foreign splits.
-			if (transaction.ParentTransactionId is null || this.FindTransaction(transaction.ParentTransactionId.Value) is null)
-			{
-				this.transactions.Add(new BankingTransactionViewModel(this, transaction));
-			}
+			this.transactions.Add(new BankingTransactionViewModel(this, transaction));
 		}
 	}
 
@@ -347,9 +348,9 @@ public class BankingAccountViewModel : AccountViewModel
 				return order;
 			}
 
-			order = x.Id is null
-				? (y.Id is null ? 0 : -1)
-				: (y.Id is null) ? 1 : 0;
+			order = x.Id == 0
+				? (y.Id == 0 ? 0 : -1)
+				: (y.Id == 0) ? 1 : 0;
 			if (order != 0)
 			{
 				return order;

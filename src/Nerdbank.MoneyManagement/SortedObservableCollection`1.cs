@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -9,7 +8,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft;
 
-namespace Nerdbank.MoneyManagement.ViewModels;
+namespace Nerdbank.MoneyManagement;
 
 /// <summary>
 /// A sorted, observable collection.

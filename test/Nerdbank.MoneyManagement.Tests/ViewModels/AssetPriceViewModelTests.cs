@@ -49,7 +49,7 @@ public class AssetPriceViewModelTests : MoneyTestBase
 	{
 		var model = new AssetPrice
 		{
-			AssetId = this.msft.Id!.Value,
+			AssetId = this.msft.Id,
 			When = DateTime.Now,
 			ReferenceAssetId = this.Money.PreferredAssetId,
 			PriceInReferenceAsset = 10,

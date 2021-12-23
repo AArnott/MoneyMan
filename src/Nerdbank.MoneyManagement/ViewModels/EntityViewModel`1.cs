@@ -41,10 +41,10 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 	/// <summary>
 	/// Gets the primary key for this entity.
 	/// </summary>
-	public int? Id { get; private set; }
+	public int Id { get; private set; }
 
 	/// <inheritdoc cref="ModelBase.IsPersisted"/>
-	public bool IsPersisted => this.Model?.IsPersisted is true;
+	public bool IsPersisted => this.Id > 0;
 
 	/// <summary>
 	/// Gets or sets a value indicating whether this entity has been changed since <see cref="ApplyTo(TEntity)"/> was last called.
@@ -122,7 +122,7 @@ public abstract class EntityViewModel<TEntity> : BindableBase, IDataErrorInfo
 	public void ApplyTo(TEntity model)
 	{
 		Requires.NotNull(model, nameof(model));
-		Requires.Argument(this.Id is null || model.Id == this.Id, nameof(model), "The provided object is not the original template.");
+		Requires.Argument(this.Id == 0 || model.Id == this.Id, nameof(model), "The provided object is not the original template.");
 		Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
 
 		this.ApplyToCore(model);

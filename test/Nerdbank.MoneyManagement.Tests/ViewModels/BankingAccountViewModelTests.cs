@@ -293,8 +293,8 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.Money.InsertAll(new ModelBase[]
 		{
-			new Transaction { CreditAmount = 10, CreditAccountId = this.checking.Id, CreditAssetId = this.checking.CurrencyAsset!.Id!.Value },
-			new Transaction { DebitAmount = 2, DebitAccountId = this.checking.Id, DebitAssetId = this.checking.CurrencyAsset!.Id!.Value },
+			new Transaction { CreditAmount = 10, CreditAccountId = this.checking.Id, CreditAssetId = this.checking.CurrencyAsset!.Id },
+			new Transaction { DebitAmount = 2, DebitAccountId = this.checking.Id, DebitAssetId = this.checking.CurrencyAsset!.Id },
 		});
 
 		this.AssertNowAndAfterReload(delegate
@@ -613,7 +613,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	public void SplitTransactionMembersDoNotAppearAsTopLevelTransactionsInHomeAccount()
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
-		int idOfASplit = tx.Splits.First().Id!.Value;
+		int idOfASplit = tx.Splits.First().Id;
 
 		this.AssertNowAndAfterReload(delegate
 		{

@@ -88,7 +88,7 @@ public class AssetViewModel : EntityViewModel<Asset>
 	/// <summary>
 	/// Gets a value indicating whether <see cref="Type"/> can be changed.
 	/// </summary>
-	public bool TypeIsReadOnly => this.typeIsReadOnly ??= this.Id is not null && this.MoneyFile?.IsAssetInUse(this.Id.Value) is true;
+	public bool TypeIsReadOnly => this.typeIsReadOnly ??= this.MoneyFile?.IsAssetInUse(this.Id) is true;
 
 	/// <inheritdoc cref="Asset.CurrencySymbol"/>
 	public string? CurrencySymbol

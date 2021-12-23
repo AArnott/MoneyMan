@@ -552,6 +552,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyToThrowsOnEntityMismatch()
 	{
+		this.viewModel.Model!.Id = 1;
 		this.viewModel.CopyFrom(this.viewModel.Model!);
 		Assert.Throws<ArgumentException>(() => this.viewModel.ApplyTo(new Transaction { Id = this.viewModel.Model!.Id + 1 }));
 	}
@@ -723,12 +724,12 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	{
 		base.ReloadViewModel();
 
-		this.account = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.account.Id!.Value);
-		this.otherAccount = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.otherAccount.Id!.Value);
+		this.account = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.account.Id);
+		this.otherAccount = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.otherAccount.Id);
 
-		if (this.viewModel.Id.HasValue)
+		if (this.viewModel.IsPersisted)
 		{
-			this.viewModel = this.account.Transactions.Single(t => t.Id == this.viewModel.Id.Value);
+			this.viewModel = this.account.Transactions.Single(t => t.Id == this.viewModel.Id);
 		}
 	}
 

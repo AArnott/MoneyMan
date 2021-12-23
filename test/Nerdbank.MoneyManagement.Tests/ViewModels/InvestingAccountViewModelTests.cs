@@ -97,8 +97,8 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 
 		this.Money.InsertAll(new ModelBase[]
 		{
-			new Transaction { CreditAmount = 10, CreditAccountId = this.brokerage.Id, CreditAssetId = this.brokerage.CurrencyAsset!.Id!.Value },
-			new Transaction { DebitAmount = 2, DebitAccountId = this.brokerage.Id, DebitAssetId = this.brokerage.CurrencyAsset!.Id!.Value },
+			new Transaction { CreditAmount = 10, CreditAccountId = this.brokerage.Id, CreditAssetId = this.brokerage.CurrencyAsset!.Id },
+			new Transaction { DebitAmount = 2, DebitAccountId = this.brokerage.Id, DebitAssetId = this.brokerage.CurrencyAsset!.Id },
 		});
 		this.AssertNowAndAfterReload(delegate
 		{
@@ -114,18 +114,18 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		DateTime when = DateTime.Today.AddDays(-1);
 		this.Money.InsertAll(new ModelBase[]
 		{
-			new Transaction { CreditAmount = 2, CreditAccountId = this.brokerage.Id, CreditAssetId = msft.Id!.Value, When = when },
-			new AssetPrice { AssetId = msft.Id!.Value, ReferenceAssetId = this.Money.PreferredAssetId, When = when, PriceInReferenceAsset = 10 },
+			new Transaction { CreditAmount = 2, CreditAccountId = this.brokerage.Id, CreditAssetId = msft.Id, When = when },
+			new AssetPrice { AssetId = msft.Id, ReferenceAssetId = this.Money.PreferredAssetId, When = when, PriceInReferenceAsset = 10 },
 		});
 		Assert.Equal(20, this.brokerage.Value);
-		this.Money.Insert(new AssetPrice { AssetId = msft.Id!.Value, ReferenceAssetId = this.Money.PreferredAssetId, When = when.AddDays(1), PriceInReferenceAsset = 12 });
+		this.Money.Insert(new AssetPrice { AssetId = msft.Id, ReferenceAssetId = this.Money.PreferredAssetId, When = when.AddDays(1), PriceInReferenceAsset = 12 });
 		Assert.Equal(24, this.brokerage.Value);
 	}
 
 	[Fact]
 	public async Task DeleteTransaction()
 	{
-		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 5 });
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id, CreditAmount = 5 });
 		InvestingTransactionViewModel txViewModel = this.brokerage.Transactions[0];
 		this.DocumentViewModel.SelectedTransaction = txViewModel;
 		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
@@ -146,9 +146,9 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task DeleteTransactions()
 	{
-		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 5 });
-		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 12 });
-		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id!.Value, CreditAmount = 15 });
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id, CreditAmount = 5 });
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id, CreditAmount = 12 });
+		this.Money.Insert(new Transaction { CreditAccountId = this.brokerage.Id, CreditAmount = 15 });
 		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
 		this.DocumentViewModel.SelectedTransactions = this.brokerage.Transactions.Where(t => t.CreditAmount != 12).ToArray();
 		Assert.True(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());

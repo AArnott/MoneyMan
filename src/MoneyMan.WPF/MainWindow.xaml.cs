@@ -44,7 +44,7 @@ public partial class MainWindow : Window
 	protected override void OnClosed(EventArgs e)
 	{
 		this.closingTokenSource.Cancel();
-		this.ViewModel.Document.Dispose();
+		this.ViewModel.Document?.Dispose();
 		AppSettings.Default.Save();
 		base.OnClosed(e);
 	}
@@ -99,6 +99,7 @@ public partial class MainWindow : Window
 
 	private void FileSave(object sender, ExecutedRoutedEventArgs e)
 	{
+		Verify.Operation(this.ViewModel.Document is not null, "No file to be saved.");
 		this.ViewModel.Document.Save();
 	}
 
@@ -182,6 +183,11 @@ public partial class MainWindow : Window
 
 	private void UpdateSelectedTransactions()
 	{
+		if (this.ViewModel.Document is null)
+		{
+			return;
+		}
+
 		this.ViewModel.Document.SelectedTransactions = null;
 		if (this.BankingAccountsListView.SelectedItem?.GetType() is Type accountType)
 		{

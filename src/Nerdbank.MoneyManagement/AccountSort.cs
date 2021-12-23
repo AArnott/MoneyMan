@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace Nerdbank.MoneyManagement.ViewModels;
+using Nerdbank.MoneyManagement.ViewModels;
+
+namespace Nerdbank.MoneyManagement;
 
 /// <summary>
 /// Sorts <see cref="AccountViewModel"/> objects by <see cref="AccountViewModel.Name"/>.
@@ -31,9 +33,9 @@ internal class AccountSort : IOptimizedComparer<AccountViewModel>
 			return order;
 		}
 
-		order = x.Id is null
-			? (y.Id is null ? 0 : -1)
-			: (y.Id is null) ? 1 : 0;
+		order = x.Id == 0
+			? (y.Id == 0 ? 0 : -1)
+			: (y.Id == 0) ? 1 : 0;
 		if (order != 0)
 		{
 			return order;

@@ -342,6 +342,11 @@ WHERE [Balances].[AccountId] = ?
 
 	internal bool IsAssetInUse(int assetId)
 	{
+		if (assetId == 0)
+		{
+			return false;
+		}
+
 		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Account)}"" WHERE ""{nameof(Account.CurrencyAssetId)}"" == ? LIMIT 1";
 		if (this.ExecuteScalar<int>(sql, assetId) > 0)
 		{
@@ -362,7 +367,7 @@ WHERE [Balances].[AccountId] = ?
 		string sql = $@"UPDATE ""{nameof(Transaction)}""
 SET ""{nameof(Transaction.CategoryId)}"" = ?
 WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
-		this.connection.Execute(sql, newId);
+		this.connection.Execute(sql, newId == 0 ? null : newId);
 	}
 
 	internal List<Transaction> GetTopLevelTransactionsFor(int accountId)

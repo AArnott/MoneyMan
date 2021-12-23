@@ -25,9 +25,9 @@ public class InvestingAccountViewModel : AccountViewModel
 			if (this.transactions is null)
 			{
 				this.transactions = new(TransactionSort.Instance);
-				if (this.MoneyFile is object && this.Id.HasValue)
+				if (this.MoneyFile is object && this.IsPersisted)
 				{
-					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id.Value);
+					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id);
 					foreach (Transaction transaction in transactions)
 					{
 						InvestingTransactionViewModel transactionViewModel = new(this, transaction);
@@ -75,8 +75,13 @@ public class InvestingAccountViewModel : AccountViewModel
 		}
 	}
 
-	public override InvestingTransactionViewModel? FindTransaction(int id)
+	public override InvestingTransactionViewModel? FindTransaction(int? id)
 	{
+		if (id is null or 0)
+		{
+			return null;
+		}
+
 		foreach (InvestingTransactionViewModel transactionViewModel in this.Transactions)
 		{
 			if (transactionViewModel.Model?.Id == id)
@@ -117,7 +122,7 @@ public class InvestingAccountViewModel : AccountViewModel
 		else if (!removedFromAccount)
 		{
 			// This may be a new transaction we need to add. Only add top-level transactions or foreign splits.
-			if (transaction.ParentTransactionId is null || this.FindTransaction(transaction.ParentTransactionId.Value) is null)
+			if (this.FindTransaction(transaction.ParentTransactionId) is null)
 			{
 				this.transactions.Add(new InvestingTransactionViewModel(this, transaction));
 			}
@@ -232,9 +237,9 @@ public class InvestingAccountViewModel : AccountViewModel
 				return order;
 			}
 
-			order = x.Id is null
-				? (y.Id is null ? 0 : -1)
-				: (y.Id is null) ? 1 : 0;
+			order = x.Id == 0
+				? (y.Id == 0 ? 0 : -1)
+				: (y.Id == 0) ? 1 : 0;
 			if (order != 0)
 			{
 				return order;

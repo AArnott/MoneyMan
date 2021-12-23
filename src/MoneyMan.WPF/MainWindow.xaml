@@ -43,14 +43,14 @@
 		</Style>
 	</Window.Resources>
 	<Window.InputBindings>
-		<KeyBinding Command="{Binding Document.SaveCommand, Source={StaticResource viewModel}}" Key="S" Modifiers="Ctrl" />
+		<KeyBinding Command="{Binding FileSaveCommand, Source={StaticResource viewModel}}" Key="S" Modifiers="Ctrl" />
 	</Window.InputBindings>
 	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
 		<Menu DockPanel.Dock="Top">
 			<MenuItem Header="_File">
 				<MenuItem Header="_New" Command="ApplicationCommands.New" />
 				<MenuItem Header="_Open" Command="ApplicationCommands.Open" />
-				<MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S" />
+				<MenuItem Header="_Save" Command="{Binding FileSaveCommand, Source={StaticResource viewModel}}" InputGestureText="Ctrl+S" />
 				<MenuItem Header="_Close" Command="{Binding FileCloseCommand, Source={StaticResource viewModel}}" />
 			</MenuItem>
 		</Menu>
@@ -75,7 +75,7 @@
 		</StatusBar>
 		<TabControl TabStripPlacement="Bottom"
 					SelectedIndex="{Binding SelectedViewIndex, Converter={StaticResource enumToOrdinalConverter}}"
-					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}}">
+					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}, Source={StaticResource viewModel}}">
 			<TabItem Header="{Binding Title}" DataContext="{Binding BankingPanel}">
 				<TabItem.Resources>
 					<CollectionViewSource Source="{Binding Accounts}" x:Key="accounts" IsLiveGroupingRequested="True">

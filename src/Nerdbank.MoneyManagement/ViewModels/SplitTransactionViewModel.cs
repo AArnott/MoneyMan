@@ -64,7 +64,12 @@ public class SplitTransactionViewModel : TransactionViewModel
 	{
 		Requires.NotNull(split, nameof(split));
 
-		split.ParentTransactionId = this.ParentTransaction.Id ?? throw new InvalidOperationException("Cannot save a split before its parent transaction.");
+		if (!this.ParentTransaction.IsPersisted)
+		{
+			throw new InvalidOperationException("Cannot save a split before its parent transaction.");
+		}
+
+		split.ParentTransactionId = this.ParentTransaction.Id;
 		split.Memo = this.Memo;
 		split.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
