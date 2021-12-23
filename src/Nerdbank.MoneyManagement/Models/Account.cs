@@ -49,8 +49,13 @@ public class Account : ModelBase
 
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> used as the currency for this account,
-	/// when <see cref="Type"/> is set to <see cref="AccountType.Banking"/>.
+	/// if the account supports currencies.
 	/// </summary>
+	/// <remarks>
+	/// When <see cref="Type"/> is <see cref="AccountType.Banking" /> this is expected to always have a value.
+	/// For <see cref="AccountType.Investing"/> accounts this may be null if the account does not support a single currency.
+	/// For example an account that represents many cryptocurrencies but no fiat currency may decide to leave this unset.
+	/// </remarks>
 	public int? CurrencyAssetId { get; set; }
 
 	private string? DebuggerDisplay => this.Name;

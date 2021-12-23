@@ -52,5 +52,5 @@ public class Asset : ModelBase
 	/// </summary>
 	public int? CurrencyDecimalDigits { get; set; }
 
-	private string? DebuggerDisplay => this.Name;
+	private string? DebuggerDisplay => string.IsNullOrEmpty(this.TickerSymbol) ? this.Name : $"{this.Name} ({this.TickerSymbol})";
 }
