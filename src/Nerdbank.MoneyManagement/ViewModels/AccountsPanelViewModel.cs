@@ -166,7 +166,7 @@ public class AccountsPanelViewModel : BindableBase
 		{
 			using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted account \"{accountViewModel.Name}\"", accountViewModel.Model);
 			this.documentViewModel.MoneyFile.Delete(accountViewModel.Model);
-}
+		}
 
 		if (accountViewModel.CurrencyAsset is object)
 		{

@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Text;
-using Xunit.Abstractions;
 
 public class XunitTraceListener : TraceListener
 {

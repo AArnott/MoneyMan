@@ -4,7 +4,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
