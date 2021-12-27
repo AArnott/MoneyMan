@@ -121,12 +121,6 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void ApplyTo_Null()
-	{
-		Assert.Throws<ArgumentNullException>(() => this.checking.ApplyTo(null!));
-	}
-
-	[Fact]
 	public void ApplyTo()
 	{
 		this.checking.Name = "some name";
@@ -134,7 +128,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.checking.Type = Account.AccountType.Investing;
 		this.checking.CurrencyAsset = this.alternateCurrency;
 
-		this.checking.ApplyTo(this.checking.Model!);
+		this.checking.ApplyToModel();
 
 		Assert.Equal(this.checking.Name, this.checking.Model!.Name);
 		Assert.Equal(this.checking.IsClosed, this.checking.Model.IsClosed);

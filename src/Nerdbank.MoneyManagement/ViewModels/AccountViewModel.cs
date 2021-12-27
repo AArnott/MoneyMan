@@ -14,8 +14,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	private bool isClosed;
 	private Account.AccountType type;
 
-	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
-		: base(documentViewModel.MoneyFile)
+	public AccountViewModel(Account model, DocumentViewModel documentViewModel)
+		: base(documentViewModel.MoneyFile, model)
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
 		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.TypeIsReadOnly));
@@ -24,10 +24,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		this.AutoSave = true;
 
 		this.DocumentViewModel = documentViewModel;
-		if (model is object)
-		{
-			this.CopyFrom(model);
-		}
+		this.CopyFrom(this.Model);
 	}
 
 	[Required]
@@ -113,7 +110,6 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	internal static AccountViewModel Create(Account model, DocumentViewModel documentViewModel)
 	{
 		AccountViewModel accountViewModel = Create(model, model.Type, documentViewModel);
-		accountViewModel.CopyFrom(model);
 		return accountViewModel;
 	}
 
@@ -123,7 +119,6 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	/// <returns>A new instance of <see cref="AccountViewModel"/>.</returns>
 	internal AccountViewModel Recreate()
 	{
-		Verify.Operation(this.Model is object, "Model must exist.");
 		AccountViewModel newViewModel = Create(this.Model, this.Type, this.DocumentViewModel);
 
 		// Copy over the base view model properties manually in case it wasn't in a valid state to copy to the model.
@@ -164,34 +159,32 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		return base.IsPersistedProperty(propertyName);
 	}
 
-	protected override void ApplyToCore(Account account)
+	protected override void ApplyToCore()
 	{
-		Requires.NotNull(account, nameof(account));
-
-		account.Name = this.name;
-		account.IsClosed = this.IsClosed;
-		account.Type = this.Type;
-		account.CurrencyAssetId = this.CurrencyAsset?.Id;
+		this.Model.Name = this.name;
+		this.Model.IsClosed = this.IsClosed;
+		this.Model.Type = this.Type;
+		this.Model.CurrencyAssetId = this.CurrencyAsset?.Id;
 	}
 
-	protected override void CopyFromCore(Account account)
+	protected override void CopyFromCore()
 	{
-		this.Name = account.Name;
-		this.IsClosed = account.IsClosed;
-		if (account.Type != this.type)
+		this.Name = this.Model.Name;
+		this.IsClosed = this.Model.IsClosed;
+		if (this.Model.Type != this.type)
 		{
-			this.type = account.Type;
+			this.type = this.Model.Type;
 			this.OnPropertyChanged(nameof(this.Type));
 		}
 
-		this.CurrencyAsset = this.DocumentViewModel.GetAsset(account.CurrencyAssetId);
-		if (account.IsPersisted)
+		this.CurrencyAsset = this.DocumentViewModel.GetAsset(this.Model.CurrencyAssetId);
+		if (this.Model.IsPersisted)
 		{
-			this.Value = this.MoneyFile.GetValue(account);
+			this.Value = this.MoneyFile.GetValue(this.Model);
 		}
 	}
 
-	private static AccountViewModel Create(Account? model, Account.AccountType type, DocumentViewModel documentViewModel)
+	private static AccountViewModel Create(Account model, Account.AccountType type, DocumentViewModel documentViewModel)
 	{
 		return type switch
 		{

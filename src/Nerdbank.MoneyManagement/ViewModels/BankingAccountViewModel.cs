@@ -11,11 +11,12 @@ public class BankingAccountViewModel : AccountViewModel
 {
 	private SortedObservableCollection<BankingTransactionViewModel>? transactions;
 
-	public BankingAccountViewModel(Account? model, DocumentViewModel documentViewModel)
+	public BankingAccountViewModel(Account model, DocumentViewModel documentViewModel)
 		: base(model, documentViewModel)
 	{
 		this.Type = Account.AccountType.Banking;
 		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.CurrencyAssetIsReadOnly));
+		this.CopyFrom(model);
 	}
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)] // It's lazily initialized, and we don't want the debugger to trip over it.
@@ -61,9 +62,7 @@ public class BankingAccountViewModel : AccountViewModel
 		// Make sure our collection has been initialized by now.
 		_ = this.Transactions;
 
-		BankingTransactionViewModel viewModel = new(this, null);
-		viewModel.When = DateTime.Now;
-		viewModel.Model = new();
+		BankingTransactionViewModel viewModel = new(this, new Transaction { When = DateTime.Now });
 
 		_ = this.Transactions; // make sure our collection is initialized.
 		this.transactions!.Add(viewModel);
@@ -79,22 +78,16 @@ public class BankingAccountViewModel : AccountViewModel
 		var bankingTransaction = (BankingTransactionViewModel)transaction;
 		bankingTransaction.ThrowIfSplitInForeignAccount();
 
-		if (bankingTransaction.Model is object)
+		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction.Model);
+		foreach (SplitTransactionViewModel split in bankingTransaction.Splits)
 		{
-			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction.Model);
-			foreach (SplitTransactionViewModel split in bankingTransaction.Splits)
-			{
-				if (split.Model is object)
-				{
-					this.MoneyFile.Delete(split.Model);
-				}
-			}
+			this.MoneyFile.Delete(split.Model);
+		}
 
-			if (!this.MoneyFile.Delete(bankingTransaction.Model))
-			{
-				// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
-				this.RemoveTransactionFromViewModel(bankingTransaction);
-			}
+		if (!this.MoneyFile.Delete(bankingTransaction.Model))
+		{
+			// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
+			this.RemoveTransactionFromViewModel(bankingTransaction);
 		}
 
 		if (!bankingTransaction.IsPersisted)
@@ -113,7 +106,7 @@ public class BankingAccountViewModel : AccountViewModel
 
 		foreach (BankingTransactionViewModel transactionViewModel in this.Transactions)
 		{
-			if (transactionViewModel.Model?.Id == id)
+			if (transactionViewModel.Model.Id == id)
 			{
 				return transactionViewModel;
 			}
@@ -228,9 +221,9 @@ public class BankingAccountViewModel : AccountViewModel
 		return base.IsPersistedProperty(propertyName);
 	}
 
-	protected override void CopyFromCore(Account account)
+	protected override void CopyFromCore()
 	{
-		base.CopyFromCore(account);
+		base.CopyFromCore();
 
 		// Force reinitialization.
 		this.transactions = null;

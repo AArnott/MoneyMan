@@ -62,8 +62,6 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
-		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
-
 		this.viewModel.Amount = this.amount;
 		this.viewModel.Memo = this.memo;
 		this.viewModel.ApplyToModel();

@@ -17,8 +17,8 @@ public class SplitTransactionViewModel : TransactionViewModel
 	private string? memo;
 	private ITransactionTarget? categoryOrTransfer;
 
-	public SplitTransactionViewModel(BankingTransactionViewModel parent, Transaction? splitTransaction)
-		: base(parent.ThisAccount)
+	public SplitTransactionViewModel(BankingTransactionViewModel parent, Transaction splitTransaction)
+		: base(parent.ThisAccount, splitTransaction)
 	{
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
 
@@ -60,76 +60,72 @@ public class SplitTransactionViewModel : TransactionViewModel
 
 	private string DebuggerDisplay => $"Split ({this.Id}): {this.Memo} {this.CategoryOrTransfer?.Name} {this.Amount}";
 
-	protected override void ApplyToCore(Transaction split)
+	protected override void ApplyToCore()
 	{
-		Requires.NotNull(split, nameof(split));
-
 		if (!this.ParentTransaction.IsPersisted)
 		{
 			throw new InvalidOperationException("Cannot save a split before its parent transaction.");
 		}
 
-		split.ParentTransactionId = this.ParentTransaction.Id;
-		split.Memo = this.Memo;
-		split.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
+		this.Model.ParentTransactionId = this.ParentTransaction.Id;
+		this.Model.Memo = this.Memo;
+		this.Model.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
 		if (this.Amount < 0)
 		{
-			split.DebitAccountId = this.ThisAccount.Id;
-			split.DebitAmount = -this.Amount;
-			split.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
+			this.Model.DebitAccountId = this.ThisAccount.Id;
+			this.Model.DebitAmount = -this.Amount;
+			this.Model.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
 			if (this.CategoryOrTransfer is AccountViewModel xfer)
 			{
-				split.CreditAccountId = xfer.Id;
-				split.CreditAmount = -this.Amount;
-				split.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
+				this.Model.CreditAccountId = xfer.Id;
+				this.Model.CreditAmount = -this.Amount;
+				this.Model.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
 			}
 			else
 			{
-				split.CreditAccountId = null;
-				split.CreditAmount = null;
-				split.CreditAssetId = null;
+				this.Model.CreditAccountId = null;
+				this.Model.CreditAmount = null;
+				this.Model.CreditAssetId = null;
 			}
 		}
 		else
 		{
-			split.CreditAccountId = this.ThisAccount.Id;
-			split.CreditAmount = this.Amount;
-			split.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
+			this.Model.CreditAccountId = this.ThisAccount.Id;
+			this.Model.CreditAmount = this.Amount;
+			this.Model.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
 			if (this.CategoryOrTransfer is AccountViewModel xfer)
 			{
-				split.DebitAccountId = xfer.Id;
-				split.DebitAmount = this.Amount;
-				split.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
+				this.Model.DebitAccountId = xfer.Id;
+				this.Model.DebitAmount = this.Amount;
+				this.Model.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
 			}
 			else
 			{
-				split.DebitAccountId = null;
-				split.DebitAmount = null;
-				split.DebitAssetId = null;
+				this.Model.DebitAccountId = null;
+				this.Model.DebitAmount = null;
+				this.Model.DebitAssetId = null;
 			}
 		}
 	}
 
-	protected override void CopyFromCore(Transaction split)
+	protected override void CopyFromCore()
 	{
-		Requires.NotNull(split, nameof(split));
-
 		this.Amount =
-			split.CreditAccountId == this.ThisAccount.Id ? (split.CreditAmount ?? 0) :
-			split.DebitAccountId == this.ThisAccount.Id ? (-split.DebitAmount ?? 0) :
+			this.Model.CreditAccountId == this.ThisAccount.Id ? (this.Model.CreditAmount ?? 0) :
+			this.Model.DebitAccountId == this.ThisAccount.Id ? (-this.Model.DebitAmount ?? 0) :
 			0;
-		this.Memo = split.Memo;
+		this.Memo = this.Model.Memo;
 
-		if (split.CategoryId is int categoryId)
+		if (this.Model.CategoryId is int categoryId)
 		{
 			this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException();
 		}
-		else if (split.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
+		else if (this.Model.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
 		{
 			this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException();
 		}
-		else if (split.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
+		else if (this.Model.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
 		{
 			this.CategoryOrTransfer = this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException();
 		}

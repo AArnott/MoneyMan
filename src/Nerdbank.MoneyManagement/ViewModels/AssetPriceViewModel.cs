@@ -13,18 +13,14 @@ public class AssetPriceViewModel : EntityViewModel<AssetPrice>
 	private AssetViewModel? referenceAsset;
 	private decimal priceInReferenceAsset;
 
-	public AssetPriceViewModel(DocumentViewModel documentViewModel, AssetPrice? model)
-		: base(documentViewModel.MoneyFile)
+	public AssetPriceViewModel(DocumentViewModel documentViewModel, AssetPrice model)
+		: base(documentViewModel.MoneyFile, model)
 	{
 		this.RegisterDependentProperty(nameof(this.Price), nameof(this.PriceFormatted));
 
 		this.AutoSave = true;
-		this.Model = model;
 		this.documentViewModel = documentViewModel;
-		if (model is object)
-		{
-			this.CopyFrom(model);
-		}
+		this.CopyFrom(this.Model);
 	}
 
 	[Required]
@@ -66,19 +62,19 @@ public class AssetPriceViewModel : EntityViewModel<AssetPrice>
 		return base.IsPersistedProperty(propertyName);
 	}
 
-	protected override void ApplyToCore(AssetPrice model)
+	protected override void ApplyToCore()
 	{
-		model.AssetId = this.Asset?.Id ?? 0;
-		model.When = this.When;
-		model.ReferenceAssetId = this.ReferenceAsset?.Id ?? 0;
-		model.PriceInReferenceAsset = this.Price;
+		this.Model.AssetId = this.Asset?.Id ?? 0;
+		this.Model.When = this.When;
+		this.Model.ReferenceAssetId = this.ReferenceAsset?.Id ?? 0;
+		this.Model.PriceInReferenceAsset = this.Price;
 	}
 
-	protected override void CopyFromCore(AssetPrice model)
+	protected override void CopyFromCore()
 	{
-		this.Asset = this.documentViewModel.GetAsset(model.AssetId);
-		this.When = model.When;
-		this.ReferenceAsset = this.documentViewModel.GetAsset(model.ReferenceAssetId);
-		this.Price = model.PriceInReferenceAsset;
+		this.Asset = this.documentViewModel.GetAsset(this.Model.AssetId);
+		this.When = this.Model.When;
+		this.ReferenceAsset = this.documentViewModel.GetAsset(this.Model.ReferenceAssetId);
+		this.Price = this.Model.PriceInReferenceAsset;
 	}
 }

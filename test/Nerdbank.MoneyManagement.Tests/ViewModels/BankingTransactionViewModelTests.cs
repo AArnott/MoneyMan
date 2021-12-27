@@ -481,16 +481,10 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void ApplyTo_Null()
-	{
-		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
-	}
-
-	[Fact]
 	public void ApplyTo()
 	{
 		Transaction transaction = new Transaction();
-		BankingTransactionViewModel viewModel = new(this.account, null);
+		BankingTransactionViewModel viewModel = new(this.account, transaction);
 
 		viewModel.Payee = this.payee;
 		viewModel.Amount = this.amount;
@@ -498,7 +492,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		viewModel.Memo = this.memo;
 		viewModel.CheckNumber = this.checkNumber;
 		viewModel.Cleared = this.cleared;
-		viewModel.ApplyTo(transaction);
+		viewModel.ApplyToModel();
 
 		Assert.Null(transaction.DebitAmount);
 		Assert.Null(transaction.DebitAccountId);
@@ -547,14 +541,6 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 
 		Transaction splitModel2 = this.Money.Transactions.First(s => s.Id == split2.Id);
 		Assert.Equal(split2.Amount, splitModel2.CreditAmount);
-	}
-
-	[Fact]
-	public void ApplyToThrowsOnEntityMismatch()
-	{
-		this.viewModel.Model!.Id = 1;
-		this.viewModel.CopyFrom(this.viewModel.Model!);
-		Assert.Throws<ArgumentException>(() => this.viewModel.ApplyTo(new Transaction { Id = this.viewModel.Model!.Id + 1 }));
 	}
 
 	[Fact]

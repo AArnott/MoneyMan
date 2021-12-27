@@ -222,7 +222,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	public bool Delete(ModelBase model)
 	{
 		Verify.NotDisposed(this);
-		int deletedCount = this.connection.Delete(model);
+		int deletedCount = model.IsPersisted ? this.connection.Delete(model) : 0;
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
 		return deletedCount > 0;
 	}
@@ -400,10 +400,7 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 
 	private static DateTime GetSqlBeforeDateOperand(DateTime asOfDate) => asOfDate.AddDays(1).Date;
 
-	private TableMapping GetTableMapping(ModelBase model)
-	{
-		return this.connection.TableMappings.Single(tm => tm.TableName == model.GetType().Name);
-	}
+	private TableMapping GetTableMapping(ModelBase model) => this.connection.GetMapping(model.GetType());
 
 	private T ExecuteScalar<T>(string query, params object[] args)
 	{

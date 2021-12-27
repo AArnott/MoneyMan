@@ -157,8 +157,6 @@ public class AssetViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
-		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
-
 		Asset? asset = this.viewModel.Model!;
 
 		this.viewModel.Name = "some name";
@@ -167,7 +165,7 @@ public class AssetViewModelTests : MoneyTestBase
 		this.viewModel.CurrencySymbol = "ⓩ";
 		this.viewModel.CurrencyDecimalDigits = 8;
 
-		this.viewModel.ApplyTo(asset);
+		this.viewModel.ApplyToModel();
 		Assert.Equal(this.viewModel.Name, asset.Name);
 		Assert.Equal(this.viewModel.TickerSymbol, asset.TickerSymbol);
 		Assert.Equal(this.viewModel.Type, asset.Type);
@@ -175,7 +173,7 @@ public class AssetViewModelTests : MoneyTestBase
 		Assert.Equal(this.viewModel.CurrencyDecimalDigits, asset.CurrencyDecimalDigits);
 
 		this.viewModel.TickerSymbol = " ";
-		this.viewModel.ApplyTo(asset);
+		this.viewModel.ApplyToModel();
 		Assert.Null(asset.TickerSymbol);
 
 		// Test auto-save behavior.
@@ -189,8 +187,6 @@ public class AssetViewModelTests : MoneyTestBase
 	[Fact]
 	public void CopyFrom()
 	{
-		Assert.Throws<ArgumentNullException>(() => this.viewModel.CopyFrom(null!));
-
 		var asset = new Asset
 		{
 			Id = 5,
@@ -201,7 +197,7 @@ public class AssetViewModelTests : MoneyTestBase
 			CurrencyDecimalDigits = 8,
 		};
 
-		this.viewModel.CopyFrom(asset);
+		this.viewModel = new(asset, this.DocumentViewModel);
 
 		Assert.Equal(asset.Id, this.viewModel.Id);
 		Assert.Equal(asset.Name, this.viewModel.Name);

@@ -82,10 +82,7 @@ public class CategoriesPanelViewModel : BindableBase
 			return this.AddingCategory;
 		}
 
-		CategoryViewModel newCategoryViewModel = new(null, this.documentViewModel.MoneyFile)
-		{
-			Model = new(),
-		};
+		CategoryViewModel newCategoryViewModel = new(new Category(), this.documentViewModel.MoneyFile);
 
 		this.categories.Add(newCategoryViewModel);
 		this.SelectedCategory = newCategoryViewModel;
@@ -111,11 +108,8 @@ public class CategoriesPanelViewModel : BindableBase
 	public void DeleteCategory(CategoryViewModel categoryViewModel)
 	{
 		this.categories.Remove(categoryViewModel);
-		if (categoryViewModel.Model is object)
-		{
-			using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel.Model);
-			this.documentViewModel.MoneyFile.Delete(categoryViewModel.Model);
-		}
+		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel.Model);
+		this.documentViewModel.MoneyFile.Delete(categoryViewModel.Model);
 
 		if (this.SelectedCategory == categoryViewModel)
 		{
@@ -231,7 +225,7 @@ public class CategoriesPanelViewModel : BindableBase
 				{
 					List<CategoryViewModel> options = new(this.viewModel.Categories);
 					options.RemoveAll(cat => inUse.Contains(cat));
-					options.Insert(0, new CategoryViewModel(null, this.viewModel.documentViewModel.MoneyFile) { Name = "(clear assigned category)" });
+					options.Insert(0, new CategoryViewModel(new Category { Name = "(clear assigned category)" }, this.viewModel.documentViewModel.MoneyFile));
 
 					if (options.Count > 1)
 					{

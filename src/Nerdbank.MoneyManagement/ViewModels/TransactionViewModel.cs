@@ -5,8 +5,8 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 
 public abstract class TransactionViewModel : EntityViewModel<Transaction>
 {
-	public TransactionViewModel(AccountViewModel thisAccount)
-		: base(thisAccount.MoneyFile)
+	public TransactionViewModel(AccountViewModel thisAccount, Transaction model)
+		: base(thisAccount.MoneyFile, model)
 	{
 		this.ThisAccount = thisAccount;
 	}

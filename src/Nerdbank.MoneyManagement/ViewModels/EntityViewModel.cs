@@ -20,7 +20,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 			if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 			{
 				this.IsDirty = true;
-				if (this.MoneyFile.IsDisposed is not true && this.AutoSave && this.IsModelSet && string.IsNullOrEmpty(this.Error))
+				if (this.MoneyFile.IsDisposed is not true && this.AutoSave && string.IsNullOrEmpty(this.Error))
 				{
 					this.Save();
 				}
@@ -67,8 +67,6 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// Gets the file to which this view model should be saved or from which it should be refreshed.
 	/// </summary>
 	public MoneyFile MoneyFile { get; }
-
-	protected abstract bool IsModelSet { get; }
 
 	/// <summary>
 	/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.
@@ -123,10 +121,17 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// <summary>
 	/// Writes this view model to the underlying model.
 	/// </summary>
-	/// <exception cref="InvalidOperationException">Thrown if <see cref="IsModelSet"/> is <see langword="false" />.</exception>
-	public abstract void ApplyToModel();
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="Error"/> is non-empty.</exception>
+	public virtual void ApplyToModel()
+	{
+		Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
+		this.ApplyToCore();
+		this.IsDirty = false;
+	}
 
 	protected abstract void SaveCore();
+
+	protected abstract void ApplyToCore();
 
 	protected virtual bool IsPersistedProperty(string propertyName) => true;
 

@@ -13,15 +13,12 @@ public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
 	private string name = string.Empty;
 
 	public CategoryViewModel(Category? model, MoneyFile moneyFile)
-		: base(moneyFile)
+		: base(moneyFile, model)
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
 		this.AutoSave = true;
 
-		if (model is object)
-		{
-			this.CopyFrom(model);
-		}
+		this.CopyFrom(this.Model);
 	}
 
 	/// <inheritdoc cref="Category.Name"/>
@@ -40,14 +37,14 @@ public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
 
 	private string DebuggerDisplay => this.Name;
 
-	protected override void ApplyToCore(Category category)
+	protected override void ApplyToCore()
 	{
-		category.Name = this.name;
+		this.Model.Name = this.name;
 	}
 
-	protected override void CopyFromCore(Category category)
+	protected override void CopyFromCore()
 	{
-		this.Name = category.Name;
+		this.Name = this.Model.Name;
 	}
 
 	protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.TransferTargetName);
