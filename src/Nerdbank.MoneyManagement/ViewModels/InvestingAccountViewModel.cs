@@ -25,7 +25,7 @@ public class InvestingAccountViewModel : AccountViewModel
 			if (this.transactions is null)
 			{
 				this.transactions = new(TransactionSort.Instance);
-				if (this.MoneyFile is object && this.IsPersisted)
+				if (this.IsPersisted)
 				{
 					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id);
 					foreach (Transaction transaction in transactions)
@@ -57,7 +57,7 @@ public class InvestingAccountViewModel : AccountViewModel
 		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
 		var investingTransaction = (InvestingTransactionViewModel)transaction;
 
-		if (this.MoneyFile is object && investingTransaction.Model is object)
+		if (investingTransaction.Model is object)
 		{
 			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction.Model);
 

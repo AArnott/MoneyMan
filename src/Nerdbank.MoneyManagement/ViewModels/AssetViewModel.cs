@@ -23,13 +23,8 @@ public class AssetViewModel : EntityViewModel<Asset>
 	private string? currencySymbol;
 	private NumberFormatInfo? numberFormat;
 
-	public AssetViewModel()
-		: this(null, null)
-	{
-	}
-
-	public AssetViewModel(Asset? model, DocumentViewModel? documentViewModel)
-		: base(documentViewModel?.MoneyFile)
+	public AssetViewModel(Asset? model, DocumentViewModel documentViewModel)
+		: base(documentViewModel.MoneyFile)
 	{
 		this.RegisterDependentProperty(nameof(this.TickerSymbol), nameof(this.TickerOrName));
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TickerOrName));
@@ -88,7 +83,7 @@ public class AssetViewModel : EntityViewModel<Asset>
 	/// <summary>
 	/// Gets a value indicating whether <see cref="Type"/> can be changed.
 	/// </summary>
-	public bool TypeIsReadOnly => this.typeIsReadOnly ??= this.MoneyFile?.IsAssetInUse(this.Id) is true;
+	public bool TypeIsReadOnly => this.typeIsReadOnly ??= this.MoneyFile.IsAssetInUse(this.Id) is true;
 
 	/// <inheritdoc cref="Asset.CurrencySymbol"/>
 	public string? CurrencySymbol

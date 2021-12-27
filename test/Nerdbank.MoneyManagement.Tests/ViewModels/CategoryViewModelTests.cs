@@ -9,11 +9,12 @@ using Xunit.Abstractions;
 
 public class CategoryViewModelTests : MoneyTestBase
 {
-	private CategoryViewModel viewModel = new CategoryViewModel();
+	private CategoryViewModel viewModel;
 
 	public CategoryViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		 this.viewModel = new CategoryViewModel(null, this.Money);
 	}
 
 	[Fact]

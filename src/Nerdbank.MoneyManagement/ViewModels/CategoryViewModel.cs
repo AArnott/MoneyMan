@@ -12,12 +12,7 @@ public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
 {
 	private string name = string.Empty;
 
-	public CategoryViewModel()
-		: this(null, null)
-	{
-	}
-
-	public CategoryViewModel(Category? model, MoneyFile? moneyFile)
+	public CategoryViewModel(Category? model, MoneyFile moneyFile)
 		: base(moneyFile)
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));

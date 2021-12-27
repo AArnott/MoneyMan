@@ -26,7 +26,7 @@ public class BankingAccountViewModel : AccountViewModel
 			if (this.transactions is null)
 			{
 				this.transactions = new(TransactionSort.Instance);
-				if (this.MoneyFile is object && this.IsPersisted)
+				if (this.IsPersisted)
 				{
 					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id);
 					foreach (Transaction transaction in transactions)
@@ -79,7 +79,7 @@ public class BankingAccountViewModel : AccountViewModel
 		var bankingTransaction = (BankingTransactionViewModel)transaction;
 		bankingTransaction.ThrowIfSplitInForeignAccount();
 
-		if (this.MoneyFile is object && bankingTransaction.Model is object)
+		if (bankingTransaction.Model is object)
 		{
 			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction.Model);
 			foreach (SplitTransactionViewModel split in bankingTransaction.Splits)

@@ -185,7 +185,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		}
 
 		this.CurrencyAsset = this.DocumentViewModel.GetAsset(account.CurrencyAssetId);
-		if (this.MoneyFile is object && account.IsPersisted)
+		if (account.IsPersisted)
 		{
 			this.Value = this.MoneyFile.GetValue(account);
 		}
