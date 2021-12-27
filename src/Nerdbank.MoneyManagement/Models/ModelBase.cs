@@ -17,20 +17,4 @@ public abstract class ModelBase
 	/// Gets a value indicating whether this entity has already received an assigned primary key from the database.
 	/// </summary>
 	public bool IsPersisted => this.Id > 0;
-
-	/// <summary>
-	/// Saves this entity to the given <see cref="MoneyFile"/>.
-	/// </summary>
-	/// <param name="moneyFile">The file to write to.</param>
-	public void Save(MoneyFile moneyFile)
-	{
-		if (this.Id == 0)
-		{
-			moneyFile.Insert(this);
-		}
-		else
-		{
-			moneyFile.InsertOrReplace(this);
-		}
-	}
 }

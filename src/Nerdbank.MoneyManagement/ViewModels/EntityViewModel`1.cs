@@ -62,7 +62,7 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 	protected override void SaveCore()
 	{
 		this.Model ??= new();
-		this.Model.Save(this.MoneyFile);
+		this.MoneyFile.InsertOrReplace(this.Model);
 
 		// First insert of an entity assigns it an ID. Make sure the view model matches it.
 		this.Id = this.Model.Id;
