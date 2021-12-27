@@ -23,7 +23,6 @@ public class SplitTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
 
 		this.ParentTransaction = parent;
-		this.AutoSave = true;
 
 		if (splitTransaction is object)
 		{

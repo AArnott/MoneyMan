@@ -21,8 +21,6 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.TypeIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.Value), nameof(this.ValueFormatted));
 
-		this.AutoSave = true;
-
 		this.DocumentViewModel = documentViewModel;
 		this.CopyFrom(this.Model);
 	}

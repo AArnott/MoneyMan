@@ -32,8 +32,6 @@ public class AssetViewModel : EntityViewModel<Asset>
 		this.RegisterDependentProperty(nameof(this.CurrencyDecimalDigits), nameof(this.NumberFormat));
 		this.RegisterDependentProperty(nameof(this.CurrentPrice), nameof(this.CurrentPriceFormatted));
 
-		this.AutoSave = true;
-
 		this.documentViewModel = documentViewModel;
 		this.CopyFrom(this.Model);
 	}

@@ -14,7 +14,6 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 		: base(documentViewModel.MoneyFile, documentViewModel.MoneyFile.CurrentConfiguration)
 	{
 		this.documentViewModel = documentViewModel;
-		this.AutoSave = true;
 		this.CopyFrom(this.Model);
 	}
 

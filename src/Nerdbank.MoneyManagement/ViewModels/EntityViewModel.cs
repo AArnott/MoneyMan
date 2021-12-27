@@ -71,7 +71,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// <summary>
 	/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.
 	/// </summary>
-	protected bool AutoSave { get; set; }
+	protected bool AutoSave { get; set; } = true;
 
 	protected abstract ModelBase? UndoTarget { get; }
 

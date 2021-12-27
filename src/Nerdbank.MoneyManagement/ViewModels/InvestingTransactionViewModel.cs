@@ -52,8 +52,6 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.DebitAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
 
-		this.AutoSave = true;
-
 		this.CopyFrom(this.Model);
 	}
 

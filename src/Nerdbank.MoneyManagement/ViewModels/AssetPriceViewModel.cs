@@ -18,7 +18,6 @@ public class AssetPriceViewModel : EntityViewModel<AssetPrice>
 	{
 		this.RegisterDependentProperty(nameof(this.Price), nameof(this.PriceFormatted));
 
-		this.AutoSave = true;
 		this.documentViewModel = documentViewModel;
 		this.CopyFrom(this.Model);
 	}

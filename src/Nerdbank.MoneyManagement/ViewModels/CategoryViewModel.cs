@@ -16,7 +16,6 @@ public class CategoryViewModel : EntityViewModel<Category>, ITransactionTarget
 		: base(moneyFile, model)
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
-		this.AutoSave = true;
 
 		this.CopyFrom(this.Model);
 	}

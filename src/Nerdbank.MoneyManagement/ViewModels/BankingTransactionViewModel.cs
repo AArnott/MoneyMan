@@ -35,8 +35,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 	public BankingTransactionViewModel(BankingAccountViewModel thisAccount, Transaction transaction)
 		: base(thisAccount, transaction)
 	{
-		this.AutoSave = true;
-
 		this.CopyFrom(this.Model);
 
 		this.SplitCommand = new SplitCommandImpl(this);
