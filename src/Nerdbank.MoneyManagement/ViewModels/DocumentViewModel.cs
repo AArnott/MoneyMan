@@ -277,7 +277,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().ToHashSet());
 
-			if (accountViewModel.Model is object && accountViewModel.IsPersisted && impactedAccountIds.Contains(accountViewModel.Id))
+			if (accountViewModel.IsPersisted && impactedAccountIds.Contains(accountViewModel.Id))
 			{
 				accountViewModel.Value = this.MoneyFile.GetValue(accountViewModel.Model);
 

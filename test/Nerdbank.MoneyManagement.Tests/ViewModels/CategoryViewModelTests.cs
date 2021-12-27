@@ -1,19 +1,14 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
-
 public class CategoryViewModelTests : MoneyTestBase
 {
-	private CategoryViewModel viewModel = new CategoryViewModel();
+	private CategoryViewModel viewModel;
 
 	public CategoryViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.viewModel = new CategoryViewModel(null, this.Money);
 	}
 
 	[Fact]
@@ -54,11 +49,11 @@ public class CategoryViewModelTests : MoneyTestBase
 	{
 		this.viewModel = this.DocumentViewModel.CategoriesPanel.NewCategory();
 		this.viewModel.Name = "Hi";
-		Assert.Equal("Hi", this.viewModel.Model?.Name);
+		Assert.Equal("Hi", this.viewModel.Model.Name);
 		this.viewModel.Name = string.Empty;
 
 		// Assert that the model does *not* immediately pick up on the invalid state of the view model.
-		Assert.Equal("Hi", this.viewModel.Model?.Name);
+		Assert.Equal("Hi", this.viewModel.Model.Name);
 	}
 
 	[Fact]
@@ -68,7 +63,7 @@ public class CategoryViewModelTests : MoneyTestBase
 		Assert.Throws<InvalidOperationException>(() => this.viewModel.ApplyToModel());
 		this.viewModel.Name = "some name";
 		this.viewModel.ApplyToModel();
-		Assert.Equal(this.viewModel.Name, this.viewModel.Model?.Name);
+		Assert.Equal(this.viewModel.Name, this.viewModel.Model.Name);
 	}
 
 	[Fact]
@@ -87,25 +82,17 @@ public class CategoryViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
-		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
-
 		var category = new Category();
+		this.viewModel = new CategoryViewModel(category, this.Money);
 
 		this.viewModel.Name = "some name";
 
-		this.viewModel.ApplyTo(category);
+		this.viewModel.ApplyToModel();
 		Assert.Equal(this.viewModel.Name, category.Name);
 
 		// Test auto-save behavior.
 		this.viewModel.Name = "another name";
 		Assert.Equal(this.viewModel.Name, category.Name);
-	}
-
-	[Fact]
-	public void ApplyToThrowsOnEntityMismatch()
-	{
-		this.viewModel.CopyFrom(new Category { Id = 2, Name = "Groceries" });
-		Assert.Throws<ArgumentException>(() => this.viewModel.ApplyTo(new Category { Id = 4 }));
 	}
 
 	[Fact]

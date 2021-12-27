@@ -1,11 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
-
 /// <summary>
 /// Tests that span multiple view models to weave together a real user story.
 /// </summary>

@@ -11,10 +11,11 @@ public class InvestingAccountViewModel : AccountViewModel
 {
 	private SortedObservableCollection<InvestingTransactionViewModel>? transactions;
 
-	public InvestingAccountViewModel(Account? model, DocumentViewModel documentViewModel)
+	public InvestingAccountViewModel(Account model, DocumentViewModel documentViewModel)
 		: base(model, documentViewModel)
 	{
 		this.Type = Account.AccountType.Investing;
+		this.CopyFrom(model);
 	}
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)] // It's lazily initialized, and we don't want the debugger to trip over it.
@@ -25,7 +26,7 @@ public class InvestingAccountViewModel : AccountViewModel
 			if (this.transactions is null)
 			{
 				this.transactions = new(TransactionSort.Instance);
-				if (this.MoneyFile is object && this.IsPersisted)
+				if (this.IsPersisted)
 				{
 					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id);
 					foreach (Transaction transaction in transactions)
@@ -57,15 +58,12 @@ public class InvestingAccountViewModel : AccountViewModel
 		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
 		var investingTransaction = (InvestingTransactionViewModel)transaction;
 
-		if (this.MoneyFile is object && investingTransaction.Model is object)
-		{
-			using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction.Model);
+		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction.Model);
 
-			if (!this.MoneyFile.Delete(investingTransaction.Model))
-			{
-				// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
-				this.RemoveTransactionFromViewModel(investingTransaction);
-			}
+		if (!this.MoneyFile.Delete(investingTransaction.Model))
+		{
+			// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
+			this.RemoveTransactionFromViewModel(investingTransaction);
 		}
 
 		if (!investingTransaction.IsPersisted)
@@ -84,7 +82,7 @@ public class InvestingAccountViewModel : AccountViewModel
 
 		foreach (InvestingTransactionViewModel transactionViewModel in this.Transactions)
 		{
-			if (transactionViewModel.Model?.Id == id)
+			if (transactionViewModel.Model.Id == id)
 			{
 				return transactionViewModel;
 			}

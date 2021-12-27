@@ -3,7 +3,6 @@
 
 using System.Text;
 using Validation;
-using Xunit.Abstractions;
 
 internal class TestLoggerAdapter : TextWriter
 {

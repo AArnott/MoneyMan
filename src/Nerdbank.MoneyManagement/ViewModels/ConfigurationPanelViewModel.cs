@@ -11,11 +11,10 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 	private int? preferredAssetId;
 
 	public ConfigurationPanelViewModel(DocumentViewModel documentViewModel)
-		: base(documentViewModel.MoneyFile)
+		: base(documentViewModel.MoneyFile, documentViewModel.MoneyFile.CurrentConfiguration)
 	{
 		this.documentViewModel = documentViewModel;
-		this.AutoSave = true;
-		this.CopyFrom(documentViewModel.MoneyFile.CurrentConfiguration);
+		this.CopyFrom(this.Model);
 	}
 
 	public string Title => "Configuration";
@@ -29,14 +28,14 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 		set => this.SetProperty(ref this.preferredAssetId, value?.Id);
 	}
 
-	protected override void ApplyToCore(Configuration model)
+	protected override void ApplyToCore()
 	{
-		model.PreferredAssetId = this.preferredAssetId ?? 0;
+		this.Model.PreferredAssetId = this.preferredAssetId ?? 0;
 	}
 
-	protected override void CopyFromCore(Configuration model)
+	protected override void CopyFromCore()
 	{
-		this.preferredAssetId = model.PreferredAssetId;
+		this.preferredAssetId = this.Model.PreferredAssetId;
 		this.OnPropertyChanged(nameof(this.PreferredAsset));
 	}
 }

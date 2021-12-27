@@ -5,7 +5,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows.Input;
 using Microsoft;
-using Xunit;
 
 namespace Nerdbank.MoneyManagement.Tests;
 

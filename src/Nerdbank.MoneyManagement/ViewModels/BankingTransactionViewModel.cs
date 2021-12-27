@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Transactions;
 using System.Windows.Input;
 using PCLCommandBase;
 using Validation;
@@ -31,15 +32,10 @@ public class BankingTransactionViewModel : TransactionViewModel
 	private decimal balance;
 	private SplitTransactionViewModel? selectedSplit;
 
-	public BankingTransactionViewModel(BankingAccountViewModel thisAccount, Transaction? transaction)
-		: base(thisAccount)
+	public BankingTransactionViewModel(BankingAccountViewModel thisAccount, Transaction transaction)
+		: base(thisAccount, transaction)
 	{
-		this.AutoSave = true;
-
-		if (transaction is object)
-		{
-			this.CopyFrom(transaction);
-		}
+		this.CopyFrom(this.Model);
 
 		this.SplitCommand = new SplitCommandImpl(this);
 		this.DeleteSplitCommand = new DeleteSplitCommandImpl(this);
@@ -81,11 +77,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 			foreach (SplitTransactionViewModel split in this.Splits.Where(s => s.IsPersisted))
 			{
-				if (split.Model is object)
-				{
-					split.Model.When = value;
-					split.Save();
-				}
+				split.Model.When = value;
+				split.Save();
 			}
 		}
 	}
@@ -142,11 +135,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 			foreach (SplitTransactionViewModel split in this.Splits.Where(s => s.IsPersisted))
 			{
-				if (split.Model is object)
-				{
-					split.Model.Payee = value;
-					split.Save();
-				}
+				split.Model.Payee = value;
+				split.Save();
 			}
 		}
 	}
@@ -188,7 +178,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 			if (this.splits is null)
 			{
 				this.splits = new();
-				if (this.MoneyFile is object && this.IsPersisted)
+				if (this.IsPersisted)
 				{
 					SQLite.TableQuery<Transaction> splits = this.MoneyFile.Transactions
 						.Where(tx => tx.ParentTransactionId == this.Id);
@@ -222,12 +212,12 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// Gets a value indicating whether this "transaction" is really just synthesized to represent the split line item(s)
 	/// of a transaction in another account that transfer to/from this account.
 	/// </summary>
-	public bool IsSplitMemberOfParentTransaction => this.Model?.ParentTransactionId.HasValue is true;
+	public bool IsSplitMemberOfParentTransaction => this.Model.ParentTransactionId.HasValue is true;
 
 	/// <summary>
 	/// Gets a value indicating whether this is a member of a split transaction that appears (as its own top-level transaction) in another account (as a transfer).
 	/// </summary>
-	public bool IsSplitInForeignAccount => this.Model?.ParentTransactionId is int parentTransactionId && this.ThisAccount.FindTransaction(parentTransactionId) is null;
+	public bool IsSplitInForeignAccount => this.Model.ParentTransactionId is int parentTransactionId && this.ThisAccount.FindTransaction(parentTransactionId) is null;
 
 	public decimal Balance
 	{
@@ -254,7 +244,12 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 		_ = this.Splits; // ensure initialized
 		bool wasSplit = this.ContainsSplits;
-		SplitTransactionViewModel split = new(this, null)
+		Transaction splitModel = new Transaction
+		{
+			When = this.When,
+			Payee = this.Payee,
+		};
+		SplitTransactionViewModel split = new(this, splitModel)
 		{
 			Amount = wasSplit ? 0 : this.Amount,
 		};
@@ -267,11 +262,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 			this.CategoryOrTransfer = SplitCategoryPlaceholder.Singleton;
 
-			split.Model = new()
-			{
-				When = this.When,
-				Payee = this.Payee,
-			};
 			this.splits!.Add(split);
 		}
 
@@ -299,10 +289,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 			return;
 		}
 
-		if (split.Model is object)
-		{
-			this.ThisAccount.MoneyFile?.Delete(split.Model);
-		}
+		this.ThisAccount.MoneyFile.Delete(split.Model);
 
 		if (this.Splits.Count(s => s.IsPersisted) > 0)
 		{
@@ -366,8 +353,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	public BankingTransactionViewModel? GetSplitParent()
 	{
-		int? splitParentId = this.Model?.ParentTransactionId;
-		if (splitParentId is null || this.MoneyFile is null)
+		int? splitParentId = this.Model.ParentTransactionId;
+		if (splitParentId is null)
 		{
 			return null;
 		}
@@ -401,18 +388,16 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	internal void ThrowIfSplitInForeignAccount() => Verify.Operation(!this.IsSplitInForeignAccount, "This operation is not allowed when applied to a split transaction in the context of a transfer account. Retry on the split in the account of the top-level account.");
 
-	protected override void ApplyToCore(Transaction transaction)
+	protected override void ApplyToCore()
 	{
-		Requires.NotNull(transaction, nameof(transaction));
-
-		transaction.Payee = this.Payee;
-		transaction.When = this.When;
-		transaction.Memo = this.Memo;
-		transaction.CheckNumber = this.CheckNumber;
+		this.Model.Payee = this.Payee;
+		this.Model.When = this.When;
+		this.Model.Memo = this.Memo;
+		this.Model.CheckNumber = this.CheckNumber;
 
 		if (this.ContainsSplits)
 		{
-			transaction.CategoryId = Category.Split;
+			this.Model.CategoryId = Category.Split;
 			foreach (SplitTransactionViewModel split in this.Splits.ToList())
 			{
 				split.Save();
@@ -420,69 +405,67 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 			// Split transactions always record the same account for credit and debit,
 			// and always have their own Amount set to 0.
-			transaction.CreditAccountId = this.ThisAccount.Id;
-			transaction.DebitAccountId = this.ThisAccount.Id;
-			transaction.CreditAmount = null;
-			transaction.DebitAmount = null;
-			transaction.CreditAssetId = null;
-			transaction.DebitAssetId = null;
+			this.Model.CreditAccountId = this.ThisAccount.Id;
+			this.Model.DebitAccountId = this.ThisAccount.Id;
+			this.Model.CreditAmount = null;
+			this.Model.DebitAmount = null;
+			this.Model.CreditAssetId = null;
+			this.Model.DebitAssetId = null;
 		}
 		else
 		{
-			transaction.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
+			this.Model.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
 
 			if (this.Amount < 0)
 			{
-				transaction.DebitCleared = this.Cleared;
-				transaction.DebitAccountId = this.ThisAccount.Id;
-				transaction.DebitAmount = -this.Amount;
-				transaction.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
+				this.Model.DebitCleared = this.Cleared;
+				this.Model.DebitAccountId = this.ThisAccount.Id;
+				this.Model.DebitAmount = -this.Amount;
+				this.Model.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
 				if (this.CategoryOrTransfer is AccountViewModel xfer)
 				{
-					transaction.CreditAccountId = xfer.Id;
-					transaction.CreditAmount = -this.Amount;
-					transaction.Action = TransactionAction.Transfer;
+					this.Model.CreditAccountId = xfer.Id;
+					this.Model.CreditAmount = -this.Amount;
+					this.Model.Action = TransactionAction.Transfer;
 				}
 				else
 				{
-					transaction.CreditAccountId = null;
-					transaction.CreditAmount = null;
-					transaction.Action = TransactionAction.Withdraw;
+					this.Model.CreditAccountId = null;
+					this.Model.CreditAmount = null;
+					this.Model.Action = TransactionAction.Withdraw;
 				}
 			}
 			else
 			{
-				transaction.CreditCleared = this.Cleared;
-				transaction.CreditAccountId = this.ThisAccount.Id;
-				transaction.CreditAmount = this.Amount;
-				transaction.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
+				this.Model.CreditCleared = this.Cleared;
+				this.Model.CreditAccountId = this.ThisAccount.Id;
+				this.Model.CreditAmount = this.Amount;
+				this.Model.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
 				if (this.CategoryOrTransfer is AccountViewModel xfer)
 				{
-					transaction.DebitAccountId = xfer.Id;
-					transaction.DebitAmount = this.Amount;
-					transaction.Action = TransactionAction.Transfer;
+					this.Model.DebitAccountId = xfer.Id;
+					this.Model.DebitAmount = this.Amount;
+					this.Model.Action = TransactionAction.Transfer;
 				}
 				else
 				{
-					transaction.DebitAccountId = null;
-					transaction.DebitAmount = null;
-					transaction.Action = TransactionAction.Deposit;
+					this.Model.DebitAccountId = null;
+					this.Model.DebitAmount = null;
+					this.Model.Action = TransactionAction.Deposit;
 				}
 			}
 		}
 	}
 
-	protected override void CopyFromCore(Transaction transaction)
+	protected override void CopyFromCore()
 	{
-		Requires.NotNull(transaction, nameof(transaction));
+		this.SetProperty(ref this.payee, this.Model.Payee, nameof(this.Payee));
+		this.SetProperty(ref this.when, this.Model.When, nameof(this.When));
+		this.Memo = this.Model.Memo;
+		this.CheckNumber = this.Model.CheckNumber;
+		this.Cleared = this.Model.CreditAccountId == this.ThisAccount.Id ? this.Model.CreditCleared : this.Model.DebitCleared;
 
-		this.SetProperty(ref this.payee, transaction.Payee, nameof(this.Payee));
-		this.SetProperty(ref this.when, transaction.When, nameof(this.When));
-		this.Memo = transaction.Memo;
-		this.CheckNumber = transaction.CheckNumber;
-		this.Cleared = transaction.CreditAccountId == this.ThisAccount.Id ? transaction.CreditCleared : transaction.DebitCleared;
-
-		if (transaction.CategoryId is int categoryId)
+		if (this.Model.CategoryId is int categoryId)
 		{
 			if (categoryId == Category.Split)
 			{
@@ -491,7 +474,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 			}
 			else
 			{
-				this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel?.GetCategory(categoryId) ?? throw new InvalidOperationException(), nameof(this.CategoryOrTransfer));
+				this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel.GetCategory(categoryId), nameof(this.CategoryOrTransfer));
 				if (this.splits is object)
 				{
 					this.splits.Clear();
@@ -500,13 +483,13 @@ public class BankingTransactionViewModel : TransactionViewModel
 				this.OnPropertyChanged(nameof(this.Splits));
 			}
 		}
-		else if (transaction.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
+		else if (this.Model.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
 		{
-			this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel?.GetAccount(creditId) ?? throw new InvalidOperationException(), nameof(this.CategoryOrTransfer));
+			this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel.GetAccount(creditId), nameof(this.CategoryOrTransfer));
 		}
-		else if (transaction.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
+		else if (this.Model.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
 		{
-			this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel?.GetAccount(debitId) ?? throw new InvalidOperationException(), nameof(this.CategoryOrTransfer));
+			this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel.GetAccount(debitId), nameof(this.CategoryOrTransfer));
 		}
 		else
 		{
@@ -521,8 +504,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 		else
 		{
 			decimal amount =
-				transaction.CreditAccountId == this.ThisAccount.Id ? (transaction.CreditAmount ?? 0) :
-				transaction.DebitAccountId == this.ThisAccount.Id ? (-transaction.DebitAmount ?? 0) :
+				this.Model.CreditAccountId == this.ThisAccount.Id ? (this.Model.CreditAmount ?? 0) :
+				this.Model.DebitAccountId == this.ThisAccount.Id ? (-this.Model.DebitAmount ?? 0) :
 				0;
 			this.SetProperty(ref this.amount, amount, nameof(this.Amount));
 		}

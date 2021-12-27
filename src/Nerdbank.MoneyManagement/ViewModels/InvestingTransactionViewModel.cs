@@ -4,7 +4,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
@@ -21,8 +20,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private decimal? debitAmount;
 	private string? memo;
 
-	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, Transaction? transaction)
-		: base(thisAccount)
+	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, Transaction transaction)
+		: base(thisAccount, transaction)
 	{
 		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimpleAmount));
 		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimpleAmount));
@@ -53,12 +52,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.DebitAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
 
-		this.AutoSave = true;
-
-		if (transaction is object)
-		{
-			this.CopyFrom(transaction);
-		}
+		this.CopyFrom(this.Model);
 	}
 
 	/// <inheritdoc cref="Transaction.When"/>
@@ -432,38 +426,38 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	private bool IsCashTransaction => this.Action is TransactionAction.Deposit or TransactionAction.Withdraw;
 
-	protected override void ApplyToCore(Transaction model)
+	protected override void ApplyToCore()
 	{
-		model.When = this.When;
-		model.Memo = this.Memo;
-		model.Action = this.Action!.Value;
+		this.Model.When = this.When;
+		this.Model.Memo = this.Memo;
+		this.Model.Action = this.Action!.Value;
 
-		model.CreditAccountId = this.CreditAccount?.Id;
-		model.CreditAssetId = this.CreditAsset?.Id;
-		model.CreditAmount = this.CreditAmount;
+		this.Model.CreditAccountId = this.CreditAccount?.Id;
+		this.Model.CreditAssetId = this.CreditAsset?.Id;
+		this.Model.CreditAmount = this.CreditAmount;
 
-		model.DebitAccountId = this.DebitAccount?.Id;
-		model.DebitAssetId = this.DebitAsset?.Id;
-		model.DebitAmount = this.DebitAmount;
+		this.Model.DebitAccountId = this.DebitAccount?.Id;
+		this.Model.DebitAssetId = this.DebitAsset?.Id;
+		this.Model.DebitAmount = this.DebitAmount;
 
-		model.RelatedAssetId = this.RelatedAsset?.Id;
+		this.Model.RelatedAssetId = this.RelatedAsset?.Id;
 	}
 
-	protected override void CopyFromCore(Transaction model)
+	protected override void CopyFromCore()
 	{
-		this.When = model.When;
-		this.Memo = model.Memo;
-		this.SetProperty(ref this.action, model.Action, nameof(this.Action));
+		this.When = this.Model.When;
+		this.Memo = this.Model.Memo;
+		this.SetProperty(ref this.action, this.Model.Action, nameof(this.Action));
 
-		this.CreditAccount = this.ThisAccount.DocumentViewModel.GetAccount(model.CreditAccountId);
-		this.CreditAmount = model.CreditAmount;
-		this.CreditAsset = this.ThisAccount.DocumentViewModel.GetAsset(model.CreditAssetId);
+		this.CreditAccount = this.ThisAccount.DocumentViewModel.GetAccount(this.Model.CreditAccountId);
+		this.CreditAmount = this.Model.CreditAmount;
+		this.CreditAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Model.CreditAssetId);
 
-		this.DebitAccount = this.ThisAccount.DocumentViewModel.GetAccount(model.DebitAccountId);
-		this.DebitAsset = this.ThisAccount.DocumentViewModel.GetAsset(model.DebitAssetId);
-		this.DebitAmount = model.DebitAmount;
+		this.DebitAccount = this.ThisAccount.DocumentViewModel.GetAccount(this.Model.DebitAccountId);
+		this.DebitAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Model.DebitAssetId);
+		this.DebitAmount = this.Model.DebitAmount;
 
-		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(model.RelatedAssetId);
+		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Model.RelatedAssetId);
 	}
 
 	protected override bool IsPersistedProperty(string propertyName)

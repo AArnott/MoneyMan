@@ -112,11 +112,9 @@ public class AssetsPanelViewModel : BindableBase
 			return this.AddingAsset;
 		}
 
-		AssetViewModel newAssetViewModel = new(null, this.documentViewModel)
-		{
-			Model = new(),
-			Type = Asset.AssetType.Security,
-		};
+		AssetViewModel newAssetViewModel = new(
+			new Asset { Type = Asset.AssetType.Security },
+			this.documentViewModel);
 
 		this.assets.Add(newAssetViewModel);
 		if (string.IsNullOrEmpty(name))
@@ -144,11 +142,8 @@ public class AssetsPanelViewModel : BindableBase
 	{
 		this.assets.Remove(asset);
 
-		if (asset.Model is object)
-		{
-			using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted asset \"{asset.Name}\".", asset.Model);
-			this.documentViewModel.MoneyFile.Delete(asset.Model);
-		}
+		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted asset \"{asset.Name}\".", asset.Model);
+		this.documentViewModel.MoneyFile.Delete(asset.Model);
 
 		if (this.SelectedAsset == asset)
 		{
@@ -169,10 +164,7 @@ public class AssetsPanelViewModel : BindableBase
 	{
 		Requires.Argument(value.IsPersisted, nameof(value), "Cannot delete the volatile price.");
 		this.assetPrices.Remove(value);
-		if (value.Model is object)
-		{
-			this.documentViewModel.MoneyFile.Delete(value.Model);
-		}
+		this.documentViewModel.MoneyFile.Delete(value.Model);
 
 		if (value == this.SelectedAssetPrice)
 		{

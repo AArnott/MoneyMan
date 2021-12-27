@@ -437,8 +437,8 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(-1, exchange.SimpleAmount);
 		Assert.False(string.IsNullOrEmpty(exchange.Error));
 		this.Logger.WriteLine(exchange.Error);
-		Assert.Null(exchange.Model?.CreditAmount);
-		Assert.Null(exchange.Model?.DebitAmount);
+		Assert.Null(exchange.Model.CreditAmount);
+		Assert.Null(exchange.Model.DebitAmount);
 	}
 
 	[Theory]
@@ -540,22 +540,16 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void ApplyTo_Null()
-	{
-		Assert.Throws<ArgumentNullException>(() => this.viewModel.ApplyTo(null!));
-	}
-
-	[Fact]
 	public void ApplyTo()
 	{
 		Transaction transaction = new();
-		InvestingTransactionViewModel viewModel = new(this.account, null);
+		InvestingTransactionViewModel viewModel = new(this.account, transaction);
 
 		viewModel.When = this.when;
 		viewModel.Memo = "my memo";
 		viewModel.Action = TransactionAction.Sell;
 		viewModel.RelatedAsset = this.msft;
-		viewModel.ApplyTo(transaction);
+		viewModel.ApplyToModel();
 
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(viewModel.Memo, transaction.Memo);

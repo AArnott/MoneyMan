@@ -23,13 +23,8 @@ public class AssetViewModel : EntityViewModel<Asset>
 	private string? currencySymbol;
 	private NumberFormatInfo? numberFormat;
 
-	public AssetViewModel()
-		: this(null, null)
-	{
-	}
-
-	public AssetViewModel(Asset? model, DocumentViewModel? documentViewModel)
-		: base(documentViewModel?.MoneyFile)
+	public AssetViewModel(Asset model, DocumentViewModel documentViewModel)
+		: base(documentViewModel.MoneyFile, model)
 	{
 		this.RegisterDependentProperty(nameof(this.TickerSymbol), nameof(this.TickerOrName));
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TickerOrName));
@@ -37,14 +32,8 @@ public class AssetViewModel : EntityViewModel<Asset>
 		this.RegisterDependentProperty(nameof(this.CurrencyDecimalDigits), nameof(this.NumberFormat));
 		this.RegisterDependentProperty(nameof(this.CurrentPrice), nameof(this.CurrentPriceFormatted));
 
-		this.AutoSave = true;
-
-		if (model is object)
-		{
-			this.CopyFrom(model);
-		}
-
 		this.documentViewModel = documentViewModel;
+		this.CopyFrom(this.Model);
 	}
 
 	/// <inheritdoc cref="Asset.Name"/>
@@ -88,7 +77,7 @@ public class AssetViewModel : EntityViewModel<Asset>
 	/// <summary>
 	/// Gets a value indicating whether <see cref="Type"/> can be changed.
 	/// </summary>
-	public bool TypeIsReadOnly => this.typeIsReadOnly ??= this.MoneyFile?.IsAssetInUse(this.Id) is true;
+	public bool TypeIsReadOnly => this.typeIsReadOnly ??= this.MoneyFile.IsAssetInUse(this.Id) is true;
 
 	/// <inheritdoc cref="Asset.CurrencySymbol"/>
 	public string? CurrencySymbol
@@ -170,21 +159,21 @@ public class AssetViewModel : EntityViewModel<Asset>
 
 	protected override bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.TypeIsReadOnly) or nameof(this.TickerOrName));
 
-	protected override void ApplyToCore(Asset model)
+	protected override void ApplyToCore()
 	{
-		model.Name = this.Name;
-		model.TickerSymbol = string.IsNullOrWhiteSpace(this.TickerSymbol) ? null : this.TickerSymbol;
-		model.Type = this.Type;
-		model.CurrencySymbol = this.CurrencySymbol;
-		model.CurrencyDecimalDigits = this.CurrencyDecimalDigits;
+		this.Model.Name = this.Name;
+		this.Model.TickerSymbol = string.IsNullOrWhiteSpace(this.TickerSymbol) ? null : this.TickerSymbol;
+		this.Model.Type = this.Type;
+		this.Model.CurrencySymbol = this.CurrencySymbol;
+		this.Model.CurrencyDecimalDigits = this.CurrencyDecimalDigits;
 	}
 
-	protected override void CopyFromCore(Asset model)
+	protected override void CopyFromCore()
 	{
-		this.Name = model.Name;
-		this.TickerSymbol = model.TickerSymbol ?? string.Empty;
-		this.SetProperty(ref this.type, model.Type);
-		this.CurrencySymbol = model.CurrencySymbol;
-		this.CurrencyDecimalDigits = model.CurrencyDecimalDigits;
+		this.Name = this.Model.Name;
+		this.TickerSymbol = this.Model.TickerSymbol ?? string.Empty;
+		this.SetProperty(ref this.type, this.Model.Type);
+		this.CurrencySymbol = this.Model.CurrencySymbol;
+		this.CurrencyDecimalDigits = this.Model.CurrencyDecimalDigits;
 	}
 }
