@@ -462,12 +462,9 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
-		if (propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted"))
-		{
-			return false;
-		}
-
-		return base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact));
+		return base.IsPersistedProperty(propertyName)
+			&& propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact))
+			&& !(propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted"));
 	}
 
 	[DoesNotReturn]
