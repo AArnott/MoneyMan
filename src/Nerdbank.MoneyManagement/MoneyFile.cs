@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Security.Principal;
 using PCLCommandBase;
 using SQLite;
 using Validation;
@@ -316,6 +317,67 @@ WHERE [Balances].[AccountId] = ?
 ";
 		decimal value = this.ExecuteScalar<decimal>(sql, account.Id);
 		return value;
+	}
+
+	public void Deposit(Account account, Amount amount)
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Deposit,
+			When = DateTime.Today,
+		};
+		this.Insert(tx);
+		this.InsertAll(
+			new TransactionEntry
+			{
+				AccountId = account.Id,
+				Amount = amount.Value,
+				AssetId = amount.AssetId,
+				TransactionId = tx.Id,
+			});
+	}
+
+	public void Withdraw(Account account, Amount amount)
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Withdraw,
+			When = DateTime.Today,
+		};
+		this.Insert(tx);
+		this.InsertAll(
+			new TransactionEntry
+			{
+				AccountId = account.Id,
+				Amount = -amount.Value,
+				AssetId = amount.AssetId,
+				TransactionId = tx.Id,
+			});
+	}
+
+	public void Transfer(Account from, Account to, Amount amount)
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Withdraw,
+			When = DateTime.Today,
+		};
+		this.Insert(tx);
+		this.InsertAll(
+			new TransactionEntry
+			{
+				AccountId = from.Id,
+				Amount = -amount.Value,
+				AssetId = amount.AssetId,
+				TransactionId = tx.Id,
+			},
+			new TransactionEntry
+			{
+				AccountId = to.Id,
+				Amount = amount.Value,
+				AssetId = amount.AssetId,
+				TransactionId = tx.Id,
+			});
 	}
 
 	/// <inheritdoc/>
