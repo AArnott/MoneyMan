@@ -17,7 +17,7 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 	/// <summary>
 	/// Gets the primary key for this entity.
 	/// </summary>
-	public int Id { get; private set; }
+	public int Id => this.Model.Id;
 
 	public override bool IsPersisted => this.Id > 0;
 
@@ -35,19 +35,17 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 		this.Model = model;
 		using (this.SuspendAutoSave(saveOnDisposal: false))
 		{
-			this.Id = this.Model.Id;
 			this.CopyFromCore();
 		}
 
 		this.IsDirty = false;
 	}
 
+	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not nameof(this.Id);
+
 	protected override void SaveCore()
 	{
 		this.MoneyFile.InsertOrReplace(this.Model);
-
-		// First insert of an entity assigns it an ID. Make sure the view model matches it.
-		this.Id = this.Model.Id;
 	}
 
 	protected abstract void CopyFromCore();

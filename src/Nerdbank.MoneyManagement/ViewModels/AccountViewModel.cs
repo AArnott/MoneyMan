@@ -149,12 +149,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
-		if (propertyName.EndsWith("Formatted"))
-		{
-			return false;
-		}
-
-		return base.IsPersistedProperty(propertyName);
+		return base.IsPersistedProperty(propertyName) && !propertyName.EndsWith("Formatted");
 	}
 
 	protected override void ApplyToCore()
