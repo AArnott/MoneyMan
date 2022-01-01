@@ -319,12 +319,14 @@ WHERE [Balances].[AccountId] = ?
 		return value;
 	}
 
-	public void Deposit(Account account, Amount amount)
+	public void Deposit(Account account, decimal amount, DateTime? when = null) => this.Deposit(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
+
+	public void Deposit(Account account, Amount amount, DateTime? when = null)
 	{
 		Transaction tx = new()
 		{
 			Action = TransactionAction.Deposit,
-			When = DateTime.Today,
+			When = when ?? DateTime.Today,
 		};
 		this.Insert(tx);
 		this.InsertAll(
@@ -337,12 +339,14 @@ WHERE [Balances].[AccountId] = ?
 			});
 	}
 
-	public void Withdraw(Account account, Amount amount)
+	public void Withdraw(Account account, decimal amount, DateTime? when = null) => this.Withdraw(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
+
+	public void Withdraw(Account account, Amount amount, DateTime? when = null)
 	{
 		Transaction tx = new()
 		{
 			Action = TransactionAction.Withdraw,
-			When = DateTime.Today,
+			When = when ?? DateTime.Today,
 		};
 		this.Insert(tx);
 		this.InsertAll(
@@ -355,12 +359,14 @@ WHERE [Balances].[AccountId] = ?
 			});
 	}
 
-	public void Transfer(Account from, Account to, Amount amount)
+	public void Transfer(Account from, Account to, decimal amount, DateTime? when = null) => this.Transfer(from, to, new Amount(amount, from.CurrencyAssetId!.Value), when);
+
+	public void Transfer(Account from, Account to, Amount amount, DateTime? when = null)
 	{
 		Transaction tx = new()
 		{
 			Action = TransactionAction.Withdraw,
-			When = DateTime.Today,
+			When = when ?? DateTime.Today,
 		};
 		this.Insert(tx);
 		this.InsertAll(
