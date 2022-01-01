@@ -15,7 +15,8 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class DocumentViewModel : BindableBase, IDisposable
 {
 	private readonly bool ownsMoneyFile;
-	private readonly SortedObservableCollection<ITransactionTarget> transactionTargets = new(TransactionTargetSort.Instance);
+	private readonly SortedObservableCollection<AccountViewModel> transactionTargets = new(TransactionTargetSort.Instance);
+	private readonly SplitCategoryPlaceholder splitCategory;
 	private decimal netWorth;
 	private IList? selectedTransactions;
 	private TransactionViewModel? selectedTransaction;
@@ -37,6 +38,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		// Keep targets collection in sync with the two collections that make it up.
 		this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
+		this.splitCategory = new(this);
 		this.Reset();
 
 		if (moneyFile is object)
@@ -46,7 +48,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 
 		this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
-		this.JumpToSplitTransactionParentCommand = new JumpToSplitTransactionParentCommandImpl(this);
 		this.UndoCommand = new UndoCommandImpl(this);
 	}
 
@@ -98,13 +99,15 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public ConfigurationPanelViewModel ConfigurationPanel { get; }
 
+	public SplitCategoryPlaceholder SplitCategory => this.splitCategory;
+
 	public SelectableViews SelectedViewIndex
 	{
 		get => this.selectedViewIndex;
 		set => this.SetProperty(ref this.selectedViewIndex, value);
 	}
 
-	public IReadOnlyCollection<ITransactionTarget> TransactionTargets => this.transactionTargets;
+	public IReadOnlyCollection<AccountViewModel> TransactionTargets => this.transactionTargets;
 
 	public AssetViewModel? DefaultCurrency => this.AssetsPanel.FindAsset(this.MoneyFile.PreferredAssetId);
 
@@ -132,11 +135,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 	/// otherwise the <see cref="SelectedTransaction"/> is deleted.
 	/// </summary>
 	public CommandBase DeleteTransactionsCommand { get; }
-
-	/// <summary>
-	/// Gets a command that jumps from a split member to its parent transaction in another account.
-	/// </summary>
-	public CommandBase JumpToSplitTransactionParentCommand { get; }
 
 	public CommandBase UndoCommand { get; }
 
@@ -201,12 +199,15 @@ public class DocumentViewModel : BindableBase, IDisposable
 	[return: NotNullIfNotNull("accountId")]
 	public AccountViewModel? GetAccount(int? accountId) => accountId is null ? null : this.GetAccount(accountId.Value);
 
-	public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? throw new ArgumentException("No match found.");
+	public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
 
 	[return: NotNullIfNotNull("assetId")]
 	public AssetViewModel? GetAsset(int? assetId) => assetId is null ? null : this.AssetsPanel.FindAsset(assetId.Value);
 
-	public CategoryViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
+	public CategoryAccountViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
+
+	[return: NotNullIfNotNull("categoryId")]
+	public CategoryAccountViewModel? GetCategory(int? categoryId) => categoryId is null ? null : this.GetCategory(categoryId.Value);
 
 	public void Save() => this.MoneyFile.Save();
 
@@ -216,7 +217,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public void Reset()
 	{
 		this.transactionTargets.Clear();
-		this.transactionTargets.Add(SplitCategoryPlaceholder.Singleton);
+		this.transactionTargets.Add(this.splitCategory);
 
 		this.AssetsPanel.ClearViewModel();
 		this.AccountsPanel.ClearViewModel();
@@ -236,9 +237,9 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 
 		this.CategoriesPanel.ClearViewModel();
-		foreach (Category category in this.MoneyFile.Categories)
+		foreach (Account category in this.MoneyFile.Categories)
 		{
-			CategoryViewModel viewModel = new(category, this.MoneyFile);
+			CategoryAccountViewModel viewModel = new(category, this);
 			this.CategoriesPanel.Categories.Add(viewModel);
 		}
 
@@ -255,9 +256,9 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	internal void AddTransactionTarget(ITransactionTarget target) => this.transactionTargets.Add(target);
+	internal void AddTransactionTarget(AccountViewModel target) => this.transactionTargets.Add(target);
 
-	internal void RemoveTransactionTarget(ITransactionTarget target) => this.transactionTargets.Remove(target);
+	internal void RemoveTransactionTarget(AccountViewModel target) => this.transactionTargets.Remove(target);
 
 	private static void ThrowUnopenedUnless([DoesNotReturnIf(false)] bool condition)
 	{
@@ -275,7 +276,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
 		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 		{
-			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().ToHashSet());
+			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().Select(a => a.Id).ToHashSet());
 
 			if (accountViewModel.IsPersisted && impactedAccountIds.Contains(accountViewModel.Id))
 			{
@@ -283,47 +284,47 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 				foreach (ModelBase model in e.Inserted)
 				{
-					if (model is Transaction tx && IsRelated(tx, accountViewModel))
+					if (model is TransactionEntry te && IsRelated(te, accountViewModel))
 					{
-						accountViewModel.NotifyTransactionChanged(tx);
+						////accountViewModel.NotifyTransactionChanged(te);
 					}
 				}
 
 				foreach ((ModelBase Before, ModelBase After) models in e.Changed)
 				{
-					if (models is { Before: Transaction beforeTx, After: Transaction afterTx } && (IsRelated(beforeTx, accountViewModel) || IsRelated(afterTx, accountViewModel)))
+					if (models is { Before: TransactionEntry beforeTx, After: TransactionEntry afterTx } && (IsRelated(beforeTx, accountViewModel) || IsRelated(afterTx, accountViewModel)))
 					{
-						accountViewModel.NotifyTransactionChanged(afterTx);
+						////accountViewModel.NotifyTransactionChanged(afterTx);
 					}
 				}
 
 				foreach (ModelBase model in e.Deleted)
 				{
-					if (model is Transaction tx && (tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id))
+					if (model is TransactionEntry tx && tx.AccountId == accountViewModel.Id)
 					{
 						accountViewModel.NotifyTransactionDeleted(tx);
+					}
+				}
+
+				foreach (ModelBase model in e.Deleted)
+				{
+					if (model is Transaction tx)
+					{
+						////accountViewModel.NotifyTransactionDeleted(tx);
 					}
 				}
 			}
 		}
 
-		static bool IsRelated(Transaction tx, AccountViewModel accountViewModel) => tx.CreditAccountId == accountViewModel.Id || tx.DebitAccountId == accountViewModel.Id;
+		static bool IsRelated(TransactionEntry te, AccountViewModel accountViewModel) => te.AccountId == accountViewModel.Id;
 
 		void SearchForImpactedAccounts(IEnumerable<ModelBase> models)
 		{
 			foreach (ModelBase model in models)
 			{
-				if (model is Transaction tx)
+				if (model is TransactionEntry te)
 				{
-					if (tx.CreditAccountId is int creditId)
-					{
-						impactedAccountIds.Add(creditId);
-					}
-
-					if (tx.DebitAccountId is int debitId)
-					{
-						impactedAccountIds.Add(debitId);
-					}
+					impactedAccountIds.Add(te.AccountId);
 				}
 
 				if (model is AssetPrice)
@@ -341,14 +342,14 @@ public class DocumentViewModel : BindableBase, IDisposable
 		switch (e.Action)
 		{
 			case NotifyCollectionChangedAction.Add when e.NewItems is object:
-				foreach (CategoryViewModel category in e.NewItems)
+				foreach (CategoryAccountViewModel category in e.NewItems)
 				{
 					this.AddTransactionTarget(category);
 				}
 
 				break;
 			case NotifyCollectionChangedAction.Remove when e.OldItems is object:
-				foreach (CategoryViewModel category in e.OldItems)
+				foreach (CategoryAccountViewModel category in e.OldItems)
 				{
 					this.RemoveTransactionTarget(category);
 				}
@@ -375,22 +376,18 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			case Transaction transaction:
 				this.SelectedViewIndex = SelectableViews.Banking;
-				int? accountid = transaction.CreditAccountId ?? transaction.DebitAccountId;
-				if (accountid.HasValue)
+				TransactionEntry? transactionEntry = this.MoneyFile.TransactionEntries.FirstOrDefault(te => te.TransactionId == transaction.Id);
+				if (transactionEntry is object && this.BankingPanel.FindAccount(transactionEntry.AccountId) is AccountViewModel teAccount)
 				{
-					AccountViewModel? account = this.BankingPanel.FindAccount(accountid.Value);
-					if (account is object)
+					this.BankingPanel.SelectedAccount = teAccount;
+					if (teAccount.FindTransaction(transaction.Id) is TransactionViewModel transactionViewModel)
 					{
-						this.BankingPanel.SelectedAccount = account;
-						if (account.FindTransaction(transaction.Id) is { } transactionViewModel)
-						{
-							this.SelectedTransaction = transactionViewModel;
-						}
+						this.SelectedTransaction = transactionViewModel;
 					}
 				}
 
 				break;
-			case Category category:
+			case Account category when category.Type == Account.AccountType.Category:
 				this.SelectedViewIndex = SelectableViews.Categories;
 				this.CategoriesPanel.SelectedCategory = this.CategoriesPanel.FindCategory(category.Id);
 				break;
@@ -507,7 +504,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			foreach (object item in transactionViewModels)
 			{
-				if (item is TransactionViewModel and not BankingTransactionViewModel { IsSplitInForeignAccount: true })
+				if (item is TransactionViewModel)
 				{
 					return true;
 				}
@@ -518,33 +515,10 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
 		{
-			using IDisposable? undo = this.ViewModel.MoneyFile.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<TransactionViewModel>().FirstOrDefault()?.Model);
+			using IDisposable? undo = this.ViewModel.MoneyFile.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<TransactionViewModel>().FirstOrDefault()?.Transaction);
 			foreach (TransactionViewModel transaction in transactionViewModels.OfType<TransactionViewModel>().ToList())
 			{
 				transaction.ThisAccount.DeleteTransaction(transaction);
-			}
-
-			return Task.CompletedTask;
-		}
-	}
-
-	private class JumpToSplitTransactionParentCommandImpl : SelectedTransactionCommandBase
-	{
-		internal JumpToSplitTransactionParentCommandImpl(DocumentViewModel viewModel)
-			: base(viewModel)
-		{
-		}
-
-		protected override bool CanExecute(IList transactionViewModels)
-		{
-			return transactionViewModels is { Count: 1 } && transactionViewModels[0] is BankingTransactionViewModel { IsSplitInForeignAccount: true };
-		}
-
-		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
-		{
-			if (transactionViewModels is { Count: 1 } && transactionViewModels[0] is BankingTransactionViewModel { IsSplitInForeignAccount: true } tx)
-			{
-				tx.JumpToSplitParent();
 			}
 
 			return Task.CompletedTask;
@@ -581,7 +555,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	private class TransactionTargetSort : IComparer<ITransactionTarget>
+	private class TransactionTargetSort : IComparer<AccountViewModel>
 	{
 		internal static readonly TransactionTargetSort Instance = new();
 
@@ -589,7 +563,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 		}
 
-		public int Compare(ITransactionTarget? x, ITransactionTarget? y)
+		public int Compare(AccountViewModel? x, AccountViewModel? y)
 		{
 			if (x is null)
 			{
@@ -604,8 +578,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 			{
 				// First list categories.
 				int index =
-					x is CategoryViewModel && y is not CategoryViewModel ? -1 :
-					y is CategoryViewModel && x is not CategoryViewModel ? 1 :
+					x is CategoryAccountViewModel && y is not CategoryAccountViewModel ? -1 :
+					y is CategoryAccountViewModel && x is not CategoryAccountViewModel ? 1 :
 					0;
 				if (index != 0)
 				{

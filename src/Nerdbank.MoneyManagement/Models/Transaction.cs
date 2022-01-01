@@ -2,8 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Diagnostics;
-using SQLite;
-using Validation;
 
 namespace Nerdbank.MoneyManagement;
 
@@ -13,8 +11,18 @@ namespace Nerdbank.MoneyManagement;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class Transaction : ModelBase
 {
-	private decimal? creditAmount;
-	private decimal? debitAmount;
+	public Transaction()
+	{
+	}
+
+	internal Transaction(TransactionAndEntry transactionAndEntry)
+	{
+		this.Id = transactionAndEntry.TransactionId;
+		this.When = transactionAndEntry.When;
+		this.Action = transactionAndEntry.Action;
+		this.CheckNumber = transactionAndEntry.CheckNumber;
+		this.RelatedAssetId = transactionAndEntry.RelatedAssetId;
+	}
 
 	/// <summary>
 	/// Gets or sets the date the transaction is to be sorted by.
@@ -46,88 +54,11 @@ public class Transaction : ModelBase
 	public string? Payee { get; set; }
 
 	/// <summary>
-	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Category"/> assigned to this transaction.
-	/// </summary>
-	/// <remarks>
-	/// Use <see cref="Category.Split"/> for the value where the transaction is split across multiple categories.
-	/// </remarks>
-	public int? CategoryId { get; set; }
-
-	/// <summary>
-	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be credited the <see cref="CreditAmount"/> of this <see cref="Transaction"/>.
-	/// </summary>
-	public int? CreditAccountId { get; set; }
-
-	/// <summary>
-	/// Gets or sets the amount of an asset that was credited to the <see cref="CreditAccountId"/> <see cref="Account"/>.
-	/// </summary>
-	/// <remarks>
-	/// This value should be 0 for split transactions, allowing their split members to have non-zero Amounts that contribute to the account balance.
-	/// </remarks>
-	public decimal? CreditAmount
-	{
-		get => this.creditAmount;
-		set
-		{
-			Requires.Range(value is null or >= 0, nameof(value));
-			this.creditAmount = value;
-		}
-	}
-
-	/// <summary>
-	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> that was credited to the <see cref="CreditAccountId"/> <see cref="Account"/>.
-	/// </summary>
-	public int? CreditAssetId { get; set; }
-
-	/// <summary>
-	/// Gets or sets the cleared or reconciled state of the credit half of this transaction.
-	/// </summary>
-	public ClearedState CreditCleared { get; set; }
-
-	/// <summary>
-	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account" /> to be debited the <see cref="DebitAmount"/> of this <see cref="Transaction"/>.
-	/// </summary>
-	public int? DebitAccountId { get; set; }
-
-	/// <summary>
-	/// Gets or sets the amount of an asset that was debited from the <see cref="DebitAccountId"/> <see cref="Account"/>.
-	/// </summary>
-	/// <remarks>
-	/// This value should be 0 for split transactions, allowing their split members to have non-zero Amounts that contribute to the account balance.
-	/// </remarks>
-	public decimal? DebitAmount
-	{
-		get => this.debitAmount;
-		set
-		{
-			Requires.Range(value is null or >= 0, nameof(value));
-			this.debitAmount = value;
-		}
-	}
-
-	/// <summary>
-	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> that was debited from the <see cref="DebitAccountId"/> <see cref="Account"/>.
-	/// </summary>
-	public int? DebitAssetId { get; set; }
-
-	/// <summary>
-	/// Gets or sets the cleared or reconciled state of the debit half of this transaction.
-	/// </summary>
-	public ClearedState DebitCleared { get; set; }
-
-	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset" /> that is related to this transaction
 	/// but not directly a credited or debited asset.
 	/// For example this may be the asset that produced a <see cref="TransactionAction.Dividend"/>.
 	/// </summary>
 	public int? RelatedAssetId { get; set; }
 
-	/// <summary>
-	/// Gets or sets the <see cref="ModelBase.Id"/> of a <em>split</em> <see cref="Transaction"/>
-	/// that this transaction is a member of.
-	/// </summary>
-	[Indexed]
-	public int? ParentTransactionId { get; set; }
-
-	private string DebuggerDisplay => $"{this.When} {this.Action} {this.Payee} (+{this.CreditAmount}/-{this.DebitAmount})";
+	private string DebuggerDisplay => $"{this.When} {this.Action}";
 }

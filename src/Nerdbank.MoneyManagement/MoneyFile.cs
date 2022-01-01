@@ -55,7 +55,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		get
 		{
 			Verify.NotDisposed(this);
-			return this.connection.Table<Account>();
+			return this.connection.Table<Account>().Where(a => a.Type != Account.AccountType.Category);
 		}
 	}
 
@@ -86,14 +86,21 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
-	public TableQuery<Category> Categories
+	public TableQuery<TransactionEntry> TransactionEntries
 	{
 		get
 		{
 			Verify.NotDisposed(this);
+			return this.connection.Table<TransactionEntry>();
+		}
+	}
 
-			// Omit the special categories like those used for splits.
-			return this.connection.Table<Category>().Where(cat => cat.Id > 0);
+	public TableQuery<Account> Categories
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<Account>().Where(a => a.Type == Account.AccountType.Category);
 		}
 	}
 
@@ -206,7 +213,9 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	public void InsertOrReplace(ModelBase model)
 	{
+		Requires.Argument(model.Id >= 0, nameof(model), "This model has a negative ID and therefore should never be persisted.");
 		Verify.NotDisposed(this);
+
 		ModelBase before = (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model));
 		if (this.connection.Update(model) > 0)
 		{
@@ -217,6 +226,20 @@ public class MoneyFile : BindableBase, IDisposableObservable
 			this.connection.Insert(model);
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		}
+	}
+
+	public bool Delete(Type modelType, object primaryKey)
+	{
+		TableMapping mapping = this.connection.GetMapping(modelType);
+		ModelBase? model = (ModelBase?)this.connection.Get(primaryKey, mapping);
+		if (model is null)
+		{
+			return false;
+		}
+
+		int deletedCount = this.connection.Delete(primaryKey, mapping);
+		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
+		return deletedCount > 0;
 	}
 
 	public bool Delete(ModelBase model)
@@ -321,23 +344,10 @@ WHERE [Balances].[AccountId] = ?
 		return new ActionOnDispose(() => this.inUndoableTransaction = false);
 	}
 
-	internal IEnumerable<IntegrityChecks.SplitTransactionTotalMismatch> FindBadSplitTransactions(CancellationToken cancellationToken)
+	internal bool IsCategoryInUse(int accountId)
 	{
-		cancellationToken.ThrowIfCancellationRequested();
-		string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
-			+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND (t.[{nameof(Transaction.CreditAmount)}] != 0 OR t.[{nameof(Transaction.DebitAmount)}] != 0)";
-
-		foreach (Transaction badSplit in this.connection.Query<Transaction>(sql))
-		{
-			yield return new IntegrityChecks.SplitTransactionTotalMismatch(badSplit);
-			cancellationToken.ThrowIfCancellationRequested();
-		}
-	}
-
-	internal bool IsCategoryInUse(int categoryId)
-	{
-		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CategoryId)}"" == ?";
-		return this.ExecuteScalar<int>(sql, categoryId) > 0;
+		string sql = $@"SELECT [Id] FROM ""{nameof(TransactionEntry)}"" WHERE ""{nameof(TransactionEntry.AccountId)}"" == ? LIMIT 1";
+		return this.connection.Query<int>(sql, accountId).Any();
 	}
 
 	internal bool IsAssetInUse(int assetId)
@@ -353,8 +363,8 @@ WHERE [Balances].[AccountId] = ?
 			return true;
 		}
 
-		sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CreditAssetId)}"" == ? OR ""{nameof(Transaction.DebitAssetId)}"" == ? LIMIT 1";
-		if (this.ExecuteScalar<int>(sql, assetId, assetId) > 0)
+		sql = $@"SELECT COUNT(*) FROM ""{nameof(TransactionEntry)}"" WHERE ""{nameof(TransactionEntry.AssetId)}"" == ? LIMIT 1";
+		if (this.ExecuteScalar<int>(sql, assetId) > 0)
 		{
 			return true;
 		}
@@ -364,19 +374,29 @@ WHERE [Balances].[AccountId] = ?
 
 	internal void ReassignCategory(IEnumerable<int> oldCategoryIds, int? newId)
 	{
-		string sql = $@"UPDATE ""{nameof(Transaction)}""
-SET ""{nameof(Transaction.CategoryId)}"" = ?
-WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
+		string sql = $@"UPDATE ""{nameof(TransactionEntry)}""
+SET ""{nameof(TransactionEntry.AccountId)}"" = ?
+WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
 		this.connection.Execute(sql, newId == 0 ? null : newId);
 	}
 
-	internal List<Transaction> GetTopLevelTransactionsFor(int accountId)
+	internal List<TransactionAndEntry> GetTopLevelTransactionsFor(int accountId)
 	{
-		// List all transactions that credit/debit to this account so long as they either are not split members or are splits of a transaction native to another account.
-		string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
-			+ $@" WHERE (t.[{nameof(Transaction.CreditAccountId)}] == ? OR t.[{nameof(Transaction.DebitAccountId)}] == ?)"
-			+ $@" AND (t.[{nameof(Transaction.ParentTransactionId)}] IS NULL OR (SELECT [{nameof(Transaction.CreditAccountId)}] FROM ""{nameof(Transaction)}"" WHERE [{nameof(Transaction.Id)}] == t.[{nameof(Transaction.ParentTransactionId)}]) != ?)";
-		return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
+		string sql = $@"SELECT * FROM ""{nameof(TransactionAndEntry)}"""
+			+ $@" WHERE [ContextAccountId] == ?";
+		return this.connection.Query<TransactionAndEntry>(sql, accountId);
+	}
+
+	internal List<TransactionEntry> GetTransactionEntries(int transactionId) => this.TransactionEntries.Where(te => te.TransactionId == transactionId).ToList();
+
+	/// <summary>
+	/// Gets a list of IDs to the accounts whose ledgers would display any transactions with the given IDs.
+	/// </summary>
+	/// <param name="transactionIds">The IDs of the transactions.</param>
+	/// <returns>The list of account IDs.</returns>
+	internal List<int> GetAccountIdsImpactedByTransaction(IReadOnlyCollection<int> transactionIds)
+	{
+		return this.connection.Query<int>("SELECT DISTINCT [ContextAccountId] AS [AccountId] FROM [TransactionAndEntry] WHERE [TransactionId] IN ?", transactionIds);
 	}
 
 	/// <summary>

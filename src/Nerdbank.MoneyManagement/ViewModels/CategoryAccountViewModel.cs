@@ -1,26 +1,23 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System.Diagnostics;
-
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class SplitCategoryPlaceholder : AccountViewModel
+public class CategoryAccountViewModel : AccountViewModel
 {
-	internal SplitCategoryPlaceholder(DocumentViewModel documentViewModel)
-		: base(null, documentViewModel)
+	public CategoryAccountViewModel(Account? model, DocumentViewModel documentViewModel)
+		: base(model, documentViewModel)
 	{
-		this.Name = "--split--";
+		ThrowOnUnexpectedAccountType(nameof(model), Account.AccountType.Category, this.Model.Type);
+		this.Type = Account.AccountType.Category;
+		this.CopyFrom(this.Model);
 	}
 
-	public override string TransferTargetName => this.Name;
+	public override string? TransferTargetName => this.Name;
 
-	protected override bool IsEmpty => true;
+	protected override bool IsEmpty => throw new NotImplementedException();
 
-	protected override bool IsPopulated => false;
-
-	private new string DebuggerDisplay => this.TransferTargetName;
+	protected override bool IsPopulated => throw new NotImplementedException();
 
 	public override void DeleteTransaction(TransactionViewModel transaction)
 	{
@@ -37,7 +34,7 @@ public class SplitCategoryPlaceholder : AccountViewModel
 		throw new NotImplementedException();
 	}
 
-	internal override void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transactionAndEntries)
+	internal override void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transaction)
 	{
 		throw new NotImplementedException();
 	}

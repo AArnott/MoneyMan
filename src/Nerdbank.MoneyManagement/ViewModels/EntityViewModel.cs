@@ -122,7 +122,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// Writes this view model to the underlying model.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown if <see cref="Error"/> is non-empty.</exception>
-	public virtual void ApplyToModel()
+	public void ApplyToModel()
 	{
 		Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
 		this.ApplyToCore();
@@ -131,6 +131,9 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 	protected abstract void SaveCore();
 
+	/// <summary>
+	/// Writes the properties in this view model (and possibly associated view models) to the underlying model(s).
+	/// </summary>
 	protected abstract void ApplyToCore();
 
 	protected virtual bool IsPersistedProperty(string propertyName) => true;

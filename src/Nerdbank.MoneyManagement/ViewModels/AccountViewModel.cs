@@ -2,11 +2,12 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
+public abstract class AccountViewModel : EntityViewModel<Account>
 {
 	private AssetViewModel? currencyAsset;
 	private decimal value;
@@ -14,7 +15,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	private bool isClosed;
 	private Account.AccountType type;
 
-	public AccountViewModel(Account model, DocumentViewModel documentViewModel)
+	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(documentViewModel.MoneyFile, model)
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
@@ -32,7 +33,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		set => this.SetProperty(ref this.name, value);
 	}
 
-	public string? TransferTargetName => $"[{this.Name}]";
+	public abstract string? TransferTargetName { get; }
 
 	/// <inheritdoc cref="Account.IsClosed"/>
 	public bool IsClosed
@@ -97,6 +98,9 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	/// </summary>
 	protected abstract bool IsEmpty { get; }
 
+	/// <summary>
+	/// Gets a value indicating whether this account has a populated collection of transaction view models.
+	/// </summary>
 	protected abstract bool IsPopulated { get; }
 
 	protected string? DebuggerDisplay => this.Name;
@@ -127,7 +131,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		return newViewModel;
 	}
 
-	internal virtual void NotifyTransactionDeleted(Transaction transaction)
+	internal virtual void NotifyTransactionDeleted(TransactionEntry transactionEntry)
 	{
 		if (!this.IsPopulated)
 		{
@@ -135,15 +139,20 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 			return;
 		}
 
-		if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
+		if (this.FindTransaction(transactionEntry.TransactionId) is { } transactionViewModel)
 		{
 			this.RemoveTransactionFromViewModel(transactionViewModel);
 		}
 	}
 
-	internal abstract void NotifyTransactionChanged(Transaction transaction);
+	internal abstract void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transaction);
 
-	internal abstract void NotifyAccountDeleted(ICollection<Account> accounts);
+	internal abstract void NotifyAccountDeleted(ICollection<int> accountIds);
+
+	protected static void ThrowOnUnexpectedAccountType(string parameterName, Account.AccountType expectedType, Account.AccountType actualType)
+	{
+		Requires.Argument(expectedType == actualType, parameterName, "Type mismatch. Expected {0} but was {1}.", expectedType, actualType);
+	}
 
 	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);
 
@@ -174,6 +183,38 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		if (this.Model.IsPersisted)
 		{
 			this.Value = this.MoneyFile.GetValue(this.Model);
+		}
+	}
+
+	protected IEnumerable<T> CreateEntryViewModels<T>(Func<IReadOnlyList<TransactionAndEntry>, T> viewModelFactory)
+		where T : TransactionViewModel
+	{
+		// Our looping algorithm here depends on the enumerated transactions being sorted by TransactionId.
+		List<TransactionAndEntry> group = new();
+		foreach (TransactionAndEntry transactionAndEntry in this.MoneyFile.GetTopLevelTransactionsFor(this.Id))
+		{
+			if (group.Count == 0 || group[^1].TransactionId == transactionAndEntry.TransactionId)
+			{
+				// This entry belongs to this new or existing group.
+				group.Add(transactionAndEntry);
+			}
+			else
+			{
+				// We have reached the first element of the next group, so flush the one we've been building up.
+				T transactionViewModel = viewModelFactory(group);
+				yield return transactionViewModel;
+
+				// Now add this new row to the next group.
+				group.Clear();
+				group.Add(transactionAndEntry);
+			}
+		}
+
+		// Flush out whatever makes up the last group.
+		if (group.Count > 0)
+		{
+			T transactionViewModel = viewModelFactory(group);
+			yield return transactionViewModel;
 		}
 	}
 

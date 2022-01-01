@@ -17,7 +17,6 @@ public static class IntegrityChecks
 	{
 		Verify.NotDisposed(file);
 		List<Issue> issues = new();
-		issues.AddRange(file.FindBadSplitTransactions(cancellationToken));
 		return issues;
 	}
 
@@ -29,19 +28,5 @@ public static class IntegrityChecks
 		}
 
 		public string Message { get; internal set; }
-	}
-
-	/// <summary>
-	/// A <see cref="Transaction"/> is split into child transactions but its <see cref="Transaction.CreditAmount"/> or <see cref="Transaction.DebitAmount"/> is not 0.
-	/// </summary>
-	public class SplitTransactionTotalMismatch : Issue
-	{
-		public SplitTransactionTotalMismatch(Transaction transaction)
-			: base($"The amount columns for transaction {transaction.Id} are expected to be 0 because it contains child transactions, but they are (+{transaction.CreditAmount}/-{transaction.DebitAmount}).")
-		{
-			this.Transaction = transaction;
-		}
-
-		public Transaction Transaction { get; }
 	}
 }

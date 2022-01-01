@@ -21,31 +21,39 @@ public class BankingTransactionViewModel : TransactionViewModel
 		new(ClearedState.Reconciled, "Reconciled", "R"),
 	});
 
-	private ObservableCollection<SplitTransactionViewModel>? splits;
-	private DateTime when;
+	private ObservableCollection<TransactionEntryViewModel>? splits;
 	private int? checkNumber;
 	private decimal amount;
-	private string? memo;
 	private ClearedState cleared = ClearedState.None;
 	private string? payee;
-	private ITransactionTarget? categoryOrTransfer;
 	private decimal balance;
-	private SplitTransactionViewModel? selectedSplit;
+	private TransactionEntryViewModel? selectedSplit;
+	private AccountViewModel? otherAccount;
 
-	public BankingTransactionViewModel(BankingAccountViewModel thisAccount, Transaction transaction)
-		: base(thisAccount, transaction)
+	/// <summary>
+	/// Initializes a new instance of the <see cref="BankingTransactionViewModel"/> class
+	/// that is not backed by any pre-existing model in the database.
+	/// </summary>
+	/// <param name="thisAccount">The account this view model belongs to.</param>
+	public BankingTransactionViewModel(BankingAccountViewModel thisAccount)
+		: this(thisAccount, Array.Empty<TransactionAndEntry>())
 	{
-		this.CopyFrom(this.Model);
+	}
 
+	public BankingTransactionViewModel(BankingAccountViewModel thisAccount, IReadOnlyList<TransactionAndEntry> transactionAndEntries)
+		: base(thisAccount, transactionAndEntries)
+	{
 		this.SplitCommand = new SplitCommandImpl(this);
 		this.DeleteSplitCommand = new DeleteSplitCommandImpl(this);
 
-		this.RegisterDependentProperty(nameof(this.AmountIsReadOnly), nameof(this.CategoryOrTransferIsReadOnly));
-		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.CategoryOrTransferIsReadOnly));
+		this.RegisterDependentProperty(nameof(this.AmountIsReadOnly), nameof(this.OtherAccountIsReadOnly));
+		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.OtherAccountIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.SplitCommandToolTip));
 		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
 		this.RegisterDependentProperty(nameof(this.Balance), nameof(this.BalanceFormatted));
+
+		this.CopyFrom(transactionAndEntries);
 	}
 
 	/// <summary>
@@ -67,27 +75,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
 
-	public DateTime When
-	{
-		get => this.when;
-		set
-		{
-			this.ThrowIfSplitInForeignAccount();
-			this.SetProperty(ref this.when, value);
-
-			foreach (SplitTransactionViewModel split in this.Splits.Where(s => s.IsPersisted))
-			{
-				split.Model.When = value;
-				split.Save();
-			}
-		}
-	}
-
-	/// <summary>
-	/// Gets a value indicating whether the <see cref="When"/> property should be considered readonly.
-	/// </summary>
-	public bool WhenIsReadOnly => this.IsSplitInForeignAccount;
-
 	public int? CheckNumber
 	{
 		get => this.checkNumber;
@@ -99,7 +86,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 		get => this.amount;
 		set
 		{
-			this.ThrowIfSplitInForeignAccount();
 			this.SetProperty(ref this.amount, value);
 		}
 	}
@@ -109,13 +95,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// <summary>
 	/// Gets a value indicating whether the <see cref="Amount"/> property should be considered readonly.
 	/// </summary>
-	public bool AmountIsReadOnly => this.IsSplitInForeignAccount || this.ContainsSplits;
-
-	public string? Memo
-	{
-		get => this.memo;
-		set => this.SetProperty(ref this.memo, value);
-	}
+	public bool AmountIsReadOnly => this.ContainsSplits;
 
 	public ClearedState Cleared
 	{
@@ -128,50 +108,33 @@ public class BankingTransactionViewModel : TransactionViewModel
 	public string? Payee
 	{
 		get => this.payee;
-		set
-		{
-			this.ThrowIfSplitInForeignAccount();
-			this.SetProperty(ref this.payee, value);
-
-			foreach (SplitTransactionViewModel split in this.Splits.Where(s => s.IsPersisted))
-			{
-				split.Model.Payee = value;
-				split.Save();
-			}
-		}
+		set => this.SetProperty(ref this.payee, value);
 	}
 
 	/// <summary>
 	/// Gets a value indicating whether the <see cref="Payee"/> property should be considered readonly.
 	/// </summary>
-	public bool PayeeIsReadOnly => this.IsSplitInForeignAccount;
+	public bool PayeeIsReadOnly => false;
 
-	public ITransactionTarget? CategoryOrTransfer
+	/// <summary>
+	/// Gets or sets the category, transfer account, or the special "split" placeholder.
+	/// </summary>
+	public AccountViewModel? OtherAccount
 	{
-		get => this.categoryOrTransfer;
-		set
-		{
-			if (value == this.categoryOrTransfer)
-			{
-				return;
-			}
-
-			Verify.Operation(!this.ContainsSplits || value == SplitCategoryPlaceholder.Singleton, "Cannot set category or transfer on a transaction containing splits.");
-			this.ThrowIfSplitInForeignAccount();
-			this.SetProperty(ref this.categoryOrTransfer, value);
-		}
+		get => this.otherAccount;
+		set => this.SetProperty(ref this.otherAccount, value);
 	}
 
 	/// <summary>
-	/// Gets a value indicating whether the <see cref="CategoryOrTransfer"/> property should be considered readonly.
+	/// Gets a value indicating whether the <see cref="OtherAccount"/> property should be considered readonly.
 	/// </summary>
-	public bool CategoryOrTransferIsReadOnly => this.ContainsSplits || this.IsSplitInForeignAccount;
+	public bool OtherAccountIsReadOnly => this.ContainsSplits;
 
-	public IEnumerable<ITransactionTarget> AvailableTransactionTargets
-		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != SplitCategoryPlaceholder.Singleton);
+	public IEnumerable<AccountViewModel> AvailableTransactionTargets
+		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != this.ThisAccount.DocumentViewModel.SplitCategory);
 
 	////[SplitSumMatchesTransactionAmount]
-	public IReadOnlyList<SplitTransactionViewModel> Splits
+	public IReadOnlyList<TransactionEntryViewModel> Splits
 	{
 		get
 		{
@@ -180,14 +143,12 @@ public class BankingTransactionViewModel : TransactionViewModel
 				this.splits = new();
 				if (this.IsPersisted)
 				{
-					SQLite.TableQuery<Transaction> splits = this.MoneyFile.Transactions
-						.Where(tx => tx.ParentTransactionId == this.Id);
-					foreach (Transaction split in splits)
-					{
-						SplitTransactionViewModel splitViewModel = new(this, split);
-						this.splits.Add(splitViewModel);
-						splitViewModel.PropertyChanged += this.Splits_PropertyChanged;
-					}
+					////foreach (Transaction split in splits)
+					////{
+					////	TransactionEntryViewModel splitViewModel = new(this, split);
+					////	this.splits.Add(splitViewModel);
+					////	splitViewModel.PropertyChanged += this.Splits_PropertyChanged;
+					////}
 
 					if (this.splits.Count > 0)
 					{
@@ -200,24 +161,20 @@ public class BankingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	public bool ContainsSplits => this.Splits.Count > 0;
+	/// <summary>
+	/// Gets a value indicating whether this transaction can only be represented with splits.
+	/// </summary>
+	/// <remarks>
+	/// A typical transaction will have 1 or 2 entries, which can be represented as a single row in a ledger.
+	/// Any more than that indicates that a split took place, where money did not just go from one account/category to another.
+	/// </remarks>
+	public bool ContainsSplits => this.Entries.Count > 2;
 
-	public SplitTransactionViewModel? SelectedSplit
+	public TransactionEntryViewModel? SelectedSplit
 	{
 		get => this.selectedSplit;
 		set => this.SetProperty(ref this.selectedSplit, value);
 	}
-
-	/// <summary>
-	/// Gets a value indicating whether this "transaction" is really just synthesized to represent the split line item(s)
-	/// of a transaction in another account that transfer to/from this account.
-	/// </summary>
-	public bool IsSplitMemberOfParentTransaction => this.Model.ParentTransactionId.HasValue is true;
-
-	/// <summary>
-	/// Gets a value indicating whether this is a member of a split transaction that appears (as its own top-level transaction) in another account (as a transfer).
-	/// </summary>
-	public bool IsSplitInForeignAccount => this.Model.ParentTransactionId is int parentTransactionId && this.ThisAccount.FindTransaction(parentTransactionId) is null;
 
 	public decimal Balance
 	{
@@ -230,12 +187,15 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
 
-	private string DebuggerDisplay => $"Transaction ({this.Id}): {this.When} {this.Payee} {this.Amount}";
+	/// <summary>
+	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
+	/// </summary>
+	private TransactionEntryViewModel TopLevelEntry => this.Entries.First(e => e.Account == this.ThisAccount);
 
-	public SplitTransactionViewModel NewSplit()
+	private string DebuggerDisplay => $"Transaction ({this.TransactionId}): {this.When} {this.Payee} {this.Amount}";
+
+	public TransactionEntryViewModel NewSplit()
 	{
-		Verify.Operation(!this.IsSplitMemberOfParentTransaction, "Cannot split a transaction that is already a member of a split transaction.");
-
 		if (!this.IsPersisted)
 		{
 			// Persist this transaction so the splits can refer to it.
@@ -244,23 +204,18 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 		_ = this.Splits; // ensure initialized
 		bool wasSplit = this.ContainsSplits;
-		Transaction splitModel = new Transaction
-		{
-			When = this.When,
-			Payee = this.Payee,
-		};
-		SplitTransactionViewModel split = new(this, splitModel)
+		TransactionEntryViewModel split = new(this)
 		{
 			Amount = wasSplit ? 0 : this.Amount,
 		};
 		using (this.SuspendAutoSave())
 		{
-			if (this.CategoryOrTransfer != SplitCategoryPlaceholder.Singleton)
+			if (this.OtherAccount != this.ThisAccount.DocumentViewModel.SplitCategory)
 			{
-				split.CategoryOrTransfer = this.CategoryOrTransfer;
+				split.Account = this.OtherAccount;
 			}
 
-			this.CategoryOrTransfer = SplitCategoryPlaceholder.Singleton;
+			this.OtherAccount = this.ThisAccount.DocumentViewModel.SplitCategory;
 
 			this.splits!.Add(split);
 		}
@@ -276,7 +231,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		return split;
 	}
 
-	public void DeleteSplit(SplitTransactionViewModel split)
+	public void DeleteSplit(TransactionEntryViewModel split)
 	{
 		if (this.splits is null)
 		{
@@ -313,7 +268,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 				this.Memo = split.Memo;
 			}
 
-			this.CategoryOrTransfer = split.CategoryOrTransfer;
+			this.OtherAccount = split.Account;
 			this.Amount = amount;
 		}
 
@@ -334,7 +289,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		{
 			int originalSplitCount = this.Splits.Count(s => s.IsPersisted); // don't count the volatile split placeholder.
 			decimal amount = this.Amount;
-			foreach (SplitTransactionViewModel split in this.Splits.ToList())
+			foreach (TransactionEntryViewModel split in this.Splits.ToList())
 			{
 				this.DeleteSplit(split);
 			}
@@ -343,41 +298,12 @@ public class BankingTransactionViewModel : TransactionViewModel
 			// so clear it explicitly since otherwise the DeleteSplit call above would cause us to inherit the last split's category.
 			if (originalSplitCount > 1)
 			{
-				this.CategoryOrTransfer = null;
+				this.OtherAccount = null;
 
 				// Also restore the Amount to the original multi-split value.
 				this.Amount = amount;
 			}
 		}
-	}
-
-	public BankingTransactionViewModel? GetSplitParent()
-	{
-		int? splitParentId = this.Model.ParentTransactionId;
-		if (splitParentId is null)
-		{
-			return null;
-		}
-
-		Transaction parentTransaction = this.MoneyFile.Transactions.First(t => t.Id == splitParentId);
-
-		// TODO: How to determine which account is preferable when a split transaction exists in two accounts?
-		int? accountId = parentTransaction.CreditAccountId ?? parentTransaction.DebitAccountId;
-		if (accountId is null)
-		{
-			return null;
-		}
-
-		BankingAccountViewModel parentAccount = (BankingAccountViewModel)this.ThisAccount.DocumentViewModel.GetAccount(accountId.Value);
-		return parentAccount.Transactions.First(tx => tx.Id == parentTransaction.Id);
-	}
-
-	public void JumpToSplitParent()
-	{
-		BankingTransactionViewModel? splitParent = this.GetSplitParent();
-		Verify.Operation(splitParent is object, "Cannot jump to split parent from a transaction that is not a member of a split transaction.");
-		this.ThisAccount.DocumentViewModel.BankingPanel.SelectedAccount = splitParent.ThisAccount;
-		this.ThisAccount.DocumentViewModel.SelectedTransaction = splitParent;
 	}
 
 	public decimal GetSplitTotal()
@@ -386,129 +312,31 @@ public class BankingTransactionViewModel : TransactionViewModel
 		return this.Splits.Sum(s => s.Amount);
 	}
 
-	internal void ThrowIfSplitInForeignAccount() => Verify.Operation(!this.IsSplitInForeignAccount, "This operation is not allowed when applied to a split transaction in the context of a transfer account. Retry on the split in the account of the top-level account.");
-
 	protected override void ApplyToCore()
 	{
-		this.Model.Payee = this.Payee;
-		this.Model.When = this.When;
-		this.Model.Memo = this.Memo;
-		this.Model.CheckNumber = this.CheckNumber;
+		this.Transaction.Payee = this.Payee;
+		this.Transaction.When = this.When;
+		this.Transaction.CheckNumber = this.CheckNumber;
+		this.TopLevelEntry.Cleared = this.Cleared;
 
-		if (this.ContainsSplits)
+		if (!this.ContainsSplits)
 		{
-			this.Model.CategoryId = Category.Split;
-			foreach (SplitTransactionViewModel split in this.Splits.ToList())
-			{
-				split.Save();
-			}
-
-			// Split transactions always record the same account for credit and debit,
-			// and always have their own Amount set to 0.
-			this.Model.CreditAccountId = this.ThisAccount.Id;
-			this.Model.DebitAccountId = this.ThisAccount.Id;
-			this.Model.CreditAmount = null;
-			this.Model.DebitAmount = null;
-			this.Model.CreditAssetId = null;
-			this.Model.DebitAssetId = null;
-		}
-		else
-		{
-			this.Model.CategoryId = (this.CategoryOrTransfer as CategoryViewModel)?.Id;
-
-			if (this.Amount < 0)
-			{
-				this.Model.DebitCleared = this.Cleared;
-				this.Model.DebitAccountId = this.ThisAccount.Id;
-				this.Model.DebitAmount = -this.Amount;
-				this.Model.DebitAssetId = this.ThisAccount.CurrencyAsset?.Id;
-				if (this.CategoryOrTransfer is AccountViewModel xfer)
-				{
-					this.Model.CreditAccountId = xfer.Id;
-					this.Model.CreditAmount = -this.Amount;
-					this.Model.Action = TransactionAction.Transfer;
-				}
-				else
-				{
-					this.Model.CreditAccountId = null;
-					this.Model.CreditAmount = null;
-					this.Model.Action = TransactionAction.Withdraw;
-				}
-			}
-			else
-			{
-				this.Model.CreditCleared = this.Cleared;
-				this.Model.CreditAccountId = this.ThisAccount.Id;
-				this.Model.CreditAmount = this.Amount;
-				this.Model.CreditAssetId = this.ThisAccount.CurrencyAsset?.Id;
-				if (this.CategoryOrTransfer is AccountViewModel xfer)
-				{
-					this.Model.DebitAccountId = xfer.Id;
-					this.Model.DebitAmount = this.Amount;
-					this.Model.Action = TransactionAction.Transfer;
-				}
-				else
-				{
-					this.Model.DebitAccountId = null;
-					this.Model.DebitAmount = null;
-					this.Model.Action = TransactionAction.Deposit;
-				}
-			}
+			this.Transaction.Action =
+				this.Entries.Count == 2 && this.Entries.All(e => e.Account?.Type is not (null or Account.AccountType.Category)) ? TransactionAction.Transfer :
+				this.Entries.Count == 1 && this.Entries[0].Amount > 0 ? TransactionAction.Deposit :
+				this.Entries.Count == 1 && this.Entries[0].Amount < 0 ? TransactionAction.Withdraw :
+				TransactionAction.Unspecified;
 		}
 	}
 
 	protected override void CopyFromCore()
 	{
-		this.SetProperty(ref this.payee, this.Model.Payee, nameof(this.Payee));
-		this.SetProperty(ref this.when, this.Model.When, nameof(this.When));
-		this.Memo = this.Model.Memo;
-		this.CheckNumber = this.Model.CheckNumber;
-		this.Cleared = this.Model.CreditAccountId == this.ThisAccount.Id ? this.Model.CreditCleared : this.Model.DebitCleared;
+		base.CopyFromCore();
+		this.Payee = this.Transaction.Payee;
+		this.CheckNumber = this.Transaction.CheckNumber;
+		this.Cleared = this.TopLevelEntry.Cleared;
 
-		if (this.Model.CategoryId is int categoryId)
-		{
-			if (categoryId == Category.Split)
-			{
-				// The split entities themselves are lazily initialized.
-				this.categoryOrTransfer = SplitCategoryPlaceholder.Singleton;
-			}
-			else
-			{
-				this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel.GetCategory(categoryId), nameof(this.CategoryOrTransfer));
-				if (this.splits is object)
-				{
-					this.splits.Clear();
-				}
-
-				this.OnPropertyChanged(nameof(this.Splits));
-			}
-		}
-		else if (this.Model.CreditAccountId is int creditId && this.ThisAccount.Id != creditId)
-		{
-			this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel.GetAccount(creditId), nameof(this.CategoryOrTransfer));
-		}
-		else if (this.Model.DebitAccountId is int debitId && this.ThisAccount.Id != debitId)
-		{
-			this.SetProperty(ref this.categoryOrTransfer, this.ThisAccount.DocumentViewModel.GetAccount(debitId), nameof(this.CategoryOrTransfer));
-		}
-		else
-		{
-			this.SetProperty(ref this.categoryOrTransfer, null, nameof(this.CategoryOrTransfer));
-		}
-
-		// Split transactions' amounts are always calculated to be the sum of the splits.
-		if (this.ContainsSplits)
-		{
-			this.SetAmountBasedOnSplits();
-		}
-		else
-		{
-			decimal amount =
-				this.Model.CreditAccountId == this.ThisAccount.Id ? (this.Model.CreditAmount ?? 0) :
-				this.Model.DebitAccountId == this.ThisAccount.Id ? (-this.Model.DebitAmount ?? 0) :
-				0;
-			this.SetProperty(ref this.amount, amount, nameof(this.Amount));
-		}
+		// TODO: Code here
 	}
 
 	protected override bool IsPersistedProperty(string propertyName)
@@ -545,16 +373,11 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.ThisAccount.NotifyAmountChangedOnSplitTransaction(this);
 	}
 
-	private SplitTransactionViewModel CreateVolatileSplit()
+	private TransactionEntryViewModel CreateVolatileSplit()
 	{
 		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
 		_ = this.Splits;
-		var volatileModel = new Transaction()
-		{
-			When = this.When,
-			Payee = this.Payee,
-		};
-		SplitTransactionViewModel volatileViewModel = new(this, volatileModel);
+		TransactionEntryViewModel volatileViewModel = new(this);
 		this.splits!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileSplitTransaction_Saved;
 		volatileViewModel.PropertyChanged += this.Splits_PropertyChanged;
@@ -563,7 +386,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	private void VolatileSplitTransaction_Saved(object? sender, EventArgs args)
 	{
-		SplitTransactionViewModel? volatileSplit = (SplitTransactionViewModel?)sender;
+		TransactionEntryViewModel? volatileSplit = (TransactionEntryViewModel?)sender;
 		Assumes.NotNull(volatileSplit);
 		volatileSplit.Saved -= this.VolatileSplitTransaction_Saved;
 

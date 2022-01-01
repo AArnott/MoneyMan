@@ -27,7 +27,7 @@
 			<TextBlock Text="{Binding Message}" TextWrapping="Wrap" d:Text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Pellentesque id nibh tortor id aliquet?" />
 			<ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" d:SelectedIndex="0" TabIndex="0">
 				<ComboBox.Resources>
-					<DataTemplate DataType="{x:Type vm:CategoryViewModel}">
+					<DataTemplate DataType="{x:Type vm:CategoryAccountViewModel}">
 						<TextBlock Text="{Binding Name}" />
 					</DataTemplate>
 				</ComboBox.Resources>
