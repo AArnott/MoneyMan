@@ -18,43 +18,26 @@ public class IntegrityChecksFacts : MoneyTestBase
 	public void ValidFileWithTransactions()
 	{
 		// Add ordinary transaction.
-		this.Money.Insert(new Transaction { CreditAmount = 10 });
+		Account checking = new Account { Name = "Checking" };
+		this.Money.Insert(checking);
+		this.Money.Deposit(checking, 10);
 
 		// Add a split transaction.
+		Account cat1 = new Account { Name = "Category 1", Type = Account.AccountType.Category };
+		Account cat2 = new Account { Name = "Category 2", Type = Account.AccountType.Category };
 		var transaction = new Transaction
 		{
-			CreditAmount = 10,
+			When = DateTime.Today,
 		};
 		this.Money.Insert(transaction);
-		var splits = new Transaction[]
+		var splits = new TransactionEntry[]
 		{
-			new() { ParentTransactionId = transaction.Id, CreditAmount = 2 },
-			new() { ParentTransactionId = transaction.Id, CreditAmount = 8 },
+			new() { AccountId = checking.Id, TransactionId = transaction.Id, Amount = 10 },
+			new() { AccountId = cat1.Id, TransactionId = transaction.Id, Amount = -8 },
+			new() { AccountId = cat2.Id, TransactionId = transaction.Id, Amount = -2 },
 		};
 		this.Money.InsertAll(splits);
 
 		Assert.Empty(IntegrityChecks.CheckIntegrity(this.Money));
-	}
-
-	[Fact]
-	public void BadSplitTransaction()
-	{
-		var transaction = new Transaction
-		{
-			CategoryId = Category.Split,
-			CreditAmount = 6, // The right sum, but it's supposed to be 0.
-		};
-		this.Money.Insert(transaction);
-		var splits = new Transaction[]
-		{
-			new() { ParentTransactionId = transaction.Id, CreditAmount = 2 },
-			new() { ParentTransactionId = transaction.Id, CreditAmount = 4 },
-		};
-		this.Money.InsertAll(splits);
-
-		IReadOnlyList<IntegrityChecks.Issue> issues = IntegrityChecks.CheckIntegrity(this.Money);
-		Assert.Single(issues);
-		var issue = Assert.IsType<IntegrityChecks.SplitTransactionTotalMismatch>(issues[0]);
-		Assert.Equal(transaction.Id, issue.Transaction.Id);
 	}
 }
