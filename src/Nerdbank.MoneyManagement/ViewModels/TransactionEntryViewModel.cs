@@ -46,6 +46,12 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		set => this.SetProperty(ref this.account, value);
 	}
 
+	/// <summary>
+	/// Gets the set of accounts that this <see cref="TransactionEntryViewModel"/> may choose from to set its <see cref="Account"/> property.
+	/// </summary>
+	public IEnumerable<AccountViewModel> AvailableTransactionTargets
+		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != this.ThisAccount.DocumentViewModel.SplitCategory);
+
 	public decimal Amount
 	{
 		get => this.amount;

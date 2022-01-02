@@ -4,9 +4,9 @@
 public class SplitTransactionViewModelTests : MoneyTestBase
 {
 	private BankingAccountViewModel checkingAccount;
-	private CategoryViewModel spendingCategory;
+	private CategoryAccountViewModel spendingCategory;
 	private BankingTransactionViewModel transaction;
-	private SplitTransactionViewModel viewModel;
+	private TransactionEntryViewModel viewModel;
 
 	private decimal amount = 5.5m;
 
@@ -36,15 +36,15 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	{
 		TestUtilities.AssertPropertyChangedEvent(
 			this.viewModel,
-			() => this.viewModel.CategoryOrTransfer = this.spendingCategory,
-			nameof(this.viewModel.CategoryOrTransfer));
-		Assert.Equal(this.spendingCategory, this.viewModel.CategoryOrTransfer);
+			() => this.viewModel.Account = this.spendingCategory,
+			nameof(this.viewModel.Account));
+		Assert.Equal(this.spendingCategory, this.viewModel.Account);
 	}
 
 	[Fact]
 	public void AvailableTransactionTargets()
 	{
-		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == SplitCategoryPlaceholder.Singleton);
+		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.DocumentViewModel.SplitCategory);
 		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.viewModel.ThisAccount);
 		Assert.NotEmpty(this.viewModel.AvailableTransactionTargets);
 	}
@@ -66,7 +66,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 		this.viewModel.Memo = this.memo;
 		this.viewModel.ApplyToModel();
 
-		Assert.Equal(this.amount, this.viewModel.Model!.CreditAmount);
+		Assert.Equal(this.amount, this.viewModel.Model.Amount);
 		Assert.Equal(this.memo, this.viewModel.Model.Memo);
 	}
 
@@ -75,22 +75,21 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	{
 		Assert.Throws<ArgumentNullException>("model", () => this.viewModel.CopyFrom(null!));
 
-		Transaction splitTransaction = new Transaction
+		TransactionEntry splitTransaction = new()
 		{
-			CreditAmount = this.amount,
+			Amount = this.amount,
 			Memo = this.memo,
-			CategoryId = this.spendingCategory.Id,
-			CreditAccountId = this.checkingAccount.Id,
+			AccountId = this.spendingCategory.Id,
 		};
 
 		this.viewModel.CopyFrom(splitTransaction);
 
-		Assert.Equal(splitTransaction.CreditAmount, this.viewModel.Amount);
+		Assert.Equal(splitTransaction.Amount, this.viewModel.Amount);
 		Assert.Equal(splitTransaction.Memo, this.viewModel.Memo);
-		Assert.Equal(this.spendingCategory.Id, ((CategoryViewModel?)this.viewModel.CategoryOrTransfer)?.Id);
+		Assert.Equal(this.spendingCategory.Id, this.viewModel.Account?.Id);
 
-		splitTransaction.CategoryId = null;
+		splitTransaction.AccountId = 0;
 		this.viewModel.CopyFrom(splitTransaction);
-		Assert.Null(this.viewModel.CategoryOrTransfer);
+		Assert.Null(this.viewModel.Account);
 	}
 }
