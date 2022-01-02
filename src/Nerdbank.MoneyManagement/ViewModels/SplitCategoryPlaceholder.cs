@@ -11,6 +11,7 @@ public class SplitCategoryPlaceholder : AccountViewModel
 	internal SplitCategoryPlaceholder(DocumentViewModel documentViewModel)
 		: base(null, documentViewModel)
 	{
+		this.Model.Id = -1; // Block accidental persisting of this in-memory representation.
 		this.Name = "--split--";
 	}
 
