@@ -3,12 +3,12 @@
 
 public class CategoryViewModelTests : MoneyTestBase
 {
-	private CategoryViewModel viewModel;
+	private CategoryAccountViewModel viewModel;
 
 	public CategoryViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.viewModel = new CategoryViewModel(null, this.Money);
+		this.viewModel = new CategoryAccountViewModel(null, this.DocumentViewModel);
 	}
 
 	[Fact]
@@ -82,17 +82,16 @@ public class CategoryViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
-		var category = new Category();
-		this.viewModel = new CategoryViewModel(category, this.Money);
+		this.viewModel = new CategoryAccountViewModel(null, this.DocumentViewModel);
 
 		this.viewModel.Name = "some name";
 
 		this.viewModel.ApplyToModel();
-		Assert.Equal(this.viewModel.Name, category.Name);
+		Assert.Equal(this.viewModel.Name, this.viewModel.Model.Name);
 
 		// Test auto-save behavior.
 		this.viewModel.Name = "another name";
-		Assert.Equal(this.viewModel.Name, category.Name);
+		Assert.Equal(this.viewModel.Name, this.viewModel.Model.Name);
 	}
 
 	[Fact]
@@ -100,7 +99,7 @@ public class CategoryViewModelTests : MoneyTestBase
 	{
 		Assert.Throws<ArgumentNullException>(() => this.viewModel.CopyFrom(null!));
 
-		var category = new Category
+		Account category = new()
 		{
 			Id = 5,
 			Name = "some name",
@@ -119,12 +118,12 @@ public class CategoryViewModelTests : MoneyTestBase
 	[Fact]
 	public void Ctor_From_Volatile_Entity()
 	{
-		var category = new Category
+		Account category = new()
 		{
 			Name = "some name",
 		};
 
-		this.viewModel = new CategoryViewModel(category, this.Money);
+		this.viewModel = new CategoryAccountViewModel(category, this.DocumentViewModel);
 
 		Assert.Equal(category.Id, this.viewModel.Id);
 		Assert.Equal(category.Name, this.viewModel.Name);
@@ -136,7 +135,7 @@ public class CategoryViewModelTests : MoneyTestBase
 		Assert.Equal(category.Id, this.viewModel.Id);
 		Assert.NotEqual(0, category.Id);
 
-		Category fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
+		Account fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
 		Assert.Equal(category.Name, fromDb.Name);
 		Assert.Single(this.Money.Categories);
 	}
@@ -144,13 +143,13 @@ public class CategoryViewModelTests : MoneyTestBase
 	[Fact]
 	public void Ctor_From_Db_Entity()
 	{
-		var category = new Category
+		Account category = new()
 		{
 			Name = "some name",
 		};
 		this.Money.Insert(category);
 
-		this.viewModel = new CategoryViewModel(category, this.Money);
+		this.viewModel = new CategoryAccountViewModel(category, this.DocumentViewModel);
 
 		Assert.Equal(category.Id, this.viewModel.Id);
 		Assert.Equal(category.Name, this.viewModel.Name);
@@ -159,7 +158,7 @@ public class CategoryViewModelTests : MoneyTestBase
 		this.viewModel.Name = "another name";
 		Assert.Equal(this.viewModel.Name, category.Name);
 
-		Category fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
+		Account fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
 		Assert.Equal(category.Name, fromDb.Name);
 		Assert.Single(this.Money.Categories);
 	}
