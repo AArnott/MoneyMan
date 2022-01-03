@@ -19,6 +19,16 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private decimal? depositAmount;
 	private decimal? withdrawAmount;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="InvestingTransactionViewModel"/> class
+	/// that is not backed by any pre-existing model in the database.
+	/// </summary>
+	/// <param name="thisAccount">The account this view model belongs to.</param>
+	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount)
+		: this(thisAccount, Array.Empty<TransactionAndEntry>())
+	{
+	}
+
 	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, IReadOnlyList<TransactionAndEntry> models)
 		: base(thisAccount, models)
 	{

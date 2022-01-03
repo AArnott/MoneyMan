@@ -50,13 +50,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	{
 		InvestingTransactionViewModel buy = this.account.Transactions[^1];
 		buy.Action = TransactionAction.Buy;
-		Assert.Same(this.account, buy.CreditAccount);
-		Assert.Same(this.account, buy.DebitAccount);
-		Assert.Same(this.DocumentViewModel.DefaultCurrency, buy.DebitAsset);
+		Assert.Same(this.account, buy.DepositAccount);
+		Assert.Same(this.account, buy.WithdrawAccount);
+		Assert.Same(this.DocumentViewModel.DefaultCurrency, buy.WithdrawAsset);
 
-		Assert.Null(buy.CreditAmount);
-		Assert.Null(buy.DebitAmount);
-		Assert.Null(buy.CreditAsset);
+		Assert.Null(buy.DepositAmount);
+		Assert.Null(buy.WithdrawAmount);
+		Assert.Null(buy.DepositAsset);
 	}
 
 	[Fact]
@@ -64,13 +64,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	{
 		InvestingTransactionViewModel sell = this.account.Transactions[^1];
 		sell.Action = TransactionAction.Sell;
-		Assert.Same(this.account, sell.CreditAccount);
-		Assert.Same(this.account, sell.DebitAccount);
-		Assert.Same(this.account.CurrencyAsset, sell.CreditAsset);
+		Assert.Same(this.account, sell.DepositAccount);
+		Assert.Same(this.account, sell.WithdrawAccount);
+		Assert.Same(this.account.CurrencyAsset, sell.DepositAsset);
 
-		Assert.Null(sell.CreditAmount);
-		Assert.Null(sell.DebitAmount);
-		Assert.Null(sell.DebitAsset);
+		Assert.Null(sell.DepositAmount);
+		Assert.Null(sell.WithdrawAmount);
+		Assert.Null(sell.WithdrawAsset);
 	}
 
 	[Fact]
@@ -78,13 +78,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	{
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 		exchange.Action = TransactionAction.Exchange;
-		Assert.Same(this.account, exchange.CreditAccount);
-		Assert.Same(this.account, exchange.DebitAccount);
+		Assert.Same(this.account, exchange.DepositAccount);
+		Assert.Same(this.account, exchange.WithdrawAccount);
 
-		Assert.Null(exchange.CreditAmount);
-		Assert.Null(exchange.DebitAmount);
-		Assert.Null(exchange.DebitAsset);
-		Assert.Null(exchange.CreditAsset);
+		Assert.Null(exchange.DepositAmount);
+		Assert.Null(exchange.WithdrawAmount);
+		Assert.Null(exchange.WithdrawAsset);
+		Assert.Null(exchange.DepositAsset);
 	}
 
 	[Fact]
@@ -93,18 +93,18 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 
 		// Add some noise that we expect to be cleaned up by setting Action.
-		exchange.CreditAccount = this.account;
-		exchange.CreditAmount = 2;
-		exchange.CreditAsset = this.appl;
+		exchange.DepositAccount = this.account;
+		exchange.DepositAmount = 2;
+		exchange.DepositAsset = this.appl;
 
 		exchange.Action = TransactionAction.Withdraw;
-		Assert.Same(this.account, exchange.DebitAccount);
-		Assert.Same(this.DocumentViewModel.DefaultCurrency, exchange.DebitAsset);
+		Assert.Same(this.account, exchange.WithdrawAccount);
+		Assert.Same(this.DocumentViewModel.DefaultCurrency, exchange.WithdrawAsset);
 
-		Assert.Null(exchange.CreditAccount);
-		Assert.Null(exchange.CreditAmount);
-		Assert.Null(exchange.CreditAsset);
-		Assert.Null(exchange.DebitAmount);
+		Assert.Null(exchange.DepositAccount);
+		Assert.Null(exchange.DepositAmount);
+		Assert.Null(exchange.DepositAsset);
+		Assert.Null(exchange.WithdrawAmount);
 	}
 
 	[Fact]
@@ -113,18 +113,18 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 
 		// Add some noise that we expect to be cleaned up by setting Action.
-		exchange.CreditAccount = this.account;
-		exchange.CreditAmount = 2;
-		exchange.CreditAsset = this.appl;
+		exchange.DepositAccount = this.account;
+		exchange.DepositAmount = 2;
+		exchange.DepositAsset = this.appl;
 
 		exchange.Action = TransactionAction.Remove;
-		Assert.Same(this.account, exchange.DebitAccount);
+		Assert.Same(this.account, exchange.WithdrawAccount);
 
-		Assert.Null(exchange.CreditAccount);
-		Assert.Null(exchange.CreditAmount);
-		Assert.Null(exchange.CreditAsset);
-		Assert.Null(exchange.DebitAmount);
-		Assert.Null(exchange.DebitAsset);
+		Assert.Null(exchange.DepositAccount);
+		Assert.Null(exchange.DepositAmount);
+		Assert.Null(exchange.DepositAsset);
+		Assert.Null(exchange.WithdrawAmount);
+		Assert.Null(exchange.WithdrawAsset);
 	}
 
 	[Fact]
@@ -133,18 +133,18 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 
 		// Add some noise that we expect to be cleaned up by setting Action.
-		exchange.DebitAccount = this.account;
-		exchange.DebitAmount = 2;
-		exchange.DebitAsset = this.appl;
+		exchange.WithdrawAccount = this.account;
+		exchange.WithdrawAmount = 2;
+		exchange.WithdrawAsset = this.appl;
 
 		exchange.Action = TransactionAction.Add;
-		Assert.Same(this.account, exchange.CreditAccount);
+		Assert.Same(this.account, exchange.DepositAccount);
 
-		Assert.Null(exchange.DebitAccount);
-		Assert.Null(exchange.DebitAmount);
-		Assert.Null(exchange.DebitAsset);
-		Assert.Null(exchange.CreditAmount);
-		Assert.Null(exchange.CreditAsset);
+		Assert.Null(exchange.WithdrawAccount);
+		Assert.Null(exchange.WithdrawAmount);
+		Assert.Null(exchange.WithdrawAsset);
+		Assert.Null(exchange.DepositAmount);
+		Assert.Null(exchange.DepositAsset);
 	}
 
 	[Fact]
@@ -153,18 +153,18 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 
 		// Add some noise that we expect to be cleaned up by setting Action.
-		exchange.DebitAccount = this.account;
-		exchange.DebitAmount = 2;
-		exchange.DebitAsset = this.appl;
+		exchange.WithdrawAccount = this.account;
+		exchange.WithdrawAmount = 2;
+		exchange.WithdrawAsset = this.appl;
 
 		exchange.Action = TransactionAction.Dividend;
-		Assert.Same(this.account, exchange.CreditAccount);
-		Assert.Same(this.account.CurrencyAsset, exchange.CreditAsset);
+		Assert.Same(this.account, exchange.DepositAccount);
+		Assert.Same(this.account.CurrencyAsset, exchange.DepositAsset);
 
-		Assert.Null(exchange.DebitAccount);
-		Assert.Null(exchange.DebitAmount);
-		Assert.Null(exchange.DebitAsset);
-		Assert.Null(exchange.CreditAmount);
+		Assert.Null(exchange.WithdrawAccount);
+		Assert.Null(exchange.WithdrawAmount);
+		Assert.Null(exchange.WithdrawAsset);
+		Assert.Null(exchange.DepositAmount);
 	}
 
 	[Fact]
@@ -173,18 +173,18 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 
 		// Add some noise that we expect to be cleaned up by setting Action.
-		exchange.DebitAccount = this.account;
-		exchange.DebitAmount = 2;
-		exchange.DebitAsset = this.appl;
+		exchange.WithdrawAccount = this.account;
+		exchange.WithdrawAmount = 2;
+		exchange.WithdrawAsset = this.appl;
 
 		exchange.Action = TransactionAction.Interest;
-		Assert.Same(this.account, exchange.CreditAccount);
-		Assert.Same(this.account.CurrencyAsset, exchange.CreditAsset);
+		Assert.Same(this.account, exchange.DepositAccount);
+		Assert.Same(this.account.CurrencyAsset, exchange.DepositAsset);
 
-		Assert.Null(exchange.DebitAccount);
-		Assert.Null(exchange.DebitAmount);
-		Assert.Null(exchange.DebitAsset);
-		Assert.Null(exchange.CreditAmount);
+		Assert.Null(exchange.WithdrawAccount);
+		Assert.Null(exchange.WithdrawAmount);
+		Assert.Null(exchange.WithdrawAsset);
+		Assert.Null(exchange.DepositAmount);
 	}
 
 	[Fact]
@@ -193,18 +193,18 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 
 		// Add some noise that we expect to be cleaned up by setting Action.
-		exchange.DebitAccount = this.account;
-		exchange.DebitAmount = 2;
-		exchange.DebitAsset = this.appl;
+		exchange.WithdrawAccount = this.account;
+		exchange.WithdrawAmount = 2;
+		exchange.WithdrawAsset = this.appl;
 
 		exchange.Action = TransactionAction.Deposit;
-		Assert.Same(this.account, exchange.CreditAccount);
-		Assert.Same(this.account.CurrencyAsset, exchange.CreditAsset);
+		Assert.Same(this.account, exchange.DepositAccount);
+		Assert.Same(this.account.CurrencyAsset, exchange.DepositAsset);
 
-		Assert.Null(exchange.DebitAccount);
-		Assert.Null(exchange.DebitAmount);
-		Assert.Null(exchange.DebitAsset);
-		Assert.Null(exchange.CreditAmount);
+		Assert.Null(exchange.WithdrawAccount);
+		Assert.Null(exchange.WithdrawAmount);
+		Assert.Null(exchange.WithdrawAsset);
+		Assert.Null(exchange.DepositAmount);
 	}
 
 	[Fact]
@@ -213,11 +213,11 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];
 		exchange.Action = TransactionAction.Exchange;
 
-		exchange.DebitAsset = this.msft;
-		exchange.DebitAmount = 3;
+		exchange.WithdrawAsset = this.msft;
+		exchange.WithdrawAmount = 3;
 
-		exchange.CreditAsset = this.appl;
-		exchange.CreditAmount = 2;
+		exchange.DepositAsset = this.appl;
+		exchange.DepositAmount = 2;
 
 		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
 		Assert.Equal(2, balances[this.appl.Id]);
@@ -225,13 +225,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			exchange = this.account.FindTransaction(exchange.Id)!;
-			Assert.Same(this.msft, exchange.DebitAsset);
-			Assert.Equal(3, exchange.DebitAmount);
-			Assert.Same(this.account, exchange.CreditAccount);
-			Assert.Same(this.appl, exchange.CreditAsset);
-			Assert.Equal(2, exchange.CreditAmount);
-			Assert.Same(this.account, exchange.DebitAccount);
+			exchange = this.account.FindTransaction(exchange.TransactionId)!;
+			Assert.Same(this.msft, exchange.WithdrawAsset);
+			Assert.Equal(3, exchange.WithdrawAmount);
+			Assert.Same(this.account, exchange.DepositAccount);
+			Assert.Same(this.appl, exchange.DepositAsset);
+			Assert.Equal(2, exchange.DepositAmount);
+			Assert.Same(this.account, exchange.WithdrawAccount);
 			Assert.Equal("3 MSFT -> 2 AAPL", exchange.Description);
 		});
 	}
@@ -245,10 +245,10 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
-			Assert.Equal(3, tx.CreditAmount);
-			Assert.Same(this.account, tx.CreditAccount);
-			Assert.Same(this.account.CurrencyAsset, tx.CreditAsset);
+			tx = this.account.FindTransaction(tx.TransactionId)!;
+			Assert.Equal(3, tx.DepositAmount);
+			Assert.Same(this.account, tx.DepositAccount);
+			Assert.Same(this.account.CurrencyAsset, tx.DepositAsset);
 			Assert.Equal("$3.00", tx.Description);
 			Assert.False(tx.IsSimpleAssetApplicable);
 			Assert.False(tx.IsSimplePriceApplicable);
@@ -264,10 +264,10 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
-			Assert.Equal(3, tx.DebitAmount);
-			Assert.Same(this.account, tx.DebitAccount);
-			Assert.Same(this.account.CurrencyAsset, tx.DebitAsset);
+			tx = this.account.FindTransaction(tx.TransactionId)!;
+			Assert.Equal(3, tx.WithdrawAmount);
+			Assert.Same(this.account, tx.WithdrawAccount);
+			Assert.Same(this.account.CurrencyAsset, tx.WithdrawAsset);
 			Assert.Equal("$3.00", tx.Description);
 			Assert.False(tx.IsSimpleAssetApplicable);
 			Assert.False(tx.IsSimplePriceApplicable);
@@ -289,13 +289,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(TransactionAction.Buy, tx.Action);
 			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
-			Assert.Same(this.msft, tx.CreditAsset);
-			Assert.Equal(2, tx.CreditAmount);
-			Assert.Equal(250, tx.DebitAmount);
+			Assert.Same(this.msft, tx.DepositAsset);
+			Assert.Equal(2, tx.DepositAmount);
+			Assert.Equal(250, tx.WithdrawAmount);
 			Assert.Equal("2 MSFT @ $125.00", tx.Description);
 		});
 	}
@@ -315,12 +315,12 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
-			Assert.Equal(250, tx.CreditAmount);
-			Assert.Equal(2, tx.DebitAmount);
-			Assert.Same(this.msft, tx.DebitAsset);
+			Assert.Equal(250, tx.DepositAmount);
+			Assert.Equal(2, tx.WithdrawAmount);
+			Assert.Same(this.msft, tx.WithdrawAsset);
 			Assert.Equal("2 MSFT @ $125.00", tx.Description);
 		});
 	}
@@ -344,7 +344,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(TransactionAction.Dividend, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(15, tx.SimpleAmount);
@@ -366,7 +366,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(TransactionAction.Add, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(2, tx.SimpleAmount);
@@ -388,7 +388,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(TransactionAction.Remove, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(2, tx.SimpleAmount);
@@ -437,8 +437,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(-1, exchange.SimpleAmount);
 		Assert.False(string.IsNullOrEmpty(exchange.Error));
 		this.Logger.WriteLine(exchange.Error);
-		Assert.Null(exchange.Model.CreditAmount);
-		Assert.Null(exchange.Model.DebitAmount);
+		Assert.Empty(exchange.Entries.Where(te => te.Amount != 0));
 	}
 
 	[Theory]
@@ -466,19 +465,19 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(string.Empty, tx.Error);
 
 			Assert.Equal(2, tx.SimpleAmount);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Same(this.otherAccount, tx.SimpleAccount);
 
-			Assert.Equal(2, tx.CreditAmount);
-			Assert.Same(this.msft, tx.CreditAsset);
-			Assert.Same(this.account, tx.CreditAccount);
-			Assert.Equal(2, tx.DebitAmount);
-			Assert.Same(this.msft, tx.DebitAsset);
-			Assert.Same(this.otherAccount, tx.DebitAccount);
+			Assert.Equal(2, tx.DepositAmount);
+			Assert.Same(this.msft, tx.DepositAsset);
+			Assert.Same(this.account, tx.DepositAccount);
+			Assert.Equal(2, tx.WithdrawAmount);
+			Assert.Same(this.msft, tx.WithdrawAsset);
+			Assert.Same(this.otherAccount, tx.WithdrawAccount);
 			Assert.Equal($"{this.otherAccount.Name} -> 2 MSFT", tx.Description);
 		});
 	}
@@ -494,19 +493,19 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(string.Empty, tx.Error);
 
 			Assert.Equal(-2, tx.SimpleAmount);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Same(this.otherAccount, tx.SimpleAccount);
 
-			Assert.Equal(2, tx.CreditAmount);
-			Assert.Same(this.msft, tx.CreditAsset);
-			Assert.Same(this.otherAccount, tx.CreditAccount);
-			Assert.Equal(2, tx.DebitAmount);
-			Assert.Same(this.msft, tx.DebitAsset);
-			Assert.Same(this.account, tx.DebitAccount);
+			Assert.Equal(2, tx.DepositAmount);
+			Assert.Same(this.msft, tx.DepositAsset);
+			Assert.Same(this.otherAccount, tx.DepositAccount);
+			Assert.Equal(2, tx.WithdrawAmount);
+			Assert.Same(this.msft, tx.WithdrawAsset);
+			Assert.Same(this.account, tx.WithdrawAccount);
 			Assert.Equal($"{this.otherAccount.Name} <- 2 MSFT", tx.Description);
 		});
 	}
@@ -522,19 +521,19 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			tx = this.account.FindTransaction(tx.Id)!;
+			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(string.Empty, tx.Error);
 
 			Assert.Equal(2, tx.SimpleAmount);
 			Assert.Same(this.account.CurrencyAsset, tx.SimpleAsset);
 			Assert.Same(this.checking, tx.SimpleAccount);
 
-			Assert.Equal(2, tx.CreditAmount);
-			Assert.Same(this.account.CurrencyAsset, tx.CreditAsset);
-			Assert.Same(this.account, tx.CreditAccount);
-			Assert.Equal(2, tx.DebitAmount);
-			Assert.Same(this.account.CurrencyAsset, tx.DebitAsset);
-			Assert.Same(this.checking, tx.DebitAccount);
+			Assert.Equal(2, tx.DepositAmount);
+			Assert.Same(this.account.CurrencyAsset, tx.DepositAsset);
+			Assert.Same(this.account, tx.DepositAccount);
+			Assert.Equal(2, tx.WithdrawAmount);
+			Assert.Same(this.account.CurrencyAsset, tx.WithdrawAsset);
+			Assert.Same(this.checking, tx.WithdrawAccount);
 			Assert.Equal($"{this.checking.Name} -> $2.00 USD", tx.Description);
 		});
 	}
@@ -542,8 +541,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
-		Transaction transaction = new();
-		InvestingTransactionViewModel viewModel = new(this.account, transaction);
+		InvestingTransactionViewModel viewModel = new(this.account);
 
 		viewModel.When = this.when;
 		viewModel.Memo = "my memo";
@@ -551,10 +549,10 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		viewModel.RelatedAsset = this.msft;
 		viewModel.ApplyToModel();
 
-		Assert.Equal(this.when, transaction.When);
-		Assert.Equal(viewModel.Memo, transaction.Memo);
-		Assert.Equal(TransactionAction.Sell, transaction.Action);
-		Assert.Equal(this.msft.Id, transaction.RelatedAssetId);
+		Assert.Equal(this.when, viewModel.Transaction.When);
+		Assert.Equal(viewModel.Memo, viewModel.Transaction.Memo);
+		Assert.Equal(TransactionAction.Sell, viewModel.Transaction.Action);
+		Assert.Equal(this.msft.Id, viewModel.Transaction.RelatedAssetId);
 	}
 
 	[Fact]
@@ -566,16 +564,19 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void CopyFrom()
 	{
-		Transaction transaction = this.viewModel.Model!;
-		transaction.When = this.when;
-		transaction.Memo = "my memo";
-		transaction.Action = TransactionAction.Sell;
-		transaction.RelatedAssetId = this.msft.Id;
+		TransactionAndEntry transactionAndEntry = new()
+		{
+			TransactionId = this.viewModel.TransactionId,
+			When = this.when,
+			TransactionMemo = "my memo",
+			Action = TransactionAction.Sell,
+			RelatedAssetId = this.msft.Id,
+		};
 
-		this.viewModel.CopyFrom(transaction);
+		this.viewModel.CopyFrom(new[] { transactionAndEntry });
 
 		Assert.Equal(this.when, this.viewModel.When);
-		Assert.Equal(transaction.Memo, this.viewModel.Memo);
+		Assert.Equal(transactionAndEntry.TransactionMemo, this.viewModel.Memo);
 		Assert.Equal(TransactionAction.Sell, this.viewModel.Action);
 		Assert.Same(this.msft, this.viewModel.RelatedAsset);
 	}
