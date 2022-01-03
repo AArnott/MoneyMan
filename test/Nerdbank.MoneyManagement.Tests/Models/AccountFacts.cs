@@ -51,11 +51,11 @@ public class AccountFacts : EntityTestBase
 		decimal expected = 0;
 		Assert.Empty(this.Money.GetBalances(this.account));
 
-		this.Money.Deposit(this.account, new Amount(5, this.account.CurrencyAssetId!.Value));
+		this.Money.Action.Deposit(this.account, new Amount(5, this.account.CurrencyAssetId!.Value));
 		expected += 5;
 		Assert.Equal(expected, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 
-		this.Money.Withdraw(this.account, new Amount(2.5m, this.account.CurrencyAssetId!.Value));
+		this.Money.Action.Withdraw(this.account, new Amount(2.5m, this.account.CurrencyAssetId!.Value));
 		expected -= 2.5m;
 		Assert.Equal(expected, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 	}
@@ -67,13 +67,13 @@ public class AccountFacts : EntityTestBase
 		this.Money.Insert(this.account);
 		this.Money.Insert(account2);
 
-		this.Money.Deposit(this.account, new Amount(5, this.account.CurrencyAssetId!.Value));
-		this.Money.Transfer(this.account, account2, new Amount(2.2m, this.account.CurrencyAssetId!.Value));
+		this.Money.Action.Deposit(this.account, new Amount(5, this.account.CurrencyAssetId!.Value));
+		this.Money.Action.Transfer(this.account, account2, new Amount(2.2m, this.account.CurrencyAssetId!.Value));
 
 		Assert.Equal(2.8m, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 		Assert.Equal(2.2m, this.Money.GetBalances(account2)[this.account.CurrencyAssetId!.Value]);
 
-		this.Money.Transfer(account2, this.account, new Amount(0.4m, this.account.CurrencyAssetId!.Value));
+		this.Money.Action.Transfer(account2, this.account, new Amount(0.4m, this.account.CurrencyAssetId!.Value));
 
 		Assert.Equal(3.2m, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 		Assert.Equal(1.8m, this.Money.GetBalances(account2)[this.account.CurrencyAssetId!.Value]);

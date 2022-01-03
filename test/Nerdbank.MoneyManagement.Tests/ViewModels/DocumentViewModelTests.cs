@@ -52,10 +52,10 @@ public class DocumentViewModelTests : MoneyTestBase
 	{
 		Account account = new() { Name = "Checking", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(account);
-		this.Money.Deposit(account, 10);
+		this.Money.Action.Deposit(account, 10);
 		Assert.Equal(10, this.DocumentViewModel.NetWorth);
 
-		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Withdraw(account, 3), nameof(this.DocumentViewModel.NetWorth));
+		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Action.Withdraw(account, 3), nameof(this.DocumentViewModel.NetWorth));
 		Assert.Equal(7, this.DocumentViewModel.NetWorth);
 
 		this.DocumentViewModel.AccountsPanel.Accounts.Single().IsClosed = true;

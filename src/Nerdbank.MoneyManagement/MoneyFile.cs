@@ -40,6 +40,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		this.connection = connection;
 
 		this.CurrentConfiguration = this.connection.Table<Configuration>().First();
+		this.Action = new TransactionOperations(this);
 	}
 
 	/// <summary>
@@ -50,6 +51,8 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	public string Path => this.connection.DatabasePath;
 
 	public TextWriter? Logger { get; set; }
+
+	public TransactionOperations Action { get; }
 
 	public TableQuery<Account> Accounts
 	{
@@ -319,73 +322,6 @@ WHERE [Balances].[AccountId] = ?
 		return value;
 	}
 
-	public void Deposit(Account account, decimal amount, DateTime? when = null) => this.Deposit(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
-
-	public void Deposit(Account account, Amount amount, DateTime? when = null)
-	{
-		Transaction tx = new()
-		{
-			Action = TransactionAction.Deposit,
-			When = when ?? DateTime.Today,
-		};
-		this.Insert(tx);
-		this.InsertAll(
-			new TransactionEntry
-			{
-				AccountId = account.Id,
-				Amount = amount.Value,
-				AssetId = amount.AssetId,
-				TransactionId = tx.Id,
-			});
-	}
-
-	public void Withdraw(Account account, decimal amount, DateTime? when = null) => this.Withdraw(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
-
-	public void Withdraw(Account account, Amount amount, DateTime? when = null)
-	{
-		Transaction tx = new()
-		{
-			Action = TransactionAction.Withdraw,
-			When = when ?? DateTime.Today,
-		};
-		this.Insert(tx);
-		this.InsertAll(
-			new TransactionEntry
-			{
-				AccountId = account.Id,
-				Amount = -amount.Value,
-				AssetId = amount.AssetId,
-				TransactionId = tx.Id,
-			});
-	}
-
-	public void Transfer(Account from, Account to, decimal amount, DateTime? when = null) => this.Transfer(from, to, new Amount(amount, from.CurrencyAssetId!.Value), when);
-
-	public void Transfer(Account from, Account to, Amount amount, DateTime? when = null)
-	{
-		Transaction tx = new()
-		{
-			Action = TransactionAction.Withdraw,
-			When = when ?? DateTime.Today,
-		};
-		this.Insert(tx);
-		this.InsertAll(
-			new TransactionEntry
-			{
-				AccountId = from.Id,
-				Amount = -amount.Value,
-				AssetId = amount.AssetId,
-				TransactionId = tx.Id,
-			},
-			new TransactionEntry
-			{
-				AccountId = to.Id,
-				Amount = amount.Value,
-				AssetId = amount.AssetId,
-				TransactionId = tx.Id,
-			});
-	}
-
 	/// <inheritdoc/>
 	public void Dispose()
 	{
@@ -622,6 +558,124 @@ WHERE [Id] != ?
 		public IReadOnlyCollection<(ModelBase Before, ModelBase After)> Changed { get; }
 
 		public IReadOnlyCollection<ModelBase> Deleted { get; }
+	}
+
+	public class TransactionOperations
+	{
+		private readonly MoneyFile money;
+
+		internal TransactionOperations(MoneyFile money)
+		{
+			this.money = money;
+		}
+
+		public void Deposit(Account account, decimal amount, DateTime? when = null) => this.Deposit(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
+
+		public void Deposit(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				Action = TransactionAction.Deposit,
+				When = when ?? DateTime.Today,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					AccountId = account.Id,
+					Amount = amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				});
+		}
+
+		public void Withdraw(Account account, decimal amount, DateTime? when = null) => this.Withdraw(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
+
+		public void Withdraw(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				Action = TransactionAction.Withdraw,
+				When = when ?? DateTime.Today,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					AccountId = account.Id,
+					Amount = -amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				});
+		}
+
+		public void Transfer(Account from, Account to, decimal amount, DateTime? when = null) => this.Transfer(from, to, new Amount(amount, from.CurrencyAssetId!.Value), when);
+
+		public void Transfer(Account from, Account to, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				Action = TransactionAction.Withdraw,
+				When = when ?? DateTime.Today,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					AccountId = from.Id,
+					Amount = -amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				},
+				new TransactionEntry
+				{
+					AccountId = to.Id,
+					Amount = amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				});
+		}
+
+		public void Add(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				When = when ?? DateTime.Today,
+				Action = TransactionAction.Add,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					TransactionId = tx.Id,
+					AccountId = account.Id,
+					Amount = amount.Value,
+					AssetId = amount.AssetId,
+				});
+		}
+
+		public void Remove(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				When = when ?? DateTime.Today,
+				Action = TransactionAction.Remove,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					TransactionId = tx.Id,
+					AccountId = account.Id,
+					Amount = -amount.Value,
+					AssetId = amount.AssetId,
+				});
+		}
+
+		public void AssetPrice(Asset asset, DateTime when, decimal price)
+		{
+			this.money.Insert(new AssetPrice { AssetId = asset.Id, ReferenceAssetId = this.money.PreferredAssetId, When = when, PriceInReferenceAsset = price });
+		}
 	}
 
 	private class BalancesRow

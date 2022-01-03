@@ -77,7 +77,7 @@ public class MoneyFileTests : IDisposable
 		Account account = new() { Name = "Checking", CurrencyAssetId = money.PreferredAssetId };
 		money.Insert(account);
 		Assert.Empty(money.GetBalances(account));
-		money.Deposit(account, new Amount(3, account.CurrencyAssetId.Value));
+		money.Action.Deposit(account, new Amount(3, account.CurrencyAssetId.Value));
 		Assert.Equal(3, money.GetBalances(account)[account.CurrencyAssetId!.Value]);
 	}
 
@@ -90,13 +90,13 @@ public class MoneyFileTests : IDisposable
 			var acct2 = new Account { Name = "second", CurrencyAssetId = money.PreferredAssetId };
 
 			money.InsertAll(acct1, acct2);
-			money.Deposit(acct1, 7, DateTime.Parse("1/1/2015"));
-			money.Deposit(acct2, 3, DateTime.Parse("1/1/2016"));
-			money.Withdraw(acct1, 2.5m, DateTime.Parse("2/1/2016"));
-			money.Transfer(acct1, acct2, 1, DateTime.Parse("2/1/2016"));
-			money.Withdraw(acct1, 1.3m, DateTime.Parse("2/1/2016 11:59 PM"));
-			money.Withdraw(acct1, 4m, DateTime.Parse("2/2/2016"));
-			money.Withdraw(acct1, 0.3m, DateTime.Parse("2/2/2222"));
+			money.Action.Deposit(acct1, 7, DateTime.Parse("1/1/2015"));
+			money.Action.Deposit(acct2, 3, DateTime.Parse("1/1/2016"));
+			money.Action.Withdraw(acct1, 2.5m, DateTime.Parse("2/1/2016"));
+			money.Action.Transfer(acct1, acct2, 1, DateTime.Parse("2/1/2016"));
+			money.Action.Withdraw(acct1, 1.3m, DateTime.Parse("2/1/2016 11:59 PM"));
+			money.Action.Withdraw(acct1, 4m, DateTime.Parse("2/2/2016"));
+			money.Action.Withdraw(acct1, 0.3m, DateTime.Parse("2/2/2222"));
 
 			Assert.Equal(6.2m, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Parse("2/1/2016") }));
 			Assert.Equal(2.2m, money.GetNetWorth());
@@ -113,8 +113,8 @@ public class MoneyFileTests : IDisposable
 			var closedAccount = new Account { Name = "second", Type = Account.AccountType.Banking, CurrencyAssetId = money.PreferredAssetId, IsClosed = true };
 
 			money.InsertAll(openAccount, closedAccount);
-			money.Deposit(openAccount, 7);
-			money.Deposit(closedAccount, 3);
+			money.Action.Deposit(openAccount, 7);
+			money.Action.Deposit(closedAccount, 3);
 
 			Assert.Equal(7, money.GetNetWorth());
 			Assert.Equal(10, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { IncludeClosedAccounts = true }));
@@ -135,17 +135,17 @@ public class MoneyFileTests : IDisposable
 		DateTime when = DateTime.Today.AddDays(-2);
 
 		decimal amount = 7;
-		money.Deposit(brokerage, amount, when);
+		money.Action.Deposit(brokerage, amount, when);
 		expectedWorth += amount;
 
 		amount = 2;
-		money.Deposit(brokerage, amount, when);
+		money.Action.Deposit(brokerage, amount, when);
 		AssetPrice msftPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		AssetPrice msftPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		expectedWorth += amount * msftPriceBefore.PriceInReferenceAsset;
 
 		amount = 2;
-		money.Deposit(brokerage, new Amount(amount, aapl.Id), when);
+		money.Action.Deposit(brokerage, new Amount(amount, aapl.Id), when);
 		AssetPrice aaplPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		AssetPrice aaplPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		expectedWorth += amount * aaplPriceBefore.PriceInReferenceAsset;
@@ -169,16 +169,16 @@ public class MoneyFileTests : IDisposable
 		decimal expectedWorth = 0;
 		DateTime when = DateTime.Today.AddDays(-2);
 		decimal amount = 7;
-		money.Deposit(brokerage, amount, when);
+		money.Action.Deposit(brokerage, amount, when);
 		expectedWorth += amount;
 
 		amount = 2;
-		money.Deposit(brokerage, amount, when);
+		money.Action.Deposit(brokerage, amount, when);
 		AssetPrice msftPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		AssetPrice msftPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		expectedWorth += amount * msftPriceBefore.PriceInReferenceAsset;
 
-		money.Deposit(brokerage, new Amount(amount, aapl.Id), when);
+		money.Action.Deposit(brokerage, new Amount(amount, aapl.Id), when);
 		AssetPrice aaplPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		AssetPrice aaplPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		expectedWorth += amount * aaplPriceBefore.PriceInReferenceAsset;

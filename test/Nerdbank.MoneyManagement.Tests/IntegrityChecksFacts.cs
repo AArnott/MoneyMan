@@ -20,7 +20,7 @@ public class IntegrityChecksFacts : MoneyTestBase
 		// Add ordinary transaction.
 		Account checking = new Account { Name = "Checking" };
 		this.Money.Insert(checking);
-		this.Money.Deposit(checking, 10);
+		this.Money.Action.Deposit(checking, 10);
 
 		// Add a split transaction.
 		Account cat1 = new Account { Name = "Category 1", Type = Account.AccountType.Category };
