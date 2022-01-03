@@ -28,6 +28,12 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 
 	protected override ModelBase? UndoTarget => this.Model;
 
+	public static implicit operator TEntity(EntityViewModel<TEntity> viewModel)
+	{
+		Verify.Operation(!viewModel.IsDirty, "Implicit conversion from view model to model is not allowed when view model is dirty.");
+		return viewModel.Model;
+	}
+
 	public void CopyFrom(TEntity model)
 	{
 		Requires.NotNull(model, nameof(model));
