@@ -1,7 +1,7 @@
 ﻿-- Migrate categories to accounts (without ledgers)
 
-INSERT INTO "Account" ([Name], [Type])
-SELECT [Name], 2 AS [Type] FROM [Category];
+INSERT INTO "Account" ([Name], [Type], [IsClosed])
+SELECT [Name], 2 AS [Type], 0 AS [IsClosed] FROM [Category];
 
 CREATE TABLE "TransactionEntry" (
 	"Id"            INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -29,13 +29,13 @@ WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTra
 
 INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId])
-SELECT [Id], (SELECT [Id] FROM [Account] a WHERE a.[IsCategory] = 1 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), [DebitAmount], [DebitAssetId]
+SELECT [Id], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), [DebitAmount], [DebitAssetId]
 FROM [Transaction] t
 WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
 
 INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId])
-SELECT [Id], (SELECT [Id] FROM [Account] a WHERE a.[IsCategory] = 1 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), -[CreditAmount], [CreditAssetId]
+SELECT [Id], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), -[CreditAmount], [CreditAssetId]
 FROM [Transaction] t
 WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
 
@@ -55,13 +55,13 @@ WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTra
 
 INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId])
-SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[IsCategory] = 1 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), [DebitAmount], [DebitAssetId]
+SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), [DebitAmount], [DebitAssetId]
 FROM [Transaction] t
 WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
 
 INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId])
-SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[IsCategory] = 1 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), -[CreditAmount], [CreditAssetId]
+SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), -[CreditAmount], [CreditAssetId]
 FROM [Transaction] t
 WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
 
