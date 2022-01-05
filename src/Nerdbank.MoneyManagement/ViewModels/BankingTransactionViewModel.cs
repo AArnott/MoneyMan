@@ -84,10 +84,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 	public decimal Amount
 	{
 		get => this.amount;
-		set
-		{
-			this.SetProperty(ref this.amount, value);
-		}
+		set => this.SetProperty(ref this.amount, value);
 	}
 
 	public string? AmountFormatted => this.ThisAccount.CurrencyAsset?.Format(this.Amount);
