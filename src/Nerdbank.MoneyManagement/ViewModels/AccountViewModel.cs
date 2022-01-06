@@ -30,7 +30,11 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 	public string Name
 	{
 		get => this.name;
-		set => this.SetProperty(ref this.name, value);
+		set
+		{
+			Requires.NotNull(value, nameof(value));
+			this.SetProperty(ref this.name, value);
+		}
 	}
 
 	public abstract string? TransferTargetName { get; }

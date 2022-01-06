@@ -92,7 +92,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	protected override void CopyFromCore()
 	{
 		this.Memo = this.Model.Memo;
-		this.Account = this.DocumentViewModel.GetAccount(this.Model.AccountId);
+		this.Account = this.Model.AccountId == 0 ? null : this.DocumentViewModel.GetAccount(this.Model.AccountId);
 		this.Amount = this.Model.Amount;
 		this.Asset = this.DocumentViewModel.GetAsset(this.Model.AssetId);
 		this.Cleared = this.Model.Cleared;
