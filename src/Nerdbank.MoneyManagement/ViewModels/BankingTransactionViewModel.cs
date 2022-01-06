@@ -217,7 +217,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 			this.splits!.Add(split);
 		}
 
-		split.Save();
 		split.PropertyChanged += this.Splits_PropertyChanged;
 		if (!wasSplit)
 		{
