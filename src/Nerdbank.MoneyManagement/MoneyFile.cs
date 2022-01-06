@@ -443,7 +443,7 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 		string dateFilter = string.Empty;
 		if (options.BeforeDate.HasValue)
 		{
-			dateFilter = "AND [When] < ?";
+			dateFilter = "WHERE t.[When] < ?";
 			args.Add(options.BeforeDate.Value);
 		}
 
@@ -460,17 +460,11 @@ CREATE {TEMPTableModifier} TABLE [Balances] (
 		this.connection.Execute(sql);
 		sql = $@"
 INSERT INTO [Balances]
-SELECT [CreditAccountId] AS [AccountId], [CreditAssetId] AS [AssetId], TOTAL([CreditAmount]) AS [Amount]
-FROM [Transaction]
-WHERE [CreditAccountId] IS NOT NULL {dateFilter}
-GROUP BY [CreditAccountId], [CreditAssetId]";
-		this.connection.Execute(sql, argsArray);
-
-		sql = $@"INSERT INTO [Balances]
-SELECT [DebitAccountId] AS [AccountId], [DebitAssetId] AS [AssetId], -TOTAL([DebitAmount]) AS [Amount]
-FROM [Transaction]
-WHERE [DebitAccountId] IS NOT NULL {dateFilter}
-GROUP BY [DebitAccountId], [DebitAssetId]";
+SELECT te.[AccountId] AS [AccountId], te.[AssetId] AS [AssetId], TOTAL(te.[Amount]) AS [Amount]
+FROM [TransactionEntry] te
+INNER JOIN [Transaction] t ON t.[Id] = te.[TransactionId]
+{dateFilter}
+GROUP BY [AccountId], [AssetId]";
 		this.connection.Execute(sql, argsArray);
 	}
 
