@@ -1,7 +1,9 @@
 ﻿-- Migrate categories to accounts (without ledgers)
 
 INSERT INTO "Account" ([Name], [Type], [IsClosed])
-SELECT [Name], 2 AS [Type], 0 AS [IsClosed] FROM [Category];
+SELECT [Name], 2 AS [Type], 0 AS [IsClosed]
+FROM [Category]
+WHERE [Id] != -1; -- don't migrate the special --split-- category
 
 CREATE TABLE "TransactionEntry" (
 	"Id"            INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

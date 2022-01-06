@@ -1,8 +1,11 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Diagnostics;
+
 namespace Nerdbank.MoneyManagement.ViewModels;
 
+[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class CategoryAccountViewModel : AccountViewModel
 {
 	public CategoryAccountViewModel(Account? model, DocumentViewModel documentViewModel)

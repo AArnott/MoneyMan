@@ -47,7 +47,7 @@ public class CategoriesPanelViewModel : BindableBase
 	/// </summary>
 	public CommandBase DeleteCommand { get; }
 
-	public SortedObservableCollection<CategoryAccountViewModel> Categories => this.categories;
+	public IReadOnlyList<CategoryAccountViewModel> Categories => this.categories;
 
 	/// <summary>
 	/// Gets or sets the selected category, or one of the selected categories.
@@ -120,6 +120,11 @@ public class CategoriesPanelViewModel : BindableBase
 		{
 			this.AddingCategory = null;
 		}
+	}
+
+	internal void AddCategory(CategoryAccountViewModel viewModel)
+	{
+		this.categories.Add(viewModel);
 	}
 
 	/// <summary>

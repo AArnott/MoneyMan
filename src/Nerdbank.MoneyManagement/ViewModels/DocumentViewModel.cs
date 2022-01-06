@@ -37,7 +37,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		this.ConfigurationPanel = new(this);
 
 		// Keep targets collection in sync with the two collections that make it up.
-		this.CategoriesPanel.Categories.CollectionChanged += this.Categories_CollectionChanged;
+		((INotifyCollectionChanged)this.CategoriesPanel.Categories).CollectionChanged += this.Categories_CollectionChanged;
 		this.splitCategory = new(this);
 		this.Reset();
 
@@ -240,7 +240,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		foreach (Account category in this.MoneyFile.Categories)
 		{
 			CategoryAccountViewModel viewModel = new(category, this);
-			this.CategoriesPanel.Categories.Add(viewModel);
+			this.CategoriesPanel.AddCategory(viewModel);
 		}
 
 		this.ConfigurationPanel.CopyFrom(this.MoneyFile.CurrentConfiguration);
