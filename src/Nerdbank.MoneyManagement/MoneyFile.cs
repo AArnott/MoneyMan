@@ -348,8 +348,13 @@ WHERE [Balances].[AccountId] = ?
 		return new ActionOnDispose(() => this.inUndoableTransaction = false);
 	}
 
-	internal bool IsCategoryInUse(int accountId)
+	internal bool IsAccountInUse(int accountId)
 	{
+		if (accountId <= 0)
+		{
+			return false;
+		}
+
 		string sql = $@"SELECT [Id] FROM ""{nameof(TransactionEntry)}"" WHERE ""{nameof(TransactionEntry.AccountId)}"" == ? LIMIT 1";
 		return this.connection.Query<int>(sql, accountId).Any();
 	}

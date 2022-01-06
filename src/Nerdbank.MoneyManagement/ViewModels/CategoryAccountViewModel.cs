@@ -6,7 +6,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class CategoryAccountViewModel : AccountViewModel
 {
 	public CategoryAccountViewModel(Account? model, DocumentViewModel documentViewModel)
-		: base(model, documentViewModel)
+		: base(model ?? new Account { Type = Account.AccountType.Category }, documentViewModel)
 	{
 		ThrowOnUnexpectedAccountType(nameof(model), Account.AccountType.Category, this.Model.Type);
 		this.Type = Account.AccountType.Category;
@@ -15,7 +15,7 @@ public class CategoryAccountViewModel : AccountViewModel
 
 	public override string? TransferTargetName => this.Name;
 
-	protected override bool IsEmpty => throw new NotImplementedException();
+	protected override bool IsEmpty => this.MoneyFile.IsAccountInUse(this.Id);
 
 	protected override bool IsPopulated => throw new NotImplementedException();
 
