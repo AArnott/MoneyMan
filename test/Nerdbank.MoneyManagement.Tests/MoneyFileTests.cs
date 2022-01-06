@@ -139,13 +139,13 @@ public class MoneyFileTests : IDisposable
 		expectedWorth += amount;
 
 		amount = 2;
-		money.Action.Deposit(brokerage, amount, when);
+		money.Action.Add(brokerage, new Amount(amount, msft.Id), when);
 		AssetPrice msftPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		AssetPrice msftPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		expectedWorth += amount * msftPriceBefore.PriceInReferenceAsset;
 
 		amount = 2;
-		money.Action.Deposit(brokerage, new Amount(amount, aapl.Id), when);
+		money.Action.Add(brokerage, new Amount(amount, aapl.Id), when);
 		AssetPrice aaplPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		AssetPrice aaplPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		expectedWorth += amount * aaplPriceBefore.PriceInReferenceAsset;
@@ -173,12 +173,12 @@ public class MoneyFileTests : IDisposable
 		expectedWorth += amount;
 
 		amount = 2;
-		money.Action.Deposit(brokerage, amount, when);
+		money.Action.Add(brokerage, new Amount(amount, msft.Id), when);
 		AssetPrice msftPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		AssetPrice msftPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
 		expectedWorth += amount * msftPriceBefore.PriceInReferenceAsset;
 
-		money.Action.Deposit(brokerage, new Amount(amount, aapl.Id), when);
+		money.Action.Add(brokerage, new Amount(amount, aapl.Id), when);
 		AssetPrice aaplPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		AssetPrice aaplPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
 		expectedWorth += amount * aaplPriceBefore.PriceInReferenceAsset;

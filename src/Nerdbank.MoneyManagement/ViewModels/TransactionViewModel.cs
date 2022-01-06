@@ -58,7 +58,7 @@ public abstract class TransactionViewModel : EntityViewModel
 	/// <param name="models">The new models to (re)initialize based on.</param>
 	public void CopyFrom(IReadOnlyList<TransactionAndEntry> models)
 	{
-		Requires.Argument(models[0].TransactionId == this.Transaction.Id, nameof(models), "The entity ID does not match.");
+		Requires.Argument(models.Count == 0 || models[0].TransactionId == this.Transaction.Id, nameof(models), "The entity ID does not match.");
 		this.SplitModels(models, out this.transaction, out this.entries);
 		this.CopyFromCore();
 	}
@@ -156,7 +156,15 @@ public abstract class TransactionViewModel : EntityViewModel
 
 	private void SplitModels(IReadOnlyList<TransactionAndEntry> models, out Transaction transaction, out ObservableCollection<TransactionEntryViewModel> entries)
 	{
-		transaction = new Transaction(models[0]);
-		entries = new ObservableCollection<TransactionEntryViewModel>(models.Select(te => new TransactionEntryViewModel(this, new TransactionEntry(te))));
+		if (models.Count == 0)
+		{
+			transaction = new();
+			entries = new();
+		}
+		else
+		{
+			transaction = new Transaction(models[0]);
+			entries = new ObservableCollection<TransactionEntryViewModel>(models.Select(te => new TransactionEntryViewModel(this, new TransactionEntry(te))));
+		}
 	}
 }

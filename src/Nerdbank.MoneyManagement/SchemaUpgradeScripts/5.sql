@@ -113,7 +113,6 @@ CREATE VIEW "TransactionAndEntry" AS
 		t.[Payee],
 		t.[Memo] AS [TransactionMemo],
 		te.[Memo] AS [TransactionEntryMemo],
-		te.[CategoryId],
 		te.[AccountId],
 		te.[Amount],
 		te.[AssetId],

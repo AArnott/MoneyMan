@@ -187,7 +187,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// <summary>
 	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
 	/// </summary>
-	private TransactionEntryViewModel TopLevelEntry => this.Entries.First(e => e.Account == this.ThisAccount);
+	private TransactionEntryViewModel? TopLevelEntry => this.Entries.FirstOrDefault(e => e.Account == this.ThisAccount);
 
 	private string DebuggerDisplay => $"Transaction ({this.TransactionId}): {this.When} {this.Payee} {this.Amount}";
 
@@ -314,7 +314,10 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.Transaction.Payee = this.Payee;
 		this.Transaction.When = this.When;
 		this.Transaction.CheckNumber = this.CheckNumber;
-		this.TopLevelEntry.Cleared = this.Cleared;
+		if (this.TopLevelEntry is object)
+		{
+			this.TopLevelEntry.Cleared = this.Cleared;
+		}
 
 		if (!this.ContainsSplits)
 		{
@@ -331,7 +334,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		base.CopyFromCore();
 		this.Payee = this.Transaction.Payee;
 		this.CheckNumber = this.Transaction.CheckNumber;
-		this.Cleared = this.TopLevelEntry.Cleared;
+		this.Cleared = this.TopLevelEntry?.Cleared ?? ClearedState.None;
 
 		// TODO: Code here
 	}
