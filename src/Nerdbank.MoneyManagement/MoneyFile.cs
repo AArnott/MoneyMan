@@ -568,7 +568,11 @@ WHERE [Id] != ?
 			this.money = money;
 		}
 
-		public void Deposit(Account account, decimal amount, DateTime? when = null) => this.Deposit(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
+		public void Deposit(Account account, decimal amount, DateTime? when = null)
+		{
+			Requires.Argument(account.CurrencyAssetId.HasValue, nameof(account), "Account has no default currency set.");
+			this.Deposit(account, new Amount(amount, account.CurrencyAssetId.Value), when);
+		}
 
 		public void Deposit(Account account, Amount amount, DateTime? when = null)
 		{
@@ -588,7 +592,11 @@ WHERE [Id] != ?
 				});
 		}
 
-		public void Withdraw(Account account, decimal amount, DateTime? when = null) => this.Withdraw(account, new Amount(amount, account.CurrencyAssetId!.Value), when);
+		public void Withdraw(Account account, decimal amount, DateTime? when = null)
+		{
+			Requires.Argument(account.CurrencyAssetId.HasValue, nameof(account), "Account has no default currency set.");
+			this.Withdraw(account, new Amount(amount, account.CurrencyAssetId.Value), when);
+		}
 
 		public void Withdraw(Account account, Amount amount, DateTime? when = null)
 		{
@@ -608,7 +616,11 @@ WHERE [Id] != ?
 				});
 		}
 
-		public void Transfer(Account from, Account to, decimal amount, DateTime? when = null) => this.Transfer(from, to, new Amount(amount, from.CurrencyAssetId!.Value), when);
+		public void Transfer(Account from, Account to, decimal amount, DateTime? when = null)
+		{
+			Requires.Argument(from.CurrencyAssetId.HasValue, nameof(from), "Account has no default currency set.");
+			this.Transfer(from, to, new Amount(amount, from.CurrencyAssetId.Value), when);
+		}
 
 		public void Transfer(Account from, Account to, Amount amount, DateTime? when = null)
 		{

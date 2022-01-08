@@ -125,6 +125,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 	/// <returns>A new instance of <see cref="AccountViewModel"/>.</returns>
 	internal AccountViewModel Recreate()
 	{
+		this.Model.Type = this.Type;
 		AccountViewModel newViewModel = Create(this.Model, this.Type, this.DocumentViewModel);
 
 		// Copy over the base view model properties manually in case it wasn't in a valid state to copy to the model.

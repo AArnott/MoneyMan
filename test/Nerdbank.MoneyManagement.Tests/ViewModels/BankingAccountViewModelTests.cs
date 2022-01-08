@@ -217,6 +217,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		var account = new Account
 		{
 			Name = "some account",
+			CurrencyAssetId = this.Money.PreferredAssetId,
 		};
 		this.Money.Insert(account);
 		this.Money.Action.Deposit(account, 5);
@@ -244,7 +245,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task DeleteTransactions()
 	{
-		var account = new Account { Name = "some account" };
+		var account = new Account { Name = "some account", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(account);
 		this.Money.Action.Deposit(account, 5);
 		this.Money.Action.Deposit(account, 12);
