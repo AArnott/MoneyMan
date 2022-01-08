@@ -62,7 +62,9 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
+		this.viewModel.Account = this.spendingCategory;
 		this.viewModel.Amount = this.amount;
+		this.viewModel.Asset = this.DocumentViewModel.DefaultCurrency;
 		this.viewModel.Memo = this.memo;
 		this.viewModel.ApplyToModel();
 

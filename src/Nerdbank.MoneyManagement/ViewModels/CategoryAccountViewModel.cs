@@ -34,16 +34,11 @@ public class CategoryAccountViewModel : AccountViewModel
 
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
-		throw new NotImplementedException();
 	}
 
 	internal override void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transaction)
 	{
-		throw new NotImplementedException();
 	}
 
-	protected override void RemoveTransactionFromViewModel(TransactionViewModel transaction)
-	{
-		throw new NotImplementedException();
-	}
+	protected override void RemoveTransactionFromViewModel(TransactionViewModel transaction) => throw new NotSupportedException();
 }

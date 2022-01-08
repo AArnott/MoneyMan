@@ -82,6 +82,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		Verify.Operation(this.Account is not null, "{0} must be set first.", nameof(this.Account));
 		Verify.Operation(this.Asset is not null, "{0} must be set first.", nameof(this.Asset));
 
+		this.Model.TransactionId = this.Transaction.TransactionId;
 		this.Model.Memo = this.Memo;
 		this.Model.AccountId = this.Account.Id;
 		this.Model.Amount = this.Amount;

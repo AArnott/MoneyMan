@@ -228,6 +228,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		{
 			Account.AccountType.Banking => new BankingAccountViewModel(model, documentViewModel),
 			Account.AccountType.Investing => new InvestingAccountViewModel(model, documentViewModel),
+			Account.AccountType.Category => new CategoryAccountViewModel(model, documentViewModel),
 			_ => throw new NotSupportedException("Unexpected account type."),
 		};
 	}

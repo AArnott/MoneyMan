@@ -121,6 +121,7 @@ public class CategoryViewModelTests : MoneyTestBase
 		Account category = new()
 		{
 			Name = "some name",
+			Type = Account.AccountType.Category,
 		};
 
 		this.viewModel = new CategoryAccountViewModel(category, this.DocumentViewModel);
@@ -146,6 +147,7 @@ public class CategoryViewModelTests : MoneyTestBase
 		Account category = new()
 		{
 			Name = "some name",
+			Type = Account.AccountType.Category,
 		};
 		this.Money.Insert(category);
 
