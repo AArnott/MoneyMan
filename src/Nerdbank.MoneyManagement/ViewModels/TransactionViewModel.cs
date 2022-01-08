@@ -52,6 +52,8 @@ public abstract class TransactionViewModel : EntityViewModel
 
 	protected override ModelBase? UndoTarget => this.Transaction;
 
+	protected override bool IsReadyToSave => base.IsReadyToSave && this.Entries.Any(e => e.Amount > 0);
+
 	/// <summary>
 	/// Updates this view model and those in <see cref="Entries"/> to match those in the specified models.
 	/// </summary>

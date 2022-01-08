@@ -242,11 +242,10 @@ public class BankingAccountViewModel : AccountViewModel
 	{
 		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
 		_ = this.Transactions;
-		var volatileModel = new Transaction()
+		BankingTransactionViewModel volatileViewModel = new(this)
 		{
 			When = DateTime.Today,
 		};
-		BankingTransactionViewModel volatileViewModel = new(this);
 		this.transactions!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileTransaction_Saved;
 	}

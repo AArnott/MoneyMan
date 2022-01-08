@@ -20,7 +20,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 			if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 			{
 				this.IsDirty = true;
-				if (this.MoneyFile.IsDisposed is not true && this.AutoSave && string.IsNullOrEmpty(this.Error))
+				if (this.MoneyFile.IsDisposed is not true && this.AutoSave && this.IsReadyToSave)
 				{
 					this.Save();
 				}
@@ -72,6 +72,11 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.
 	/// </summary>
 	protected bool AutoSave { get; set; } = true;
+
+	/// <summary>
+	/// Gets a value indicating whether this view model is in a good state to be persisted.
+	/// </summary>
+	protected virtual bool IsReadyToSave => string.IsNullOrEmpty(this.Error);
 
 	protected abstract ModelBase? UndoTarget { get; }
 
