@@ -291,6 +291,18 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Equal(DocumentViewModel.SelectableViews.Categories, this.DocumentViewModel.SelectedViewIndex);
 	}
 
+	[Fact]
+	public void Categories_AddedFromDirectEntityInsertion()
+	{
+		var spending = new Account
+		{
+			Name = "Spending",
+			Type = Account.AccountType.Category,
+		};
+		this.Money.Insert(spending);
+		Assert.Contains(this.ViewModel.Categories, cat => cat.Id == spending.Id);
+	}
+
 	[Theory, PairwiseData]
 	public async Task DeleteCommand_Undo(bool useSelectedCollection)
 	{
