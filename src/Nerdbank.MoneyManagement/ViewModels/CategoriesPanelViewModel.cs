@@ -207,7 +207,7 @@ public class CategoriesPanelViewModel : BindableBase
 			List<CategoryAccountViewModel> inUse = new(), notInUse = new();
 			foreach (CategoryAccountViewModel category in categories)
 			{
-				if (category.Id is int id && this.viewModel.documentViewModel.MoneyFile.IsAccountInUse(id) is true)
+				if (this.viewModel.documentViewModel.MoneyFile.IsAccountInUse(category.Id) is true)
 				{
 					inUse.Add(category);
 				}
