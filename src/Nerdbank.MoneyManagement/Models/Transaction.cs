@@ -22,6 +22,8 @@ public class Transaction : ModelBase
 		this.Action = transactionAndEntry.Action;
 		this.CheckNumber = transactionAndEntry.CheckNumber;
 		this.RelatedAssetId = transactionAndEntry.RelatedAssetId;
+		this.Payee = transactionAndEntry.Payee;
+		this.Memo = transactionAndEntry.TransactionMemo;
 	}
 
 	/// <summary>

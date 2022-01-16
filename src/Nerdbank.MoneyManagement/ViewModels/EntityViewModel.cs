@@ -49,10 +49,10 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 			foreach (PropertyInfo propertyInfo in propertyInfos)
 			{
-				if (propertyInfo.DeclaringType?.IsAssignableFrom(typeof(EntityViewModel)) is false)
+				if (propertyInfo.GetCustomAttribute<ValidationAttribute>(true) is not null)
 				{
-					var errorMsg = this[propertyInfo.Name];
-					if (errorMsg?.Length > 0)
+					string errorMsg = this[propertyInfo.Name];
+					if (errorMsg.Length > 0)
 					{
 						return errorMsg;
 					}
@@ -69,14 +69,14 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	public MoneyFile MoneyFile { get; }
 
 	/// <summary>
+	/// Gets a value indicating whether this view model is in a good state to be persisted.
+	/// </summary>
+	public virtual bool IsReadyToSave => string.IsNullOrEmpty(this.Error);
+
+	/// <summary>
 	/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.
 	/// </summary>
 	protected bool AutoSave { get; set; } = true;
-
-	/// <summary>
-	/// Gets a value indicating whether this view model is in a good state to be persisted.
-	/// </summary>
-	protected virtual bool IsReadyToSave => string.IsNullOrEmpty(this.Error);
 
 	protected abstract ModelBase? UndoTarget { get; }
 
@@ -106,7 +106,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 	public void Save()
 	{
-		this.ApplyToModel();
+		Verify.Operation(this.IsReadyToSave, "This view model is not ready to save.");
 		if (!this.MoneyFile.IsDisposed)
 		{
 			bool wasPersisted = this.IsPersisted;
@@ -129,7 +129,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// <exception cref="InvalidOperationException">Thrown if <see cref="Error"/> is non-empty.</exception>
 	public void ApplyToModel()
 	{
-		Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
+		Verify.Operation(this.IsReadyToSave, "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
 		this.ApplyToCore();
 		this.IsDirty = false;
 	}

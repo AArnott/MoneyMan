@@ -63,7 +63,6 @@ public class BankingAccountViewModel : AccountViewModel
 
 		_ = this.Transactions; // make sure our collection is initialized.
 		this.transactions!.Add(viewModel);
-		viewModel.Save();
 
 		return viewModel;
 	}

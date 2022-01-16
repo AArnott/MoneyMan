@@ -108,6 +108,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.OtherAccount = cat1;
+		transaction.Amount = 5;
 
 		this.ViewModel.SelectedCategory = cat1;
 		bool presented = false;
@@ -175,6 +176,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.OtherAccount = cat1;
+		transaction.Amount = 5;
+		Assert.True(transaction.IsPersisted);
 
 		this.ViewModel.SelectedCategory = cat2;
 		await this.ViewModel.DeleteCommand.ExecuteAsync();

@@ -81,6 +81,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.checkNumber, value);
 	}
 
+	[NonZero]
 	public decimal Amount
 	{
 		get => this.amount;
@@ -165,7 +166,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// A typical transaction will have 1 or 2 entries, which can be represented as a single row in a ledger.
 	/// Any more than that indicates that a split took place, where money did not just go from one account/category to another.
 	/// </remarks>
-	public bool ContainsSplits => this.Entries.Count > 2;
+	public bool ContainsSplits => this.Splits.Count > 0;
 
 	public TransactionEntryViewModel? SelectedSplit
 	{
@@ -183,6 +184,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
+
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && this.Splits.All(e => e.IsReadyToSave);
 
 	/// <summary>
 	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
@@ -308,24 +311,60 @@ public class BankingTransactionViewModel : TransactionViewModel
 		return this.Splits.Sum(s => s.Amount);
 	}
 
+	protected internal override void NotifyReassignCategory(ICollection<CategoryAccountViewModel> oldCategories, CategoryAccountViewModel? newCategory)
+	{
+		base.NotifyReassignCategory(oldCategories, newCategory);
+
+		// Update our transaction category if applicable.
+		if (this.Entries.Count == 2)
+		{
+			this.OtherAccount = this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account;
+		}
+	}
+
 	protected override void ApplyToCore()
 	{
 		this.Transaction.Payee = this.Payee;
 		this.Transaction.When = this.When;
 		this.Transaction.CheckNumber = this.CheckNumber;
-		if (this.TopLevelEntry is object)
-		{
-			this.TopLevelEntry.Cleared = this.Cleared;
-		}
 
 		if (!this.ContainsSplits)
 		{
+			switch (this.Entries.Count)
+			{
+				case 0:
+					this.EntriesMutable.Add(new TransactionEntryViewModel(this) { Account = this.ThisAccount, Amount = this.Amount, Asset = this.ThisAccount.CurrencyAsset });
+					if (this.OtherAccount is not null)
+					{
+						this.EntriesMutable.Add(new TransactionEntryViewModel(this) { Account = this.OtherAccount, Amount = -this.Amount, Asset = this.ThisAccount.CurrencyAsset });
+					}
+
+					break;
+				case 1:
+					this.Entries[0].Amount = this.Amount;
+					if (this.OtherAccount is not null)
+					{
+						this.EntriesMutable.Add(new TransactionEntryViewModel(this) { Account = this.OtherAccount, Amount = -this.Amount, Asset = this.ThisAccount.CurrencyAsset });
+					}
+
+					break;
+				default:
+					break;
+			}
+
 			this.Transaction.Action =
 				this.Entries.Count == 2 && this.Entries.All(e => e.Account?.Type is not (null or Account.AccountType.Category)) ? TransactionAction.Transfer :
 				this.Entries.Count == 1 && this.Entries[0].Amount > 0 ? TransactionAction.Deposit :
 				this.Entries.Count == 1 && this.Entries[0].Amount < 0 ? TransactionAction.Withdraw :
 				TransactionAction.Unspecified;
 		}
+
+		if (this.TopLevelEntry is object)
+		{
+			this.TopLevelEntry.Cleared = this.Cleared;
+		}
+
+		base.ApplyToCore();
 	}
 
 	protected override void CopyFromCore()
@@ -335,7 +374,21 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.CheckNumber = this.Transaction.CheckNumber;
 		this.Cleared = this.TopLevelEntry?.Cleared ?? ClearedState.None;
 
-		// TODO: Code here
+		switch (this.Entries.Count)
+		{
+			case 0:
+				this.OtherAccount = null;
+				this.Amount = 0;
+				break;
+			case 1:
+				this.OtherAccount = null;
+				break;
+			case 2:
+				this.OtherAccount = this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account;
+				break;
+		}
+
+		this.Amount = this.Entries.Where(e => e.Account == this.ThisAccount).Sum(e => e.Amount);
 	}
 
 	protected override bool IsPersistedProperty(string propertyName)

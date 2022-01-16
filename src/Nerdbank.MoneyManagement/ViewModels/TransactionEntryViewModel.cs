@@ -25,6 +25,8 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.CopyFrom(this.Model);
 	}
 
+	public override bool IsReadyToSave => base.IsReadyToSave && this.Transaction.IsPersisted;
+
 	/// <summary>
 	/// Gets the <see cref="TransactionViewModel"/> to which this belongs.
 	/// </summary>
@@ -52,6 +54,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	public IEnumerable<AccountViewModel> AvailableTransactionTargets
 		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != this.ThisAccount.DocumentViewModel.SplitCategory);
 
+	[NonZero]
 	public decimal Amount
 	{
 		get => this.amount;

@@ -230,7 +230,7 @@ public class CategoriesPanelViewModel : BindableBase
 				{
 					List<CategoryAccountViewModel> options = new(this.viewModel.Categories);
 					options.RemoveAll(cat => inUse.Contains(cat));
-					options.Insert(0, new CategoryAccountViewModel(new Account { Id = -1, Name = "(clear assigned category)" }, this.viewModel.documentViewModel));
+					options.Insert(0, new CategoryAccountViewModel(new Account { Id = -1, Name = "(clear assigned category)", Type = Account.AccountType.Category }, this.viewModel.documentViewModel));
 
 					if (options.Count > 1)
 					{

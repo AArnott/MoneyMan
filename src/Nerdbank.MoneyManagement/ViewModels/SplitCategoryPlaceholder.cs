@@ -18,6 +18,8 @@ public class SplitCategoryPlaceholder : AccountViewModel
 
 	public override string TransferTargetName => this.Name;
 
+	public override bool IsReadyToSave => false;
+
 	protected override bool IsEmpty => true;
 
 	protected override bool IsPopulated => false;

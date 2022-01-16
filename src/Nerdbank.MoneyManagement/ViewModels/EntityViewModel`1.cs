@@ -47,10 +47,11 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 		this.IsDirty = false;
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not nameof(this.Id);
+	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.Id) or nameof(this.IsDirty));
 
 	protected override void SaveCore()
 	{
+		this.ApplyToModel();
 		this.MoneyFile.InsertOrReplace(this.Model);
 	}
 

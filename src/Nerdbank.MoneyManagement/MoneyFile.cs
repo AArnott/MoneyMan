@@ -329,6 +329,11 @@ WHERE [Balances].[AccountId] = ?
 		this.connection.Dispose();
 	}
 
+	internal void PurgeTransactionEntries(int transactionId, IEnumerable<int> entryIdsToPreserve)
+	{
+		// TODO: code here
+	}
+
 	/// <summary>
 	/// Starts a reversible transaction.
 	/// </summary>

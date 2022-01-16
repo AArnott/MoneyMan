@@ -14,6 +14,7 @@ public class TransactionEntry : ModelBase
 
 	public TransactionEntry(TransactionAndEntry te)
 	{
+		this.Id = te.TransactionEntryId;
 		this.TransactionId = te.TransactionId;
 		this.Memo = te.TransactionEntryMemo;
 		this.AccountId = te.AccountId;

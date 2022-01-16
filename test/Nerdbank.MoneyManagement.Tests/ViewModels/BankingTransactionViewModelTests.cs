@@ -25,8 +25,8 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	public BankingTransactionViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		Account thisAccountModel = this.Money.Insert(new Account { Name = "this" });
-		Account otherAccountModel = this.Money.Insert(new Account { Name = "other" });
+		Account thisAccountModel = this.Money.Insert(new Account { Name = "this", CurrencyAssetId = this.Money.PreferredAssetId });
+		Account otherAccountModel = this.Money.Insert(new Account { Name = "other", CurrencyAssetId = this.Money.PreferredAssetId });
 
 		this.account = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(otherAccountModel.Id);
@@ -470,43 +470,42 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public void ApplyTo()
 	{
-		BankingTransactionViewModel viewModel = new(this.account);
-		Transaction transaction = viewModel.Transaction;
+		Transaction transaction = this.viewModel.Transaction;
 
-		viewModel.Payee = this.payee;
-		viewModel.Amount = this.amount;
-		viewModel.When = this.when;
-		viewModel.Memo = this.memo;
-		viewModel.CheckNumber = this.checkNumber;
-		viewModel.Cleared = this.cleared;
-		viewModel.ApplyToModel();
+		this.viewModel.Payee = this.payee;
+		this.viewModel.Amount = this.amount;
+		this.viewModel.When = this.when;
+		this.viewModel.Memo = this.memo;
+		this.viewModel.CheckNumber = this.checkNumber;
+		this.viewModel.Cleared = this.cleared;
+		this.viewModel.ApplyToModel();
 
 		Assert.Equal(this.payee, transaction.Payee);
 		Assert.Equal(this.when, transaction.When);
 		Assert.Equal(this.memo, transaction.Memo);
 		Assert.Equal(this.checkNumber, transaction.CheckNumber);
 
-		TransactionEntry entry = Assert.Single(viewModel.Entries).Model;
+		TransactionEntry entry = Assert.Single(this.viewModel.Entries).Model;
 		Assert.Equal(this.account.Id, entry.AccountId);
 		Assert.Equal(this.amount, entry.Amount);
 		Assert.Equal(this.cleared, entry.Cleared);
 
 		// Test auto-save behavior for transaction model.
-		viewModel.Memo = "bonus";
-		Assert.Equal(viewModel.Memo, transaction.Memo);
+		this.viewModel.Memo = "bonus";
+		Assert.Equal(this.viewModel.Memo, transaction.Memo);
 
 		// Test auto-save behavior for transaction entry model.
-		viewModel.Amount = this.amount + 1;
+		this.viewModel.Amount = this.amount + 1;
 		Assert.Equal(this.amount + 1, entry.Amount);
 
 		// Test negative amount.
-		viewModel.Amount = -this.amount;
-		entry = Assert.Single(viewModel.Entries).Model;
+		this.viewModel.Amount = -this.amount;
+		entry = Assert.Single(this.viewModel.Entries).Model;
 		Assert.Equal(-this.amount, entry.Amount);
 		Assert.Equal(this.account.Id, entry.AccountId);
 
 		// Test a money transfer.
-		viewModel.OtherAccount = this.otherAccount;
+		this.viewModel.OtherAccount = this.otherAccount;
 		TransactionEntry otherEntry = this.viewModel.Entries.Single(e => e.Account == this.otherAccount).Model;
 		Assert.Equal(this.otherAccount.Id, otherEntry.AccountId);
 	}
@@ -542,7 +541,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	public void CopyFrom_Category()
 	{
 		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
-
+		this.viewModel.Transaction.Id = 1;
 		List<TransactionAndEntry> transactionAndEntries = new()
 		{
 			new TransactionAndEntry()
@@ -555,6 +554,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 				TransactionEntryId = 1,
 				AccountId = categoryViewModel.Id,
 				Amount = -this.amount,
+				AssetId = this.account.CurrencyAsset!.Id,
 			},
 			new TransactionAndEntry()
 			{
@@ -567,6 +567,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 				Cleared = this.cleared,
 				AccountId = this.account.Id,
 				Amount = this.amount,
+				AssetId = this.account.CurrencyAsset!.Id,
 			},
 		};
 

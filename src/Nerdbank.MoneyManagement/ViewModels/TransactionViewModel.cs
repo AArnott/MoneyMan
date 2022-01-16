@@ -8,9 +8,9 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 
 public abstract class TransactionViewModel : EntityViewModel
 {
+	private ObservableCollection<TransactionEntryViewModel> entries;
 	private DateTime when;
 	private string? memo;
-	private ObservableCollection<TransactionEntryViewModel> entries;
 	private Transaction transaction;
 
 	public TransactionViewModel(AccountViewModel thisAccount, IReadOnlyList<TransactionAndEntry> models)
@@ -50,9 +50,11 @@ public abstract class TransactionViewModel : EntityViewModel
 		set => this.SetProperty(ref this.memo, value);
 	}
 
-	protected override ModelBase? UndoTarget => this.Transaction;
+	public override bool IsReadyToSave => base.IsReadyToSave && this.Entries.Any(e => e.Amount > 0);
 
-	protected override bool IsReadyToSave => base.IsReadyToSave && this.Entries.Any(e => e.Amount > 0);
+	protected ObservableCollection<TransactionEntryViewModel> EntriesMutable => this.entries;
+
+	protected override ModelBase? UndoTarget => this.Transaction;
 
 	/// <summary>
 	/// Updates this view model and those in <see cref="Entries"/> to match those in the specified models.
@@ -60,9 +62,18 @@ public abstract class TransactionViewModel : EntityViewModel
 	/// <param name="models">The new models to (re)initialize based on.</param>
 	public void CopyFrom(IReadOnlyList<TransactionAndEntry> models)
 	{
+		Requires.NotNull(models, nameof(models));
 		Requires.Argument(models.Count == 0 || models[0].TransactionId == this.Transaction.Id, nameof(models), "The entity ID does not match.");
-		this.SplitModels(models, out this.transaction, out this.entries);
-		this.CopyFromCore();
+
+		using (this.SuspendAutoSave(saveOnDisposal: false))
+		{
+			this.SplitModels(models, out this.transaction, out this.entries);
+			this.OnPropertyChanged(nameof(this.Transaction));
+			this.OnPropertyChanged(nameof(this.Entries));
+			this.CopyFromCore();
+		}
+
+		this.IsDirty = false;
 	}
 
 	internal void NotifyAccountDeleted(ICollection<int> accountIds)
@@ -86,7 +97,7 @@ public abstract class TransactionViewModel : EntityViewModel
 		}
 	}
 
-	internal void NotifyReassignCategory(ICollection<CategoryAccountViewModel> oldCategories, CategoryAccountViewModel? newCategory)
+	protected internal virtual void NotifyReassignCategory(ICollection<CategoryAccountViewModel> oldCategories, CategoryAccountViewModel? newCategory)
 	{
 		List<TransactionEntryViewModel>? entriesToDelete = null;
 		foreach (TransactionEntryViewModel entry in this.Entries)
@@ -123,13 +134,9 @@ public abstract class TransactionViewModel : EntityViewModel
 	/// </remarks>
 	protected virtual void CopyFromCore()
 	{
+		// We don't copy from entry models because this method is called from CopyFrom which always creates fresh view models.
 		this.When = this.Transaction.When;
 		this.Memo = this.Transaction.Memo;
-
-		foreach (TransactionEntryViewModel entry in this.entries)
-		{
-			entry.CopyFrom(entry.Model);
-		}
 	}
 
 	/// <summary>
@@ -144,16 +151,20 @@ public abstract class TransactionViewModel : EntityViewModel
 	{
 		this.Transaction.When = this.When;
 		this.Transaction.Memo = this.Memo;
-
-		foreach (TransactionEntryViewModel entry in this.entries)
-		{
-			entry.ApplyToModel();
-		}
 	}
 
 	protected override void SaveCore()
 	{
+		this.ApplyToModel();
 		this.MoneyFile.InsertOrReplace(this.Transaction);
+
+		foreach (TransactionEntryViewModel entry in this.entries)
+		{
+			entry.Save();
+		}
+
+		// Purge any entries from the db that are no longer supposed to be there.
+		this.MoneyFile.PurgeTransactionEntries(this.TransactionId, this.entries.Select(e => e.Id));
 	}
 
 	private void SplitModels(IReadOnlyList<TransactionAndEntry> models, out Transaction transaction, out ObservableCollection<TransactionEntryViewModel> entries)
