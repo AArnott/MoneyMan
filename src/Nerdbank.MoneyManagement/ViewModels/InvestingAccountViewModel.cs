@@ -56,7 +56,7 @@ public class InvestingAccountViewModel : AccountViewModel
 		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
 		var investingTransaction = (InvestingTransactionViewModel)transaction;
 
-		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction.Transaction);
+		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction);
 
 		if (!this.MoneyFile.Delete(investingTransaction.Transaction))
 		{

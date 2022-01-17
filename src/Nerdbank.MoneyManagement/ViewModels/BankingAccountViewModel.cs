@@ -77,7 +77,7 @@ public class BankingAccountViewModel : AccountViewModel
 		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
 		var bankingTransaction = (BankingTransactionViewModel)transaction;
 
-		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction.Transaction);
+		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction);
 		if (!this.MoneyFile.Delete(bankingTransaction.Transaction))
 		{
 			// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.

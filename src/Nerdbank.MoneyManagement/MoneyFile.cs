@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Principal;
+using Nerdbank.MoneyManagement.ViewModels;
 using PCLCommandBase;
 using SQLite;
 using Validation;
@@ -26,7 +27,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	/// <summary>
 	/// The undo stack.
 	/// </summary>
-	private readonly Stack<(string SavepointName, string Activity, ModelBase? Model)> undoStack = new();
+	private readonly Stack<(string SavepointName, string Activity, EntityViewModel? ViewModel)> undoStack = new();
 
 	private bool inUndoableTransaction;
 
@@ -114,7 +115,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	internal Configuration CurrentConfiguration { get; }
 
-	internal IEnumerable<(string Savepoint, string Activity, ModelBase? Model)> UndoStack => this.undoStack;
+	internal IEnumerable<(string Savepoint, string Activity, EntityViewModel? ViewModel)> UndoStack => this.undoStack;
 
 	private string DebuggerDisplay => this.Path;
 
@@ -172,17 +173,17 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	}
 
 	/// <summary>
-	/// Reverts the database to the last savepoint as recorded with <see cref="RecordSavepoint(string, ModelBase?)"/>.
+	/// Reverts the database to the last savepoint as recorded with <see cref="RecordSavepoint(string, EntityViewModel?)"/>.
 	/// </summary>
 	/// <returns>A model that may have been impacted by the rollback.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if the undo stack is empty.</exception>
-	public ModelBase? Undo()
+	public EntityViewModel? Undo()
 	{
-		(string SavepointName, string Activity, ModelBase? Model) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
+		(string SavepointName, string Activity, EntityViewModel? ViewModel) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
 		this.OnPropertyChanged(nameof(this.UndoStack));
 		this.Logger?.WriteLine("Rolling back: {0}", savepoint.Activity);
 		this.connection.RollbackTo(savepoint.SavepointName);
-		return savepoint.Model;
+		return savepoint.ViewModel;
 	}
 
 	public T Get<T>(object primaryKey)
@@ -337,10 +338,10 @@ WHERE [Balances].[AccountId] = ?
 	/// <summary>
 	/// Starts a reversible transaction.
 	/// </summary>
-	/// <param name="description"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='nextActivityDescription']"/></param>
-	/// <param name="model"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='model']"/></param>
+	/// <param name="description"><inheritdoc cref="RecordSavepoint(string, EntityViewModel?)" path="/param[@name='nextActivityDescription']"/></param>
+	/// <param name="viewModel"><inheritdoc cref="RecordSavepoint(string, EntityViewModel?)" path="/param[@name='model']"/></param>
 	/// <returns>A value to dispose of at the conclusion of the operation.</returns>
-	internal IDisposable? UndoableTransaction(string description, ModelBase? model)
+	internal IDisposable? UndoableTransaction(string description, EntityViewModel? viewModel)
 	{
 		if (this.inUndoableTransaction)
 		{
@@ -349,7 +350,7 @@ WHERE [Balances].[AccountId] = ?
 		}
 
 		this.inUndoableTransaction = true;
-		this.RecordSavepoint(description, model);
+		this.RecordSavepoint(description, viewModel);
 		return new ActionOnDispose(() => this.inUndoableTransaction = false);
 	}
 
@@ -429,11 +430,11 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 	/// by a call to <see cref="Undo"/>.
 	/// </summary>
 	/// <param name="nextActivityDescription">A human-readable description of the operation that is about to be applied to the database. Use present tense with no trailing period.</param>
-	/// <param name="model">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
-	internal void RecordSavepoint(string nextActivityDescription, ModelBase? model)
+	/// <param name="viewModel">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
+	internal void RecordSavepoint(string nextActivityDescription, EntityViewModel? viewModel)
 	{
 		this.Logger?.WriteLine("Writing savepoint before: {0}", nextActivityDescription);
-		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription, model));
+		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription, viewModel));
 		this.OnPropertyChanged(nameof(this.UndoStack));
 	}
 

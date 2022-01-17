@@ -54,8 +54,6 @@ public abstract class TransactionViewModel : EntityViewModel
 
 	protected ObservableCollection<TransactionEntryViewModel> EntriesMutable => this.entries;
 
-	protected override ModelBase? UndoTarget => this.Transaction;
-
 	/// <summary>
 	/// Updates this view model and those in <see cref="Entries"/> to match those in the specified models.
 	/// </summary>

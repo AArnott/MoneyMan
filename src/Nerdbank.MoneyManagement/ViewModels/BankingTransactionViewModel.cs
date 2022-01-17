@@ -387,7 +387,12 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
-		if (propertyName is nameof(this.Balance) or nameof(this.ContainsSplits) or nameof(this.SelectedSplit))
+		if (!base.IsPersistedProperty(propertyName))
+		{
+			return false;
+		}
+
+		if (propertyName is nameof(this.Balance) or nameof(this.ContainsSplits) or nameof(this.SelectedSplit) or nameof(this.IsEmpty))
 		{
 			return false;
 		}

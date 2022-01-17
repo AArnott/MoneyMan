@@ -78,8 +78,6 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// </summary>
 	protected bool AutoSave { get; set; } = true;
 
-	protected abstract ModelBase? UndoTarget { get; }
-
 	public virtual string this[string columnName]
 	{
 		get
@@ -110,7 +108,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 		if (!this.MoneyFile.IsDisposed)
 		{
 			bool wasPersisted = this.IsPersisted;
-			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this.UndoTarget);
+			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this);
 
 			this.SaveCore();
 

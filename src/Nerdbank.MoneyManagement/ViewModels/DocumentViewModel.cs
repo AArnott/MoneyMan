@@ -369,39 +369,33 @@ public class DocumentViewModel : BindableBase, IDisposable
 	/// <summary>
 	/// Makes a best effort to select a given entity in the app.
 	/// </summary>
-	/// <param name="model">The model to select.</param>
-	private void Select(ModelBase model)
+	/// <param name="viewModel">The model to select.</param>
+	private void Select(EntityViewModel viewModel)
 	{
-		switch (model)
+		// Never use the view model we're given except to extract its ID, because it may be a view model from a deleted and resurrected entity,
+		// and therefore a new view model exists to represent it.
+		switch (viewModel)
 		{
-			case Transaction transaction:
+			case TransactionViewModel transaction:
 				this.SelectedViewIndex = SelectableViews.Banking;
-				TransactionEntry? transactionEntry = this.MoneyFile.TransactionEntries.FirstOrDefault(te => te.TransactionId == transaction.Id);
-				if (transactionEntry is object && this.BankingPanel.FindAccount(transactionEntry.AccountId) is AccountViewModel teAccount)
-				{
-					this.BankingPanel.SelectedAccount = teAccount;
-					if (teAccount.FindTransaction(transaction.Id) is TransactionViewModel transactionViewModel)
-					{
-						this.SelectedTransaction = transactionViewModel;
-					}
-				}
-
+				this.BankingPanel.SelectedAccount = this.BankingPanel.FindAccount(transaction.ThisAccount.Id);
+				this.SelectedTransaction = this.BankingPanel.SelectedAccount?.FindTransaction(transaction.TransactionId);
 				break;
-			case Account category when category.Type == Account.AccountType.Category:
+			case AccountViewModel category when category.Type == Account.AccountType.Category:
 				this.SelectedViewIndex = SelectableViews.Categories;
 				this.CategoriesPanel.SelectedCategory = this.CategoriesPanel.FindCategory(category.Id);
 				break;
-			case Account account:
+			case AccountViewModel account:
 				this.SelectedViewIndex = SelectableViews.Accounts;
 				this.AccountsPanel.SelectedAccount = this.AccountsPanel.FindAccount(account.Id);
 				break;
-			case Asset asset:
+			case AssetViewModel asset:
 				this.SelectedViewIndex = SelectableViews.Assets;
 				this.AssetsPanel.SelectedAsset = this.AssetsPanel.FindAsset(asset.Id);
 				break;
-			case AssetPrice assetPrice:
+			case AssetPriceViewModel assetPrice:
 				this.SelectedViewIndex = SelectableViews.Assets;
-				this.AssetsPanel.SelectedAsset = this.GetAsset(assetPrice.AssetId);
+				this.AssetsPanel.SelectedAsset = this.GetAsset(assetPrice.Asset?.Id);
 				this.AssetsPanel.SelectedAssetPrice = this.AssetsPanel.AssetPrices.FirstOrDefault(ap => ap.When == assetPrice.When);
 				break;
 		}
@@ -515,7 +509,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override Task ExecuteCoreAsync(IList transactionViewModels, CancellationToken cancellationToken)
 		{
-			using IDisposable? undo = this.ViewModel.MoneyFile.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<TransactionViewModel>().FirstOrDefault()?.Transaction);
+			using IDisposable? undo = this.ViewModel.MoneyFile.UndoableTransaction($"Delete {transactionViewModels.Count} transactions", transactionViewModels.OfType<TransactionViewModel>().FirstOrDefault());
 			foreach (TransactionViewModel transaction in transactionViewModels.OfType<TransactionViewModel>().ToList())
 			{
 				transaction.ThisAccount.DeleteTransaction(transaction);
@@ -539,7 +533,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
-			ModelBase? model = this.documentViewModel.MoneyFile.Undo();
+			EntityViewModel? model = this.documentViewModel.MoneyFile.Undo();
 			this.documentViewModel.Reset();
 			if (model is object)
 			{

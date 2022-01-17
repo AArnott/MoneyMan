@@ -108,7 +108,7 @@ public class CategoriesPanelViewModel : BindableBase
 	public void DeleteCategory(CategoryAccountViewModel categoryViewModel)
 	{
 		this.categories.Remove(categoryViewModel);
-		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel.Model);
+		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel);
 		this.documentViewModel.MoneyFile.Delete(categoryViewModel.Model);
 
 		if (this.SelectedCategory == categoryViewModel)
@@ -202,7 +202,7 @@ public class CategoriesPanelViewModel : BindableBase
 
 		private async Task ExecuteCoreAsync(IList categoryViewModels, CancellationToken cancellationToken)
 		{
-			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryAccountViewModel>().FirstOrDefault()?.Model);
+			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryAccountViewModel>().FirstOrDefault());
 			IEnumerable<CategoryAccountViewModel> categories = categoryViewModels.OfType<CategoryAccountViewModel>();
 			List<CategoryAccountViewModel> inUse = new(), notInUse = new();
 			foreach (CategoryAccountViewModel category in categories)
