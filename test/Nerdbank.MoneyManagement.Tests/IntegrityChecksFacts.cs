@@ -18,13 +18,14 @@ public class IntegrityChecksFacts : MoneyTestBase
 	public void ValidFileWithTransactions()
 	{
 		// Add ordinary transaction.
-		Account checking = new Account { Name = "Checking" };
+		Account checking = new Account { Name = "Checking", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(checking);
 		this.Money.Action.Deposit(checking, 10);
 
 		// Add a split transaction.
 		Account cat1 = new Account { Name = "Category 1", Type = Account.AccountType.Category };
 		Account cat2 = new Account { Name = "Category 2", Type = Account.AccountType.Category };
+		this.Money.InsertAll(cat1, cat2);
 		var transaction = new Transaction
 		{
 			When = DateTime.Today,
@@ -32,9 +33,8 @@ public class IntegrityChecksFacts : MoneyTestBase
 		this.Money.Insert(transaction);
 		var splits = new TransactionEntry[]
 		{
-			new() { AccountId = checking.Id, TransactionId = transaction.Id, Amount = 10 },
-			new() { AccountId = cat1.Id, TransactionId = transaction.Id, Amount = -8 },
-			new() { AccountId = cat2.Id, TransactionId = transaction.Id, Amount = -2 },
+			new() { AccountId = cat1.Id, TransactionId = transaction.Id, Amount = -8, AssetId = checking.CurrencyAssetId.Value },
+			new() { AccountId = cat2.Id, TransactionId = transaction.Id, Amount = -2, AssetId = checking.CurrencyAssetId.Value },
 		};
 		this.Money.InsertAll(splits);
 

@@ -71,7 +71,9 @@ public class DocumentViewModelTests : MoneyTestBase
 		Assert.Equal(accountViewModel.Name, account.Name);
 	}
 
-	[Theory, PairwiseData]
+	[Theory]
+	[InlineData(Account.AccountType.Banking)]
+	[InlineData(Account.AccountType.Investing)]
 	public void AddedAccountAddsToTransactionTargets(Account.AccountType type)
 	{
 		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
@@ -81,7 +83,9 @@ public class DocumentViewModelTests : MoneyTestBase
 		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
-	[Theory, PairwiseData]
+	[Theory]
+	[InlineData(Account.AccountType.Banking)]
+	[InlineData(Account.AccountType.Investing)]
 	public void DeletedAccountRemovesFromTransactionTargets(Account.AccountType type)
 	{
 		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
