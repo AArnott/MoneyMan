@@ -321,12 +321,13 @@ public class BankingTransactionViewModel : TransactionViewModel
 		base.NotifyReassignCategory(oldCategories, newCategory);
 
 		// Update our transaction category if applicable.
-		this.OtherAccount = this.Entries.Count switch
-		{
-			0 or 1 => null,
-			2 => this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account,
-			_ => throw new NotSupportedException(),
-		};
+		this.SetOtherAccountBasedOnEntries();
+	}
+
+	protected internal override void NotifyAccountDeleted(ICollection<int> accountIds)
+	{
+		base.NotifyAccountDeleted(accountIds);
+		this.SetOtherAccountBasedOnEntries();
 	}
 
 	protected override void ApplyToCore()
@@ -380,21 +381,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.Payee = this.Transaction.Payee;
 		this.CheckNumber = this.Transaction.CheckNumber;
 		this.Cleared = this.TopLevelEntry?.Cleared ?? ClearedState.None;
-
-		switch (this.Entries.Count)
-		{
-			case 0:
-				this.OtherAccount = null;
-				this.Amount = 0;
-				break;
-			case 1:
-				this.OtherAccount = null;
-				break;
-			case 2:
-				this.OtherAccount = this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account;
-				break;
-		}
-
+		this.SetOtherAccountBasedOnEntries();
 		this.Amount = this.Entries.Where(e => e.Account == this.ThisAccount).Sum(e => e.Amount);
 	}
 
@@ -430,6 +417,16 @@ public class BankingTransactionViewModel : TransactionViewModel
 	{
 		this.Amount = this.Splits.Sum(s => s.Amount);
 		this.ThisAccount.NotifyAmountChangedOnSplitTransaction(this);
+	}
+
+	private void SetOtherAccountBasedOnEntries()
+	{
+		this.OtherAccount = this.Entries.Count switch
+		{
+			0 or 1 => null,
+			2 => this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account,
+			_ => throw new NotSupportedException(),
+		};
 	}
 
 	private TransactionEntryViewModel CreateVolatileSplit()

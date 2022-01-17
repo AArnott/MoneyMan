@@ -179,6 +179,11 @@ public class AccountsPanelViewModel : BindableBase
 		{
 			this.AddingAccount = null;
 		}
+
+		foreach (AccountViewModel otherAccount in this.documentViewModel.BankingPanel.Accounts)
+		{
+			otherAccount.NotifyAccountDeleted(new[] { accountViewModel.Id });
+		}
 	}
 
 	public AccountViewModel? FindAccount(int id) => this.Accounts.FirstOrDefault(acct => acct.Id == id);

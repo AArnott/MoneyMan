@@ -143,7 +143,7 @@ public class BankingAccountViewModel : AccountViewModel
 
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
-		if (this.transactions is object)
+		if (this.transactions is object && accountIds.Count > 0)
 		{
 			foreach (BankingTransactionViewModel transaction in this.transactions)
 			{

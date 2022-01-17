@@ -76,7 +76,7 @@ public abstract class TransactionViewModel : EntityViewModel
 		this.IsDirty = false;
 	}
 
-	internal void NotifyAccountDeleted(ICollection<int> accountIds)
+	protected internal virtual void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		List<TransactionEntryViewModel>? impactedEntries = null;
 		foreach (TransactionEntryViewModel entry in this.Entries)

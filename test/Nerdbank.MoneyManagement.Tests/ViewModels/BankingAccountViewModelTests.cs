@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using Microsoft;
+using Xunit.Sdk;
 
 public class BankingAccountViewModelTests : MoneyTestBase
 {
@@ -179,7 +180,8 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	{
 		var account = new Account
 		{
-			Name = "some person",
+			Name = "some account",
+			CurrencyAssetId = this.Money.PreferredAssetId,
 		};
 		this.Money.Insert(account);
 
@@ -189,7 +191,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		Assert.Equal(account.Name, alternate.Name);
 
 		// Test auto-save behavior.
-		alternate.Name = "some other person";
+		alternate.Name = "some other account";
 		Assert.Equal(alternate.Name, account.Name);
 
 		Account fromDb = this.Money.Accounts.First(tx => tx.Id == account.Id);
@@ -200,28 +202,16 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	[Fact]
 	public void PopulatesWithTransactionsFromDb()
 	{
-		var account = new Account
-		{
-			Name = "some account",
-		};
-		this.Money.Insert(account);
-		this.Money.Action.Deposit(account, 1);
-		this.Money.Action.Withdraw(account, 1);
-		this.checking = new BankingAccountViewModel(account, this.DocumentViewModel);
+		this.Money.Action.Deposit(this.checking, 1);
+		this.Money.Action.Withdraw(this.checking, 1);
+		this.ReloadViewModel();
 		Assert.Equal(2, this.checking.Transactions.Count(t => t.IsPersisted));
 	}
 
 	[Fact]
 	public async Task DeleteTransaction()
 	{
-		var account = new Account
-		{
-			Name = "some account",
-			CurrencyAssetId = this.Money.PreferredAssetId,
-		};
-		this.Money.Insert(account);
-		this.Money.Action.Deposit(account, 5);
-		this.checking = new BankingAccountViewModel(account, this.DocumentViewModel);
+		this.Money.Action.Deposit(this.checking, 5);
 		BankingTransactionViewModel txViewModel = this.checking.Transactions[0];
 		this.DocumentViewModel.SelectedTransaction = txViewModel;
 		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
@@ -245,12 +235,9 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task DeleteTransactions()
 	{
-		var account = new Account { Name = "some account", CurrencyAssetId = this.Money.PreferredAssetId };
-		this.Money.Insert(account);
-		this.Money.Action.Deposit(account, 5);
-		this.Money.Action.Deposit(account, 12);
-		this.Money.Action.Deposit(account, 15);
-		this.checking = new BankingAccountViewModel(account, this.DocumentViewModel);
+		this.Money.Action.Deposit(this.checking, 5);
+		this.Money.Action.Deposit(this.checking, 12);
+		this.Money.Action.Deposit(this.checking, 15);
 		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
 		this.DocumentViewModel.SelectedTransactions = this.checking.Transactions.Where(t => t.Amount != 12).ToArray();
 		Assert.True(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
@@ -345,15 +332,16 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	{
 		BankingTransactionViewModel tx1 = this.checking.NewTransaction();
 		tx1.When = new DateTime(2021, 1, 3);
+		tx1.Amount = 1;
 
 		BankingTransactionViewModel tx2 = this.checking.NewTransaction();
 		tx2.When = new DateTime(2021, 1, 2);
+		tx2.Amount = 2;
 
 		// Confirm that a reload does not mess up transaction order.
 		Assert.Equal(new[] { tx2.TransactionId, tx1.TransactionId, 0 }, this.checking.Transactions.Select(tx => tx.TransactionId));
 		this.ReloadViewModel();
-		var newChecking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Id == this.checking.Id);
-		Assert.Equal(new[] { tx2.TransactionId, tx1.TransactionId, 0 }, newChecking.Transactions.Select(tx => tx.TransactionId));
+		Assert.Equal(new[] { tx2.TransactionId, tx1.TransactionId, 0 }, this.checking.Transactions.Select(tx => tx.TransactionId));
 	}
 
 	[Fact]
@@ -467,6 +455,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
+			tx1 = this.checking.FindTransaction(tx1.TransactionId) ?? throw new XunitException("Missing transaction.");
 			Assert.Null(tx1.OtherAccount);
 			Assert.Single(tx1.Entries);
 		});

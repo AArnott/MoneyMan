@@ -113,6 +113,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 
 	public abstract TransactionViewModel? FindTransaction(int? id);
 
+	public override string ToString() => $"Account: {this.Name}";
+
 	internal static AccountViewModel Create(Account model, DocumentViewModel documentViewModel)
 	{
 		AccountViewModel accountViewModel = Create(model, model.Type, documentViewModel);
