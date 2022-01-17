@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -59,7 +60,10 @@ public class BankingAccountViewModel : AccountViewModel
 		// Make sure our collection has been initialized by now.
 		_ = this.Transactions;
 
-		BankingTransactionViewModel viewModel = new(this);
+		BankingTransactionViewModel viewModel = new(this)
+		{
+			When = DateTime.Now,
+		};
 
 		_ = this.Transactions; // make sure our collection is initialized.
 		this.transactions!.Add(viewModel);

@@ -246,19 +246,24 @@ public class CategoriesPanelViewModel : BindableBase
 						// No need to ask the user what to do when there is only one option.
 						redirectedCategory = options[0];
 					}
+
+					// Update every transaction in the database, including those for which no view model has been created.
+					if (redirectedCategory.Id == -1)
+					{
+						redirectedCategory = null;
+					}
 				}
 				else
 				{
 					throw new NotSupportedException("Some categories are used by transactions but no UI is attached to prompt the user for how to deal with it.");
 				}
 
-				// Update every transaction in the database, including those for which no view model has been created.
-				this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory.Id);
+				this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory?.Id);
 
 				// Also update the live view models.
 				foreach (BankingAccountViewModel account in this.viewModel.documentViewModel.BankingPanel.BankingAccounts)
 				{
-					account.NotifyReassignCategory(inUse, redirectedCategory.Id == 0 ? null : redirectedCategory);
+					account.NotifyReassignCategory(inUse, redirectedCategory?.Id > 0 ? redirectedCategory : null);
 				}
 
 				// Now actually delete the categories.

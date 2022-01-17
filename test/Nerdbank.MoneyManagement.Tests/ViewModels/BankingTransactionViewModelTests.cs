@@ -654,8 +654,8 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		TransactionEntry split1 = new() { Amount = 3, AccountId = this.account.Id, TransactionId = transaction.Id };
-		TransactionEntry split2 = new() { Amount = 7, AccountId = this.account.Id, TransactionId = transaction.Id };
+		TransactionEntry split1 = new() { Amount = 3, AccountId = this.account.Id, TransactionId = transaction.Id, AssetId = this.account.CurrencyAsset!.Id };
+		TransactionEntry split2 = new() { Amount = 7, AccountId = this.account.Id, TransactionId = transaction.Id, AssetId = this.account.CurrencyAsset!.Id };
 		this.Money.InsertAll(split1, split2);
 
 		this.ReloadViewModel();

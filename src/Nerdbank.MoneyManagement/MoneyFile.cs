@@ -388,10 +388,21 @@ WHERE [Balances].[AccountId] = ?
 
 	internal void ReassignCategory(IEnumerable<int> oldCategoryIds, int? newId)
 	{
-		string sql = $@"UPDATE ""{nameof(TransactionEntry)}""
+		Requires.Range(newId is null or > 0, nameof(newId), "Category ID must be a positive integer or null.");
+
+		if (newId is null)
+		{
+			string sql = $@"DELETE FROM ""{nameof(TransactionEntry)}""
+WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
+			this.connection.Execute(sql);
+		}
+		else
+		{
+			string sql = $@"UPDATE ""{nameof(TransactionEntry)}""
 SET ""{nameof(TransactionEntry.AccountId)}"" = ?
 WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
-		this.connection.Execute(sql, newId == 0 ? null : newId);
+			this.connection.Execute(sql, newId == 0 ? null : newId);
+		}
 	}
 
 	internal List<TransactionAndEntry> GetTopLevelTransactionsFor(int accountId)

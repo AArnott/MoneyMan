@@ -316,10 +316,12 @@ public class BankingTransactionViewModel : TransactionViewModel
 		base.NotifyReassignCategory(oldCategories, newCategory);
 
 		// Update our transaction category if applicable.
-		if (this.Entries.Count == 2)
+		this.OtherAccount = this.Entries.Count switch
 		{
-			this.OtherAccount = this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account;
-		}
+			0 or 1 => null,
+			2 => this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account,
+			_ => throw new NotSupportedException(),
+		};
 	}
 
 	protected override void ApplyToCore()
