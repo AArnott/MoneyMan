@@ -54,7 +54,6 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	public IEnumerable<AccountViewModel> AvailableTransactionTargets
 		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != this.ThisAccount.DocumentViewModel.SplitCategory);
 
-	[NonZero]
 	public decimal Amount
 	{
 		get => this.amount;

@@ -52,6 +52,10 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
 		this.RegisterDependentProperty(nameof(this.Balance), nameof(this.BalanceFormatted));
+		this.RegisterDependentProperty(nameof(this.Payee), nameof(this.IsEmpty));
+		this.RegisterDependentProperty(nameof(this.Memo), nameof(this.IsEmpty));
+		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.IsEmpty));
+		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.IsEmpty));
 
 		this.CopyFrom(transactionAndEntries);
 	}
@@ -81,7 +85,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.checkNumber, value);
 	}
 
-	[NonZero]
 	public decimal Amount
 	{
 		get => this.amount;
@@ -185,7 +188,9 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
 
-	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && this.Splits.All(e => e.IsReadyToSave);
+	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Payee) && string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && !this.ContainsSplits;
+
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && !this.IsEmpty && this.Splits.All(e => e.IsReadyToSave);
 
 	/// <summary>
 	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
