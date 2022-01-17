@@ -141,7 +141,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// </summary>
 	protected abstract void ApplyToCore();
 
-	protected virtual bool IsPersistedProperty(string propertyName) => true;
+	protected virtual bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.IsReadyToSave) or nameof(this.IsDirty) or nameof(this.IsPersisted) or nameof(this.AutoSave));
 
 	protected AutoSaveSuspension SuspendAutoSave(bool saveOnDisposal = true) => new(this, saveOnDisposal);
 

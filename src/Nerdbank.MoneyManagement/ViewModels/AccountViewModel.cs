@@ -163,7 +163,9 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
-		return base.IsPersistedProperty(propertyName) && !propertyName.EndsWith("Formatted");
+		return base.IsPersistedProperty(propertyName)
+			&& propertyName is not (nameof(this.TransferTargetName) or nameof(this.IsEmpty) or nameof(this.IsPopulated) or nameof(this.Value))
+			&& !propertyName.EndsWith("Formatted");
 	}
 
 	protected override void ApplyToCore()
