@@ -138,6 +138,10 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		return newViewModel;
 	}
 
+	internal virtual void NotifyTransactionDeleted(Transaction transaction)
+	{
+	}
+
 	internal virtual void NotifyTransactionDeleted(TransactionEntry transactionEntry)
 	{
 		if (!this.IsPopulated)
@@ -153,6 +157,10 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 	}
 
 	internal abstract void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transaction);
+
+	internal virtual void NotifyTransactionChanged(Transaction transaction)
+	{
+	}
 
 	internal abstract void NotifyAccountDeleted(ICollection<int> accountIds);
 

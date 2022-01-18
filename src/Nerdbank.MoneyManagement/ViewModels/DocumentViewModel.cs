@@ -305,13 +305,21 @@ public class DocumentViewModel : BindableBase, IDisposable
 						accountViewModel.NotifyTransactionDeleted(tx);
 					}
 				}
+			}
 
-				foreach (ModelBase model in e.Deleted)
+			foreach ((ModelBase Before, ModelBase After) models in e.Changed)
+			{
+				if (models is { Before: Transaction beforeTx, After: Transaction afterTx })
 				{
-					if (model is Transaction tx)
-					{
-						////accountViewModel.NotifyTransactionDeleted(tx);
-					}
+					accountViewModel.NotifyTransactionChanged(afterTx);
+				}
+			}
+
+			foreach (ModelBase model in e.Deleted)
+			{
+				if (model is Transaction tx)
+				{
+					accountViewModel.NotifyTransactionDeleted(tx);
 				}
 			}
 		}

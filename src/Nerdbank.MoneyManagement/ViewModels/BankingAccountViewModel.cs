@@ -141,6 +141,33 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
+	internal override void NotifyTransactionChanged(Transaction transaction)
+	{
+		base.NotifyTransactionChanged(transaction);
+
+		if (this.transactions is object)
+		{
+			foreach (TransactionViewModel tx in this.transactions)
+			{
+				if (tx.TransactionId == transaction.Id)
+				{
+					tx.CopyFrom(transaction);
+				}
+			}
+		}
+	}
+
+	internal override void NotifyTransactionDeleted(Transaction transaction)
+	{
+		base.NotifyTransactionDeleted(transaction);
+
+		BankingTransactionViewModel? viewModel = this.transactions?.FirstOrDefault(t => t.TransactionId == transaction.Id);
+		if (this.transactions is object && viewModel is object)
+		{
+			this.transactions.Remove(viewModel);
+		}
+	}
+
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		if (this.transactions is object && accountIds.Count > 0)
@@ -198,8 +225,11 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 
 		int index = this.transactions.IndexOf((BankingTransactionViewModel)transactionViewModel);
-		this.transactions.RemoveAt(index);
-		this.UpdateBalances(index);
+		if (index >= 0)
+		{
+			this.transactions.RemoveAt(index);
+			this.UpdateBalances(index);
+		}
 	}
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

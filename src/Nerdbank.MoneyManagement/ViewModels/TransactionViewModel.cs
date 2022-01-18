@@ -74,6 +74,17 @@ public abstract class TransactionViewModel : EntityViewModel
 		this.IsDirty = false;
 	}
 
+	internal virtual void CopyFrom(Transaction model)
+	{
+		using (this.SuspendAutoSave(saveOnDisposal: false))
+		{
+			this.transaction = model;
+			this.CopyFromCore();
+		}
+
+		this.IsDirty = false;
+	}
+
 	protected internal virtual void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		List<TransactionEntryViewModel>? impactedEntries = null;
