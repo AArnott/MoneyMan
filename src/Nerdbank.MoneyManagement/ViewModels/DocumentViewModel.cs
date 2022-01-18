@@ -276,12 +276,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 		SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
 		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 		{
+			accountViewModel.RefreshValue();
 			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().Select(a => a.Id).ToHashSet());
 
 			if (accountViewModel.IsPersisted && impactedAccountIds.Contains(accountViewModel.Id))
 			{
-				accountViewModel.Value = this.MoneyFile.GetValue(accountViewModel.Model);
-
 				foreach (ModelBase model in e.Inserted)
 				{
 					if (model is TransactionEntry te && IsRelated(te, accountViewModel))

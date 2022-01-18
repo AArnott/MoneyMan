@@ -164,6 +164,11 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 
 	internal abstract void NotifyAccountDeleted(ICollection<int> accountIds);
 
+	internal void RefreshValue()
+	{
+		this.Value = this.MoneyFile.GetValue(this.Model);
+	}
+
 	protected static void ThrowOnUnexpectedAccountType(string parameterName, Account.AccountType expectedType, Account.AccountType actualType)
 	{
 		Requires.Argument(expectedType == actualType, parameterName, "Type mismatch. Expected {0} but was {1}.", expectedType, actualType);

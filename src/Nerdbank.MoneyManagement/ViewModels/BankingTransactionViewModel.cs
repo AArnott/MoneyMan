@@ -356,8 +356,14 @@ public class BankingTransactionViewModel : TransactionViewModel
 					}
 
 					break;
-				default:
+				case 2:
+					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+					ourEntry.Amount = this.Amount;
+					otherEntry.Amount = -this.Amount;
 					break;
+				default:
+					throw new NotSupportedException();
 			}
 
 			this.Transaction.Action =
