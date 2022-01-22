@@ -46,7 +46,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.SplitCommand = new SplitCommandImpl(this);
 		this.DeleteSplitCommand = new DeleteSplitCommandImpl(this);
 
-		this.RegisterDependentProperty(nameof(this.AmountIsReadOnly), nameof(this.OtherAccountIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.OtherAccountIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.SplitCommandToolTip));
 		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
@@ -92,11 +91,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 	}
 
 	public string? AmountFormatted => this.ThisAccount.CurrencyAsset?.Format(this.Amount);
-
-	/// <summary>
-	/// Gets a value indicating whether the <see cref="Amount"/> property should be considered readonly.
-	/// </summary>
-	public bool AmountIsReadOnly => this.ContainsSplits;
 
 	public ClearedState Cleared
 	{

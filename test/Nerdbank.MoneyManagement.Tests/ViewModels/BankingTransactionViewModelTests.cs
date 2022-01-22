@@ -73,15 +73,6 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void AmountIsReadOnly()
-	{
-		this.viewModel.Save();
-		Assert.False(this.viewModel.AmountIsReadOnly);
-		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
-		Assert.False(foreignSplitTransaction.AmountIsReadOnly);
-	}
-
-	[Fact]
 	public void Amount_OnSplitTransactions_ViewModelOnly()
 	{
 		this.viewModel.Amount = -50;

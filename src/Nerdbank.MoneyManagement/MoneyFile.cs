@@ -413,6 +413,13 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 		return this.connection.Query<TransactionAndEntry>(sql, accountId);
 	}
 
+	internal List<TransactionAndEntry> GetTransactionDetails(int accountId, int transactionId)
+	{
+		string sql = $@"SELECT * FROM ""{nameof(TransactionAndEntry)}"""
+			+ $@" WHERE [ContextAccountId] == ? AND [TransactionId] == ?";
+		return this.connection.Query<TransactionAndEntry>(sql, accountId, transactionId);
+	}
+
 	internal List<TransactionEntry> GetTransactionEntries(int transactionId) => this.TransactionEntries.Where(te => te.TransactionId == transactionId).ToList();
 
 	/// <summary>

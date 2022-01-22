@@ -109,59 +109,11 @@ public class BankingAccountViewModel : AccountViewModel
 		return null;
 	}
 
-	internal override void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transactionAndEntries)
+	internal override void NotifyTransactionDeleted(int transactionId)
 	{
-		if (this.transactions is null or { Count: 0 })
-		{
-			// Nothing to refresh.
-			return;
-		}
+		base.NotifyTransactionDeleted(transactionId);
 
-		// This transaction may have added or dropped our account as a transfer
-		bool removedFromAccount = !transactionAndEntries.Any(te => te.AccountId == this.Id);
-		if (this.FindTransaction(transactionAndEntries.First().TransactionId) is { } transactionViewModel)
-		{
-			if (removedFromAccount)
-			{
-				this.transactions.Remove(transactionViewModel);
-			}
-			else
-			{
-				transactionViewModel.CopyFrom(transactionAndEntries);
-				int index = this.transactions.IndexOf(transactionViewModel);
-				if (index >= 0)
-				{
-					this.UpdateBalances(index);
-				}
-			}
-		}
-		else if (!removedFromAccount)
-		{
-			this.transactions.Add(new BankingTransactionViewModel(this, transactionAndEntries));
-		}
-	}
-
-	internal override void NotifyTransactionChanged(Transaction transaction)
-	{
-		base.NotifyTransactionChanged(transaction);
-
-		if (this.transactions is object)
-		{
-			foreach (TransactionViewModel tx in this.transactions)
-			{
-				if (tx.TransactionId == transaction.Id)
-				{
-					tx.CopyFrom(transaction);
-				}
-			}
-		}
-	}
-
-	internal override void NotifyTransactionDeleted(Transaction transaction)
-	{
-		base.NotifyTransactionDeleted(transaction);
-
-		BankingTransactionViewModel? viewModel = this.transactions?.FirstOrDefault(t => t.TransactionId == transaction.Id);
+		BankingTransactionViewModel? viewModel = this.transactions?.FirstOrDefault(t => t.TransactionId == transactionId);
 		if (this.transactions is object && viewModel is object)
 		{
 			this.transactions.Remove(viewModel);
@@ -199,6 +151,18 @@ public class BankingAccountViewModel : AccountViewModel
 			foreach (BankingTransactionViewModel transaction in this.transactions)
 			{
 				transaction.NotifyReassignCategory(oldCategories, newCategory);
+			}
+		}
+	}
+
+	protected override void UpdateBalances(TransactionViewModel startingWith)
+	{
+		if (this.transactions is not null)
+		{
+			int index = this.transactions.IndexOf((BankingTransactionViewModel)startingWith);
+			if (index >= 0)
+			{
+				this.UpdateBalances(index);
 			}
 		}
 	}

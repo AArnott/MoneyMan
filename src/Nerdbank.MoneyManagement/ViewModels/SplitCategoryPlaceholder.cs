@@ -26,28 +26,11 @@ public class SplitCategoryPlaceholder : AccountViewModel
 
 	private new string DebuggerDisplay => this.TransferTargetName;
 
-	public override void DeleteTransaction(TransactionViewModel transaction)
-	{
-		throw new NotImplementedException();
-	}
+	public override void DeleteTransaction(TransactionViewModel transaction) => throw new NotImplementedException();
 
-	public override TransactionViewModel? FindTransaction(int? id)
-	{
-		throw new NotImplementedException();
-	}
+	public override TransactionViewModel? FindTransaction(int? id) => throw new NotImplementedException();
 
-	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
-	{
-		throw new NotImplementedException();
-	}
+	internal override void NotifyAccountDeleted(ICollection<int> accountIds) => throw new NotImplementedException();
 
-	internal override void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transactionAndEntries)
-	{
-		throw new NotImplementedException();
-	}
-
-	protected override void RemoveTransactionFromViewModel(TransactionViewModel transaction)
-	{
-		throw new NotImplementedException();
-	}
+	protected override void RemoveTransactionFromViewModel(TransactionViewModel transaction) => throw new NotImplementedException();
 }

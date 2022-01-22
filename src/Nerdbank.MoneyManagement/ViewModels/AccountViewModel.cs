@@ -138,28 +138,25 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		return newViewModel;
 	}
 
-	internal virtual void NotifyTransactionDeleted(Transaction transaction)
+	internal virtual void NotifyTransactionAdded(int transactionId)
 	{
 	}
 
-	internal virtual void NotifyTransactionDeleted(TransactionEntry transactionEntry)
+	internal virtual void NotifyTransactionDeleted(int transactionId)
 	{
-		if (!this.IsPopulated)
-		{
-			// Nothing to refresh.
-			return;
-		}
-
-		if (this.FindTransaction(transactionEntry.TransactionId) is { } transactionViewModel)
-		{
-			this.RemoveTransactionFromViewModel(transactionViewModel);
-		}
 	}
 
-	internal abstract void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transaction);
-
-	internal virtual void NotifyTransactionChanged(Transaction transaction)
+	internal virtual void NotifyTransactionChanged(int transactionId)
 	{
+		if (this.IsPopulated)
+		{
+			TransactionViewModel? transactionViewModel = this.FindTransaction(transactionId);
+			if (transactionViewModel is not null)
+			{
+				transactionViewModel.Refresh();
+				this.UpdateBalances(transactionViewModel);
+			}
+		}
 	}
 
 	internal abstract void NotifyAccountDeleted(ICollection<int> accountIds);
@@ -172,6 +169,10 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 	protected static void ThrowOnUnexpectedAccountType(string parameterName, Account.AccountType expectedType, Account.AccountType actualType)
 	{
 		Requires.Argument(expectedType == actualType, parameterName, "Type mismatch. Expected {0} but was {1}.", expectedType, actualType);
+	}
+
+	protected virtual void UpdateBalances(TransactionViewModel startingWith)
+	{
 	}
 
 	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);

@@ -270,73 +270,55 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	private void Model_EntitiesChanged(object? sender, MoneyFile.EntitiesChangedEventArgs e)
 	{
-		HashSet<int> impactedAccountIds = new();
-		SearchForImpactedAccounts(e.Inserted);
-		SearchForImpactedAccounts(e.Deleted);
-		SearchForImpactedAccounts(e.Changed.Select(c => c.Before).Concat(e.Changed.Select(c => c.After)));
 		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 		{
 			accountViewModel.RefreshValue();
 			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().Select(a => a.Id).ToHashSet());
 
-			if (accountViewModel.IsPersisted && impactedAccountIds.Contains(accountViewModel.Id))
+			foreach ((ModelBase Before, ModelBase After) models in e.Changed)
 			{
-				foreach (ModelBase model in e.Inserted)
+				if (models is { Before: Transaction beforeTransaction, After: Transaction afterTransaction })
 				{
-					if (model is TransactionEntry te && IsRelated(te, accountViewModel))
+					accountViewModel.NotifyTransactionChanged(beforeTransaction.Id);
+					if (afterTransaction.Id != beforeTransaction.Id)
 					{
-						////accountViewModel.NotifyTransactionChanged(te);
+						accountViewModel.NotifyTransactionChanged(afterTransaction.Id);
 					}
 				}
 
-				foreach ((ModelBase Before, ModelBase After) models in e.Changed)
+				if (models is { Before: TransactionEntry beforeEntry, After: TransactionEntry afterEntry })
 				{
-					if (models is { Before: TransactionEntry beforeTx, After: TransactionEntry afterTx } && (IsRelated(beforeTx, accountViewModel) || IsRelated(afterTx, accountViewModel)))
+					accountViewModel.NotifyTransactionChanged(beforeEntry.TransactionId);
+					if (afterEntry.TransactionId != beforeEntry.TransactionId)
 					{
-						////accountViewModel.NotifyTransactionChanged(afterTx);
-					}
-				}
-
-				foreach (ModelBase model in e.Deleted)
-				{
-					if (model is TransactionEntry tx && tx.AccountId == accountViewModel.Id)
-					{
-						accountViewModel.NotifyTransactionDeleted(tx);
+						accountViewModel.NotifyTransactionChanged(afterEntry.TransactionId);
 					}
 				}
 			}
 
-			foreach ((ModelBase Before, ModelBase After) models in e.Changed)
+			foreach (ModelBase model in e.Inserted)
 			{
-				if (models is { Before: Transaction beforeTx, After: Transaction afterTx })
+				if (model is Transaction transaction)
 				{
-					accountViewModel.NotifyTransactionChanged(afterTx);
+					accountViewModel.NotifyTransactionAdded(transaction.Id);
+				}
+
+				if (model is TransactionEntry entry)
+				{
+					accountViewModel.NotifyTransactionChanged(entry.TransactionId);
 				}
 			}
 
 			foreach (ModelBase model in e.Deleted)
 			{
-				if (model is Transaction tx)
+				if (model is Transaction transaction)
 				{
-					accountViewModel.NotifyTransactionDeleted(tx);
-				}
-			}
-		}
-
-		static bool IsRelated(TransactionEntry te, AccountViewModel accountViewModel) => te.AccountId == accountViewModel.Id;
-
-		void SearchForImpactedAccounts(IEnumerable<ModelBase> models)
-		{
-			foreach (ModelBase model in models)
-			{
-				if (model is TransactionEntry te)
-				{
-					impactedAccountIds.Add(te.AccountId);
+					accountViewModel.NotifyTransactionDeleted(transaction.Id);
 				}
 
-				if (model is AssetPrice)
+				if (model is TransactionEntry entry)
 				{
-					impactedAccountIds.UnionWith(this.BankingPanel.Accounts.Where(a => a.Type == Account.AccountType.Investing && a.IsPersisted).Select(a => a.Id));
+					accountViewModel.NotifyTransactionChanged(entry.TransactionId);
 				}
 			}
 		}

@@ -89,7 +89,7 @@ public class InvestingAccountViewModel : AccountViewModel
 		return null;
 	}
 
-	internal override void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transactionAndEntries)
+	internal override void NotifyTransactionChanged(int transactionId)
 	{
 		if (this.transactions is null)
 		{
@@ -97,28 +97,28 @@ public class InvestingAccountViewModel : AccountViewModel
 			return;
 		}
 
-		// This transaction may have added or dropped our account as a transfer
-		bool removedFromAccount = !transactionAndEntries.Any(te => te.AccountId == this.Id);
-		if (this.FindTransaction(transactionAndEntries.First().TransactionId) is { } transactionViewModel)
-		{
-			if (removedFromAccount)
-			{
-				this.transactions.Remove(transactionViewModel);
-			}
-			else
-			{
-				transactionViewModel.CopyFrom(transactionAndEntries);
-				int index = this.transactions.IndexOf(transactionViewModel);
-				if (index >= 0)
-				{
-					this.UpdateBalances(index);
-				}
-			}
-		}
-		else if (!removedFromAccount)
-		{
-			this.transactions.Add(new InvestingTransactionViewModel(this, transactionAndEntries));
-		}
+		////// This transaction may have added or dropped our account as a transfer
+		////bool removedFromAccount = !transactionAndEntries.Any(te => te.AccountId == this.Id);
+		////if (this.FindTransaction(transactionAndEntries.First().TransactionId) is { } transactionViewModel)
+		////{
+		////	if (removedFromAccount)
+		////	{
+		////		this.transactions.Remove(transactionViewModel);
+		////	}
+		////	else
+		////	{
+		////		transactionViewModel.CopyFrom(transactionAndEntries);
+		////		int index = this.transactions.IndexOf(transactionViewModel);
+		////		if (index >= 0)
+		////		{
+		////			this.UpdateBalances(index);
+		////		}
+		////	}
+		////}
+		////else if (!removedFromAccount)
+		////{
+		////	this.transactions.Add(new InvestingTransactionViewModel(this, transactionAndEntries));
+		////}
 	}
 
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)

@@ -74,6 +74,11 @@ public abstract class TransactionViewModel : EntityViewModel
 		this.IsDirty = false;
 	}
 
+	internal void Refresh()
+	{
+		this.CopyFrom(this.MoneyFile.GetTransactionDetails(this.ThisAccount.Id, this.TransactionId));
+	}
+
 	internal virtual void CopyFrom(Transaction model)
 	{
 		using (this.SuspendAutoSave(saveOnDisposal: false))

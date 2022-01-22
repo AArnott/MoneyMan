@@ -36,9 +36,5 @@ public class CategoryAccountViewModel : AccountViewModel
 	{
 	}
 
-	internal override void NotifyTransactionChanged(IReadOnlyList<TransactionAndEntry> transaction)
-	{
-	}
-
 	protected override void RemoveTransactionFromViewModel(TransactionViewModel transaction) => throw new NotSupportedException();
 }
