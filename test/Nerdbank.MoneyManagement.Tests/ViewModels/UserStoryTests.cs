@@ -46,7 +46,7 @@ public class UserStoryTests : MoneyTestBase
 		// Reverse direction of money flow.
 		tx.Amount *= -1;
 
-		Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id && te.Amount == -tx.Amount);
-		Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id && te.Amount == tx.Amount);
+		Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id && te.Amount == tx.Amount);
+		Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id && te.Amount == -tx.Amount);
 	}
 }

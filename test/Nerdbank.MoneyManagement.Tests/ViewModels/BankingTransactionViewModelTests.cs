@@ -35,7 +35,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void When()
+	public void When_LinkedAcrossSplits()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
 			this.viewModel,
@@ -146,7 +146,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void Payee()
+	public void Payee_LinkedAcrossSplits()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
 			this.viewModel,
@@ -161,14 +161,6 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(this.viewModel.Payee, foreignSplitTransaction.Payee);
 		this.viewModel.Payee = "somebody else";
 		Assert.Equal(this.viewModel.Payee, foreignSplitTransaction.Payee);
-	}
-
-	[Fact]
-	public void PayeeIsReadOnly()
-	{
-		Assert.False(this.viewModel.PayeeIsReadOnly);
-		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
-		Assert.True(foreignSplitTransaction.PayeeIsReadOnly);
 	}
 
 	[Fact]

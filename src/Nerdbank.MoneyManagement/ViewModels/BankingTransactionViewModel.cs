@@ -113,11 +113,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 	}
 
 	/// <summary>
-	/// Gets a value indicating whether the <see cref="Payee"/> property should be considered readonly.
-	/// </summary>
-	public bool PayeeIsReadOnly => false;
-
-	/// <summary>
 	/// Gets or sets the category, transfer account, or the special "split" placeholder.
 	/// </summary>
 	public AccountViewModel? OtherAccount
