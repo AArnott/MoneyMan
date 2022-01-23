@@ -341,14 +341,6 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void CategoryOrTransferIsReadOnly()
-	{
-		Assert.False(this.viewModel.OtherAccountIsReadOnly);
-		BankingTransactionViewModel foreignSplitTransaction = this.SplitAndFetchForeignTransactionViewModel();
-		Assert.True(foreignSplitTransaction.OtherAccountIsReadOnly);
-	}
-
-	[Fact]
 	public void AvailableTransactionTargets()
 	{
 		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.DocumentViewModel.SplitCategory);
@@ -677,7 +669,6 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	private BankingTransactionViewModel SplitAndFetchForeignTransactionViewModel()
 	{
 		TransactionEntryViewModel split = this.viewModel.NewSplit();
-		Assert.True(this.viewModel.OtherAccountIsReadOnly);
 		split.Account = this.otherAccount;
 		BankingTransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single(t => t.TransactionId == split.Transaction.TransactionId);
 		return foreignSplitTransaction;

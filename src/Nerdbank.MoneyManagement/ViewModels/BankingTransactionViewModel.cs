@@ -46,7 +46,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.SplitCommand = new SplitCommandImpl(this);
 		this.DeleteSplitCommand = new DeleteSplitCommandImpl(this);
 
-		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.OtherAccountIsReadOnly));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.SplitCommandToolTip));
 		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
@@ -114,11 +113,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 		get => this.otherAccount;
 		set => this.SetProperty(ref this.otherAccount, value);
 	}
-
-	/// <summary>
-	/// Gets a value indicating whether the <see cref="OtherAccount"/> property should be considered readonly.
-	/// </summary>
-	public bool OtherAccountIsReadOnly => this.ContainsSplits;
 
 	public IEnumerable<AccountViewModel> AvailableTransactionTargets
 		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != this.ThisAccount.DocumentViewModel.SplitCategory);
