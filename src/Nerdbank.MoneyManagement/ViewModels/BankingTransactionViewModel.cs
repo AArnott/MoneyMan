@@ -350,6 +350,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
 					ourEntry.Amount = this.Amount;
 					otherEntry.Amount = -this.Amount;
+					otherEntry.Account = this.OtherAccount;
 					break;
 				default:
 					throw new NotSupportedException();

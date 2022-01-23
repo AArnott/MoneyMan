@@ -12,6 +12,7 @@ public abstract class TransactionViewModel : EntityViewModel
 	private DateTime when;
 	private string? memo;
 	private Transaction transaction;
+	private bool saving;
 
 	public TransactionViewModel(AccountViewModel thisAccount, IReadOnlyList<TransactionAndEntry> models)
 		: base(thisAccount.MoneyFile)
@@ -74,9 +75,27 @@ public abstract class TransactionViewModel : EntityViewModel
 		this.IsDirty = false;
 	}
 
-	internal void Refresh()
+	/// <summary>
+	/// Refreshes this view model with the latest from the database.
+	/// </summary>
+	/// <returns><see langword="true" /> if the refresh completed successfully; <see langword="false"/> if this transaction no longer appears in the contextual account.</returns>
+	internal bool Refresh()
 	{
-		this.CopyFrom(this.MoneyFile.GetTransactionDetails(this.ThisAccount.Id, this.TransactionId));
+		if (this.saving)
+		{
+			// Do not refresh when we are the ones writing the changes.
+			// We also know we can't be removing this transaction from its own account.
+			return true;
+		}
+
+		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(this.ThisAccount.Id, this.TransactionId);
+		if (details.Count == 0)
+		{
+			return false;
+		}
+
+		this.CopyFrom(details);
+		return true;
 	}
 
 	internal virtual void CopyFrom(Transaction model)
@@ -169,16 +188,24 @@ public abstract class TransactionViewModel : EntityViewModel
 
 	protected override void SaveCore()
 	{
-		this.ApplyToModel();
-		this.MoneyFile.InsertOrReplace(this.Transaction);
-
-		foreach (TransactionEntryViewModel entry in this.entries)
+		this.saving = true;
+		try
 		{
-			entry.Save();
-		}
+			this.ApplyToModel();
+			this.MoneyFile.InsertOrReplace(this.Transaction);
 
-		// Purge any entries from the db that are no longer supposed to be there.
-		this.MoneyFile.PurgeTransactionEntries(this.TransactionId, this.entries.Select(e => e.Id));
+			foreach (TransactionEntryViewModel entry in this.entries)
+			{
+				entry.Save();
+			}
+
+			// Purge any entries from the db that are no longer supposed to be there.
+			this.MoneyFile.PurgeTransactionEntries(this.TransactionId, this.entries.Select(e => e.Id));
+		}
+		finally
+		{
+			this.saving = false;
+		}
 	}
 
 	private void SplitModels(IReadOnlyList<TransactionAndEntry> models, out Transaction transaction, out ObservableCollection<TransactionEntryViewModel> entries)

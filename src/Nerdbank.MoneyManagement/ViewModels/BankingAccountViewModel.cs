@@ -155,17 +155,9 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	protected override void UpdateBalances(TransactionViewModel startingWith)
-	{
-		if (this.transactions is not null)
-		{
-			int index = this.transactions.IndexOf((BankingTransactionViewModel)startingWith);
-			if (index >= 0)
-			{
-				this.UpdateBalances(index);
-			}
-		}
-	}
+	protected override int GetTransactionIndex(TransactionViewModel transaction) => this.transactions?.IndexOf((BankingTransactionViewModel)transaction) ?? throw new InvalidOperationException();
+
+	protected override void UpdateBalances(int index) => this.UpdateBalances(index, -1);
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{

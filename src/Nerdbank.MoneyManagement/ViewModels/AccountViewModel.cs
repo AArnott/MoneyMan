@@ -153,8 +153,19 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 			TransactionViewModel? transactionViewModel = this.FindTransaction(transactionId);
 			if (transactionViewModel is not null)
 			{
-				transactionViewModel.Refresh();
-				this.UpdateBalances(transactionViewModel);
+				int index;
+				bool removed = !transactionViewModel.Refresh();
+				index = this.GetTransactionIndex(transactionViewModel);
+
+				if (removed)
+				{
+					this.RemoveTransactionFromViewModel(transactionViewModel);
+				}
+
+				if (index >= 0)
+				{
+					this.UpdateBalances(index);
+				}
 			}
 		}
 	}
@@ -171,9 +182,11 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		Requires.Argument(expectedType == actualType, parameterName, "Type mismatch. Expected {0} but was {1}.", expectedType, actualType);
 	}
 
-	protected virtual void UpdateBalances(TransactionViewModel startingWith)
+	protected virtual void UpdateBalances(int fromIndex)
 	{
 	}
+
+	protected virtual int GetTransactionIndex(TransactionViewModel transaction) => throw new NotSupportedException();
 
 	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);
 
