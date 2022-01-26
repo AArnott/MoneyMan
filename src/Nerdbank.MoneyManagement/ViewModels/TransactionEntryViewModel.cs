@@ -25,7 +25,9 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.CopyFrom(this.Model);
 	}
 
-	public override bool IsReadyToSave => base.IsReadyToSave && this.Transaction.IsPersisted;
+	public override bool IsReadyToSave => this.IsReadyToSaveBesidesParentTransactionPersisted && this.Transaction.IsPersisted;
+
+	public bool IsReadyToSaveBesidesParentTransactionPersisted => base.IsReadyToSave;
 
 	/// <summary>
 	/// Gets the <see cref="TransactionViewModel"/> to which this belongs.

@@ -173,7 +173,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Payee) && string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && !this.ContainsSplits;
 
-	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && !this.IsEmpty && this.Splits.All(e => e.IsReadyToSave);
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && !this.IsEmpty && this.Splits.All(e => e.IsReadyToSaveBesidesParentTransactionPersisted);
 
 	/// <summary>
 	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
@@ -184,19 +184,13 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	public TransactionEntryViewModel NewSplit()
 	{
-		if (!this.IsPersisted)
-		{
-			// Persist this transaction so the splits can refer to it.
-			this.Save();
-		}
-
 		_ = this.Splits; // ensure initialized
 		bool wasSplit = this.ContainsSplits;
 		TransactionEntryViewModel split = new(this)
 		{
 			Amount = wasSplit ? 0 : this.Amount,
 		};
-		using (this.SuspendAutoSave())
+		using (this.SuspendAutoSave(saveOnDisposal: false))
 		{
 			if (this.OtherAccount != this.ThisAccount.DocumentViewModel.SplitCategory)
 			{
