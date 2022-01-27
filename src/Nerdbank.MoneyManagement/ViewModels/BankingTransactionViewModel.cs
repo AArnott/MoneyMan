@@ -206,7 +206,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 			this.OtherAccount = this.ThisAccount.DocumentViewModel.SplitCategory;
 
-			this.splits!.Add(split);
+			int insertPosition = this.splits!.Count > 0 && this.splits![this.splits.Count - 1].IsEmpty ? this.splits.Count - 1 : this.splits.Count;
+			this.splits.Insert(insertPosition, split);
 		}
 
 		split.PropertyChanged += this.Splits_PropertyChanged;
@@ -346,7 +347,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 			// Look for one more entry that would match the 'rest' that this top-level transaction represents,
 			// and update or add it if necessary.
-			TransactionEntryViewModel balanceEntry = unrecognizedEntries.FirstOrDefault(entry => entry.Account == this.ThisAccount);
+			TransactionEntryViewModel? balanceEntry = unrecognizedEntries.FirstOrDefault(entry => entry.Account == this.ThisAccount);
 			if (balanceEntry is null)
 			{
 				// Create one.
