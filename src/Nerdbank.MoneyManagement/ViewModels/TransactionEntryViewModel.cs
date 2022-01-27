@@ -20,14 +20,22 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	public TransactionEntryViewModel(TransactionViewModel parent, TransactionEntry? model = null)
 		: base(parent.ThisAccount.MoneyFile, model)
 	{
+		this.AutoSave = false;
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
 		this.parent = parent;
 		this.CopyFrom(this.Model);
+		this.PropertyChanged += (s, e) =>
+		{
+			if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
+			{
+				parent.Entry_PropertyChanged(this, e);
+			}
+		};
 	}
 
-	public override bool IsReadyToSave => this.IsReadyToSaveBesidesParentTransactionPersisted && this.Transaction.IsPersisted;
+	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted;
 
-	public bool IsReadyToSaveBesidesParentTransactionPersisted => base.IsReadyToSave;
+	public bool IsReadyToSaveIsolated => base.IsReadyToSave;
 
 	/// <summary>
 	/// Gets the <see cref="TransactionViewModel"/> to which this belongs.

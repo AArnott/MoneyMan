@@ -167,6 +167,8 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		Assert.Same(this.viewModel, split.Transaction);
 		Assert.Same(split, this.viewModel.Splits[0]);
 		Assert.Equal(2, this.viewModel.Splits.Count);
+		Assert.Equal(string.Empty, split.Error);
+		split.Amount = 5;
 		Assert.True(this.viewModel.Splits[0].IsPersisted);
 		Assert.False(this.viewModel.Splits[1].IsPersisted);
 	}
@@ -176,7 +178,11 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	{
 		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
 		this.viewModel.OtherAccount = categoryViewModel;
+		this.viewModel.Amount = -10;
 		TransactionEntryViewModel split = this.viewModel.NewSplit();
+		split.Amount = -6;
+		split = this.viewModel.NewSplit();
+		split.Amount = -4;
 
 		this.AssertNowAndAfterReload(delegate
 		{
@@ -184,6 +190,19 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 			split = this.viewModel.Splits[0];
 			Assert.Equal(categoryViewModel.Id, split.Account?.Id);
 		});
+	}
+
+	[Fact]
+	public void NewSplit_CollapsesOnReloadWhenOnlyOne()
+	{
+		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
+		this.viewModel.OtherAccount = categoryViewModel;
+
+		TransactionEntryViewModel split = this.viewModel.NewSplit();
+		Assert.True(this.viewModel.ContainsSplits);
+		Assert.Same(this.DocumentViewModel.SplitCategory, this.viewModel.OtherAccount);
+		this.ReloadViewModel();
+		Assert.Equal(categoryViewModel.Id, this.viewModel.OtherAccount?.Id);
 	}
 
 	[Fact]
@@ -323,7 +342,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void CategoryOrTransfer_ThrowsWhenSplit()
+	public void OtherAccount_ThrowsWhenSplit()
 	{
 		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
 		TransactionEntryViewModel split = this.viewModel.NewSplit();
@@ -663,6 +682,10 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		if (this.viewModel.IsPersisted)
 		{
 			this.viewModel = this.account.Transactions.Single(t => t.TransactionId == this.viewModel.TransactionId);
+		}
+		else
+		{
+			this.viewModel = this.account.Transactions[^1];
 		}
 	}
 

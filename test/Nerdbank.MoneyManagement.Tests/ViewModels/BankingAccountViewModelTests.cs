@@ -562,14 +562,15 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void SplitTransferTransactionAllowLimitedChangesFromOtherAccount()
+	public void SplitTransferTransactionAllowChangesFromOtherAccount()
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 
 		BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
+		Assert.True(txSavings.ContainsSplits);
 
-		// Disallow changes to amount, since that can upset the balance on the overall transaction.
-		Assert.Throws<InvalidOperationException>(() => txSavings.Amount += 1);
+		// Allow changes to amount
+		txSavings.Amount += 1;
 
 		// Disallow changes to category, since that is set in the original transaction to this foreign account.
 		Assert.Throws<InvalidOperationException>(() => txSavings.OtherAccount = this.DocumentViewModel.CategoriesPanel.Categories.First());

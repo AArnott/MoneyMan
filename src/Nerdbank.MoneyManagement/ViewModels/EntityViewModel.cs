@@ -78,6 +78,11 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// </summary>
 	protected bool AutoSave { get; set; } = true;
 
+	/// <summary>
+	/// Gets a value indicating whether this object is currently in a call to <see cref="ApplyToModel"/>.
+	/// </summary>
+	protected bool IsApplyingToModel { get; private set; }
+
 	public virtual string this[string columnName]
 	{
 		get
@@ -128,8 +133,17 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	public void ApplyToModel()
 	{
 		Verify.Operation(this.IsReadyToSave, "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
-		this.ApplyToCore();
-		this.IsDirty = false;
+		Verify.Operation(!this.IsApplyingToModel, "This view model is already in this call.");
+		this.IsApplyingToModel = true;
+		try
+		{
+			this.ApplyToCore();
+			this.IsDirty = false;
+		}
+		finally
+		{
+			this.IsApplyingToModel = false;
+		}
 	}
 
 	protected abstract void SaveCore();

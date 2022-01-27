@@ -111,7 +111,11 @@ public class BankingTransactionViewModel : TransactionViewModel
 	public AccountViewModel? OtherAccount
 	{
 		get => this.otherAccount;
-		set => this.SetProperty(ref this.otherAccount, value);
+		set
+		{
+			Verify.Operation(value == this.ThisAccount.DocumentViewModel.SplitCategory || !this.ContainsSplits, "Split transactions cannot have their category set on the top-level.");
+			this.SetProperty(ref this.otherAccount, value);
+		}
 	}
 
 	public IEnumerable<AccountViewModel> AvailableTransactionTargets
@@ -171,9 +175,9 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public new BankingAccountViewModel ThisAccount => (BankingAccountViewModel)base.ThisAccount;
 
-	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Payee) && string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && !this.ContainsSplits;
+	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Payee) && string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && this.OtherAccount is null && !this.ContainsSplits;
 
-	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && !this.IsEmpty && this.Splits.All(e => e.IsReadyToSaveBesidesParentTransactionPersisted);
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && !this.IsEmpty && this.Splits.Take(this.Splits.Count - 1).All(e => e.IsReadyToSaveIsolated);
 
 	/// <summary>
 	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
@@ -188,11 +192,13 @@ public class BankingTransactionViewModel : TransactionViewModel
 		bool wasSplit = this.ContainsSplits;
 		TransactionEntryViewModel split = new(this)
 		{
+			Account = this.ThisAccount,
+			Asset = this.ThisAccount.CurrencyAsset,
 			Amount = wasSplit ? 0 : this.Amount,
 		};
 		using (this.SuspendAutoSave(saveOnDisposal: false))
 		{
-			if (this.OtherAccount != this.ThisAccount.DocumentViewModel.SplitCategory)
+			if (this.OtherAccount is object && this.OtherAccount != this.ThisAccount.DocumentViewModel.SplitCategory)
 			{
 				split.Account = this.OtherAccount;
 			}
@@ -313,7 +319,14 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.Transaction.When = this.When;
 		this.Transaction.CheckNumber = this.CheckNumber;
 
-		if (!this.ContainsSplits)
+		if (this.ContainsSplits)
+		{
+			// Review each split and create an entry if no match exists.
+			// Look for one more entry that would match the 'rest' that this top-level transaction represents,
+			// and update or add it if necessary.
+			// Remove extraneous entries (from removed splits).
+		}
+		else
 		{
 			switch (this.Entries.Count)
 			{

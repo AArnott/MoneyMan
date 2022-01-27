@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -96,6 +97,14 @@ public abstract class TransactionViewModel : EntityViewModel
 
 		this.CopyFrom(details);
 		return true;
+	}
+
+	internal virtual void Entry_PropertyChanged(TransactionEntryViewModel sender, PropertyChangedEventArgs args)
+	{
+		if (this.MoneyFile.IsDisposed is not true && this.AutoSave && this.IsReadyToSave && !this.IsApplyingToModel)
+		{
+			this.Save();
+		}
 	}
 
 	internal virtual void CopyFrom(Transaction model)
