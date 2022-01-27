@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Transactions;
 using System.Windows.Input;
 using PCLCommandBase;
@@ -321,10 +322,51 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 		if (this.ContainsSplits)
 		{
+			// Calculate the amount for the 'balance'.
+			decimal balanceAmount = -this.Splits.Sum(split => split.Amount);
+
 			// Review each split and create an entry if no match exists.
+			HashSet<TransactionEntryViewModel> unrecognizedEntries = new(this.Entries);
+			foreach (TransactionEntryViewModel split in this.Splits)
+			{
+				if (split.IsEmpty)
+				{
+					continue;
+				}
+
+				if (this.Entries.Contains(split))
+				{
+					unrecognizedEntries.Remove(split);
+				}
+				else
+				{
+					this.EntriesMutable.Add(split);
+				}
+			}
+
 			// Look for one more entry that would match the 'rest' that this top-level transaction represents,
 			// and update or add it if necessary.
+			TransactionEntryViewModel balanceEntry = unrecognizedEntries.FirstOrDefault(entry => entry.Account == this.ThisAccount);
+			if (balanceEntry is null)
+			{
+				// Create one.
+				balanceEntry = new TransactionEntryViewModel(this) { Account = this.ThisAccount, Amount = balanceAmount, Asset = this.ThisAccount.CurrencyAsset };
+				this.EntriesMutable.Add(balanceEntry);
+			}
+			else
+			{
+				// Consider the balance entry recognized.
+				unrecognizedEntries.Remove(balanceEntry);
+
+				// Update the entry.
+				balanceEntry.Amount = balanceAmount;
+			}
+
 			// Remove extraneous entries (from removed splits).
+			foreach (TransactionEntryViewModel entry in unrecognizedEntries)
+			{
+				this.EntriesMutable.Remove(entry);
+			}
 		}
 		else
 		{
@@ -356,13 +398,13 @@ public class BankingTransactionViewModel : TransactionViewModel
 				default:
 					throw new NotSupportedException();
 			}
-
-			this.Transaction.Action =
-				this.Entries.Count == 2 && this.Entries.All(e => e.Account?.Type is not (null or Account.AccountType.Category)) ? TransactionAction.Transfer :
-				this.Entries.Count == 1 && this.Entries[0].Amount > 0 ? TransactionAction.Deposit :
-				this.Entries.Count == 1 && this.Entries[0].Amount < 0 ? TransactionAction.Withdraw :
-				TransactionAction.Unspecified;
 		}
+
+		this.Transaction.Action =
+			this.Entries.Count == 2 && this.Entries.All(e => e.Account?.Type is not (null or Account.AccountType.Category)) ? TransactionAction.Transfer :
+			this.Entries.Count == 1 && this.Entries[0].Amount > 0 ? TransactionAction.Deposit :
+			this.Entries.Count == 1 && this.Entries[0].Amount < 0 ? TransactionAction.Withdraw :
+			TransactionAction.Unspecified;
 
 		if (this.TopLevelEntry is object)
 		{

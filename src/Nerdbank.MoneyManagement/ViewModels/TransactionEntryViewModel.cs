@@ -37,6 +37,8 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 	public bool IsReadyToSaveIsolated => base.IsReadyToSave;
 
+	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && this.Cleared == ClearedState.None;
+
 	/// <summary>
 	/// Gets the <see cref="TransactionViewModel"/> to which this belongs.
 	/// </summary>
