@@ -209,9 +209,9 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	public void MultipleNewSplits()
 	{
 		TransactionEntryViewModel split1 = this.viewModel.NewSplit();
-		Assert.Null(split1.Account);
+		Assert.Same(this.viewModel.ThisAccount, split1.Account);
 		TransactionEntryViewModel split2 = this.viewModel.NewSplit();
-		Assert.Null(split2.Account);
+		Assert.Same(this.viewModel.ThisAccount, split2.Account);
 	}
 
 	[Fact]
@@ -693,7 +693,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	{
 		TransactionEntryViewModel split = this.viewModel.NewSplit();
 		split.Account = this.otherAccount;
-		BankingTransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single(t => t.TransactionId == split.Transaction.TransactionId);
+		BankingTransactionViewModel foreignSplitTransaction = this.otherAccount.Transactions.Single(t => t.TransactionId == this.viewModel.TransactionId);
 		return foreignSplitTransaction;
 	}
 }
