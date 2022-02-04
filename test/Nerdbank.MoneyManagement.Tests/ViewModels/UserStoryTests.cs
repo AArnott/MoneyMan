@@ -40,13 +40,13 @@ public class UserStoryTests : MoneyTestBase
 		tx.OtherAccount = this.savingsAccount;
 
 		var txModel = this.Money.TransactionEntries.Where(t => t.TransactionId == tx.TransactionId);
-		Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id && te.Amount == tx.Amount);
-		Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id && te.Amount == -tx.Amount);
+		Assert.Equal(tx.Amount, Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id).Amount);
+		Assert.Equal(-tx.Amount, Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id).Amount);
 
 		// Reverse direction of money flow.
-		tx.Amount *= -1;
+		tx.Amount *= -1; // checking -> savings
 
-		Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id && te.Amount == tx.Amount);
-		Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id && te.Amount == -tx.Amount);
+		Assert.Equal(tx.Amount, Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id).Amount);
+		Assert.Equal(-tx.Amount, Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id).Amount);
 	}
 }

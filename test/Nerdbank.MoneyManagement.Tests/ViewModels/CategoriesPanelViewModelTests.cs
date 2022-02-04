@@ -163,8 +163,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		this.ReloadViewModel();
 		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
 		transaction = checking.Transactions.Single(t => t.TransactionId == transaction.TransactionId);
-		split = transaction.Splits[0];
-		Assert.Equal(cat2.Name, split.Account?.Name);
+		Assert.False(transaction.ContainsSplits);
+		Assert.Equal(cat2.Name, transaction.OtherAccount?.Name);
 	}
 
 	[Fact]

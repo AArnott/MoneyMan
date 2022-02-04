@@ -53,7 +53,6 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		set => this.SetProperty(ref this.memo, value);
 	}
 
-	[Required]
 	public AccountViewModel? Account
 	{
 		get => this.account;

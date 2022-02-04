@@ -303,22 +303,30 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	protected internal override void NotifyReassignCategory(ICollection<CategoryAccountViewModel> oldCategories, CategoryAccountViewModel? newCategory)
 	{
-		base.NotifyReassignCategory(oldCategories, newCategory);
+		using (this.SuspendAutoSave(saveOnDisposal: false))
+		{
+			base.NotifyReassignCategory(oldCategories, newCategory);
 
-		// Update our transaction category if applicable.
-		this.SetOtherAccountBasedOnEntries();
+			// Update our transaction category if applicable.
+			if (!this.ContainsSplits)
+			{
+				this.SetOtherAccountBasedOnEntries();
+			}
+		}
 	}
 
 	protected internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		base.NotifyAccountDeleted(accountIds);
-		this.SetOtherAccountBasedOnEntries();
+		if (!this.ContainsSplits)
+		{
+			this.SetOtherAccountBasedOnEntries();
+		}
 	}
 
 	protected override void ApplyToCore()
 	{
 		this.Transaction.Payee = this.Payee;
-		this.Transaction.When = this.When;
 		this.Transaction.CheckNumber = this.CheckNumber;
 
 		if (this.ContainsSplits)
@@ -470,7 +478,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		{
 			0 or 1 => null,
 			2 => this.Entries[0].Account != this.ThisAccount ? this.Entries[0].Account : this.Entries[1].Account,
-			_ => throw new NotSupportedException(),
+			_ => this.ThisAccount.DocumentViewModel.SplitCategory,
 		};
 	}
 
@@ -478,7 +486,11 @@ public class BankingTransactionViewModel : TransactionViewModel
 	{
 		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
 		_ = this.Splits;
-		TransactionEntryViewModel volatileViewModel = new(this);
+		TransactionEntryViewModel volatileViewModel = new(this)
+		{
+			Account = this.ThisAccount,
+			Asset = this.ThisAccount.CurrencyAsset,
+		};
 		this.splits!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileSplitTransaction_Saved;
 		volatileViewModel.PropertyChanged += this.Splits_PropertyChanged;

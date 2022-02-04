@@ -97,7 +97,6 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task Balance_OnSplitTransactions()
 	{
-		this.viewModel.Save();
 		this.viewModel.Amount = -50;
 		Assert.Equal(-50, this.viewModel.Balance);
 		await this.viewModel.SplitCommand.ExecuteAsync();
