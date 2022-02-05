@@ -134,15 +134,10 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	{
 		Verify.Operation(this.IsReadyToSave, "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
 		Verify.Operation(!this.IsApplyingToModel, "This view model is already in this call.");
-		this.IsApplyingToModel = true;
-		try
+		using (this.ApplyingToModel())
 		{
 			this.ApplyToCore();
 			this.IsDirty = false;
-		}
-		finally
-		{
-			this.IsApplyingToModel = false;
 		}
 	}
 
@@ -156,6 +151,8 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	protected virtual bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.IsReadyToSave) or nameof(this.IsDirty) or nameof(this.IsPersisted) or nameof(this.AutoSave));
 
 	protected AutoSaveSuspension SuspendAutoSave(bool saveOnDisposal = true) => new(this, saveOnDisposal);
+
+	protected IsApplyingToModelBlock ApplyingToModel() => new(this);
 
 	protected struct AutoSaveSuspension : IDisposable
 	{
@@ -178,6 +175,24 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 			{
 				this.entity.Save();
 			}
+		}
+	}
+
+	protected struct IsApplyingToModelBlock : IDisposable
+	{
+		private readonly EntityViewModel entity;
+		private readonly bool oldIsApplyingToModel;
+
+		internal IsApplyingToModelBlock(EntityViewModel entity)
+		{
+			this.entity = entity;
+			this.oldIsApplyingToModel = entity.IsApplyingToModel;
+			entity.IsApplyingToModel = true;
+		}
+
+		public void Dispose()
+		{
+			this.entity.IsApplyingToModel = this.oldIsApplyingToModel;
 		}
 	}
 }

@@ -233,7 +233,11 @@ public class BankingTransactionViewModel : TransactionViewModel
 			return;
 		}
 
-		this.ThisAccount.MoneyFile.Delete(split.Model);
+		this.EntriesMutable.Remove(split);
+		using (this.ApplyingToModel())
+		{
+			this.ThisAccount.MoneyFile.Delete(split.Model);
+		}
 
 		if (this.Splits.Count(s => s.IsPersisted) > 0)
 		{
@@ -257,7 +261,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 				this.Memo = split.Memo;
 			}
 
-			this.OtherAccount = split.Account;
+			this.OtherAccount = split.Account != this.ThisAccount ? split.Account : null;
 			this.Amount = amount;
 		}
 
@@ -405,6 +409,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 					otherEntry.Account = this.OtherAccount;
 					break;
 				default:
+					// Was previously a split but is no longer.
 					throw new NotSupportedException();
 			}
 		}

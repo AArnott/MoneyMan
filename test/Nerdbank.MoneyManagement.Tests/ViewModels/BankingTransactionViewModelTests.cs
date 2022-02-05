@@ -217,7 +217,9 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	public void DeleteSplit()
 	{
 		TransactionEntryViewModel split1 = this.viewModel.NewSplit();
+		split1.Amount = 10;
 		TransactionEntryViewModel split2 = this.viewModel.NewSplit();
+		split2.Amount = 20;
 		Assert.Equal(3, this.viewModel.Splits.Count);
 		this.viewModel.DeleteSplit(split1);
 		Assert.Equal(2, this.viewModel.Splits.Count);

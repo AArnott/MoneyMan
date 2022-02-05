@@ -82,7 +82,7 @@ public abstract class TransactionViewModel : EntityViewModel
 	/// <returns><see langword="true" /> if the refresh completed successfully; <see langword="false"/> if this transaction no longer appears in the contextual account.</returns>
 	internal bool Refresh()
 	{
-		if (this.saving)
+		if (this.saving || this.IsApplyingToModel)
 		{
 			// Do not refresh when we are the ones writing the changes.
 			// We also know we can't be removing this transaction from its own account.
