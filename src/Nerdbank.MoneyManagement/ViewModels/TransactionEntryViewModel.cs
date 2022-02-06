@@ -35,7 +35,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted;
 
-	public bool IsReadyToSaveIsolated => base.IsReadyToSave;
+	public bool IsReadyToSaveIsolated => base.IsReadyToSave && !this.IsApplyingToModel;
 
 	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && this.Cleared == ClearedState.None && (this.Account is null || this.Account == this.ThisAccount);
 

@@ -36,10 +36,13 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 	{
 		Requires.NotNull(model, nameof(model));
 
-		this.Model = model;
-		using (this.SuspendAutoSave(saveOnDisposal: false))
+		using (this.ApplyingToModel())
 		{
-			this.CopyFromCore();
+			this.Model = model;
+			using (this.SuspendAutoSave(saveOnDisposal: false))
+			{
+				this.CopyFromCore();
+			}
 		}
 
 		this.IsDirty = false;
