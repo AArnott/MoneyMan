@@ -204,6 +204,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	{
 		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
 		this.viewModel.OtherAccount = categoryViewModel;
+		this.viewModel.Amount = 5;
 
 		TransactionEntryViewModel split = this.viewModel.NewSplit();
 		Assert.True(this.viewModel.ContainsSplits);

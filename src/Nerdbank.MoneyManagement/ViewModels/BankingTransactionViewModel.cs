@@ -189,14 +189,15 @@ public class BankingTransactionViewModel : TransactionViewModel
 	{
 		_ = this.Splits; // ensure initialized
 		bool wasSplit = this.ContainsSplits;
-		TransactionEntryViewModel split = new(this)
-		{
-			Account = this.ThisAccount,
-			Asset = this.ThisAccount.CurrencyAsset,
-			Amount = wasSplit ? 0 : this.Amount,
-		};
+		TransactionEntryViewModel split;
 		using (this.SuspendAutoSave(saveOnDisposal: false))
 		{
+			split = new TransactionEntryViewModel(this)
+			{
+				Account = this.ThisAccount,
+				Asset = this.ThisAccount.CurrencyAsset,
+				Amount = wasSplit ? 0 : this.Amount,
+			};
 			if (this.OtherAccount is object && this.OtherAccount != this.ThisAccount.DocumentViewModel.SplitCategory)
 			{
 				split.Account = this.OtherAccount;
@@ -494,15 +495,18 @@ public class BankingTransactionViewModel : TransactionViewModel
 	{
 		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
 		_ = this.Splits;
-		TransactionEntryViewModel volatileViewModel = new(this)
+		using (this.SuspendAutoSave(saveOnDisposal: false))
 		{
-			Account = this.ThisAccount,
-			Asset = this.ThisAccount.CurrencyAsset,
-		};
-		this.splits!.Add(volatileViewModel);
-		volatileViewModel.Saved += this.VolatileSplitTransaction_Saved;
-		volatileViewModel.PropertyChanged += this.Splits_PropertyChanged;
-		return volatileViewModel;
+			TransactionEntryViewModel volatileViewModel = new(this)
+			{
+				Account = this.ThisAccount,
+				Asset = this.ThisAccount.CurrencyAsset,
+			};
+			this.splits!.Add(volatileViewModel);
+			volatileViewModel.Saved += this.VolatileSplitTransaction_Saved;
+			volatileViewModel.PropertyChanged += this.Splits_PropertyChanged;
+			return volatileViewModel;
+		}
 	}
 
 	private void VolatileSplitTransaction_Saved(object? sender, EventArgs args)
