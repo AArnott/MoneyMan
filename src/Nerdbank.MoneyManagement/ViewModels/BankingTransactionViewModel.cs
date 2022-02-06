@@ -415,8 +415,16 @@ public class BankingTransactionViewModel : TransactionViewModel
 					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
 					ourEntry.Amount = this.Amount;
-					otherEntry.Amount = this.Amount; // otherEntry will negate this amount because it's a foreign account.
-					otherEntry.Account = this.OtherAccount;
+					if (this.OtherAccount is object)
+					{
+						otherEntry.Amount = this.Amount; // otherEntry will negate this amount because it's a foreign account.
+						otherEntry.Account = this.OtherAccount;
+					}
+					else
+					{
+						this.EntriesMutable.Remove(otherEntry);
+					}
+
 					break;
 				default:
 					// Was previously a split but is no longer.

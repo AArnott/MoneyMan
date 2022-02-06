@@ -332,7 +332,8 @@ WHERE [Balances].[AccountId] = ?
 
 	internal void PurgeTransactionEntries(int transactionId, IEnumerable<int> entryIdsToPreserve)
 	{
-		// TODO: code here
+		string sql = $"DELETE FROM [TransactionEntry] WHERE [TransactionId] = {transactionId} AND [Id] NOT IN ({string.Join(',', entryIdsToPreserve)})";
+		this.ExecuteSql(sql);
 	}
 
 	/// <summary>

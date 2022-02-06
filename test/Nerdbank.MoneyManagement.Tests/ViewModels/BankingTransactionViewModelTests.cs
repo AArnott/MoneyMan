@@ -106,6 +106,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	public async Task Balance_OnSplitTransactions()
 	{
 		this.viewModel.Amount = -50;
+		this.viewModel.OtherAccount = this.category1;
 		Assert.Equal(-50, this.viewModel.Balance);
 		await this.viewModel.SplitCommand.ExecuteAsync();
 		TransactionEntryViewModel split1 = this.viewModel.Splits[0];
@@ -116,6 +117,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 
 		TransactionEntryViewModel split2 = this.viewModel.Splits[^1];
 		split2.Amount = -30;
+		split2.Account = this.category2;
 		Assert.Equal(-70, this.viewModel.Balance);
 
 		this.ReloadViewModel();
@@ -282,17 +284,13 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	[Fact]
 	public async Task SplitCommand_OneSplit_ThenDelete()
 	{
-		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("cat");
-
-		Assert.True(this.viewModel.SplitCommand.CanExecute(null));
 		await TestUtilities.AssertPropertyChangedEventAsync(this.viewModel, () => this.viewModel.SplitCommand.ExecuteAsync(), nameof(this.viewModel.ContainsSplits));
 		Assert.True(this.viewModel.ContainsSplits);
 
 		TransactionEntryViewModel split = this.viewModel.Splits[0];
 		split.Amount = 10;
-		split.Account = categoryViewModel;
+		split.Account = this.category1;
 
-		Assert.True(this.viewModel.SplitCommand.CanExecute(null));
 		await TestUtilities.AssertPropertyChangedEventAsync(this.viewModel, () => this.viewModel.SplitCommand.ExecuteAsync(), nameof(this.viewModel.ContainsSplits));
 
 		// We expect no prompts because one split can collapse to a simple transaction with little or no data loss.
@@ -302,11 +300,11 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		{
 			Assert.False(this.viewModel.ContainsSplits);
 			Assert.Equal(10, this.viewModel.Amount);
-			Assert.Equal(categoryViewModel.Name, this.viewModel.OtherAccount?.Name);
+			Assert.Equal(this.category1.Name, this.viewModel.OtherAccount?.Name);
 		});
 
 		// Confirm the split was deleted from the database.
-		Assert.Empty(this.Money.Transactions.Where(tx => tx.Id == split.Id));
+		Assert.Empty(this.Money.TransactionEntries.Where(entry => entry.Id == split.Id));
 	}
 
 	[Theory, PairwiseData]
@@ -316,10 +314,11 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 
 		TransactionEntryViewModel split1 = this.viewModel.NewSplit();
 		split1.Amount = 10;
+		split1.Account = this.category1;
 		TransactionEntryViewModel split2 = this.viewModel.NewSplit();
 		split2.Amount = 5;
+		split2.Account = this.category2;
 
-		Assert.True(this.viewModel.SplitCommand.CanExecute(null));
 		await this.viewModel.SplitCommand.ExecuteAsync();
 		Assert.Equal(1, this.UserNotification.ConfirmCounter);
 
