@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-public class SplitTransactionViewModelTests : MoneyTestBase
+public class TransactionEntryViewModelTests : MoneyTestBase
 {
 	private BankingAccountViewModel checkingAccount;
 	private CategoryAccountViewModel spendingCategory;
@@ -12,7 +12,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 
 	private string memo = "Some memo";
 
-	public SplitTransactionViewModelTests(ITestOutputHelper logger)
+	public TransactionEntryViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
 		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
@@ -80,6 +80,7 @@ public class SplitTransactionViewModelTests : MoneyTestBase
 		TransactionEntry splitTransaction = new()
 		{
 			Amount = this.amount,
+			AssetId = this.checkingAccount.CurrencyAsset!.Id,
 			Memo = this.memo,
 			AccountId = this.spendingCategory.Id,
 		};
