@@ -130,19 +130,17 @@ public class BankingTransactionViewModel : TransactionViewModel
 			if (this.splits is null)
 			{
 				this.splits = new();
-				if (this.IsPersisted)
+				if (this.IsPersisted && this.Entries.Count > 2)
 				{
-					////foreach (Transaction split in splits)
-					////{
-					////	TransactionEntryViewModel splitViewModel = new(this, split);
-					////	this.splits.Add(splitViewModel);
-					////	splitViewModel.PropertyChanged += this.Splits_PropertyChanged;
-					////}
-
-					if (this.splits.Count > 0)
+					foreach (TransactionEntryViewModel entry in this.Entries)
 					{
-						this.CreateVolatileSplit();
+						if (entry.Account != this.ThisAccount)
+						{
+							this.splits.Add(entry);
+						}
 					}
+
+					this.CreateVolatileSplit();
 				}
 			}
 

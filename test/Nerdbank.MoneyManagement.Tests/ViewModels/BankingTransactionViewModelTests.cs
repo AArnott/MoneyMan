@@ -7,6 +7,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 {
 	private BankingAccountViewModel account;
 	private BankingAccountViewModel otherAccount;
+	private CategoryAccountViewModel category;
 
 	private BankingTransactionViewModel viewModel;
 
@@ -27,9 +28,11 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	{
 		Account thisAccountModel = this.Money.Insert(new Account { Name = "this", CurrencyAssetId = this.Money.PreferredAssetId });
 		Account otherAccountModel = this.Money.Insert(new Account { Name = "other", CurrencyAssetId = this.Money.PreferredAssetId });
+		Account categoryAccountModel = this.Money.Insert(new Account { Name = "Spending", Type = Account.AccountType.Category, });
 
 		this.account = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(otherAccountModel.Id);
+		this.category = this.DocumentViewModel.GetCategory(categoryAccountModel.Id);
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
 		this.viewModel = this.account.Transactions[^1];
 	}
@@ -650,19 +653,19 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		};
 		this.Money.Insert(transaction);
 
-		TransactionEntry split1 = new() { Amount = 3, AccountId = this.account.Id, TransactionId = transaction.Id, AssetId = this.account.CurrencyAsset!.Id };
-		TransactionEntry split2 = new() { Amount = 7, AccountId = this.account.Id, TransactionId = transaction.Id, AssetId = this.account.CurrencyAsset!.Id };
-		this.Money.InsertAll(split1, split2);
+		TransactionEntry homeEntry = new() { Amount = -4, AccountId = this.account.Id, TransactionId = transaction.Id, AssetId = this.account.CurrencyAsset!.Id };
+		TransactionEntry split1 = new() { Amount = 3, AccountId = this.otherAccount.Id, TransactionId = transaction.Id, AssetId = this.account.CurrencyAsset!.Id };
+		TransactionEntry split2 = new() { Amount = 1, AccountId = this.category.Id, TransactionId = transaction.Id, AssetId = this.account.CurrencyAsset!.Id };
+		this.Money.InsertAll(homeEntry, split1, split2);
 
 		this.ReloadViewModel();
 
-		this.account = Assert.Single(this.DocumentViewModel.BankingPanel.BankingAccounts, a => a.Id == this.account.Id);
 		this.viewModel = Assert.Single(this.account.Transactions, t => t.TransactionId == transaction.Id);
-		Assert.Equal(10, this.viewModel.Amount);
+		Assert.Equal(-4, this.viewModel.Amount);
 		Assert.Same(this.DocumentViewModel.SplitCategory, this.viewModel.OtherAccount);
 		Assert.Equal(3, this.viewModel.Splits.Count);
-		Assert.Single(this.viewModel.Splits, s => s.Amount == split1.Amount);
-		Assert.Single(this.viewModel.Splits, s => s.Amount == split2.Amount);
+		Assert.Single(this.viewModel.Splits, s => s.Amount == -split1.Amount);
+		Assert.Single(this.viewModel.Splits, s => s.Amount == -split2.Amount);
 	}
 
 	[Fact]
@@ -680,6 +683,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 
 		this.account = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.account.Id);
 		this.otherAccount = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.otherAccount.Id);
+		this.category = this.DocumentViewModel.GetCategory(this.category.Id);
 
 		if (this.viewModel.IsPersisted)
 		{
