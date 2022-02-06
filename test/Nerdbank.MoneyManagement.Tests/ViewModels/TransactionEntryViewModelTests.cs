@@ -68,7 +68,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		this.viewModel.Memo = this.memo;
 		this.viewModel.ApplyToModel();
 
-		Assert.Equal(this.amount, this.viewModel.Model.Amount);
+		Assert.Equal(-this.amount, this.viewModel.Model.Amount);
 		Assert.Equal(this.memo, this.viewModel.Model.Memo);
 	}
 
@@ -87,7 +87,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 
 		this.viewModel.CopyFrom(splitTransaction);
 
-		Assert.Equal(splitTransaction.Amount, this.viewModel.Amount);
+		Assert.Equal(-splitTransaction.Amount, this.viewModel.Amount);
 		Assert.Equal(splitTransaction.Memo, this.viewModel.Memo);
 		Assert.Equal(this.spendingCategory.Id, this.viewModel.Account?.Id);
 

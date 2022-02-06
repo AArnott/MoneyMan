@@ -98,7 +98,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.Model.TransactionId = this.Transaction.TransactionId;
 		this.Model.Memo = this.Memo;
 		this.Model.AccountId = this.Account.Id;
-		this.Model.Amount = this.Amount;
+		this.Model.Amount = this.NegateAmountIfAppropriate(this.Amount);
 		this.Model.AssetId = this.Asset.Id;
 		this.Cleared = this.Cleared;
 	}
@@ -107,8 +107,34 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	{
 		this.Memo = this.Model.Memo;
 		this.Account = this.Model.AccountId == 0 ? null : this.DocumentViewModel.GetAccount(this.Model.AccountId);
-		this.Amount = this.Model.Amount;
+		this.Amount = this.NegateAmountIfAppropriate(this.Model.Amount);
 		this.Asset = this.DocumentViewModel.GetAsset(this.Model.AssetId);
 		this.Cleared = this.Model.Cleared;
 	}
+
+	/// <summary>
+	/// Negates an amount if this transaction entry is foreign to the account that is viewing it.
+	/// </summary>
+	/// <param name="amount">An amount to possibly negate.</param>
+	/// <returns>The amount, possibly negated.</returns>
+	/// <remarks>
+	/// Given these 3 transaction entries:
+	/// [Checking] -500
+	/// [House]     400
+	/// Interest    100
+	/// When viewed from the Checking account, they should appear like this:
+	/// "Mortgage"  -500
+	/// - [House]   -400
+	/// - Interest  -100
+	/// And when viewed from the House account, they should appear like this:
+	/// "Mortgage"   400
+	/// - [Checking] 500
+	/// - Interest  -100
+	/// Notice how the 500 amount is negative when viewed from its own account, and positive when viewed from another.
+	/// Notice how the 400 amount is positive when viewed from its own account, and negative when viewed from another.
+	/// Interest is negative from both ledgers, but would be positive in a report.
+	/// From this we deduce that a TransactionEntry should flip its Amount between model and view model
+	/// iff <see cref="Account"/> (the account it applies to) is set to any account other than <see cref="ThisAccount"/>.
+	/// </remarks>
+	private decimal NegateAmountIfAppropriate(decimal amount) => this.Account == this.ThisAccount ? amount : -amount;
 }

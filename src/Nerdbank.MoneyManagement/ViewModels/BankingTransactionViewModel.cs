@@ -397,7 +397,12 @@ public class BankingTransactionViewModel : TransactionViewModel
 					this.Entries[0].Amount = this.Amount;
 					if (this.OtherAccount is not null)
 					{
-						this.EntriesMutable.Add(new TransactionEntryViewModel(this) { Account = this.OtherAccount, Amount = -this.Amount, Asset = this.ThisAccount.CurrencyAsset });
+						this.EntriesMutable.Add(new TransactionEntryViewModel(this)
+						{
+							Account = this.OtherAccount,
+							Amount = this.Amount, // otherEntry will negate this amount because it's a foreign account.
+							Asset = this.ThisAccount.CurrencyAsset,
+						});
 					}
 
 					break;
@@ -405,7 +410,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
 					ourEntry.Amount = this.Amount;
-					otherEntry.Amount = -this.Amount;
+					otherEntry.Amount = this.Amount; // otherEntry will negate this amount because it's a foreign account.
 					otherEntry.Account = this.OtherAccount;
 					break;
 				default:

@@ -231,13 +231,14 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	public void DeleteSplitCommand()
 	{
 		TransactionEntryViewModel split1 = this.viewModel.NewSplit();
+		split1.Amount = 5;
 		TransactionEntryViewModel split2 = this.viewModel.NewSplit();
+		split2.Amount = 8;
 		Assert.Equal(3, this.viewModel.Splits.Count);
 
 		this.viewModel.SelectedSplit = split2;
 		Assert.Equal(3, this.viewModel.Splits.Count);
 
-		Assert.True(this.viewModel.DeleteSplitCommand.CanExecute(null));
 		this.viewModel.DeleteSplitCommand.Execute(null);
 		Assert.Equal(2, this.viewModel.Splits.Count);
 		Assert.Same(this.viewModel.Splits[1], this.viewModel.SelectedSplit);
