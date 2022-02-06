@@ -334,7 +334,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		if (this.ContainsSplits)
 		{
 			// Calculate the amount for the 'balance'.
-			decimal balanceAmount = -this.Splits.Sum(split => split.Amount);
+			decimal balanceAmount = this.Splits.Sum(split => split.Amount);
 
 			// Review each split and create an entry if no match exists.
 			HashSet<TransactionEntryViewModel> unrecognizedEntries = new(this.Entries);
