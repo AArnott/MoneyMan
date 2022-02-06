@@ -30,6 +30,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 	private decimal balance;
 	private TransactionEntryViewModel? selectedSplit;
 	private AccountViewModel? otherAccount;
+	private bool wasEverNonEmpty;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="BankingTransactionViewModel"/> class
@@ -55,6 +56,8 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.Memo), nameof(this.IsEmpty));
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.IsEmpty));
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.IsEmpty));
+
+		this.PropertyChanged += (s, e) => this.wasEverNonEmpty |= !this.IsEmpty;
 
 		this.CopyFrom(transactionAndEntries);
 	}
@@ -176,7 +179,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Payee) && string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && this.OtherAccount is null && !this.ContainsSplits;
 
-	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && !this.IsEmpty && this.Splits.Take(this.Splits.Count - 1).All(e => e.IsReadyToSaveIsolated);
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && (!this.IsEmpty || this.wasEverNonEmpty) && this.Splits.Take(this.Splits.Count - 1).All(e => e.IsReadyToSaveIsolated);
 
 	/// <summary>
 	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
@@ -232,44 +235,47 @@ public class BankingTransactionViewModel : TransactionViewModel
 			return;
 		}
 
-		this.EntriesMutable.Remove(split);
-		using (this.ApplyingToModel())
+		using (this.SuspendAutoSave())
 		{
-			this.ThisAccount.MoneyFile.Delete(split.Model);
-		}
-
-		if (this.Splits.Count(s => s.IsPersisted) > 0)
-		{
-			this.SetAmountBasedOnSplits();
-
-			if (!split.IsPersisted)
+			this.EntriesMutable.Remove(split);
+			using (this.ApplyingToModel())
 			{
-				// We deleted the volatile transaction (new row placeholder). Recreate it.
-				this.CreateVolatileSplit();
-			}
-		}
-		else
-		{
-			decimal amount = this.Amount;
-			this.splits.Clear();
-			this.OnPropertyChanged(nameof(this.ContainsSplits));
-
-			// Salvage some data from the last split.
-			if (string.IsNullOrEmpty(this.Memo))
-			{
-				this.Memo = split.Memo;
+				this.ThisAccount.MoneyFile.Delete(split.Model);
 			}
 
-			this.OtherAccount = split.Account != this.ThisAccount ? split.Account : null;
-			this.Amount = amount;
-		}
+			if (this.Splits.Count(s => s.IsPersisted) > 0)
+			{
+				this.SetAmountBasedOnSplits();
 
-		if (this.SelectedSplit == split)
-		{
-			this.SelectedSplit =
-				this.splits.Count > indexOfSplit ? this.splits[indexOfSplit] :
-				this.splits.Count == indexOfSplit ? this.splits[indexOfSplit - 1] :
-				null;
+				if (!split.IsPersisted)
+				{
+					// We deleted the volatile transaction (new row placeholder). Recreate it.
+					this.CreateVolatileSplit();
+				}
+			}
+			else
+			{
+				decimal amount = this.Amount;
+				this.splits.Clear();
+				this.OnPropertyChanged(nameof(this.ContainsSplits));
+
+				// Salvage some data from the last split.
+				if (string.IsNullOrEmpty(this.Memo))
+				{
+					this.Memo = split.Memo;
+				}
+
+				this.OtherAccount = split.Account != this.ThisAccount ? split.Account : null;
+				this.Amount = amount;
+			}
+
+			if (this.SelectedSplit == split)
+			{
+				this.SelectedSplit =
+					this.splits.Count > indexOfSplit ? this.splits[indexOfSplit] :
+					this.splits.Count == indexOfSplit ? this.splits[indexOfSplit - 1] :
+					null;
+			}
 		}
 	}
 
