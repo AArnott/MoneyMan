@@ -342,6 +342,8 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	public void ChangingVolatileTransactionProducesNewOne()
 	{
 		TransactionEntryViewModel tx1 = this.viewModel.NewSplit();
+		tx1.Account = this.category1;
+		tx1.Amount = 3;
 		TransactionEntryViewModel volatileTx = this.viewModel.Splits[1];
 		Assert.True(tx1.IsPersisted);
 		Assert.False(volatileTx.IsPersisted);
