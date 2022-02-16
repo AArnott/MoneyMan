@@ -543,22 +543,17 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		});
 	}
 
-	/// <summary>
-	/// Verifies that an attempt to delete a transaction that is actually just a split that transfers with another account
-	/// cannot be deleted from the view of the other account.
-	/// This is important because it would quietly upset the sum of the splits that (presumably) match the total of the overall transaction.
-	/// </summary>
 	[Fact]
-	public void SplitTransferTransactionCannotBeDeletedFromOtherAccount()
+	public void SplitTransferTransactionCanBeDeletedFromOtherAccount()
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 		Assert.Equal(tx.GetSplitTotal(), this.checking.Value);
 
 		BankingTransactionViewModel txSavings = this.savings!.Transactions[0];
-		Assert.Throws<InvalidOperationException>(() => this.savings!.DeleteTransaction(txSavings));
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.savings;
 		this.DocumentViewModel.SelectedTransaction = txSavings;
-		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
+		Assert.True(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
+		this.savings!.DeleteTransaction(txSavings);
 	}
 
 	[Fact]
@@ -572,13 +567,16 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		// Allow changes to amount
 		txSavings.Amount += 1;
 
-		// Disallow changes to category, since that is set in the original transaction to this foreign account.
+		// Disallow changes to category, since split transactions have a fixed category of Split.
 		Assert.Throws<InvalidOperationException>(() => txSavings.OtherAccount = this.DocumentViewModel.CategoriesPanel.Categories.First());
 
 		// Allow updating the memo field.
 		txSavings.Memo = "some memo";
-		TransactionEntryViewModel splitTransfer = Assert.Single(tx.Splits, s => s.Account == this.savings);
-		Assert.Equal(txSavings.Memo, splitTransfer.Memo);
+
+		// Should this update the top-level transaction memo, or the split? Not sure at this point.
+		Assert.Equal(txSavings.Memo, tx.Memo);
+		////TransactionEntryViewModel splitTransfer = Assert.Single(tx.Splits, s => s.Account == this.savings);
+		////Assert.Equal(txSavings.Memo, splitTransfer.Memo);
 
 		// Allow updating the cleared flag, independently of the parent transaction.
 		txSavings.Cleared = ClearedState.Cleared;
@@ -590,7 +588,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	{
 		BankingTransactionViewModel tx = this.CreateSplitWithCategoryAndTransfer();
 		Assert.NotEmpty(this.savings!.Transactions);
-		tx.DeleteSplit(tx.Splits.Single(s => s.Account is BankingAccountViewModel));
+		tx.DeleteSplit(tx.Splits.Single(s => s.IsPersisted && s.Account is BankingAccountViewModel));
 
 		this.AssertNowAndAfterReload(delegate
 		{
