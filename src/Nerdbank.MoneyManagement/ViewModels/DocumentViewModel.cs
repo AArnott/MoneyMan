@@ -140,8 +140,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public string DeleteCommandCaption => "_Delete";
 
-	public string JumpToSplitTransactionParentCommandCaption => "_Jump to split parent";
-
 	public string UndoCommandCaption => this.MoneyFile?.UndoStack.FirstOrDefault().Activity is string top ? $"Undo {top}" : "Undo";
 
 	/// <summary>
