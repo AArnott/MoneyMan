@@ -49,7 +49,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 			foreach (PropertyInfo propertyInfo in propertyInfos)
 			{
-				if (propertyInfo.GetCustomAttribute<ValidationAttribute>(true) is not null)
+				if (propertyInfo.GetCustomAttributes<ValidationAttribute>(true).Any())
 				{
 					string errorMsg = this[propertyInfo.Name];
 					if (errorMsg.Length > 0)

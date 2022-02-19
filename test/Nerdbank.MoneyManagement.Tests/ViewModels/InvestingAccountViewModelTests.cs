@@ -142,7 +142,6 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		this.Money.Action.Deposit(this.brokerage.Model, 15);
 		Assert.False(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
 		this.DocumentViewModel.SelectedTransactions = this.brokerage.Transactions.Where(t => t.DepositAmount != 12).ToArray();
-		Assert.True(this.DocumentViewModel.DeleteTransactionsCommand.CanExecute());
 		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
 		Transaction remainingTransaction = Assert.Single(this.Money.Transactions);
 		TransactionEntry remainingTransactionEntry = Assert.Single(this.Money.TransactionEntries);
