@@ -493,6 +493,29 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				}
 
 				break;
+			case TransactionAction.Withdraw:
+				if (this.WithdrawFullyInitialized)
+				{
+					while (this.Entries.Count < 1)
+					{
+						this.EntriesMutable.Add(new(this));
+					}
+
+					while (this.Entries.Count > 1)
+					{
+						this.EntriesMutable.RemoveAt(1);
+					}
+
+					this.Entries[0].Account = this.ThisAccount;
+					this.Entries[0].Asset = this.WithdrawAsset;
+					this.Entries[0].Amount = -this.WithdrawAmount ?? 0;
+				}
+				else
+				{
+					this.EntriesMutable.Clear();
+				}
+
+				break;
 			default:
 				throw new NotImplementedException("Action: " + this.Action.Value);
 		}
@@ -526,6 +549,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				this.WithdrawAsset = null;
 				break;
 			case TransactionAction.Remove:
+			case TransactionAction.Withdraw:
 				Assumes.True(this.Entries.Count == 1);
 				this.WithdrawAccount = this.Entries[0].Account;
 				this.WithdrawAmount = -this.Entries[0].Amount;
