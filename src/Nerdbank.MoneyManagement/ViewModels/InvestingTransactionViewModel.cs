@@ -444,25 +444,31 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		switch (this.Action.Value)
 		{
 			case TransactionAction.Interest:
-				TransactionEntryViewModel? interestEntry = this.Entries.FirstOrDefault();
-				if (interestEntry is null)
+			case TransactionAction.Add:
+			case TransactionAction.Deposit:
+				if (this.DepositFullyInitialized)
 				{
-					interestEntry = new(this);
-					this.EntriesMutable.Add(interestEntry);
-				}
-				else
-				{
-					while (this.EntriesMutable.Count > 1)
+					while (this.Entries.Count < 1)
+					{
+						this.EntriesMutable.Add(new(this));
+					}
+
+					while (this.Entries.Count > 1)
 					{
 						this.EntriesMutable.RemoveAt(1);
 					}
+
+					this.Entries[0].Account = this.ThisAccount;
+					this.Entries[0].Asset = this.DepositAsset;
+					this.Entries[0].Amount = this.DepositAmount ?? 0;
+				}
+				else
+				{
+					this.EntriesMutable.Clear();
 				}
 
-				interestEntry.Account = this.ThisAccount;
-				interestEntry.Amount = this.DepositAmount ?? 0;
-				interestEntry.Asset = this.ThisAccount.CurrencyAsset;
-
 				break;
+			case TransactionAction.Sell:
 			case TransactionAction.Buy:
 			case TransactionAction.Transfer:
 				if (this.DepositFullyInitialized && this.WithdrawFullyInitialized)
@@ -494,6 +500,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 				break;
 			case TransactionAction.Withdraw:
+			case TransactionAction.Remove:
 				if (this.WithdrawFullyInitialized)
 				{
 					while (this.Entries.Count < 1)
