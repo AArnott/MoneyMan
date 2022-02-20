@@ -18,6 +18,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private AssetViewModel? relatedAsset;
 	private decimal? depositAmount;
 	private decimal? withdrawAmount;
+	private bool wasEverNonEmpty;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="InvestingTransactionViewModel"/> class
@@ -61,8 +62,14 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.WithdrawAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
 
+		this.PropertyChanged += (s, e) => this.wasEverNonEmpty |= !this.IsEmpty;
+
 		this.CopyFrom(models);
 	}
+
+	public bool IsEmpty => this.Action == TransactionAction.Unspecified && this.DepositAmount is null && this.WithdrawAmount is null && this.RelatedAsset is null;
+
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && (!this.IsEmpty || this.wasEverNonEmpty);
 
 	/// <inheritdoc cref="Transaction.Action"/>
 	[Required, NonZero]
@@ -422,6 +429,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	private bool IsCashTransaction => this.Action is TransactionAction.Deposit or TransactionAction.Withdraw;
 
+	private bool DepositFullyInitialized => this.DepositAmount.HasValue && this.DepositAccount is not null && this.DepositAsset is not null;
+
+	private bool WithdrawFullyInitialized => this.WithdrawAmount.HasValue && this.WithdrawAccount is not null && this.WithdrawAsset is not null;
+
 	protected override void ApplyToCore()
 	{
 		Verify.Operation(this.Action.HasValue, $"{nameof(this.Action)} must be set first.");
@@ -429,16 +440,105 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		base.ApplyToCore();
 		this.Transaction.Action = this.Action.Value;
 		this.Transaction.RelatedAssetId = this.RelatedAsset?.Id;
+
+		switch (this.Action.Value)
+		{
+			case TransactionAction.Interest:
+				TransactionEntryViewModel? interestEntry = this.Entries.FirstOrDefault();
+				if (interestEntry is null)
+				{
+					interestEntry = new(this);
+					this.EntriesMutable.Add(interestEntry);
+				}
+				else
+				{
+					while (this.EntriesMutable.Count > 1)
+					{
+						this.EntriesMutable.RemoveAt(1);
+					}
+				}
+
+				interestEntry.Account = this.ThisAccount;
+				interestEntry.Amount = this.DepositAmount ?? 0;
+				interestEntry.Asset = this.ThisAccount.CurrencyAsset;
+
+				break;
+			case TransactionAction.Buy:
+			case TransactionAction.Transfer:
+				if (this.DepositFullyInitialized && this.WithdrawFullyInitialized)
+				{
+					while (this.Entries.Count < 2)
+					{
+						this.EntriesMutable.Add(new(this));
+					}
+
+					while (this.Entries.Count > 2)
+					{
+						this.EntriesMutable.RemoveAt(2);
+					}
+
+					bool deposit = this.DepositAccount == this.ThisAccount;
+					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+					ourEntry.Account = this.ThisAccount;
+					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
+					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
+					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
+					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : (this.WithdrawAmount ?? 0);
+					otherEntry.Amount = deposit ? (this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
+				}
+				else
+				{
+					this.EntriesMutable.Clear();
+				}
+
+				break;
+			default:
+				throw new NotImplementedException("Action: " + this.Action.Value);
+		}
 	}
 
 	protected override void CopyFromCore()
 	{
-		this.SetProperty(ref this.action, this.Transaction.Action, nameof(this.Action));
-
-		// TODO: code here
-		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Transaction.RelatedAssetId);
-
 		base.CopyFromCore();
+		this.SetProperty(ref this.action, this.Transaction.Action, nameof(this.Action));
+		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Transaction.RelatedAssetId);
+		switch (this.Action)
+		{
+			case TransactionAction.Transfer:
+				Assumes.True(this.Entries.Count == 2);
+				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+				TransactionEntryViewModel otherEntry = this.Entries[1].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+				this.DepositAmount = ourEntry.Amount > 0 ? ourEntry.Amount : 0;
+				this.DepositAccount = ourEntry.Amount > 0 ? ourEntry.Account : otherEntry.Account;
+				this.WithdrawAmount = ourEntry.Amount < 0 ? ourEntry.Amount : 0;
+				this.WithdrawAccount = ourEntry.Amount < 0 ? ourEntry.Account : otherEntry.Account;
+				break;
+			case TransactionAction.Deposit:
+			case TransactionAction.Interest:
+			case TransactionAction.Add:
+				Assumes.True(this.Entries.Count == 1);
+				this.DepositAccount = this.Entries[0].Account;
+				this.DepositAmount = this.Entries[0].Amount;
+				this.DepositAsset = this.Entries[0].Asset;
+				this.WithdrawAccount = null;
+				this.WithdrawAmount = null;
+				this.WithdrawAsset = null;
+				break;
+			case TransactionAction.Remove:
+				Assumes.True(this.Entries.Count == 1);
+				this.WithdrawAccount = this.Entries[0].Account;
+				this.WithdrawAmount = -this.Entries[0].Amount;
+				this.WithdrawAsset = this.Entries[0].Asset;
+				this.DepositAccount = null;
+				this.DepositAmount = null;
+				this.DepositAsset = null;
+				break;
+			case TransactionAction.Unspecified when this.Entries.Count(e => !e.IsEmpty) == 0:
+				break;
+			default:
+				throw new NotImplementedException("Action is " + this.Action);
+		}
 	}
 
 	protected override bool IsPersistedProperty(string propertyName)

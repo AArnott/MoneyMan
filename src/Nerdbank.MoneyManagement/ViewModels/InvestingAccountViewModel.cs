@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -89,38 +90,6 @@ public class InvestingAccountViewModel : AccountViewModel
 		return null;
 	}
 
-	internal override void NotifyTransactionChanged(int transactionId)
-	{
-		if (this.transactions is null)
-		{
-			// Nothing to refresh.
-			return;
-		}
-
-		////// This transaction may have added or dropped our account as a transfer
-		////bool removedFromAccount = !transactionAndEntries.Any(te => te.AccountId == this.Id);
-		////if (this.FindTransaction(transactionAndEntries.First().TransactionId) is { } transactionViewModel)
-		////{
-		////	if (removedFromAccount)
-		////	{
-		////		this.transactions.Remove(transactionViewModel);
-		////	}
-		////	else
-		////	{
-		////		transactionViewModel.CopyFrom(transactionAndEntries);
-		////		int index = this.transactions.IndexOf(transactionViewModel);
-		////		if (index >= 0)
-		////		{
-		////			this.UpdateBalances(index);
-		////		}
-		////	}
-		////}
-		////else if (!removedFromAccount)
-		////{
-		////	this.transactions.Add(new InvestingTransactionViewModel(this, transactionAndEntries));
-		////}
-	}
-
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		if (this.transactions is object)
@@ -150,6 +119,19 @@ public class InvestingAccountViewModel : AccountViewModel
 		int index = this.transactions.IndexOf((InvestingTransactionViewModel)transactionViewModel);
 		this.transactions.RemoveAt(index);
 		this.UpdateBalances(index);
+	}
+
+	protected override int GetTransactionIndex(TransactionViewModel transaction)
+	{
+		for (int i = 0; i < this.Transactions.Count; i++)
+		{
+			if (this.Transactions[i] == transaction)
+			{
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -183,7 +165,7 @@ public class InvestingAccountViewModel : AccountViewModel
 		{
 			When = DateTime.Today,
 		};
-		InvestingTransactionViewModel volatileViewModel = new(this, new[] { volatileModel });
+		InvestingTransactionViewModel volatileViewModel = new(this);
 		this.transactions!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileTransaction_Saved;
 	}
