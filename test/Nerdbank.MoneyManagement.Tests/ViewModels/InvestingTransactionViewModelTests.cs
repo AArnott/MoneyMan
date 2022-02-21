@@ -295,6 +295,8 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			Assert.True(tx.IsSimpleAssetApplicable);
 			Assert.Same(this.msft, tx.DepositAsset);
 			Assert.Equal(2, tx.DepositAmount);
+			Assert.Equal(2, tx.SimpleAmount);
+			Assert.Equal(125, tx.SimplePrice);
 			Assert.Equal(250, tx.WithdrawAmount);
 			Assert.Equal("2 MSFT @ $125.00", tx.Description);
 		});

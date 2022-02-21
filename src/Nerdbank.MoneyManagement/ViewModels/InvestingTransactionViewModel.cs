@@ -492,8 +492,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
 					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
 					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
-					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : (this.WithdrawAmount ?? 0);
-					otherEntry.Amount = deposit ? (this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
+					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
+					otherEntry.Amount = deposit ? -(this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
 				}
 				else
 				{
@@ -543,13 +543,14 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Buy:
 				Assumes.True(this.Entries.Count == 2);
 				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
-				TransactionEntryViewModel otherEntry = this.Entries[1].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
-				this.DepositAmount = ourEntry.Amount > 0 ? ourEntry.Amount : 0;
-				this.DepositAccount = ourEntry.Amount > 0 ? ourEntry.Account : otherEntry.Account;
-				this.DepositAsset = ourEntry.Amount > 0 ? ourEntry.Asset : otherEntry.Asset;
-				this.WithdrawAmount = ourEntry.Amount < 0 ? ourEntry.Amount : 0;
-				this.WithdrawAccount = ourEntry.Amount < 0 ? ourEntry.Account : otherEntry.Account;
-				this.WithdrawAsset = ourEntry.Amount < 0 ? ourEntry.Asset : otherEntry.Asset;
+				TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+				bool deposit = ourEntry.Amount > 0;
+				this.DepositAmount = deposit ? ourEntry.Amount : otherEntry.Amount;
+				this.DepositAccount = deposit ? ourEntry.Account : otherEntry.Account;
+				this.DepositAsset = deposit ? ourEntry.Asset : otherEntry.Asset;
+				this.WithdrawAmount = -(deposit ? otherEntry.Amount : ourEntry.Amount);
+				this.WithdrawAccount = deposit ? otherEntry.Account : ourEntry.Account;
+				this.WithdrawAsset = deposit ? otherEntry.Asset : ourEntry.Asset;
 				break;
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
