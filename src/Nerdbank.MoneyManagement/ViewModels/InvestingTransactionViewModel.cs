@@ -116,6 +116,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 						case TransactionAction.Deposit:
 							this.DepositAccount = this.ThisAccount;
 							this.DepositAsset = this.ThisAccount.CurrencyAsset;
+							this.DepositAmount ??= 0;
 							this.WithdrawAccount = null;
 							this.WithdrawAmount = null;
 							this.WithdrawAsset = null;
@@ -541,7 +542,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Exchange:
 			case TransactionAction.Sell:
 			case TransactionAction.Buy:
-				Assumes.True(this.Entries.Count == 2);
+				Assumes.True(this.Entries.Count == 2, "Entries.Count is {0}", this.Entries.Count);
 				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 				TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
 				bool deposit = ourEntry.Amount > 0;

@@ -184,7 +184,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Null(exchange.WithdrawAccount);
 		Assert.Null(exchange.WithdrawAmount);
 		Assert.Null(exchange.WithdrawAsset);
-		Assert.Null(exchange.DepositAmount);
+		Assert.Equal(0, exchange.DepositAmount);
 	}
 
 	[Fact]
@@ -204,7 +204,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Null(exchange.WithdrawAccount);
 		Assert.Null(exchange.WithdrawAmount);
 		Assert.Null(exchange.WithdrawAsset);
-		Assert.Null(exchange.DepositAmount);
+		Assert.Equal(0, exchange.DepositAmount);
 	}
 
 	[Fact]
@@ -564,23 +564,38 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void CopyFrom()
+	public void CopyFrom_Sell()
 	{
-		TransactionAndEntry transactionAndEntry = new()
+		TransactionAndEntry[] transactionAndEntries = new TransactionAndEntry[]
 		{
-			TransactionId = this.viewModel.TransactionId,
-			When = this.when,
-			TransactionMemo = "my memo",
-			Action = TransactionAction.Sell,
-			RelatedAssetId = this.msft.Id,
+			new TransactionAndEntry
+			{
+				TransactionId = this.viewModel.TransactionId,
+				When = this.when,
+				TransactionMemo = "my memo",
+				Action = TransactionAction.Sell,
+				AssetId = this.msft.Id,
+				Amount = -2,
+				AccountId = this.account.Id,
+			},
+			new TransactionAndEntry
+			{
+				TransactionId = this.viewModel.TransactionId,
+				When = this.when,
+				TransactionMemo = "my memo",
+				Action = TransactionAction.Sell,
+				AssetId = this.account.CurrencyAsset!.Id,
+				Amount = 250,
+				AccountId = this.account.Id,
+			},
 		};
 
-		this.viewModel.CopyFrom(new[] { transactionAndEntry });
+		this.viewModel.CopyFrom(transactionAndEntries);
 
 		Assert.Equal(this.when, this.viewModel.When);
-		Assert.Equal(transactionAndEntry.TransactionMemo, this.viewModel.Memo);
+		Assert.Equal(transactionAndEntries[0].TransactionMemo, this.viewModel.Memo);
 		Assert.Equal(TransactionAction.Sell, this.viewModel.Action);
-		Assert.Same(this.msft, this.viewModel.RelatedAsset);
+		Assert.Same(this.msft, this.viewModel.SimpleAsset);
 	}
 
 	protected override void ReloadViewModel()
