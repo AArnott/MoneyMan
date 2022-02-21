@@ -446,6 +446,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Interest:
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
+			case TransactionAction.Dividend:
 				if (this.DepositFullyInitialized)
 				{
 					while (this.Entries.Count < 1)
@@ -471,6 +472,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Sell:
 			case TransactionAction.Buy:
 			case TransactionAction.Transfer:
+			case TransactionAction.Exchange:
 				if (this.DepositFullyInitialized && this.WithdrawFullyInitialized)
 				{
 					while (this.Entries.Count < 2)
@@ -536,17 +538,23 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		switch (this.Action)
 		{
 			case TransactionAction.Transfer:
+			case TransactionAction.Exchange:
+			case TransactionAction.Sell:
+			case TransactionAction.Buy:
 				Assumes.True(this.Entries.Count == 2);
 				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 				TransactionEntryViewModel otherEntry = this.Entries[1].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 				this.DepositAmount = ourEntry.Amount > 0 ? ourEntry.Amount : 0;
 				this.DepositAccount = ourEntry.Amount > 0 ? ourEntry.Account : otherEntry.Account;
+				this.DepositAsset = ourEntry.Amount > 0 ? ourEntry.Asset : otherEntry.Asset;
 				this.WithdrawAmount = ourEntry.Amount < 0 ? ourEntry.Amount : 0;
 				this.WithdrawAccount = ourEntry.Amount < 0 ? ourEntry.Account : otherEntry.Account;
+				this.WithdrawAsset = ourEntry.Amount < 0 ? ourEntry.Asset : otherEntry.Asset;
 				break;
+			case TransactionAction.Add:
 			case TransactionAction.Deposit:
 			case TransactionAction.Interest:
-			case TransactionAction.Add:
+			case TransactionAction.Dividend:
 				Assumes.True(this.Entries.Count == 1);
 				this.DepositAccount = this.Entries[0].Account;
 				this.DepositAmount = this.Entries[0].Amount;
