@@ -4,7 +4,6 @@
 using System.Globalization;
 using System.Windows;
 using MoneyMan.Converters;
-using Xunit;
 
 public class NullToVisibilityConverterTests
 {
