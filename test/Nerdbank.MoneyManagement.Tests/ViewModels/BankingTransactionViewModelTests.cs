@@ -336,6 +336,24 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public async Task SplitCommand_TransfersCategoryAndAmountToFirstSplit()
+	{
+		this.viewModel.OtherAccount = this.category1;
+		this.viewModel.Amount = 10;
+		this.viewModel.Memo = "memo";
+		await this.viewModel.SplitCommand.ExecuteAsync();
+		Assert.Equal("memo", this.viewModel.Memo);
+		Assert.Equal(10, this.viewModel.Amount);
+		Assert.Same(this.DocumentViewModel.SplitCategory, this.viewModel.OtherAccount);
+
+		Assert.Equal(2, this.viewModel.Splits.Count);
+		TransactionEntryViewModel split = this.viewModel.Splits[0];
+		Assert.Null(split.Memo);
+		Assert.Equal(10, split.Amount);
+		Assert.Same(this.category1, split.Account);
+	}
+
+	[Fact]
 	public void ChangingVolatileTransactionProducesNewOne()
 	{
 		TransactionEntryViewModel tx1 = this.viewModel.NewSplit();

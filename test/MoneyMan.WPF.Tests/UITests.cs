@@ -20,6 +20,20 @@ public class UITests : UITestBase
 	}
 
 	[WpfFact]
+	public async Task Split()
+	{
+		AccountViewModel groceries = this.DocumentViewModel.CategoriesPanel.NewCategory("Groceries");
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		this.DocumentViewModel.BankingPanel.SelectedAccount = checking;
+		var tx = checking.Transactions[^1];
+		this.DocumentViewModel.SelectedTransaction = tx;
+		tx.Amount = 10;
+		tx.OtherAccount = groceries;
+		await Dispatcher.Yield(DispatcherPriority.ContextIdle);
+		await tx.SplitCommand.ExecuteAsync();
+	}
+
+	[WpfFact]
 	public void CreateInvestmentAccount()
 	{
 		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;

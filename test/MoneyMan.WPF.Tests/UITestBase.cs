@@ -20,10 +20,16 @@ public abstract class UITestBase : MoneyTestBase
 		PresentationTraceSources.DataBindingSource.Listeners.Add(this.TraceListener);
 
 		this.Window.ViewModel.ReplaceViewModel(this.DocumentViewModel);
-		if (VisibleWindow)
+
+		// We have to make the window "visible" in order for data binding to occur so we can log errors
+		// from data binding, which is a major purpose of these UI tests.
+		// But we don't want to flash the window for each test, so position it so it's guaranteed to be off screen.
+		if (!VisibleWindow)
 		{
-			this.Window.Show();
+			this.Window.Top = -1000;
 		}
+
+		this.Window.Show();
 	}
 
 	protected MainWindow Window { get; }
@@ -32,19 +38,19 @@ public abstract class UITestBase : MoneyTestBase
 
 	private static bool VisibleWindow => Debugger.IsAttached;
 
-	protected override void Dispose(bool disposing)
+	public override async Task DisposeAsync()
 	{
-		if (disposing)
-		{
-			this.Logger.WriteLine("Data-binding trace switch: {0}, {1}", PresentationTraceSources.DataBindingSource.Switch.Level, PresentationTraceSources.DataBindingSource.Listeners.Count);
-			this.Window.Close();
-			PresentationTraceSources.DataBindingSource.Flush();
-			PresentationTraceSources.DataBindingSource.Listeners.Remove(this.TraceListener);
+		// We must wait for the Render step in WPF to ensure that data binding errors are reported.
+		await Dispatcher.Yield(DispatcherPriority.Render);
 
-			// Fail the test if any failures were traced.
-			Assert.False(this.TraceListener.HasLoggedErrors, "Errors have been logged.");
-		}
+		this.Logger.WriteLine("Data-binding trace switch: {0}, {1}", PresentationTraceSources.DataBindingSource.Switch.Level, PresentationTraceSources.DataBindingSource.Listeners.Count);
+		this.Window.Close();
+		PresentationTraceSources.DataBindingSource.Flush();
+		PresentationTraceSources.DataBindingSource.Listeners.Remove(this.TraceListener);
 
-		base.Dispose(disposing);
+		// Fail the test if any failures were traced.
+		Assert.False(this.TraceListener.HasLoggedErrors, "Errors have been logged.");
+
+		await base.DisposeAsync();
 	}
 }

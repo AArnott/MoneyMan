@@ -1,8 +1,12 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-public abstract class TestBase : IDisposable
+public abstract class TestBase : IDisposable, IAsyncLifetime
 {
+	protected static readonly TimeSpan ExpectedTimeout = TimeSpan.FromMilliseconds(250);
+
+	protected static readonly TimeSpan UnexpectedTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(20);
+
 	private bool disposed;
 	private List<string> filesToDelete = new();
 
@@ -12,6 +16,12 @@ public abstract class TestBase : IDisposable
 	}
 
 	protected ITestOutputHelper Logger { get; }
+
+	protected CancellationToken TimeoutToken { get; } = new CancellationTokenSource(UnexpectedTimeout).Token;
+
+	public virtual Task InitializeAsync() => Task.CompletedTask;
+
+	public virtual Task DisposeAsync() => Task.CompletedTask;
 
 	public void Dispose()
 	{

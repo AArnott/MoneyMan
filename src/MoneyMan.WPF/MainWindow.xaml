@@ -253,13 +253,13 @@
 													<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
 														<DataGridTemplateColumn.CellTemplate>
 															<DataTemplate>
-																<TextBlock Text="{Binding OtherAccount.TransferTargetName}" Margin="3pt" />
+																<TextBlock Text="{Binding Account.TransferTargetName}" Margin="3pt" />
 															</DataTemplate>
 														</DataGridTemplateColumn.CellTemplate>
 														<DataGridTemplateColumn.CellEditingTemplate>
 															<DataTemplate>
 																<ComboBox ItemsSource="{Binding AvailableTransactionTargets}"
-																		  SelectedItem="{Binding OtherAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+																		  SelectedItem="{Binding Account, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 																	<ComboBox.ItemTemplate>
 																		<DataTemplate>
 																			<TextBlock Text="{Binding TransferTargetName}" />
