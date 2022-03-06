@@ -179,7 +179,9 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 	public bool IsEmpty => string.IsNullOrWhiteSpace(this.Payee) && string.IsNullOrWhiteSpace(this.Memo) && this.Amount == 0 && this.OtherAccount is null && !this.ContainsSplits;
 
-	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && (!this.IsEmpty || this.wasEverNonEmpty) && this.Splits.Take(this.Splits.Count - 1).All(e => e.IsReadyToSaveIsolated);
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && (!this.IsEmpty || this.wasEverNonEmpty) && this.NonVolatileSplits.All(e => e.IsReadyToSaveIsolated);
+
+	private IEnumerable<TransactionEntryViewModel> NonVolatileSplits => this.Splits.Count > 0 && this.Splits[^1].IsEmpty ? this.Splits.Take(this.Splits.Count - 1) : this.Splits;
 
 	/// <summary>
 	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
@@ -513,7 +515,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 		{
 			TransactionEntryViewModel volatileViewModel = new(this)
 			{
-				Account = this.ThisAccount,
 				Asset = this.ThisAccount.CurrencyAsset,
 			};
 			this.splits!.Add(volatileViewModel);

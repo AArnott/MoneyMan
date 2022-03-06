@@ -347,6 +347,8 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		Assert.Same(this.DocumentViewModel.SplitCategory, this.viewModel.OtherAccount);
 
 		Assert.Equal(2, this.viewModel.Splits.Count);
+		Assert.Null(this.viewModel.Splits[1].Account);
+
 		TransactionEntryViewModel split = this.viewModel.Splits[0];
 		Assert.Null(split.Memo);
 		Assert.Equal(10, split.Amount);
@@ -363,6 +365,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		Assert.True(tx1.IsPersisted);
 		Assert.False(volatileTx.IsPersisted);
 		volatileTx.Amount = 50;
+		volatileTx.Account = this.category2;
 		Assert.True(volatileTx.IsPersisted);
 		Assert.Equal(3, this.viewModel.Splits.Count);
 		TransactionEntryViewModel volatileTx2 = this.viewModel.Splits[2];
