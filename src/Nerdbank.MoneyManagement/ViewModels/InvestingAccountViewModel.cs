@@ -58,7 +58,6 @@ public class InvestingAccountViewModel : AccountViewModel
 		var investingTransaction = (InvestingTransactionViewModel)transaction;
 
 		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction);
-
 		if (!this.MoneyFile.Delete(investingTransaction.Transaction))
 		{
 			// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
@@ -92,7 +91,7 @@ public class InvestingAccountViewModel : AccountViewModel
 
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
-		if (this.transactions is object)
+		if (this.transactions is object && accountIds.Count > 0)
 		{
 			foreach (InvestingTransactionViewModel transaction in this.transactions)
 			{

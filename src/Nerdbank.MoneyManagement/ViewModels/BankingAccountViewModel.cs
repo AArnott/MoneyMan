@@ -109,17 +109,6 @@ public class BankingAccountViewModel : AccountViewModel
 		return null;
 	}
 
-	internal override void NotifyTransactionDeleted(int transactionId)
-	{
-		base.NotifyTransactionDeleted(transactionId);
-
-		BankingTransactionViewModel? viewModel = this.transactions?.FirstOrDefault(t => t.TransactionId == transactionId);
-		if (this.transactions is object && viewModel is object)
-		{
-			this.transactions.Remove(viewModel);
-		}
-	}
-
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		if (this.transactions is object && accountIds.Count > 0)

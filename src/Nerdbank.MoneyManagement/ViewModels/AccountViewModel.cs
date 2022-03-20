@@ -144,6 +144,10 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 
 	internal virtual void NotifyTransactionDeleted(int transactionId)
 	{
+		if (this.FindTransaction(transactionId) is TransactionViewModel transactionViewModel)
+		{
+			this.RemoveTransactionFromViewModel(transactionViewModel);
+		}
 	}
 
 	internal virtual void NotifyTransactionChanged(int transactionId)
