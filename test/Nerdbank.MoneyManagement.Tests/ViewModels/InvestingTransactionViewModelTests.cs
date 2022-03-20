@@ -558,7 +558,33 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.checking.Transactions.Count);
 		tx1.SimpleAccount = this.otherAccount;
 		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
+		Assert.Equal(2, this.otherAccount.Transactions.Count);
 		Assert.Contains(tx1, this.account.Transactions);
+	}
+
+	[Fact]
+	public void Transfers_InitiateFromBankingAccount()
+	{
+		// Force population of the other accounts we'll be testing so we can test dynamically adding to it when a transfer is created that's related to it.
+		_ = this.checking!.Transactions;
+		_ = this.otherAccount!.Transactions;
+
+		BankingTransactionViewModel bankingTx = this.checking.Transactions[0];
+		bankingTx.Amount = -10;
+		bankingTx.OtherAccount = this.account;
+
+		Assert.Single(this.account!.Transactions.Where(t => t.IsPersisted));
+		Assert.Equal(2, this.account.Transactions.Count);
+
+		InvestingTransactionViewModel investingTx = this.account.Transactions[0];
+		Assert.Equal(TransactionAction.Transfer, investingTx.Action);
+		Assert.Equal(10, investingTx.SimpleAmount);
+		Assert.Same(this.checking, investingTx.SimpleAccount);
+		investingTx.SimpleAccount = this.otherAccount;
+
+		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
+		Assert.Single(this.checking.Transactions);
+		Assert.Equal(2, this.otherAccount.Transactions.Count);
 	}
 
 	[Fact]
