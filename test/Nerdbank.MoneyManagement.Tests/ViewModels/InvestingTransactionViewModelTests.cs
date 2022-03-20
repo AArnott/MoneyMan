@@ -556,6 +556,8 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 
 		Assert.Single(this.checking!.Transactions.Where(t => t.IsPersisted));
 		Assert.Equal(2, this.checking.Transactions.Count);
+		Assert.Equal(-10, this.checking.Transactions[0].Balance);
+
 		tx1.SimpleAccount = this.otherAccount;
 		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
 		Assert.Equal(2, this.otherAccount.Transactions.Count);
@@ -585,6 +587,20 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
 		Assert.Single(this.checking.Transactions);
 		Assert.Equal(2, this.otherAccount.Transactions.Count);
+	}
+
+	[Fact]
+	public async Task DeleteTransaction_RemovesRowFromViewModel()
+	{
+		// Particularly the Transfer type may need two deletes to work.
+		InvestingTransactionViewModel tx1 = this.account.Transactions[0];
+		tx1.Action = TransactionAction.Transfer;
+		tx1.SimpleAmount = 10;
+		tx1.SimpleAccount = this.checking;
+
+		this.DocumentViewModel.SelectedTransaction = tx1;
+		await this.DocumentViewModel.DeleteTransactionsCommand.ExecuteAsync();
+		Assert.False(Assert.Single(this.account.Transactions).IsPersisted);
 	}
 
 	[Fact]
