@@ -438,6 +438,24 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public IEnumerable<AccountViewModel> Accounts => this.ThisAccount.DocumentViewModel.AccountsPanel.Accounts.Where(a => a != this.ThisAccount);
 
+	private decimal? WithdrawAmountWithValidation
+	{
+		set
+		{
+			Requires.Range(value is not < 0, nameof(value));
+			this.WithdrawAmount = value;
+		}
+	}
+
+	private decimal? DepositAmountWithValidation
+	{
+		set
+		{
+			Requires.Range(value is not < 0, nameof(value));
+			this.DepositAmount = value;
+		}
+	}
+
 	private bool IsDepositOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend;
 
 	private bool IsWithdrawOperation => this.Action is TransactionAction.Sell or TransactionAction.Remove or TransactionAction.Withdraw;
@@ -560,10 +578,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 				TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
 				bool deposit = ourEntry.Amount > 0;
-				this.DepositAmount = deposit ? ourEntry.Amount : otherEntry.Amount;
+				this.DepositAmountWithValidation = Math.Abs(deposit ? ourEntry.Amount : otherEntry.Amount);
 				this.DepositAccount = deposit ? ourEntry.Account : otherEntry.Account;
 				this.DepositAsset = deposit ? ourEntry.Asset : otherEntry.Asset;
-				this.WithdrawAmount = -(deposit ? otherEntry.Amount : ourEntry.Amount);
+				this.WithdrawAmountWithValidation = Math.Abs(deposit ? otherEntry.Amount : ourEntry.Amount);
 				this.WithdrawAccount = deposit ? otherEntry.Account : ourEntry.Account;
 				this.WithdrawAsset = deposit ? otherEntry.Asset : ourEntry.Asset;
 				break;
@@ -573,20 +591,20 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Dividend:
 				Assumes.True(this.Entries.Count == 1);
 				this.DepositAccount = this.Entries[0].Account;
-				this.DepositAmount = this.Entries[0].Amount;
+				this.DepositAmountWithValidation = Math.Abs(this.Entries[0].Amount);
 				this.DepositAsset = this.Entries[0].Asset;
 				this.WithdrawAccount = null;
-				this.WithdrawAmount = null;
+				this.WithdrawAmountWithValidation = null;
 				this.WithdrawAsset = null;
 				break;
 			case TransactionAction.Remove:
 			case TransactionAction.Withdraw:
 				Assumes.True(this.Entries.Count == 1);
 				this.WithdrawAccount = this.Entries[0].Account;
-				this.WithdrawAmount = -this.Entries[0].Amount;
+				this.WithdrawAmountWithValidation = Math.Abs(this.Entries[0].Amount);
 				this.WithdrawAsset = this.Entries[0].Asset;
 				this.DepositAccount = null;
-				this.DepositAmount = null;
+				this.DepositAmountWithValidation = null;
 				this.DepositAsset = null;
 				break;
 			case TransactionAction.Unspecified when this.Entries.Count(e => !e.IsEmpty) == 0:
