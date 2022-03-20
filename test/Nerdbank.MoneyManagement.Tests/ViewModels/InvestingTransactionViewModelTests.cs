@@ -541,6 +541,27 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Transfers_CreateOrDeleteTransactionViewsInOtherAccounts()
+	{
+		// Force population of the other accounts we'll be testing so we can test dynamically adding to it when a transfer is created that's related to it.
+		_ = this.checking!.Transactions;
+		_ = this.otherAccount!.Transactions;
+
+		InvestingTransactionViewModel tx1 = this.account.Transactions[0];
+		tx1.Action = TransactionAction.Transfer;
+		tx1.SimpleAmount = 10;
+		tx1.SimpleAccount = this.checking;
+		Assert.True(tx1.IsReadyToSave);
+		Assert.False(tx1.IsDirty);
+
+		Assert.Single(this.checking!.Transactions.Where(t => t.IsPersisted));
+		Assert.Equal(2, this.checking.Transactions.Count);
+		tx1.SimpleAccount = this.otherAccount;
+		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
+		Assert.Contains(tx1, this.account.Transactions);
+	}
+
+	[Fact]
 	public void ApplyTo()
 	{
 		InvestingTransactionViewModel viewModel = new(this.account);

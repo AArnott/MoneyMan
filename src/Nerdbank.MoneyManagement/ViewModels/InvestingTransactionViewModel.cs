@@ -249,6 +249,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					if (other != this.ThisAccount && other is not null)
 					{
 						this.WithdrawAccount = other;
+						if (other is BankingAccountViewModel)
+						{
+							this.SimpleAsset = other.CurrencyAsset;
+						}
 					}
 				}
 				else
@@ -258,6 +262,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					if (other != this.ThisAccount && other is not null)
 					{
 						this.DepositAccount = other;
+					}
+
+					if (other is BankingAccountViewModel)
+					{
+						this.SimpleAsset = other.CurrencyAsset;
 					}
 				}
 			}
@@ -361,6 +370,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				this.WithdrawAccount = this.ThisAccount;
 				this.DepositAccount = value;
+			}
+
+			if (value is BankingAccountViewModel)
+			{
+				this.SimpleAsset = value.CurrencyAsset;
 			}
 
 			this.OnPropertyChanged();

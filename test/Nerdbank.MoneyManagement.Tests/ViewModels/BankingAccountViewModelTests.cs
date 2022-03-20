@@ -476,11 +476,11 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		tx1.Amount = -10;
 		tx1.OtherAccount = this.savings;
 
-		Assert.Single(this.savings!.Transactions.Where(t => t.IsPersisted));
+		Assert.Single(this.savings.Transactions.Where(t => t.IsPersisted));
 		Assert.Equal(2, this.savings.Transactions.Count);
-		Assert.Single(this.rainyDay!.Transactions);
+		Assert.Single(this.rainyDay.Transactions);
 		tx1.OtherAccount = cat;
-		Assert.Empty(this.savings!.Transactions.Where(t => t.IsPersisted));
+		Assert.Empty(this.savings.Transactions.Where(t => t.IsPersisted));
 		Assert.Contains(tx1, this.checking.Transactions);
 	}
 
