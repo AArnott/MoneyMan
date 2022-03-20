@@ -9,6 +9,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	private AssetViewModel alternateCurrency;
 	private BankingAccountViewModel checking;
 	private BankingAccountViewModel? savings;
+	private BankingAccountViewModel? rainyDay;
 
 	public BankingAccountViewModelTests(ITestOutputHelper logger)
 		: base(logger)
@@ -18,6 +19,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.savings = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
+		this.rainyDay = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Rainy Day");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
 	}
 
@@ -462,8 +464,12 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void TransferChangedToCategoryIsRemovedFromOtherAccount()
+	public void CategoryToTransferToCategory_AddsAndRemovesTransactionViewFromOtherAccount()
 	{
+		// Force population of the savings account transactions so we can test dynamically adding to it when a transfer is created that's related to it.
+		_ = this.savings!.Transactions;
+		_ = this.rainyDay!.Transactions;
+
 		CategoryAccountViewModel cat = this.DocumentViewModel.CategoriesPanel.NewCategory("Household");
 
 		BankingTransactionViewModel tx1 = this.checking.NewTransaction();
@@ -471,6 +477,8 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		tx1.OtherAccount = this.savings;
 
 		Assert.Single(this.savings!.Transactions.Where(t => t.IsPersisted));
+		Assert.Equal(2, this.savings.Transactions.Count);
+		Assert.Single(this.rainyDay!.Transactions);
 		tx1.OtherAccount = cat;
 		Assert.Empty(this.savings!.Transactions.Where(t => t.IsPersisted));
 		Assert.Contains(tx1, this.checking.Transactions);
@@ -658,6 +666,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	{
 		this.checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts.Single(a => a.Name == "Checking");
 		this.savings = (BankingAccountViewModel?)this.DocumentViewModel.AccountsPanel.Accounts.SingleOrDefault(a => a.Name == "Savings");
+		this.rainyDay = (BankingAccountViewModel?)this.DocumentViewModel.AccountsPanel.Accounts.SingleOrDefault(a => a.Name == "Rainy Day");
 	}
 
 	private BankingTransactionViewModel CreateSplitWithCategoryAndTransfer()

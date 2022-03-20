@@ -31,7 +31,7 @@ public class InvestingAccountViewModel : AccountViewModel
 				this.transactions = new(TransactionSort.Instance);
 				if (this.IsPersisted)
 				{
-					this.transactions.AddRange(this.CreateEntryViewModels(tes => new InvestingTransactionViewModel(this, tes)));
+					this.transactions.AddRange(this.CreateEntryViewModels<InvestingTransactionViewModel>());
 					this.UpdateBalances(0);
 				}
 
@@ -107,6 +107,10 @@ public class InvestingAccountViewModel : AccountViewModel
 			}
 		}
 	}
+
+	protected override TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails) => new InvestingTransactionViewModel(this, transactionDetails);
+
+	protected override int AddTransaction(TransactionViewModel transactionViewModel) => this.transactions?.Add((InvestingTransactionViewModel)transactionViewModel) ?? throw new InvalidOperationException();
 
 	protected override void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
 	{

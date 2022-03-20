@@ -31,7 +31,7 @@ public class BankingAccountViewModel : AccountViewModel
 				this.transactions = new(TransactionSort.Instance);
 				if (this.IsPersisted)
 				{
-					this.transactions.AddRange(this.CreateEntryViewModels(tes => new BankingTransactionViewModel(this, tes)));
+					this.transactions.AddRange(this.CreateEntryViewModels<BankingTransactionViewModel>());
 					this.UpdateBalances(0);
 				}
 
@@ -154,6 +154,10 @@ public class BankingAccountViewModel : AccountViewModel
 			}
 		}
 	}
+
+	protected override BankingTransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails) => new BankingTransactionViewModel(this, transactionDetails);
+
+	protected override int AddTransaction(TransactionViewModel transactionViewModel) => this.transactions?.Add((BankingTransactionViewModel)transactionViewModel) ?? throw new InvalidOperationException();
 
 	protected override int GetTransactionIndex(TransactionViewModel transaction) => this.transactions?.IndexOf((BankingTransactionViewModel)transaction) ?? throw new InvalidOperationException();
 

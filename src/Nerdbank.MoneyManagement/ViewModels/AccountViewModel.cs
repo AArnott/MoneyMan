@@ -167,6 +167,11 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 					this.UpdateBalances(index);
 				}
 			}
+			else
+			{
+				// This may be a new transaction (a transfer) that we should add.
+				this.AddTransactionIfAppropriate(transactionId);
+			}
 		}
 	}
 
@@ -181,6 +186,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 	{
 		Requires.Argument(expectedType == actualType, parameterName, "Type mismatch. Expected {0} but was {1}.", expectedType, actualType);
 	}
+
+	protected abstract int AddTransaction(TransactionViewModel transactionViewModel);
 
 	protected virtual void UpdateBalances(int fromIndex)
 	{
@@ -222,7 +229,9 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		}
 	}
 
-	protected IEnumerable<T> CreateEntryViewModels<T>(Func<IReadOnlyList<TransactionAndEntry>, T> viewModelFactory)
+	protected abstract TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails);
+
+	protected IEnumerable<T> CreateEntryViewModels<T>()
 		where T : TransactionViewModel
 	{
 		// Our looping algorithm here depends on the enumerated transactions being sorted by TransactionId.
@@ -237,7 +246,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 			else
 			{
 				// We have reached the first element of the next group, so flush the one we've been building up.
-				T transactionViewModel = viewModelFactory(group);
+				T transactionViewModel = (T)this.CreateTransactionViewModel(group);
 				yield return transactionViewModel;
 
 				// Now add this new row to the next group.
@@ -249,7 +258,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		// Flush out whatever makes up the last group.
 		if (group.Count > 0)
 		{
-			T transactionViewModel = viewModelFactory(group);
+			T transactionViewModel = (T)this.CreateTransactionViewModel(group);
 			yield return transactionViewModel;
 		}
 	}
@@ -263,5 +272,15 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 			Account.AccountType.Category => new CategoryAccountViewModel(model, documentViewModel),
 			_ => throw new NotSupportedException("Unexpected account type."),
 		};
+	}
+
+	private void AddTransactionIfAppropriate(int transactionId)
+	{
+		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(this.Id, transactionId);
+		if (details.Count > 0)
+		{
+			int index = this.AddTransaction(this.CreateTransactionViewModel(details));
+			this.UpdateBalances(index);
+		}
 	}
 }

@@ -33,4 +33,8 @@ public class SplitCategoryPlaceholder : AccountViewModel
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds) => throw new NotImplementedException();
 
 	protected override void RemoveTransactionFromViewModel(TransactionViewModel transaction) => throw new NotImplementedException();
+
+	protected override TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails) => throw new NotSupportedException();
+
+	protected override int AddTransaction(TransactionViewModel transactionViewModel) => throw new NotSupportedException();
 }

@@ -37,4 +37,8 @@ public class CategoryAccountViewModel : AccountViewModel
 	}
 
 	protected override void RemoveTransactionFromViewModel(TransactionViewModel transaction) => throw new NotSupportedException();
+
+	protected override TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails) => throw new NotSupportedException();
+
+	protected override int AddTransaction(TransactionViewModel transactionViewModel) => throw new NotSupportedException();
 }
