@@ -4,63 +4,72 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 public class InvestingTransactionViewModel : TransactionViewModel
 {
-	private DateTime when;
 	private TransactionAction? action;
-	private AccountViewModel? creditAccount;
-	private AccountViewModel? debitAccount;
-	private AssetViewModel? creditAsset;
-	private AssetViewModel? debitAsset;
+	private AccountViewModel? depositAccount;
+	private AccountViewModel? withdrawAccount;
+	private AssetViewModel? deposit;
+	private AssetViewModel? withdrawAsset;
 	private AssetViewModel? relatedAsset;
-	private decimal? creditAmount;
-	private decimal? debitAmount;
-	private string? memo;
+	private decimal? depositAmount;
+	private decimal? withdrawAmount;
+	private bool wasEverNonEmpty;
 
-	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, Transaction transaction)
-		: base(thisAccount, transaction)
+	/// <summary>
+	/// Initializes a new instance of the <see cref="InvestingTransactionViewModel"/> class
+	/// that is not backed by any pre-existing model in the database.
+	/// </summary>
+	/// <param name="thisAccount">The account this view model belongs to.</param>
+	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount)
+		: this(thisAccount, Array.Empty<TransactionAndEntry>())
 	{
-		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimpleAmount));
-		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimpleAmount));
-		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.SimpleAsset));
-		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.SimpleAsset));
-		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimpleCurrencyImpact));
-		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimpleCurrencyImpact));
-		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.SimpleCurrencyImpact));
-		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.SimpleCurrencyImpact));
-		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.SimplePrice));
-		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.SimplePrice));
+	}
+
+	public InvestingTransactionViewModel(InvestingAccountViewModel thisAccount, IReadOnlyList<TransactionAndEntry> models)
+		: base(thisAccount, models)
+	{
+		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.SimpleAmount));
+		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.SimpleAmount));
+		this.RegisterDependentProperty(nameof(this.DepositAsset), nameof(this.SimpleAsset));
+		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.SimpleAsset));
+		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.SimpleCurrencyImpact));
+		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.SimpleCurrencyImpact));
+		this.RegisterDependentProperty(nameof(this.DepositAsset), nameof(this.SimpleCurrencyImpact));
+		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.SimpleCurrencyImpact));
+		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.SimplePrice));
+		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.SimpleAccount), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Accounts));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimplePriceApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimpleAssetApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Description));
-		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.Description));
-		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.Description));
-		this.RegisterDependentProperty(nameof(this.CreditAccount), nameof(this.Description));
-		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.Description));
-		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.Description));
-		this.RegisterDependentProperty(nameof(this.DebitAccount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.DepositAsset), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.DepositAccount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.WithdrawAccount), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.RelatedAsset), nameof(this.Description));
-		this.RegisterDependentProperty(nameof(this.CreditAmount), nameof(this.CreditAmountFormatted));
-		this.RegisterDependentProperty(nameof(this.CreditAsset), nameof(this.CreditAmountFormatted));
-		this.RegisterDependentProperty(nameof(this.DebitAmount), nameof(this.DebitAmountFormatted));
-		this.RegisterDependentProperty(nameof(this.DebitAsset), nameof(this.DebitAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.DepositAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.DepositAsset), nameof(this.DepositAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.WithdrawAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.WithdrawAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
 
-		this.CopyFrom(this.Model);
+		this.PropertyChanged += (s, e) => this.wasEverNonEmpty |= !this.IsEmpty;
+
+		this.CopyFrom(models);
 	}
 
-	/// <inheritdoc cref="Transaction.When"/>
-	public DateTime When
-	{
-		get => this.when;
-		set => this.SetProperty(ref this.when, value);
-	}
+	public bool IsEmpty => this.Action == TransactionAction.Unspecified && this.DepositAmount is null && this.WithdrawAmount is null && this.RelatedAsset is null;
+
+	public override bool IsReadyToSave => string.IsNullOrEmpty(this.Error) && (!this.IsEmpty || this.wasEverNonEmpty);
 
 	/// <inheritdoc cref="Transaction.Action"/>
 	[Required, NonZero]
@@ -77,52 +86,53 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					switch (value.Value)
 					{
 						case TransactionAction.Buy:
-							this.CreditAccount ??= this.ThisAccount;
-							this.DebitAccount ??= this.ThisAccount;
-							this.DebitAsset ??= this.ThisAccount.CurrencyAsset;
+							this.DepositAccount ??= this.ThisAccount;
+							this.WithdrawAccount ??= this.ThisAccount;
+							this.WithdrawAsset ??= this.ThisAccount.CurrencyAsset;
 							break;
 						case TransactionAction.Sell:
-							this.CreditAccount ??= this.ThisAccount;
-							this.DebitAccount ??= this.ThisAccount;
-							this.CreditAsset ??= this.ThisAccount.CurrencyAsset;
+							this.DepositAccount ??= this.ThisAccount;
+							this.WithdrawAccount ??= this.ThisAccount;
+							this.DepositAsset ??= this.ThisAccount.CurrencyAsset;
 							break;
 						case TransactionAction.Exchange:
-							this.CreditAccount ??= this.ThisAccount;
-							this.DebitAccount ??= this.ThisAccount;
+							this.DepositAccount ??= this.ThisAccount;
+							this.WithdrawAccount ??= this.ThisAccount;
 							break;
 						case TransactionAction.Remove:
-							this.DebitAccount = this.ThisAccount;
-							this.CreditAccount = null;
-							this.CreditAmount = null;
-							this.CreditAsset = null;
+							this.WithdrawAccount = this.ThisAccount;
+							this.DepositAccount = null;
+							this.DepositAmount = null;
+							this.DepositAsset = null;
 							break;
 						case TransactionAction.Withdraw:
-							this.DebitAccount = this.ThisAccount;
-							this.CreditAccount = null;
-							this.CreditAmount = null;
-							this.CreditAsset = null;
-							this.DebitAsset = this.ThisAccount.CurrencyAsset;
+							this.WithdrawAccount = this.ThisAccount;
+							this.DepositAccount = null;
+							this.DepositAmount = null;
+							this.DepositAsset = null;
+							this.WithdrawAsset = this.ThisAccount.CurrencyAsset;
 							break;
 						case TransactionAction.Interest:
 						case TransactionAction.Deposit:
-							this.CreditAccount = this.ThisAccount;
-							this.CreditAsset = this.ThisAccount.CurrencyAsset;
-							this.DebitAccount = null;
-							this.DebitAmount = null;
-							this.DebitAsset = null;
+							this.DepositAccount = this.ThisAccount;
+							this.DepositAsset = this.ThisAccount.CurrencyAsset;
+							this.DepositAmount ??= 0;
+							this.WithdrawAccount = null;
+							this.WithdrawAmount = null;
+							this.WithdrawAsset = null;
 							break;
 						case TransactionAction.Add:
-							this.CreditAccount = this.ThisAccount;
-							this.DebitAccount = null;
-							this.DebitAmount = null;
-							this.DebitAsset = null;
+							this.DepositAccount = this.ThisAccount;
+							this.WithdrawAccount = null;
+							this.WithdrawAmount = null;
+							this.WithdrawAsset = null;
 							break;
 						case TransactionAction.Dividend:
-							this.CreditAccount = this.ThisAccount;
-							this.CreditAsset = this.ThisAccount.CurrencyAsset;
-							this.DebitAccount = null;
-							this.DebitAmount = null;
-							this.DebitAsset = null;
+							this.DepositAccount = this.ThisAccount;
+							this.DepositAsset = this.ThisAccount.CurrencyAsset;
+							this.WithdrawAccount = null;
+							this.WithdrawAmount = null;
+							this.WithdrawAsset = null;
 							break;
 					}
 				}
@@ -151,42 +161,42 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public new InvestingAccountViewModel ThisAccount => (InvestingAccountViewModel)base.ThisAccount;
 
-	public AssetViewModel? CreditAsset
+	public AssetViewModel? DepositAsset
 	{
-		get => this.creditAsset;
-		set => this.SetProperty(ref this.creditAsset, value);
+		get => this.deposit;
+		set => this.SetProperty(ref this.deposit, value);
 	}
 
 	[Range(0, int.MaxValue, ErrorMessage = "Must not be a negative number.")]
-	public decimal? CreditAmount
+	public decimal? DepositAmount
 	{
-		get => this.creditAmount;
-		set => this.SetProperty(ref this.creditAmount, value);
+		get => this.depositAmount;
+		set => this.SetProperty(ref this.depositAmount, value);
 	}
 
-	public AccountViewModel? CreditAccount
+	public AccountViewModel? DepositAccount
 	{
-		get => this.creditAccount;
-		set => this.SetProperty(ref this.creditAccount, value);
+		get => this.depositAccount;
+		set => this.SetProperty(ref this.depositAccount, value);
 	}
 
-	public AssetViewModel? DebitAsset
+	public AssetViewModel? WithdrawAsset
 	{
-		get => this.debitAsset;
-		set => this.SetProperty(ref this.debitAsset, value);
+		get => this.withdrawAsset;
+		set => this.SetProperty(ref this.withdrawAsset, value);
 	}
 
 	[Range(0, int.MaxValue, ErrorMessage = "Must not be a negative number.")]
-	public decimal? DebitAmount
+	public decimal? WithdrawAmount
 	{
-		get => this.debitAmount;
-		set => this.SetProperty(ref this.debitAmount, value);
+		get => this.withdrawAmount;
+		set => this.SetProperty(ref this.withdrawAmount, value);
 	}
 
-	public AccountViewModel? DebitAccount
+	public AccountViewModel? WithdrawAccount
 	{
-		get => this.debitAccount;
-		set => this.SetProperty(ref this.debitAccount, value);
+		get => this.withdrawAccount;
+		set => this.SetProperty(ref this.withdrawAccount, value);
 	}
 
 	/// <inheritdoc cref="Transaction.RelatedAssetId"/>
@@ -201,17 +211,17 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		get
 		{
-			if (this.IsCreditOperation)
+			if (this.IsDepositOperation)
 			{
-				return this.CreditAmount;
+				return this.DepositAmount;
 			}
-			else if (this.IsDebitOperation)
+			else if (this.IsWithdrawOperation)
 			{
-				return this.DebitAmount;
+				return this.WithdrawAmount;
 			}
 			else if (this.Action == TransactionAction.Transfer)
 			{
-				return this.CreditAccount == this.ThisAccount ? this.CreditAmount : -this.DebitAmount;
+				return this.DepositAccount == this.ThisAccount ? this.DepositAmount : -this.WithdrawAmount;
 			}
 			else
 			{
@@ -221,33 +231,42 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 		set
 		{
-			if (this.IsCreditOperation)
+			if (this.IsDepositOperation)
 			{
-				this.CreditAmount = value;
+				this.DepositAmount = value;
 			}
-			else if (this.IsDebitOperation)
+			else if (this.IsWithdrawOperation)
 			{
-				this.DebitAmount = value;
+				this.WithdrawAmount = value;
 			}
 			else if (this.Action == TransactionAction.Transfer)
 			{
-				this.DebitAmount = this.CreditAmount = value.HasValue ? Math.Abs(value.Value) : null;
+				this.WithdrawAmount = this.DepositAmount = value.HasValue ? Math.Abs(value.Value) : null;
 				if (value > 0)
 				{
-					AccountViewModel? other = this.CreditAccount;
-					this.CreditAccount = this.ThisAccount;
+					AccountViewModel? other = this.DepositAccount;
+					this.DepositAccount = this.ThisAccount;
 					if (other != this.ThisAccount && other is not null)
 					{
-						this.DebitAccount = other;
+						this.WithdrawAccount = other;
+						if (other is BankingAccountViewModel)
+						{
+							this.SimpleAsset = other.CurrencyAsset;
+						}
 					}
 				}
 				else
 				{
-					AccountViewModel? other = this.DebitAccount;
-					this.DebitAccount = this.ThisAccount;
+					AccountViewModel? other = this.WithdrawAccount;
+					this.WithdrawAccount = this.ThisAccount;
 					if (other != this.ThisAccount && other is not null)
 					{
-						this.CreditAccount = other;
+						this.DepositAccount = other;
+					}
+
+					if (other is BankingAccountViewModel)
+					{
+						this.SimpleAsset = other.CurrencyAsset;
 					}
 				}
 			}
@@ -264,9 +283,9 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		get =>
 			this.Action == TransactionAction.Dividend ? this.RelatedAsset :
-			this.IsCreditOperation ? this.CreditAsset :
-			this.IsDebitOperation ? this.DebitAsset :
-			this.Action == TransactionAction.Transfer && this.CreditAsset == this.DebitAsset ? this.CreditAsset :
+			this.IsDepositOperation ? this.DepositAsset :
+			this.IsWithdrawOperation ? this.WithdrawAsset :
+			this.Action == TransactionAction.Transfer && this.DepositAsset == this.WithdrawAsset ? this.DepositAsset :
 			null;
 		set
 		{
@@ -276,15 +295,15 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			}
 			else if (this.Action is TransactionAction.Buy or TransactionAction.Add)
 			{
-				this.CreditAsset = value;
+				this.DepositAsset = value;
 			}
 			else if (this.Action is TransactionAction.Sell or TransactionAction.Remove)
 			{
-				this.DebitAsset = value;
+				this.WithdrawAsset = value;
 			}
 			else if (this.Action == TransactionAction.Transfer)
 			{
-				this.DebitAsset = this.CreditAsset = value;
+				this.WithdrawAsset = this.DepositAsset = value;
 			}
 			else
 			{
@@ -304,11 +323,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		{
 			if (this.Action is TransactionAction.Buy)
 			{
-				return this.CreditAmount != 0 && this.DebitAmount != 0 ? this.DebitAmount / this.CreditAmount : null;
+				return this.DepositAmount != 0 && this.WithdrawAmount != 0 ? this.WithdrawAmount / this.DepositAmount : null;
 			}
 			else if (this.Action is TransactionAction.Sell)
 			{
-				return this.CreditAmount != 0 && this.DebitAmount != 0 ? this.CreditAmount / this.DebitAmount : null;
+				return this.DepositAmount != 0 && this.WithdrawAmount != 0 ? this.DepositAmount / this.WithdrawAmount : null;
 			}
 			else
 			{
@@ -320,11 +339,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		{
 			if (this.Action is TransactionAction.Buy)
 			{
-				this.DebitAmount = value * this.CreditAmount;
+				this.WithdrawAmount = value * this.DepositAmount;
 			}
 			else if (this.Action is TransactionAction.Sell)
 			{
-				this.CreditAmount = value * this.DebitAmount;
+				this.DepositAmount = value * this.WithdrawAmount;
 			}
 			else
 			{
@@ -339,18 +358,23 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public AccountViewModel? SimpleAccount
 	{
-		get => this.SimpleAmount > 0 ? this.DebitAccount : this.CreditAccount;
+		get => this.SimpleAmount > 0 ? this.WithdrawAccount : this.DepositAccount;
 		set
 		{
 			if (this.SimpleAmount > 0)
 			{
-				this.CreditAccount = this.ThisAccount;
-				this.DebitAccount = value;
+				this.DepositAccount = this.ThisAccount;
+				this.WithdrawAccount = value;
 			}
 			else
 			{
-				this.DebitAccount = this.ThisAccount;
-				this.CreditAccount = value;
+				this.WithdrawAccount = this.ThisAccount;
+				this.DepositAccount = value;
+			}
+
+			if (value is BankingAccountViewModel)
+			{
+				this.SimpleAsset = value.CurrencyAsset;
 			}
 
 			this.OnPropertyChanged();
@@ -361,20 +385,20 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		get
 		{
-			if (this.Action == TransactionAction.Dividend && this.CreditAsset == this.ThisAccount.CurrencyAsset)
+			if (this.Action == TransactionAction.Dividend && this.DepositAsset == this.ThisAccount.CurrencyAsset)
 			{
-				return this.CreditAmount;
+				return this.DepositAmount;
 			}
 
 			decimal impact = 0;
-			if (this.DebitAsset == this.ThisAccount.CurrencyAsset && this.DebitAmount.HasValue)
+			if (this.WithdrawAsset == this.ThisAccount.CurrencyAsset && this.WithdrawAmount.HasValue)
 			{
-				impact -= this.DebitAmount.Value;
+				impact -= this.WithdrawAmount.Value;
 			}
 
-			if (this.CreditAsset == this.ThisAccount.CurrencyAsset && this.CreditAmount.HasValue)
+			if (this.DepositAsset == this.ThisAccount.CurrencyAsset && this.DepositAmount.HasValue)
 			{
-				impact += this.CreditAmount.Value;
+				impact += this.DepositAmount.Value;
 			}
 
 			return impact;
@@ -383,36 +407,30 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public string? SimpleCurrencyImpactFormatted => this.ThisAccount.CurrencyAsset?.Format(this.SimpleCurrencyImpact);
 
-	public string? Memo
-	{
-		get => this.memo;
-		set => this.SetProperty(ref this.memo, value);
-	}
-
 	public string Description
 	{
 		get
 		{
 			return this.Action switch
 			{
-				TransactionAction.Add => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName}",
-				TransactionAction.Remove => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName}",
-				TransactionAction.Interest => $"+{this.CreditAmountFormatted}",
-				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.CreditAmountFormatted}",
-				TransactionAction.Sell => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
-				TransactionAction.Buy => $"{this.CreditAmount} {this.CreditAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
-				TransactionAction.Transfer => this.ThisAccount == this.CreditAccount ? $"{this.DebitAccount?.Name} -> {this.CreditAmountFormatted} {this.CreditAsset?.TickerOrName}" : $"{this.CreditAccount?.Name} <- {this.DebitAmountFormatted} {this.DebitAsset?.TickerOrName}",
-				TransactionAction.Deposit => $"{this.CreditAmountFormatted}",
-				TransactionAction.Withdraw => $"{this.DebitAmountFormatted}",
-				TransactionAction.Exchange => $"{this.DebitAmount} {this.DebitAsset?.TickerOrName} -> {this.CreditAmount} {this.CreditAsset?.TickerOrName}",
+				TransactionAction.Add => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName}",
+				TransactionAction.Remove => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName}",
+				TransactionAction.Interest => $"+{this.DepositAmountFormatted}",
+				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.DepositAmountFormatted}",
+				TransactionAction.Sell => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
+				TransactionAction.Buy => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
+				TransactionAction.Transfer => this.ThisAccount == this.DepositAccount ? $"{this.WithdrawAccount?.Name} -> {this.DepositAmountFormatted} {this.DepositAsset?.TickerOrName}" : $"{this.DepositAccount?.Name} <- {this.WithdrawAmountFormatted} {this.WithdrawAsset?.TickerOrName}",
+				TransactionAction.Deposit => $"{this.DepositAmountFormatted}",
+				TransactionAction.Withdraw => $"{this.WithdrawAmountFormatted}",
+				TransactionAction.Exchange => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} -> {this.DepositAmount} {this.DepositAsset?.TickerOrName}",
 				_ => string.Empty,
 			};
 		}
 	}
 
-	public string? CreditAmountFormatted => this.CreditAsset?.Format(this.CreditAmount);
+	public string? DepositAmountFormatted => this.DepositAsset?.Format(this.DepositAmount);
 
-	public string? DebitAmountFormatted => this.DebitAsset?.Format(this.DebitAmount);
+	public string? WithdrawAmountFormatted => this.WithdrawAsset?.Format(this.WithdrawAmount);
 
 	public string? SimplePriceFormatted => this.ThisAccount.CurrencyAsset?.Format(this.SimplePrice);
 
@@ -420,44 +438,173 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public IEnumerable<AccountViewModel> Accounts => this.ThisAccount.DocumentViewModel.AccountsPanel.Accounts.Where(a => a != this.ThisAccount);
 
-	private bool IsCreditOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend;
+	private decimal? WithdrawAmountWithValidation
+	{
+		set
+		{
+			Requires.Range(value is not < 0, nameof(value));
+			this.WithdrawAmount = value;
+		}
+	}
 
-	private bool IsDebitOperation => this.Action is TransactionAction.Sell or TransactionAction.Remove or TransactionAction.Withdraw;
+	private decimal? DepositAmountWithValidation
+	{
+		set
+		{
+			Requires.Range(value is not < 0, nameof(value));
+			this.DepositAmount = value;
+		}
+	}
+
+	private bool IsDepositOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend;
+
+	private bool IsWithdrawOperation => this.Action is TransactionAction.Sell or TransactionAction.Remove or TransactionAction.Withdraw;
 
 	private bool IsCashTransaction => this.Action is TransactionAction.Deposit or TransactionAction.Withdraw;
 
+	private bool DepositFullyInitialized => this.DepositAmount.HasValue && this.DepositAccount is not null && this.DepositAsset is not null;
+
+	private bool WithdrawFullyInitialized => this.WithdrawAmount.HasValue && this.WithdrawAccount is not null && this.WithdrawAsset is not null;
+
 	protected override void ApplyToCore()
 	{
-		this.Model.When = this.When;
-		this.Model.Memo = this.Memo;
-		this.Model.Action = this.Action!.Value;
+		Verify.Operation(this.Action.HasValue, $"{nameof(this.Action)} must be set first.");
 
-		this.Model.CreditAccountId = this.CreditAccount?.Id;
-		this.Model.CreditAssetId = this.CreditAsset?.Id;
-		this.Model.CreditAmount = this.CreditAmount;
+		base.ApplyToCore();
+		this.Transaction.Action = this.Action.Value;
+		this.Transaction.RelatedAssetId = this.RelatedAsset?.Id;
 
-		this.Model.DebitAccountId = this.DebitAccount?.Id;
-		this.Model.DebitAssetId = this.DebitAsset?.Id;
-		this.Model.DebitAmount = this.DebitAmount;
+		switch (this.Action.Value)
+		{
+			case TransactionAction.Interest:
+			case TransactionAction.Add:
+			case TransactionAction.Deposit:
+			case TransactionAction.Dividend:
+				if (TryEnsureEntryCount(1, this.DepositFullyInitialized))
+				{
+					this.Entries[0].Account = this.ThisAccount;
+					this.Entries[0].Asset = this.DepositAsset;
+					this.Entries[0].Amount = this.DepositAmount ?? 0;
+				}
 
-		this.Model.RelatedAssetId = this.RelatedAsset?.Id;
+				break;
+			case TransactionAction.Transfer:
+				if (TryEnsureEntryCount(2, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
+				{
+					bool deposit = this.DepositAccount == this.ThisAccount;
+					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+					ourEntry.Account = this.ThisAccount;
+					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
+					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
+					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
+					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
+					otherEntry.Amount = deposit ? (this.WithdrawAmount ?? 0) : -(this.DepositAmount ?? 0);
+				}
+
+				break;
+			case TransactionAction.Sell:
+			case TransactionAction.Buy:
+			case TransactionAction.Exchange:
+				if (TryEnsureEntryCount(2, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
+				{
+					bool deposit = this.DepositAccount == this.ThisAccount;
+					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+					ourEntry.Account = this.ThisAccount;
+					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
+					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
+					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
+					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
+					otherEntry.Amount = deposit ? -(this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
+				}
+
+				break;
+			case TransactionAction.Withdraw:
+			case TransactionAction.Remove:
+				if (TryEnsureEntryCount(1, this.WithdrawFullyInitialized))
+				{
+					this.Entries[0].Account = this.ThisAccount;
+					this.Entries[0].Asset = this.WithdrawAsset;
+					this.Entries[0].Amount = -this.WithdrawAmount ?? 0;
+				}
+
+				break;
+			default:
+				throw new NotImplementedException("Action: " + this.Action.Value);
+		}
+
+		bool TryEnsureEntryCount(int requiredCount, bool condition)
+		{
+			if (condition)
+			{
+				while (this.Entries.Count < requiredCount)
+				{
+					this.EntriesMutable.Add(new(this));
+				}
+
+				while (this.Entries.Count > requiredCount)
+				{
+					this.EntriesMutable.RemoveAt(requiredCount);
+				}
+
+				return true;
+			}
+
+			this.EntriesMutable.Clear();
+			return false;
+		}
 	}
 
 	protected override void CopyFromCore()
 	{
-		this.When = this.Model.When;
-		this.Memo = this.Model.Memo;
-		this.SetProperty(ref this.action, this.Model.Action, nameof(this.Action));
-
-		this.CreditAccount = this.ThisAccount.DocumentViewModel.GetAccount(this.Model.CreditAccountId);
-		this.CreditAmount = this.Model.CreditAmount;
-		this.CreditAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Model.CreditAssetId);
-
-		this.DebitAccount = this.ThisAccount.DocumentViewModel.GetAccount(this.Model.DebitAccountId);
-		this.DebitAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Model.DebitAssetId);
-		this.DebitAmount = this.Model.DebitAmount;
-
-		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Model.RelatedAssetId);
+		base.CopyFromCore();
+		this.SetProperty(ref this.action, this.Transaction.Action, nameof(this.Action));
+		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Transaction.RelatedAssetId);
+		switch (this.Action)
+		{
+			case TransactionAction.Transfer:
+			case TransactionAction.Exchange:
+			case TransactionAction.Sell:
+			case TransactionAction.Buy:
+				Assumes.True(this.Entries.Count == 2, "Entries.Count is {0}", this.Entries.Count);
+				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+				TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+				bool deposit = ourEntry.Amount > 0;
+				this.DepositAmountWithValidation = Math.Abs(deposit ? ourEntry.Amount : otherEntry.Amount);
+				this.DepositAccount = deposit ? ourEntry.Account : otherEntry.Account;
+				this.DepositAsset = deposit ? ourEntry.Asset : otherEntry.Asset;
+				this.WithdrawAmountWithValidation = Math.Abs(deposit ? otherEntry.Amount : ourEntry.Amount);
+				this.WithdrawAccount = deposit ? otherEntry.Account : ourEntry.Account;
+				this.WithdrawAsset = deposit ? otherEntry.Asset : ourEntry.Asset;
+				break;
+			case TransactionAction.Add:
+			case TransactionAction.Deposit:
+			case TransactionAction.Interest:
+			case TransactionAction.Dividend:
+				Assumes.True(this.Entries.Count == 1);
+				this.DepositAccount = this.Entries[0].Account;
+				this.DepositAmountWithValidation = Math.Abs(this.Entries[0].Amount);
+				this.DepositAsset = this.Entries[0].Asset;
+				this.WithdrawAccount = null;
+				this.WithdrawAmountWithValidation = null;
+				this.WithdrawAsset = null;
+				break;
+			case TransactionAction.Remove:
+			case TransactionAction.Withdraw:
+				Assumes.True(this.Entries.Count == 1);
+				this.WithdrawAccount = this.Entries[0].Account;
+				this.WithdrawAmountWithValidation = Math.Abs(this.Entries[0].Amount);
+				this.WithdrawAsset = this.Entries[0].Asset;
+				this.DepositAccount = null;
+				this.DepositAmountWithValidation = null;
+				this.DepositAsset = null;
+				break;
+			case TransactionAction.Unspecified when this.Entries.Count(e => !e.IsEmpty) == 0:
+				break;
+			default:
+				throw new NotImplementedException("Action is " + this.Action);
+		}
 	}
 
 	protected override bool IsPersistedProperty(string propertyName)

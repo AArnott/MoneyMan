@@ -3,7 +3,6 @@
 
 using System.Globalization;
 using MoneyMan.Converters;
-using Xunit;
 
 public class NumberToNullConverterTests
 {

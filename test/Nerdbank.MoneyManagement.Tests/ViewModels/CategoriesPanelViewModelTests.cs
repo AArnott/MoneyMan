@@ -26,7 +26,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 			h => this.ViewModel.AddingNewCategory += h,
 			h => this.ViewModel.AddingNewCategory -= h,
 			() => this.ViewModel.NewCategory());
-		CategoryViewModel newCategory = Assert.Single(this.ViewModel.Categories);
+		CategoryAccountViewModel newCategory = Assert.Single(this.ViewModel.Categories);
 		Assert.Same(newCategory, this.ViewModel.SelectedCategory);
 		Assert.Equal(string.Empty, newCategory.Name);
 
@@ -43,7 +43,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 			h => this.ViewModel.AddingNewCategory += h,
 			h => this.ViewModel.AddingNewCategory -= h,
 			() => this.ViewModel.AddCommand.ExecuteAsync());
-		CategoryViewModel newCategory = Assert.Single(this.ViewModel.Categories);
+		CategoryAccountViewModel newCategory = Assert.Single(this.ViewModel.Categories);
 		Assert.Same(newCategory, this.ViewModel.SelectedCategory);
 		Assert.Equal(string.Empty, newCategory.Name);
 
@@ -55,7 +55,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	public async Task AddCommand_Twice()
 	{
 		await this.ViewModel.AddCommand.ExecuteAsync();
-		CategoryViewModel? newCategory = this.ViewModel.SelectedCategory;
+		CategoryAccountViewModel? newCategory = this.ViewModel.SelectedCategory;
 		Assert.NotNull(newCategory);
 		newCategory!.Name = "cat";
 
@@ -70,7 +70,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	[Theory, PairwiseData]
 	public async Task DeleteCommand(bool saveFirst)
 	{
-		CategoryViewModel viewModel = this.DocumentViewModel.CategoriesPanel.NewCategory();
+		CategoryAccountViewModel viewModel = this.DocumentViewModel.CategoriesPanel.NewCategory();
 		if (saveFirst)
 		{
 			viewModel.Name = "cat";
@@ -107,7 +107,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
-		transaction.CategoryOrTransfer = cat1;
+		transaction.OtherAccount = cat1;
+		transaction.Amount = 5;
 
 		this.ViewModel.SelectedCategory = cat1;
 		bool presented = false;
@@ -122,13 +123,13 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.True(presented);
 
-		Assert.Same(cat2, transaction.CategoryOrTransfer);
+		Assert.Same(cat2, transaction.OtherAccount);
 		Assert.DoesNotContain(cat1, this.ViewModel.Categories);
 
 		this.ReloadViewModel();
 		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
-		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
-		Assert.Equal(cat2.Name, transaction.CategoryOrTransfer?.Name);
+		transaction = checking.Transactions.Single(t => t.TransactionId == transaction.TransactionId);
+		Assert.Equal(cat2.Name, transaction.OtherAccount?.Name);
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == cat1.Name);
 	}
 
@@ -140,8 +141,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
-		SplitTransactionViewModel split = transaction.NewSplit();
-		split.CategoryOrTransfer = cat1;
+		TransactionEntryViewModel split = transaction.NewSplit();
+		split.Account = cat1;
 
 		this.ViewModel.SelectedCategories = new[] { cat1 };
 		bool presented = false;
@@ -157,13 +158,13 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.True(presented);
 
-		Assert.Same(cat2, split.CategoryOrTransfer);
+		Assert.Same(cat2, split.Account);
 
 		this.ReloadViewModel();
 		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
-		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
-		split = transaction.Splits[0];
-		Assert.Equal(cat2.Name, split.CategoryOrTransfer?.Name);
+		transaction = checking.Transactions.Single(t => t.TransactionId == transaction.TransactionId);
+		Assert.False(transaction.ContainsSplits);
+		Assert.Equal(cat2.Name, transaction.OtherAccount?.Name);
 	}
 
 	[Fact]
@@ -174,18 +175,20 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
-		transaction.CategoryOrTransfer = cat1;
+		transaction.OtherAccount = cat1;
+		transaction.Amount = 5;
+		Assert.True(transaction.IsPersisted);
 
 		this.ViewModel.SelectedCategory = cat2;
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 
-		Assert.Same(cat1, transaction.CategoryOrTransfer);
+		Assert.Same(cat1, transaction.OtherAccount);
 		Assert.DoesNotContain(cat2, this.ViewModel.Categories);
 
 		this.ReloadViewModel();
 		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
-		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
-		Assert.Equal(cat1.Name, transaction.CategoryOrTransfer?.Name);
+		transaction = checking.Transactions.Single(t => t.TransactionId == transaction.TransactionId);
+		Assert.Equal(cat1.Name, transaction.OtherAccount?.Name);
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == cat2.Name);
 	}
 
@@ -198,7 +201,8 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
-		transaction.CategoryOrTransfer = cat1;
+		transaction.OtherAccount = cat1;
+		transaction.Amount = 5;
 
 		this.ViewModel.SelectedCategories = new[] { cat1, cat2 };
 		bool presented = false;
@@ -215,12 +219,12 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.True(presented);
 
-		Assert.Null(transaction.CategoryOrTransfer);
+		Assert.Null(transaction.OtherAccount);
 
 		this.ReloadViewModel();
 		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
-		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
-		Assert.Null(transaction.CategoryOrTransfer);
+		transaction = checking.Transactions.Single(t => t.TransactionId == transaction.TransactionId);
+		Assert.Null(transaction.OtherAccount);
 	}
 
 	[Fact]
@@ -232,17 +236,18 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
-		transaction.CategoryOrTransfer = cat1;
+		transaction.OtherAccount = cat1;
+		transaction.Amount = 5;
 
 		this.ViewModel.SelectedCategories = new[] { cat1, cat2, cat3 };
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 
-		Assert.Null(transaction.CategoryOrTransfer);
+		Assert.Null(transaction.OtherAccount);
 
 		this.ReloadViewModel();
 		checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.Accounts[0];
-		transaction = checking.Transactions.Single(t => t.Id == transaction.Id);
-		Assert.Null(transaction.CategoryOrTransfer);
+		transaction = checking.Transactions.Single(t => t.TransactionId == transaction.TransactionId);
+		Assert.Null(transaction.OtherAccount);
 	}
 
 	[Fact]
@@ -250,18 +255,18 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	{
 		Assert.True(this.ViewModel.AddCommand.CanExecute());
 		await this.ViewModel.AddCommand.ExecuteAsync();
-		CategoryViewModel? first = this.ViewModel.SelectedCategory;
+		CategoryAccountViewModel? first = this.ViewModel.SelectedCategory;
 		Assert.NotNull(first);
 
 		Assert.True(this.ViewModel.AddCommand.CanExecute());
 		await this.ViewModel.AddCommand.ExecuteAsync();
-		CategoryViewModel? second = this.ViewModel.SelectedCategory;
+		CategoryAccountViewModel? second = this.ViewModel.SelectedCategory;
 		Assert.Same(first, second);
 
 		first!.Name = "Some category";
 		Assert.True(this.ViewModel.AddCommand.CanExecute());
 		await this.ViewModel.AddCommand.ExecuteAsync();
-		CategoryViewModel? third = this.ViewModel.SelectedCategory;
+		CategoryAccountViewModel? third = this.ViewModel.SelectedCategory;
 		Assert.NotNull(third);
 		Assert.NotSame(first, third);
 		Assert.Equal(string.Empty, third!.Name);
@@ -291,16 +296,28 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.Equal(DocumentViewModel.SelectableViews.Categories, this.DocumentViewModel.SelectedViewIndex);
 	}
 
+	[Fact]
+	public void Categories_AddedFromDirectEntityInsertion()
+	{
+		var spending = new Account
+		{
+			Name = "Spending",
+			Type = Account.AccountType.Category,
+		};
+		this.Money.Insert(spending);
+		Assert.Contains(this.ViewModel.Categories, cat => cat.Id == spending.Id);
+	}
+
 	[Theory, PairwiseData]
 	public async Task DeleteCommand_Undo(bool useSelectedCollection)
 	{
 		const string name = "Some new category";
-		CategoryViewModel category = this.ViewModel.NewCategory(name);
+		CategoryAccountViewModel category = this.ViewModel.NewCategory(name);
 
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("checking");
 		BankingTransactionViewModel transaction = checking.NewTransaction();
 		transaction.Memo = "some memo";
-		transaction.CategoryOrTransfer = category;
+		transaction.OtherAccount = category;
 
 		if (useSelectedCollection)
 		{
@@ -320,6 +337,6 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		// Verify that transaction assignments were also restored.
 		BankingTransactionViewModel refreshedTransaction = ((BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(checking.Id)!).Transactions[0];
 		Assert.Equal(transaction.Memo, refreshedTransaction.Memo);
-		Assert.Equal(category.Id, refreshedTransaction.CategoryOrTransfer?.Id);
+		Assert.Equal(category.Id, refreshedTransaction.OtherAccount?.Id);
 	}
 }

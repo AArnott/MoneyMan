@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -14,6 +15,7 @@ public class BankingAccountViewModel : AccountViewModel
 	public BankingAccountViewModel(Account model, DocumentViewModel documentViewModel)
 		: base(model, documentViewModel)
 	{
+		ThrowOnUnexpectedAccountType(nameof(model), Account.AccountType.Banking, model.Type);
 		this.Type = Account.AccountType.Banking;
 		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.CurrencyAssetIsReadOnly));
 		this.CopyFrom(model);
@@ -29,13 +31,7 @@ public class BankingAccountViewModel : AccountViewModel
 				this.transactions = new(TransactionSort.Instance);
 				if (this.IsPersisted)
 				{
-					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id);
-					foreach (Transaction transaction in transactions)
-					{
-						BankingTransactionViewModel transactionViewModel = new(this, transaction);
-						this.transactions.Add(transactionViewModel);
-					}
-
+					this.transactions.AddRange(this.CreateEntryViewModels<BankingTransactionViewModel>());
 					this.UpdateBalances(0);
 				}
 
@@ -48,6 +44,8 @@ public class BankingAccountViewModel : AccountViewModel
 			return this.transactions;
 		}
 	}
+
+	public override string? TransferTargetName => $"[{this.Name}]";
 
 	protected override bool IsPopulated => this.transactions is object;
 
@@ -62,11 +60,13 @@ public class BankingAccountViewModel : AccountViewModel
 		// Make sure our collection has been initialized by now.
 		_ = this.Transactions;
 
-		BankingTransactionViewModel viewModel = new(this, new Transaction { When = DateTime.Now });
+		BankingTransactionViewModel viewModel = new(this)
+		{
+			When = DateTime.Now,
+		};
 
 		_ = this.Transactions; // make sure our collection is initialized.
 		this.transactions!.Add(viewModel);
-		viewModel.Save();
 
 		return viewModel;
 	}
@@ -76,15 +76,9 @@ public class BankingAccountViewModel : AccountViewModel
 		Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
 		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
 		var bankingTransaction = (BankingTransactionViewModel)transaction;
-		bankingTransaction.ThrowIfSplitInForeignAccount();
 
-		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction.Model);
-		foreach (SplitTransactionViewModel split in bankingTransaction.Splits)
-		{
-			this.MoneyFile.Delete(split.Model);
-		}
-
-		if (!this.MoneyFile.Delete(bankingTransaction.Model))
+		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {bankingTransaction.When.Date}", bankingTransaction);
+		if (!this.MoneyFile.Delete(bankingTransaction.Transaction))
 		{
 			// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
 			this.RemoveTransactionFromViewModel(bankingTransaction);
@@ -106,7 +100,7 @@ public class BankingAccountViewModel : AccountViewModel
 
 		foreach (BankingTransactionViewModel transactionViewModel in this.Transactions)
 		{
-			if (transactionViewModel.Model.Id == id)
+			if (transactionViewModel.Transaction.Id == id)
 			{
 				return transactionViewModel;
 			}
@@ -115,61 +109,13 @@ public class BankingAccountViewModel : AccountViewModel
 		return null;
 	}
 
-	internal override void NotifyTransactionChanged(Transaction transaction)
+	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
-		if (this.transactions is null)
-		{
-			// Nothing to refresh.
-			return;
-		}
-
-		// This transaction may have added or dropped our account as a transfer
-		bool removedFromAccount = transaction.CreditAccountId != this.Id && transaction.DebitAccountId != this.Id;
-		if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
-		{
-			if (removedFromAccount)
-			{
-				this.transactions.Remove(transactionViewModel);
-			}
-			else
-			{
-				transactionViewModel.CopyFrom(transaction);
-				int index = this.transactions.IndexOf(transactionViewModel);
-				if (index >= 0)
-				{
-					this.UpdateBalances(index);
-				}
-			}
-		}
-		else if (this.FindTransaction(transaction.ParentTransactionId) is { } parentTransactionViewModel)
-		{
-			SplitTransactionViewModel? splitViewModel = parentTransactionViewModel.Splits.FirstOrDefault(s => s.Id == transaction.Id);
-			if (splitViewModel is object)
-			{
-				splitViewModel.CopyFrom(transaction);
-				int index = this.transactions.IndexOf(parentTransactionViewModel);
-				if (index >= 0)
-				{
-					this.UpdateBalances(index);
-				}
-			}
-		}
-		else if (!removedFromAccount)
-		{
-			this.transactions.Add(new BankingTransactionViewModel(this, transaction));
-		}
-	}
-
-	internal override void NotifyAccountDeleted(ICollection<Account> accounts)
-	{
-		if (this.transactions is object)
+		if (this.transactions is object && accountIds.Count > 0)
 		{
 			foreach (BankingTransactionViewModel transaction in this.transactions)
 			{
-				if (transaction.CategoryOrTransfer is AccountViewModel { Model: Account transferAccount } && accounts.Contains(transferAccount))
-				{
-					transaction.CategoryOrTransfer = null;
-				}
+				transaction.NotifyAccountDeleted(accountIds);
 			}
 		}
 	}
@@ -187,29 +133,24 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	internal void NotifyReassignCategory(List<CategoryViewModel> oldCategories, CategoryViewModel? newCategory)
+	internal void NotifyReassignCategory(ICollection<CategoryAccountViewModel> oldCategories, CategoryAccountViewModel? newCategory)
 	{
 		if (this.transactions is object)
 		{
 			foreach (BankingTransactionViewModel transaction in this.transactions)
 			{
-				if (transaction.CategoryOrTransfer == SplitCategoryPlaceholder.Singleton)
-				{
-					foreach (SplitTransactionViewModel split in transaction.Splits)
-					{
-						if (oldCategories.Contains(split.CategoryOrTransfer))
-						{
-							split.CategoryOrTransfer = newCategory;
-						}
-					}
-				}
-				else if (oldCategories.Contains(transaction.CategoryOrTransfer))
-				{
-					transaction.CategoryOrTransfer = newCategory;
-				}
+				transaction.NotifyReassignCategory(oldCategories, newCategory);
 			}
 		}
 	}
+
+	protected override BankingTransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails) => new BankingTransactionViewModel(this, transactionDetails);
+
+	protected override int AddTransaction(TransactionViewModel transactionViewModel) => this.transactions?.Add((BankingTransactionViewModel)transactionViewModel) ?? throw new InvalidOperationException();
+
+	protected override int GetTransactionIndex(TransactionViewModel transaction) => this.transactions?.IndexOf((BankingTransactionViewModel)transaction) ?? throw new InvalidOperationException();
+
+	protected override void UpdateBalances(int index) => this.UpdateBalances(index, -1);
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
@@ -233,8 +174,11 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 
 		int index = this.transactions.IndexOf((BankingTransactionViewModel)transactionViewModel);
-		this.transactions.RemoveAt(index);
-		this.UpdateBalances(index);
+		if (index >= 0)
+		{
+			this.transactions.RemoveAt(index);
+			this.UpdateBalances(index);
+		}
 	}
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -280,11 +224,10 @@ public class BankingAccountViewModel : AccountViewModel
 	{
 		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
 		_ = this.Transactions;
-		var volatileModel = new Transaction()
+		BankingTransactionViewModel volatileViewModel = new(this)
 		{
 			When = DateTime.Today,
 		};
-		BankingTransactionViewModel volatileViewModel = new(this, volatileModel);
 		this.transactions!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileTransaction_Saved;
 	}
@@ -318,7 +261,7 @@ public class BankingAccountViewModel : AccountViewModel
 				return 1;
 			}
 
-			int order = Utilities.CompareNullOrZeroComesLast(x.Id, y.Id);
+			int order = Utilities.CompareNullOrZeroComesLast(x.TransactionId, y.TransactionId);
 			if (order != 0)
 			{
 				return order;
@@ -336,17 +279,10 @@ public class BankingAccountViewModel : AccountViewModel
 				return order;
 			}
 
-			order = x.Id == 0
-				? (y.Id == 0 ? 0 : -1)
-				: (y.Id == 0) ? 1 : 0;
-			if (order != 0)
-			{
-				return order;
-			}
-
 			return StringComparer.CurrentCultureIgnoreCase.Compare(x.Payee, y.Payee);
 		}
 
-		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(BankingTransactionViewModel.When) or nameof(BankingTransactionViewModel.Amount) or nameof(BankingTransactionViewModel.Id) or nameof(BankingTransactionViewModel.Payee);
+		public bool IsPropertySignificant(string propertyName) =>
+			propertyName is nameof(BankingTransactionViewModel.When) or nameof(BankingTransactionViewModel.Amount) or nameof(BankingTransactionViewModel.TransactionId) or nameof(BankingTransactionViewModel.Payee);
 	}
 }

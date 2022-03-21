@@ -2,6 +2,7 @@
 		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"	
 		xmlns:local="clr-namespace:MoneyMan"
 		xmlns:localVms="clr-namespace:MoneyMan.ViewModel"
@@ -82,6 +83,10 @@
 						<CollectionViewSource.GroupDescriptions>
 							<PropertyGroupDescription PropertyName="Type" />
 						</CollectionViewSource.GroupDescriptions>
+						<CollectionViewSource.SortDescriptions>
+							<scm:SortDescription PropertyName="Type" />
+							<scm:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
 					</CollectionViewSource>
 				</TabItem.Resources>
 				<Grid Name="BankingLayoutGrid">
@@ -133,26 +138,22 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
-											         IsReadOnly="{Binding PayeeIsReadOnly}"/>
+													<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
 										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate>
-													<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt" />
+													<TextBlock Text="{Binding OtherAccount.TransferTargetName}" Margin="3pt" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
 													<StackPanel Orientation="Horizontal">
-														<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt"
-															Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter}}" />
 														<ComboBox
-															Visibility="{Binding CategoryOrTransferIsReadOnly, Converter={StaticResource boolToVisibilityConverter},ConverterParameter=true}"
 															ItemsSource="{Binding AvailableTransactionTargets}"
-															SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+															SelectedItem="{Binding OtherAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 															<ComboBox.ItemTemplate>
 																<DataTemplate>
 																	<TextBlock Text="{Binding TransferTargetName}" />
@@ -184,8 +185,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number"
-											         IsReadOnly="{Binding AmountIsReadOnly}"/>
+													<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
@@ -258,13 +258,13 @@
 													<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
 														<DataGridTemplateColumn.CellTemplate>
 															<DataTemplate>
-																<TextBlock Text="{Binding CategoryOrTransfer.TransferTargetName}" Margin="3pt" />
+																<TextBlock Text="{Binding Account.TransferTargetName}" Margin="3pt" />
 															</DataTemplate>
 														</DataGridTemplateColumn.CellTemplate>
 														<DataGridTemplateColumn.CellEditingTemplate>
 															<DataTemplate>
 																<ComboBox ItemsSource="{Binding AvailableTransactionTargets}"
-																		  SelectedItem="{Binding CategoryOrTransfer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+																		  SelectedItem="{Binding Account, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 																	<ComboBox.ItemTemplate>
 																		<DataTemplate>
 																			<TextBlock Text="{Binding TransferTargetName}" />
@@ -305,9 +305,6 @@
 									<DataGrid.ContextMenu>
 										<ContextMenu>
 											<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
-											<MenuItem Header="{Binding Document.JumpToSplitTransactionParentCommandCaption, Source={StaticResource viewModel}}"
-									          Command="{Binding Document.JumpToSplitTransactionParentCommand, Source={StaticResource viewModel}}"
-									          Visibility="{Binding Document.JumpToSplitTransactionParentCommand.IsEnabled, Source={StaticResource viewModel}, Converter={StaticResource boolToVisibilityConverter}}"/>
 										</ContextMenu>
 									</DataGrid.ContextMenu>
 								</DataGrid>
@@ -524,9 +521,6 @@
 									<DataGrid.ContextMenu>
 										<ContextMenu>
 											<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
-											<MenuItem Header="{Binding Document.JumpToSplitTransactionParentCommandCaption, Source={StaticResource viewModel}}"
-									          Command="{Binding Document.JumpToSplitTransactionParentCommand, Source={StaticResource viewModel}}"
-									          Visibility="{Binding Document.JumpToSplitTransactionParentCommand.IsEnabled, Source={StaticResource viewModel}, Converter={StaticResource boolToVisibilityConverter}}"/>
 										</ContextMenu>
 									</DataGrid.ContextMenu>
 								</DataGrid>
@@ -588,6 +582,10 @@
 						<CollectionViewSource.GroupDescriptions>
 							<PropertyGroupDescription PropertyName="Type" />
 						</CollectionViewSource.GroupDescriptions>
+						<CollectionViewSource.SortDescriptions>
+							<scm:SortDescription PropertyName="Type" />
+							<scm:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
 					</CollectionViewSource>
 				</TabItem.Resources>
 				<Grid>
@@ -735,6 +733,10 @@
 						<CollectionViewSource.GroupDescriptions>
 							<PropertyGroupDescription PropertyName="Type" />
 						</CollectionViewSource.GroupDescriptions>
+						<CollectionViewSource.SortDescriptions>
+							<scm:SortDescription PropertyName="Type" />
+							<scm:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
 					</CollectionViewSource>
 				</TabItem.Resources>
 				<DockPanel>

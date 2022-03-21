@@ -26,25 +26,33 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 	/// </summary>
 	public TEntity Model { get; private set; }
 
-	protected override ModelBase? UndoTarget => this.Model;
+	public static implicit operator TEntity(EntityViewModel<TEntity> viewModel)
+	{
+		Verify.Operation(!viewModel.IsDirty, "Implicit conversion from view model to model is not allowed when view model is dirty.");
+		return viewModel.Model;
+	}
 
 	public void CopyFrom(TEntity model)
 	{
 		Requires.NotNull(model, nameof(model));
 
-		this.Model = model;
-		using (this.SuspendAutoSave(saveOnDisposal: false))
+		using (this.ApplyingToModel())
 		{
-			this.CopyFromCore();
+			this.Model = model;
+			using (this.SuspendAutoSave(saveOnDisposal: false))
+			{
+				this.CopyFromCore();
+			}
 		}
 
 		this.IsDirty = false;
 	}
 
-	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not nameof(this.Id);
+	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not (nameof(this.Id) or nameof(this.IsDirty));
 
 	protected override void SaveCore()
 	{
+		this.ApplyToModel();
 		this.MoneyFile.InsertOrReplace(this.Model);
 	}
 

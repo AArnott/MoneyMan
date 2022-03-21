@@ -25,10 +25,10 @@ public class UserStoryTests : MoneyTestBase
 		tx.Payee = "My boss";
 		tx.Amount = 15;
 
-		Transaction? txModel = this.Money.Transactions.FirstOrDefault(t => t.Id == tx.Id);
+		TransactionEntry? txModel = this.Money.TransactionEntries.SingleOrDefault(t => t.TransactionId == tx.TransactionId);
 		Assert.NotNull(txModel);
-		Assert.Equal(this.checkingAccount.Id, txModel.CreditAccountId);
-		Assert.Null(txModel.DebitAccountId);
+		Assert.Equal(this.checkingAccount.Id, txModel!.AccountId);
+		Assert.Equal(15, txModel.Amount);
 	}
 
 	[Fact]
@@ -37,18 +37,16 @@ public class UserStoryTests : MoneyTestBase
 		BankingTransactionViewModel tx = this.checkingAccount.NewTransaction();
 		Assert.True(DateTime.Now - tx.When < TimeSpan.FromMinutes(5));
 		tx.Amount = 15;
-		tx.CategoryOrTransfer = this.savingsAccount;
+		tx.OtherAccount = this.savingsAccount;
 
-		Transaction? txModel = this.Money.Transactions.FirstOrDefault(t => t.Id == tx.Id);
-		Assert.NotNull(txModel);
-		Assert.Equal(this.checkingAccount.Id, txModel.CreditAccountId);
-		Assert.Equal(this.savingsAccount.Id, txModel.DebitAccountId);
+		var txModel = this.Money.TransactionEntries.Where(t => t.TransactionId == tx.TransactionId);
+		Assert.Equal(tx.Amount, Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id).Amount);
+		Assert.Equal(-tx.Amount, Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id).Amount);
 
 		// Reverse direction of money flow.
-		tx.Amount *= -1;
+		tx.Amount *= -1; // checking -> savings
 
-		txModel = this.Money.Transactions.FirstOrDefault(t => t.Id == tx.Id);
-		Assert.Equal(this.savingsAccount.Id, txModel.CreditAccountId);
-		Assert.Equal(this.checkingAccount.Id, txModel.DebitAccountId);
+		Assert.Equal(tx.Amount, Assert.Single(txModel, te => te.AccountId == this.checkingAccount.Id).Amount);
+		Assert.Equal(-tx.Amount, Assert.Single(txModel, te => te.AccountId == this.savingsAccount.Id).Amount);
 	}
 }

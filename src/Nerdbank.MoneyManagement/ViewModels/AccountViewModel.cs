@@ -2,11 +2,12 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
+public abstract class AccountViewModel : EntityViewModel<Account>
 {
 	private AssetViewModel? currencyAsset;
 	private decimal value;
@@ -14,7 +15,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	private bool isClosed;
 	private Account.AccountType type;
 
-	public AccountViewModel(Account model, DocumentViewModel documentViewModel)
+	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(documentViewModel.MoneyFile, model)
 	{
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
@@ -29,10 +30,14 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	public string Name
 	{
 		get => this.name;
-		set => this.SetProperty(ref this.name, value);
+		set
+		{
+			Requires.NotNull(value, nameof(value));
+			this.SetProperty(ref this.name, value);
+		}
 	}
 
-	public string? TransferTargetName => $"[{this.Name}]";
+	public abstract string? TransferTargetName { get; }
 
 	/// <inheritdoc cref="Account.IsClosed"/>
 	public bool IsClosed
@@ -97,6 +102,9 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	/// </summary>
 	protected abstract bool IsEmpty { get; }
 
+	/// <summary>
+	/// Gets a value indicating whether this account has a populated collection of transaction view models.
+	/// </summary>
 	protected abstract bool IsPopulated { get; }
 
 	protected string? DebuggerDisplay => this.Name;
@@ -104,6 +112,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	public abstract void DeleteTransaction(TransactionViewModel transaction);
 
 	public abstract TransactionViewModel? FindTransaction(int? id);
+
+	public override string ToString() => $"Account: {this.Name}";
 
 	internal static AccountViewModel Create(Account model, DocumentViewModel documentViewModel)
 	{
@@ -117,6 +127,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 	/// <returns>A new instance of <see cref="AccountViewModel"/>.</returns>
 	internal AccountViewModel Recreate()
 	{
+		this.Model.Type = this.Type;
 		AccountViewModel newViewModel = Create(this.Model, this.Type, this.DocumentViewModel);
 
 		// Copy over the base view model properties manually in case it wasn't in a valid state to copy to the model.
@@ -127,29 +138,74 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		return newViewModel;
 	}
 
-	internal virtual void NotifyTransactionDeleted(Transaction transaction)
+	internal virtual void NotifyTransactionAdded(int transactionId)
 	{
-		if (!this.IsPopulated)
-		{
-			// Nothing to refresh.
-			return;
-		}
+	}
 
-		if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
+	internal virtual void NotifyTransactionDeleted(int transactionId)
+	{
+		if (this.FindTransaction(transactionId) is TransactionViewModel transactionViewModel)
 		{
 			this.RemoveTransactionFromViewModel(transactionViewModel);
 		}
 	}
 
-	internal abstract void NotifyTransactionChanged(Transaction transaction);
+	internal virtual void NotifyTransactionChanged(int transactionId)
+	{
+		if (this.IsPopulated)
+		{
+			TransactionViewModel? transactionViewModel = this.FindTransaction(transactionId);
+			if (transactionViewModel is not null)
+			{
+				int index;
+				bool removed = !transactionViewModel.Refresh();
+				index = this.GetTransactionIndex(transactionViewModel);
 
-	internal abstract void NotifyAccountDeleted(ICollection<Account> accounts);
+				if (removed)
+				{
+					this.RemoveTransactionFromViewModel(transactionViewModel);
+				}
+
+				if (index >= 0)
+				{
+					this.UpdateBalances(index);
+				}
+			}
+			else
+			{
+				// This may be a new transaction (a transfer) that we should add.
+				this.AddTransactionIfAppropriate(transactionId);
+			}
+		}
+	}
+
+	internal abstract void NotifyAccountDeleted(ICollection<int> accountIds);
+
+	internal void RefreshValue()
+	{
+		this.Value = this.MoneyFile.GetValue(this.Model);
+	}
+
+	protected static void ThrowOnUnexpectedAccountType(string parameterName, Account.AccountType expectedType, Account.AccountType actualType)
+	{
+		Requires.Argument(expectedType == actualType, parameterName, "Type mismatch. Expected {0} but was {1}.", expectedType, actualType);
+	}
+
+	protected abstract int AddTransaction(TransactionViewModel transactionViewModel);
+
+	protected virtual void UpdateBalances(int fromIndex)
+	{
+	}
+
+	protected virtual int GetTransactionIndex(TransactionViewModel transaction) => throw new NotSupportedException();
 
 	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
-		return base.IsPersistedProperty(propertyName) && !propertyName.EndsWith("Formatted");
+		return base.IsPersistedProperty(propertyName)
+			&& propertyName is not (nameof(this.TransferTargetName) or nameof(this.IsEmpty) or nameof(this.IsPopulated) or nameof(this.Value))
+			&& !propertyName.EndsWith("Formatted");
 	}
 
 	protected override void ApplyToCore()
@@ -177,13 +233,58 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ITransactionT
 		}
 	}
 
+	protected abstract TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails);
+
+	protected IEnumerable<T> CreateEntryViewModels<T>()
+		where T : TransactionViewModel
+	{
+		// Our looping algorithm here depends on the enumerated transactions being sorted by TransactionId.
+		List<TransactionAndEntry> group = new();
+		foreach (TransactionAndEntry transactionAndEntry in this.MoneyFile.GetTopLevelTransactionsFor(this.Id))
+		{
+			if (group.Count == 0 || group[^1].TransactionId == transactionAndEntry.TransactionId)
+			{
+				// This entry belongs to this new or existing group.
+				group.Add(transactionAndEntry);
+			}
+			else
+			{
+				// We have reached the first element of the next group, so flush the one we've been building up.
+				T transactionViewModel = (T)this.CreateTransactionViewModel(group);
+				yield return transactionViewModel;
+
+				// Now add this new row to the next group.
+				group.Clear();
+				group.Add(transactionAndEntry);
+			}
+		}
+
+		// Flush out whatever makes up the last group.
+		if (group.Count > 0)
+		{
+			T transactionViewModel = (T)this.CreateTransactionViewModel(group);
+			yield return transactionViewModel;
+		}
+	}
+
 	private static AccountViewModel Create(Account model, Account.AccountType type, DocumentViewModel documentViewModel)
 	{
 		return type switch
 		{
 			Account.AccountType.Banking => new BankingAccountViewModel(model, documentViewModel),
 			Account.AccountType.Investing => new InvestingAccountViewModel(model, documentViewModel),
+			Account.AccountType.Category => new CategoryAccountViewModel(model, documentViewModel),
 			_ => throw new NotSupportedException("Unexpected account type."),
 		};
+	}
+
+	private void AddTransactionIfAppropriate(int transactionId)
+	{
+		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(this.Id, transactionId);
+		if (details.Count > 0)
+		{
+			int index = this.AddTransaction(this.CreateTransactionViewModel(details));
+			this.UpdateBalances(index);
+		}
 	}
 }

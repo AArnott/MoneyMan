@@ -12,8 +12,8 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class CategoriesPanelViewModel : BindableBase
 {
 	private readonly DocumentViewModel documentViewModel;
-	private readonly SortedObservableCollection<CategoryViewModel> categories = new(CategorySort.Instance);
-	private CategoryViewModel? selectedCategory;
+	private readonly SortedObservableCollection<CategoryAccountViewModel> categories = new(CategorySort.Instance);
+	private CategoryAccountViewModel? selectedCategory;
 	private IList? selectedCategories;
 
 	public CategoriesPanelViewModel(DocumentViewModel documentViewModel)
@@ -47,12 +47,12 @@ public class CategoriesPanelViewModel : BindableBase
 	/// </summary>
 	public CommandBase DeleteCommand { get; }
 
-	public SortedObservableCollection<CategoryViewModel> Categories => this.categories;
+	public IReadOnlyList<CategoryAccountViewModel> Categories => this.categories;
 
 	/// <summary>
 	/// Gets or sets the selected category, or one of the selected categories.
 	/// </summary>
-	public CategoryViewModel? SelectedCategory
+	public CategoryAccountViewModel? SelectedCategory
 	{
 		get => this.selectedCategory;
 		set => this.SetProperty(ref this.selectedCategory, value);
@@ -71,9 +71,9 @@ public class CategoriesPanelViewModel : BindableBase
 		set => this.SetProperty(ref this.selectedCategories, value);
 	}
 
-	internal CategoryViewModel? AddingCategory { get; set; }
+	internal CategoryAccountViewModel? AddingCategory { get; set; }
 
-	public CategoryViewModel NewCategory(string name = "")
+	public CategoryAccountViewModel NewCategory(string name = "")
 	{
 		this.AddingNewCategory?.Invoke(this, EventArgs.Empty);
 		if (this.AddingCategory is object)
@@ -82,14 +82,14 @@ public class CategoriesPanelViewModel : BindableBase
 			return this.AddingCategory;
 		}
 
-		CategoryViewModel newCategoryViewModel = new(new Category(), this.documentViewModel.MoneyFile);
+		CategoryAccountViewModel newCategoryAccountViewModel = new(null, this.documentViewModel);
 
-		this.categories.Add(newCategoryViewModel);
-		this.SelectedCategory = newCategoryViewModel;
+		this.categories.Add(newCategoryAccountViewModel);
+		this.SelectedCategory = newCategoryAccountViewModel;
 		if (string.IsNullOrEmpty(name))
 		{
-			this.AddingCategory = newCategoryViewModel;
-			newCategoryViewModel.NotifyWhenValid(s =>
+			this.AddingCategory = newCategoryAccountViewModel;
+			newCategoryAccountViewModel.NotifyWhenValid(s =>
 			{
 				if (this.AddingCategory == s)
 				{
@@ -99,16 +99,16 @@ public class CategoriesPanelViewModel : BindableBase
 		}
 		else
 		{
-			newCategoryViewModel.Name = name;
+			newCategoryAccountViewModel.Name = name;
 		}
 
-		return newCategoryViewModel;
+		return newCategoryAccountViewModel;
 	}
 
-	public void DeleteCategory(CategoryViewModel categoryViewModel)
+	public void DeleteCategory(CategoryAccountViewModel categoryViewModel)
 	{
 		this.categories.Remove(categoryViewModel);
-		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel.Model);
+		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel);
 		this.documentViewModel.MoneyFile.Delete(categoryViewModel.Model);
 
 		if (this.SelectedCategory == categoryViewModel)
@@ -122,6 +122,11 @@ public class CategoriesPanelViewModel : BindableBase
 		}
 	}
 
+	internal void AddCategory(CategoryAccountViewModel viewModel)
+	{
+		this.categories.Add(viewModel);
+	}
+
 	/// <summary>
 	/// Clears the view model without deleting anything from the database.
 	/// </summary>
@@ -132,7 +137,7 @@ public class CategoriesPanelViewModel : BindableBase
 		this.selectedCategories?.Clear();
 	}
 
-	internal CategoryViewModel? FindCategory(int id) => this.Categories.FirstOrDefault(cat => cat.Id == id);
+	internal CategoryAccountViewModel? FindCategory(int id) => this.Categories.FirstOrDefault(cat => cat.Id == id);
 
 	private class AddCategoryCommand : CommandBase
 	{
@@ -149,12 +154,12 @@ public class CategoriesPanelViewModel : BindableBase
 			return Task.CompletedTask;
 		}
 
-		private void NewCategoryViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+		private void NewCategoryAccountViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
-			CategoryViewModel newCategory = (CategoryViewModel)Requires.NotNull(sender!, nameof(sender));
+			CategoryAccountViewModel newCategory = (CategoryAccountViewModel)Requires.NotNull(sender!, nameof(sender));
 			if (!string.IsNullOrEmpty(newCategory.Name))
 			{
-				newCategory.PropertyChanged -= this.NewCategoryViewModel_PropertyChanged;
+				newCategory.PropertyChanged -= this.NewCategoryAccountViewModel_PropertyChanged;
 			}
 
 			if (this.viewModel.AddingCategory == newCategory)
@@ -189,7 +194,7 @@ public class CategoriesPanelViewModel : BindableBase
 
 			if (this.viewModel.SelectedCategory is object)
 			{
-				return this.ExecuteCoreAsync(new CategoryViewModel[] { this.viewModel.SelectedCategory }, cancellationToken);
+				return this.ExecuteCoreAsync(new CategoryAccountViewModel[] { this.viewModel.SelectedCategory }, cancellationToken);
 			}
 
 			return Task.CompletedTask;
@@ -197,12 +202,12 @@ public class CategoriesPanelViewModel : BindableBase
 
 		private async Task ExecuteCoreAsync(IList categoryViewModels, CancellationToken cancellationToken)
 		{
-			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryViewModel>().FirstOrDefault()?.Model);
-			IEnumerable<CategoryViewModel> categories = categoryViewModels.OfType<CategoryViewModel>();
-			List<CategoryViewModel> inUse = new(), notInUse = new();
-			foreach (CategoryViewModel category in categories)
+			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryAccountViewModel>().FirstOrDefault());
+			IEnumerable<CategoryAccountViewModel> categories = categoryViewModels.OfType<CategoryAccountViewModel>();
+			List<CategoryAccountViewModel> inUse = new(), notInUse = new();
+			foreach (CategoryAccountViewModel category in categories)
 			{
-				if (category.Id is int id && this.viewModel.documentViewModel.MoneyFile.IsCategoryInUse(id) is true)
+				if (this.viewModel.documentViewModel.MoneyFile.IsAccountInUse(category.Id) is true)
 				{
 					inUse.Add(category);
 				}
@@ -212,7 +217,7 @@ public class CategoriesPanelViewModel : BindableBase
 				}
 			}
 
-			foreach (CategoryViewModel category in notInUse)
+			foreach (CategoryAccountViewModel category in notInUse)
 			{
 				this.viewModel.DeleteCategory(category);
 			}
@@ -220,12 +225,12 @@ public class CategoriesPanelViewModel : BindableBase
 			if (inUse.Count > 0)
 			{
 				// Ask the user what they want to do about the categories that are in use.
-				CategoryViewModel? redirectedCategory = null;
+				CategoryAccountViewModel? redirectedCategory = null;
 				if (this.viewModel.documentViewModel.UserNotification is { } userNotification)
 				{
-					List<CategoryViewModel> options = new(this.viewModel.Categories);
+					List<CategoryAccountViewModel> options = new(this.viewModel.Categories);
 					options.RemoveAll(cat => inUse.Contains(cat));
-					options.Insert(0, new CategoryViewModel(new Category { Name = "(clear assigned category)" }, this.viewModel.documentViewModel.MoneyFile));
+					options.Insert(0, new CategoryAccountViewModel(new Account { Id = -1, Name = "(clear assigned category)", Type = Account.AccountType.Category }, this.viewModel.documentViewModel));
 
 					if (options.Count > 1)
 					{
@@ -234,12 +239,18 @@ public class CategoriesPanelViewModel : BindableBase
 							Title = "Category in use",
 						};
 						await userNotification.PresentAsync(pickerViewModel, cancellationToken);
-						redirectedCategory = (CategoryViewModel)pickerViewModel.GetSelectedOptionOrThrowCancelled();
+						redirectedCategory = (CategoryAccountViewModel)pickerViewModel.GetSelectedOptionOrThrowCancelled();
 					}
 					else
 					{
 						// No need to ask the user what to do when there is only one option.
 						redirectedCategory = options[0];
+					}
+
+					// Update every transaction in the database, including those for which no view model has been created.
+					if (redirectedCategory.Id == -1)
+					{
+						redirectedCategory = null;
 					}
 				}
 				else
@@ -247,17 +258,16 @@ public class CategoriesPanelViewModel : BindableBase
 					throw new NotSupportedException("Some categories are used by transactions but no UI is attached to prompt the user for how to deal with it.");
 				}
 
-				// Update every transaction in the database, including those for which no view model has been created.
-				this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory.Id);
+				this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory?.Id);
 
 				// Also update the live view models.
 				foreach (BankingAccountViewModel account in this.viewModel.documentViewModel.BankingPanel.BankingAccounts)
 				{
-					account.NotifyReassignCategory(inUse, redirectedCategory.Id == 0 ? null : redirectedCategory);
+					account.NotifyReassignCategory(inUse, redirectedCategory?.Id > 0 ? redirectedCategory : null);
 				}
 
 				// Now actually delete the categories.
-				foreach (CategoryViewModel category in inUse)
+				foreach (CategoryAccountViewModel category in inUse)
 				{
 					this.viewModel.DeleteCategory(category);
 				}
@@ -294,7 +304,7 @@ public class CategoriesPanelViewModel : BindableBase
 		}
 	}
 
-	private class CategorySort : IOptimizedComparer<CategoryViewModel>
+	private class CategorySort : IOptimizedComparer<CategoryAccountViewModel>
 	{
 		internal static readonly CategorySort Instance = new();
 
@@ -302,7 +312,7 @@ public class CategoriesPanelViewModel : BindableBase
 		{
 		}
 
-		public int Compare(CategoryViewModel? x, CategoryViewModel? y)
+		public int Compare(CategoryAccountViewModel? x, CategoryAccountViewModel? y)
 		{
 			if (x is null)
 			{
@@ -322,6 +332,6 @@ public class CategoriesPanelViewModel : BindableBase
 			return 0;
 		}
 
-		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(CategoryViewModel.Name);
+		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(CategoryAccountViewModel.Name);
 	}
 }

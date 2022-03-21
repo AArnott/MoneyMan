@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Security.Principal;
+using Nerdbank.MoneyManagement.ViewModels;
 using PCLCommandBase;
 using SQLite;
 using Validation;
@@ -25,7 +27,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	/// <summary>
 	/// The undo stack.
 	/// </summary>
-	private readonly Stack<(string SavepointName, string Activity, ModelBase? Model)> undoStack = new();
+	private readonly Stack<(string SavepointName, string Activity, EntityViewModel? ViewModel)> undoStack = new();
 
 	private bool inUndoableTransaction;
 
@@ -39,6 +41,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		this.connection = connection;
 
 		this.CurrentConfiguration = this.connection.Table<Configuration>().First();
+		this.Action = new TransactionOperations(this);
 	}
 
 	/// <summary>
@@ -50,12 +53,14 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	public TextWriter? Logger { get; set; }
 
+	public TransactionOperations Action { get; }
+
 	public TableQuery<Account> Accounts
 	{
 		get
 		{
 			Verify.NotDisposed(this);
-			return this.connection.Table<Account>();
+			return this.connection.Table<Account>().Where(a => a.Type != Account.AccountType.Category);
 		}
 	}
 
@@ -86,14 +91,21 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
-	public TableQuery<Category> Categories
+	public TableQuery<TransactionEntry> TransactionEntries
 	{
 		get
 		{
 			Verify.NotDisposed(this);
+			return this.connection.Table<TransactionEntry>();
+		}
+	}
 
-			// Omit the special categories like those used for splits.
-			return this.connection.Table<Category>().Where(cat => cat.Id > 0);
+	public TableQuery<Account> Categories
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<Account>().Where(a => a.Type == Account.AccountType.Category);
 		}
 	}
 
@@ -103,7 +115,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	internal Configuration CurrentConfiguration { get; }
 
-	internal IEnumerable<(string Savepoint, string Activity, ModelBase? Model)> UndoStack => this.undoStack;
+	internal IEnumerable<(string Savepoint, string Activity, EntityViewModel? ViewModel)> UndoStack => this.undoStack;
 
 	private string DebuggerDisplay => this.Path;
 
@@ -161,17 +173,17 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	}
 
 	/// <summary>
-	/// Reverts the database to the last savepoint as recorded with <see cref="RecordSavepoint(string, ModelBase?)"/>.
+	/// Reverts the database to the last savepoint as recorded with <see cref="RecordSavepoint(string, EntityViewModel?)"/>.
 	/// </summary>
 	/// <returns>A model that may have been impacted by the rollback.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if the undo stack is empty.</exception>
-	public ModelBase? Undo()
+	public EntityViewModel? Undo()
 	{
-		(string SavepointName, string Activity, ModelBase? Model) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
+		(string SavepointName, string Activity, EntityViewModel? ViewModel) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
 		this.OnPropertyChanged(nameof(this.UndoStack));
 		this.Logger?.WriteLine("Rolling back: {0}", savepoint.Activity);
 		this.connection.RollbackTo(savepoint.SavepointName);
-		return savepoint.Model;
+		return savepoint.ViewModel;
 	}
 
 	public T Get<T>(object primaryKey)
@@ -206,7 +218,9 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	public void InsertOrReplace(ModelBase model)
 	{
+		Requires.Argument(model.Id >= 0, nameof(model), "This model has a negative ID and therefore should never be persisted.");
 		Verify.NotDisposed(this);
+
 		ModelBase before = (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model));
 		if (this.connection.Update(model) > 0)
 		{
@@ -217,6 +231,20 @@ public class MoneyFile : BindableBase, IDisposableObservable
 			this.connection.Insert(model);
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		}
+	}
+
+	public bool Delete(Type modelType, object primaryKey)
+	{
+		TableMapping mapping = this.connection.GetMapping(modelType);
+		ModelBase? model = (ModelBase?)this.connection.Get(primaryKey, mapping);
+		if (model is null)
+		{
+			return false;
+		}
+
+		int deletedCount = this.connection.Delete(primaryKey, mapping);
+		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
+		return deletedCount > 0;
 	}
 
 	public bool Delete(ModelBase model)
@@ -302,13 +330,19 @@ WHERE [Balances].[AccountId] = ?
 		this.connection.Dispose();
 	}
 
+	internal void PurgeTransactionEntries(int transactionId, IEnumerable<int> entryIdsToPreserve)
+	{
+		string sql = $"DELETE FROM [TransactionEntry] WHERE [TransactionId] = {transactionId} AND [Id] NOT IN ({string.Join(',', entryIdsToPreserve)})";
+		this.ExecuteSql(sql);
+	}
+
 	/// <summary>
 	/// Starts a reversible transaction.
 	/// </summary>
-	/// <param name="description"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='nextActivityDescription']"/></param>
-	/// <param name="model"><inheritdoc cref="RecordSavepoint(string, ModelBase?)" path="/param[@name='model']"/></param>
+	/// <param name="description"><inheritdoc cref="RecordSavepoint(string, EntityViewModel?)" path="/param[@name='nextActivityDescription']"/></param>
+	/// <param name="viewModel"><inheritdoc cref="RecordSavepoint(string, EntityViewModel?)" path="/param[@name='model']"/></param>
 	/// <returns>A value to dispose of at the conclusion of the operation.</returns>
-	internal IDisposable? UndoableTransaction(string description, ModelBase? model)
+	internal IDisposable? UndoableTransaction(string description, EntityViewModel? viewModel)
 	{
 		if (this.inUndoableTransaction)
 		{
@@ -317,27 +351,19 @@ WHERE [Balances].[AccountId] = ?
 		}
 
 		this.inUndoableTransaction = true;
-		this.RecordSavepoint(description, model);
+		this.RecordSavepoint(description, viewModel);
 		return new ActionOnDispose(() => this.inUndoableTransaction = false);
 	}
 
-	internal IEnumerable<IntegrityChecks.SplitTransactionTotalMismatch> FindBadSplitTransactions(CancellationToken cancellationToken)
+	internal bool IsAccountInUse(int accountId)
 	{
-		cancellationToken.ThrowIfCancellationRequested();
-		string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
-			+ $@" WHERE t.[{nameof(Transaction.CategoryId)}] == {Category.Split} AND (t.[{nameof(Transaction.CreditAmount)}] != 0 OR t.[{nameof(Transaction.DebitAmount)}] != 0)";
-
-		foreach (Transaction badSplit in this.connection.Query<Transaction>(sql))
+		if (accountId <= 0)
 		{
-			yield return new IntegrityChecks.SplitTransactionTotalMismatch(badSplit);
-			cancellationToken.ThrowIfCancellationRequested();
+			return false;
 		}
-	}
 
-	internal bool IsCategoryInUse(int categoryId)
-	{
-		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CategoryId)}"" == ?";
-		return this.ExecuteScalar<int>(sql, categoryId) > 0;
+		string sql = $@"SELECT [Id] FROM ""{nameof(TransactionEntry)}"" WHERE ""{nameof(TransactionEntry.AccountId)}"" == ? LIMIT 1";
+		return this.connection.Query<int>(sql, accountId).Any();
 	}
 
 	internal bool IsAssetInUse(int assetId)
@@ -353,8 +379,8 @@ WHERE [Balances].[AccountId] = ?
 			return true;
 		}
 
-		sql = $@"SELECT COUNT(*) FROM ""{nameof(Transaction)}"" WHERE ""{nameof(Transaction.CreditAssetId)}"" == ? OR ""{nameof(Transaction.DebitAssetId)}"" == ? LIMIT 1";
-		if (this.ExecuteScalar<int>(sql, assetId, assetId) > 0)
+		sql = $@"SELECT COUNT(*) FROM ""{nameof(TransactionEntry)}"" WHERE ""{nameof(TransactionEntry.AssetId)}"" == ? LIMIT 1";
+		if (this.ExecuteScalar<int>(sql, assetId) > 0)
 		{
 			return true;
 		}
@@ -364,19 +390,47 @@ WHERE [Balances].[AccountId] = ?
 
 	internal void ReassignCategory(IEnumerable<int> oldCategoryIds, int? newId)
 	{
-		string sql = $@"UPDATE ""{nameof(Transaction)}""
-SET ""{nameof(Transaction.CategoryId)}"" = ?
-WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
-		this.connection.Execute(sql, newId == 0 ? null : newId);
+		Requires.Range(newId is null or > 0, nameof(newId), "Category ID must be a positive integer or null.");
+
+		if (newId is null)
+		{
+			string sql = $@"DELETE FROM ""{nameof(TransactionEntry)}""
+WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
+			this.connection.Execute(sql);
+		}
+		else
+		{
+			string sql = $@"UPDATE ""{nameof(TransactionEntry)}""
+SET ""{nameof(TransactionEntry.AccountId)}"" = ?
+WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
+			this.connection.Execute(sql, newId == 0 ? null : newId);
+		}
 	}
 
-	internal List<Transaction> GetTopLevelTransactionsFor(int accountId)
+	internal List<TransactionAndEntry> GetTopLevelTransactionsFor(int accountId)
 	{
-		// List all transactions that credit/debit to this account so long as they either are not split members or are splits of a transaction native to another account.
-		string sql = $@"SELECT * FROM ""{nameof(Transaction)}"" t"
-			+ $@" WHERE (t.[{nameof(Transaction.CreditAccountId)}] == ? OR t.[{nameof(Transaction.DebitAccountId)}] == ?)"
-			+ $@" AND (t.[{nameof(Transaction.ParentTransactionId)}] IS NULL OR (SELECT [{nameof(Transaction.CreditAccountId)}] FROM ""{nameof(Transaction)}"" WHERE [{nameof(Transaction.Id)}] == t.[{nameof(Transaction.ParentTransactionId)}]) != ?)";
-		return this.connection.Query<Transaction>(sql, accountId, accountId, accountId);
+		string sql = $@"SELECT * FROM ""{nameof(TransactionAndEntry)}"""
+			+ $@" WHERE [ContextAccountId] == ?";
+		return this.connection.Query<TransactionAndEntry>(sql, accountId);
+	}
+
+	internal List<TransactionAndEntry> GetTransactionDetails(int accountId, int transactionId)
+	{
+		string sql = $@"SELECT * FROM ""{nameof(TransactionAndEntry)}"""
+			+ $@" WHERE [ContextAccountId] == ? AND [TransactionId] == ?";
+		return this.connection.Query<TransactionAndEntry>(sql, accountId, transactionId);
+	}
+
+	internal List<TransactionEntry> GetTransactionEntries(int transactionId) => this.TransactionEntries.Where(te => te.TransactionId == transactionId).ToList();
+
+	/// <summary>
+	/// Gets a list of IDs to the accounts whose ledgers would display any transactions with the given IDs.
+	/// </summary>
+	/// <param name="transactionIds">The IDs of the transactions.</param>
+	/// <returns>The list of account IDs.</returns>
+	internal List<int> GetAccountIdsImpactedByTransaction(IReadOnlyCollection<int> transactionIds)
+	{
+		return this.connection.Query<int>("SELECT DISTINCT [ContextAccountId] AS [AccountId] FROM [TransactionAndEntry] WHERE [TransactionId] IN ?", transactionIds);
 	}
 
 	/// <summary>
@@ -384,11 +438,11 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 	/// by a call to <see cref="Undo"/>.
 	/// </summary>
 	/// <param name="nextActivityDescription">A human-readable description of the operation that is about to be applied to the database. Use present tense with no trailing period.</param>
-	/// <param name="model">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
-	internal void RecordSavepoint(string nextActivityDescription, ModelBase? model)
+	/// <param name="viewModel">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
+	internal void RecordSavepoint(string nextActivityDescription, EntityViewModel? viewModel)
 	{
 		this.Logger?.WriteLine("Writing savepoint before: {0}", nextActivityDescription);
-		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription, model));
+		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription, viewModel));
 		this.OnPropertyChanged(nameof(this.UndoStack));
 	}
 
@@ -419,7 +473,7 @@ WHERE ""{nameof(Transaction.CategoryId)}"" IN ({string.Join(", ", oldCategoryIds
 		string dateFilter = string.Empty;
 		if (options.BeforeDate.HasValue)
 		{
-			dateFilter = "AND [When] < ?";
+			dateFilter = "WHERE t.[When] < ?";
 			args.Add(options.BeforeDate.Value);
 		}
 
@@ -436,17 +490,11 @@ CREATE {TEMPTableModifier} TABLE [Balances] (
 		this.connection.Execute(sql);
 		sql = $@"
 INSERT INTO [Balances]
-SELECT [CreditAccountId] AS [AccountId], [CreditAssetId] AS [AssetId], TOTAL([CreditAmount]) AS [Amount]
-FROM [Transaction]
-WHERE [CreditAccountId] IS NOT NULL {dateFilter}
-GROUP BY [CreditAccountId], [CreditAssetId]";
-		this.connection.Execute(sql, argsArray);
-
-		sql = $@"INSERT INTO [Balances]
-SELECT [DebitAccountId] AS [AccountId], [DebitAssetId] AS [AssetId], -TOTAL([DebitAmount]) AS [Amount]
-FROM [Transaction]
-WHERE [DebitAccountId] IS NOT NULL {dateFilter}
-GROUP BY [DebitAccountId], [DebitAssetId]";
+SELECT te.[AccountId] AS [AccountId], te.[AssetId] AS [AssetId], TOTAL(te.[Amount]) AS [Amount]
+FROM [TransactionEntry] te
+INNER JOIN [Transaction] t ON t.[Id] = te.[TransactionId]
+{dateFilter}
+GROUP BY [AccountId], [AssetId]";
 		this.connection.Execute(sql, argsArray);
 	}
 
@@ -534,6 +582,136 @@ WHERE [Id] != ?
 		public IReadOnlyCollection<(ModelBase Before, ModelBase After)> Changed { get; }
 
 		public IReadOnlyCollection<ModelBase> Deleted { get; }
+	}
+
+	public class TransactionOperations
+	{
+		private readonly MoneyFile money;
+
+		internal TransactionOperations(MoneyFile money)
+		{
+			this.money = money;
+		}
+
+		public void Deposit(Account account, decimal amount, DateTime? when = null)
+		{
+			Requires.Argument(account.CurrencyAssetId.HasValue, nameof(account), "Account has no default currency set.");
+			this.Deposit(account, new Amount(amount, account.CurrencyAssetId.Value), when);
+		}
+
+		public void Deposit(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				Action = TransactionAction.Deposit,
+				When = when ?? DateTime.Today,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					AccountId = account.Id,
+					Amount = amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				});
+		}
+
+		public void Withdraw(Account account, decimal amount, DateTime? when = null)
+		{
+			Requires.Argument(account.CurrencyAssetId.HasValue, nameof(account), "Account has no default currency set.");
+			this.Withdraw(account, new Amount(amount, account.CurrencyAssetId.Value), when);
+		}
+
+		public void Withdraw(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				Action = TransactionAction.Withdraw,
+				When = when ?? DateTime.Today,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					AccountId = account.Id,
+					Amount = -amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				});
+		}
+
+		public void Transfer(Account from, Account to, decimal amount, DateTime? when = null)
+		{
+			Requires.Argument(from.CurrencyAssetId.HasValue, nameof(from), "Account has no default currency set.");
+			this.Transfer(from, to, new Amount(amount, from.CurrencyAssetId.Value), when);
+		}
+
+		public void Transfer(Account from, Account to, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				Action = TransactionAction.Withdraw,
+				When = when ?? DateTime.Today,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					AccountId = from.Id,
+					Amount = -amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				},
+				new TransactionEntry
+				{
+					AccountId = to.Id,
+					Amount = amount.Value,
+					AssetId = amount.AssetId,
+					TransactionId = tx.Id,
+				});
+		}
+
+		public void Add(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				When = when ?? DateTime.Today,
+				Action = TransactionAction.Add,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					TransactionId = tx.Id,
+					AccountId = account.Id,
+					Amount = amount.Value,
+					AssetId = amount.AssetId,
+				});
+		}
+
+		public void Remove(Account account, Amount amount, DateTime? when = null)
+		{
+			Transaction tx = new()
+			{
+				When = when ?? DateTime.Today,
+				Action = TransactionAction.Remove,
+			};
+			this.money.Insert(tx);
+			this.money.InsertAll(
+				new TransactionEntry
+				{
+					TransactionId = tx.Id,
+					AccountId = account.Id,
+					Amount = -amount.Value,
+					AssetId = amount.AssetId,
+				});
+		}
+
+		public void AssetPrice(Asset asset, DateTime when, decimal price)
+		{
+			this.money.Insert(new AssetPrice { AssetId = asset.Id, ReferenceAssetId = this.money.PreferredAssetId, When = when, PriceInReferenceAsset = price });
+		}
 	}
 
 	private class BalancesRow

@@ -142,7 +142,7 @@ public class AssetsPanelViewModel : BindableBase
 	{
 		this.assets.Remove(asset);
 
-		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted asset \"{asset.Name}\".", asset.Model);
+		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted asset \"{asset.Name}\".", asset);
 		this.documentViewModel.MoneyFile.Delete(asset.Model);
 
 		if (this.SelectedAsset == asset)
@@ -371,7 +371,7 @@ public class AssetsPanelViewModel : BindableBase
 		{
 			if (this.viewModel.SelectedAssetPrices is object)
 			{
-				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleting {this.viewModel.SelectedAssetPrices.Count} prices for \"{this.viewModel.SelectedAsset?.Name}\".", this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().FirstOrDefault()?.Model);
+				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleting {this.viewModel.SelectedAssetPrices.Count} prices for \"{this.viewModel.SelectedAsset?.Name}\".", this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().FirstOrDefault());
 				foreach (AssetPriceViewModel pricepoint in this.viewModel.SelectedAssetPrices.OfType<AssetPriceViewModel>().ToList())
 				{
 					if (pricepoint.IsPersisted)
@@ -382,7 +382,7 @@ public class AssetsPanelViewModel : BindableBase
 			}
 			else if (this.viewModel.SelectedAssetPrice is { IsPersisted: true })
 			{
-				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleting \"{this.viewModel.SelectedAsset?.Name}\" price for {this.viewModel.SelectedAssetPrice.When}.", this.viewModel.SelectedAssetPrice.Model);
+				using IDisposable? undo = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleting \"{this.viewModel.SelectedAsset?.Name}\" price for {this.viewModel.SelectedAssetPrice.When}.", this.viewModel.SelectedAssetPrice);
 				this.viewModel.DeletePrice(this.viewModel.SelectedAssetPrice);
 			}
 

@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -14,6 +16,7 @@ public class InvestingAccountViewModel : AccountViewModel
 	public InvestingAccountViewModel(Account model, DocumentViewModel documentViewModel)
 		: base(model, documentViewModel)
 	{
+		ThrowOnUnexpectedAccountType(nameof(model), Account.AccountType.Investing, model.Type);
 		this.Type = Account.AccountType.Investing;
 		this.CopyFrom(model);
 	}
@@ -28,13 +31,7 @@ public class InvestingAccountViewModel : AccountViewModel
 				this.transactions = new(TransactionSort.Instance);
 				if (this.IsPersisted)
 				{
-					List<Transaction> transactions = this.MoneyFile.GetTopLevelTransactionsFor(this.Id);
-					foreach (Transaction transaction in transactions)
-					{
-						InvestingTransactionViewModel transactionViewModel = new(this, transaction);
-						this.transactions.Add(transactionViewModel);
-					}
-
+					this.transactions.AddRange(this.CreateEntryViewModels<InvestingTransactionViewModel>());
 					this.UpdateBalances(0);
 				}
 
@@ -48,6 +45,8 @@ public class InvestingAccountViewModel : AccountViewModel
 		}
 	}
 
+	public override string? TransferTargetName => $"[{this.Name}]";
+
 	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
 
 	protected override bool IsPopulated => this.transactions is object;
@@ -58,9 +57,8 @@ public class InvestingAccountViewModel : AccountViewModel
 		Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
 		var investingTransaction = (InvestingTransactionViewModel)transaction;
 
-		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction.Model);
-
-		if (!this.MoneyFile.Delete(investingTransaction.Model))
+		using IDisposable? undo = this.MoneyFile.UndoableTransaction($"Deleted transaction from {investingTransaction.When.Date}", investingTransaction);
+		if (!this.MoneyFile.Delete(investingTransaction.Transaction))
 		{
 			// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
 			this.RemoveTransactionFromViewModel(investingTransaction);
@@ -82,7 +80,7 @@ public class InvestingAccountViewModel : AccountViewModel
 
 		foreach (InvestingTransactionViewModel transactionViewModel in this.Transactions)
 		{
-			if (transactionViewModel.Model.Id == id)
+			if (transactionViewModel.Transaction.Id == id)
 			{
 				return transactionViewModel;
 			}
@@ -91,59 +89,27 @@ public class InvestingAccountViewModel : AccountViewModel
 		return null;
 	}
 
-	internal override void NotifyTransactionChanged(Transaction transaction)
+	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
-		if (this.transactions is null)
-		{
-			// Nothing to refresh.
-			return;
-		}
-
-		// This transaction may have added or dropped our account as a transfer
-		bool removedFromAccount = transaction.CreditAccountId != this.Id && transaction.DebitAccountId != this.Id;
-		if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
-		{
-			if (removedFromAccount)
-			{
-				this.transactions.Remove(transactionViewModel);
-			}
-			else
-			{
-				transactionViewModel.CopyFrom(transaction);
-				int index = this.transactions.IndexOf(transactionViewModel);
-				if (index >= 0)
-				{
-					this.UpdateBalances(index);
-				}
-			}
-		}
-		else if (!removedFromAccount)
-		{
-			// This may be a new transaction we need to add. Only add top-level transactions or foreign splits.
-			if (this.FindTransaction(transaction.ParentTransactionId) is null)
-			{
-				this.transactions.Add(new InvestingTransactionViewModel(this, transaction));
-			}
-		}
-	}
-
-	internal override void NotifyAccountDeleted(ICollection<Account> accounts)
-	{
-		if (this.transactions is object)
+		if (this.transactions is object && accountIds.Count > 0)
 		{
 			foreach (InvestingTransactionViewModel transaction in this.transactions)
 			{
-				if (transaction.CreditAccount is AccountViewModel { Model: Account creditAccount } && accounts.Contains(creditAccount))
+				if (transaction.DepositAccount is AccountViewModel { Model: Account creditAccount } && accountIds.Contains(creditAccount.Id))
 				{
-					transaction.CreditAccount = null;
+					transaction.DepositAccount = null;
 				}
-				else if (transaction.DebitAccount is AccountViewModel { Model: Account debitAccount } && accounts.Contains(debitAccount))
+				else if (transaction.WithdrawAccount is AccountViewModel { Model: Account debitAccount } && accountIds.Contains(debitAccount.Id))
 				{
-					transaction.DebitAccount = null;
+					transaction.WithdrawAccount = null;
 				}
 			}
 		}
 	}
+
+	protected override TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails) => new InvestingTransactionViewModel(this, transactionDetails);
+
+	protected override int AddTransaction(TransactionViewModel transactionViewModel) => this.transactions?.Add((InvestingTransactionViewModel)transactionViewModel) ?? throw new InvalidOperationException();
 
 	protected override void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
 	{
@@ -156,6 +122,19 @@ public class InvestingAccountViewModel : AccountViewModel
 		int index = this.transactions.IndexOf((InvestingTransactionViewModel)transactionViewModel);
 		this.transactions.RemoveAt(index);
 		this.UpdateBalances(index);
+	}
+
+	protected override int GetTransactionIndex(TransactionViewModel transaction)
+	{
+		for (int i = 0; i < this.Transactions.Count; i++)
+		{
+			if (this.Transactions[i] == transaction)
+			{
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -185,11 +164,11 @@ public class InvestingAccountViewModel : AccountViewModel
 	{
 		// Always add one more "volatile" transaction at the end as a placeholder to add new data.
 		_ = this.Transactions;
-		Transaction volatileModel = new()
+		TransactionAndEntry volatileModel = new()
 		{
 			When = DateTime.Today,
 		};
-		InvestingTransactionViewModel volatileViewModel = new(this, volatileModel);
+		InvestingTransactionViewModel volatileViewModel = new(this);
 		this.transactions!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileTransaction_Saved;
 	}
@@ -223,7 +202,7 @@ public class InvestingAccountViewModel : AccountViewModel
 				return 1;
 			}
 
-			int order = Utilities.CompareNullOrZeroComesLast(x.Id, y.Id);
+			int order = Utilities.CompareNullOrZeroComesLast(x.TransactionId, y.TransactionId);
 			if (order != 0)
 			{
 				return order;
@@ -235,17 +214,9 @@ public class InvestingAccountViewModel : AccountViewModel
 				return order;
 			}
 
-			order = x.Id == 0
-				? (y.Id == 0 ? 0 : -1)
-				: (y.Id == 0) ? 1 : 0;
-			if (order != 0)
-			{
-				return order;
-			}
-
 			return 0;
 		}
 
-		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(InvestingTransactionViewModel.When) or nameof(InvestingTransactionViewModel.Id);
+		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(InvestingTransactionViewModel.When) or nameof(InvestingTransactionViewModel.TransactionId);
 	}
 }

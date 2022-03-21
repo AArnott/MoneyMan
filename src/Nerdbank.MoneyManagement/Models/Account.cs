@@ -27,6 +27,11 @@ public class Account : ModelBase
 		/// E.g. a brokerage, 401k or cryptocurrency wallet.
 		/// </summary>
 		Investing = 1,
+
+		/// <summary>
+		/// An account without a ledger that represents a spending or income category.
+		/// </summary>
+		Category = 2,
 	}
 
 	/// <summary>
@@ -59,63 +64,4 @@ public class Account : ModelBase
 	public int? CurrencyAssetId { get; set; }
 
 	private string? DebuggerDisplay => this.Name;
-
-	/// <summary>
-	/// Creates a new <see cref="Transaction"/> that describes a withdrawal from this account.
-	/// </summary>
-	/// <param name="amount">The amount to withdraw.</param>
-	/// <returns>The created transaction that has not yet been added to the database.</returns>
-	public Transaction Withdraw(Amount amount)
-	{
-		Verify.Operation(this.Id != 0, "This account has not been saved yet.");
-		return new Transaction
-		{
-			Action = TransactionAction.Withdraw,
-			When = DateTime.Now,
-			DebitAccountId = this.Id,
-			DebitAmount = amount.Value,
-			DebitAssetId = amount.AssetId,
-		};
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="Transaction"/> that describes a deposit to this account.
-	/// </summary>
-	/// <param name="amount">The amount to deposit.</param>
-	/// <returns>The created transaction that has not yet been added to the database.</returns>
-	public Transaction Deposit(Amount amount)
-	{
-		Verify.Operation(this.Id != 0, "This account has not been saved yet.");
-		return new Transaction
-		{
-			Action = TransactionAction.Deposit,
-			When = DateTime.Now,
-			CreditAccountId = this.Id,
-			CreditAmount = amount.Value,
-			CreditAssetId = amount.AssetId,
-		};
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="Transaction"/> that describes a transfer from this account to another one.
-	/// </summary>
-	/// <param name="receivingAccount">The account to receive funds from this account.</param>
-	/// <param name="amount">The amount to transfer.</param>
-	/// <returns>The created transaction that has not yet been added to the database.</returns>
-	public Transaction Transfer(Account receivingAccount, Amount amount)
-	{
-		Requires.NotNull(receivingAccount, nameof(receivingAccount));
-
-		return new Transaction
-		{
-			Action = TransactionAction.Transfer,
-			When = DateTime.Now,
-			DebitAccountId = this.Id,
-			DebitAmount = amount.Value,
-			DebitAssetId = amount.AssetId,
-			CreditAccountId = receivingAccount.Id,
-			CreditAmount = amount.Value,
-			CreditAssetId = amount.AssetId,
-		};
-	}
 }

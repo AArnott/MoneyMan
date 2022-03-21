@@ -1,10 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
+using System.Windows.Threading;
 
 [Trait("UI", "")]
 public class UITests : UITestBase
@@ -20,6 +17,20 @@ public class UITests : UITestBase
 		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = checking;
 		this.DocumentViewModel.SelectedTransaction = checking.Transactions[^1];
+	}
+
+	[WpfFact]
+	public async Task Split()
+	{
+		AccountViewModel groceries = this.DocumentViewModel.CategoriesPanel.NewCategory("Groceries");
+		BankingAccountViewModel checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		this.DocumentViewModel.BankingPanel.SelectedAccount = checking;
+		var tx = checking.Transactions[^1];
+		this.DocumentViewModel.SelectedTransaction = tx;
+		tx.Amount = 10;
+		tx.OtherAccount = groceries;
+		await Dispatcher.Yield(DispatcherPriority.ContextIdle);
+		await tx.SplitCommand.ExecuteAsync();
 	}
 
 	[WpfFact]

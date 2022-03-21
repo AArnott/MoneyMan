@@ -20,7 +20,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 			if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 			{
 				this.IsDirty = true;
-				if (this.MoneyFile.IsDisposed is not true && this.AutoSave && string.IsNullOrEmpty(this.Error))
+				if (this.MoneyFile.IsDisposed is not true && this.AutoSave && this.IsReadyToSave)
 				{
 					this.Save();
 				}
@@ -49,10 +49,10 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 			foreach (PropertyInfo propertyInfo in propertyInfos)
 			{
-				if (propertyInfo.DeclaringType?.IsAssignableFrom(typeof(EntityViewModel)) is false)
+				if (propertyInfo.GetCustomAttributes<ValidationAttribute>(true).Any())
 				{
-					var errorMsg = this[propertyInfo.Name];
-					if (errorMsg?.Length > 0)
+					string errorMsg = this[propertyInfo.Name];
+					if (errorMsg.Length > 0)
 					{
 						return errorMsg;
 					}
@@ -69,11 +69,19 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	public MoneyFile MoneyFile { get; }
 
 	/// <summary>
+	/// Gets a value indicating whether this view model is in a good state to be persisted.
+	/// </summary>
+	public virtual bool IsReadyToSave => string.IsNullOrEmpty(this.Error);
+
+	/// <summary>
 	/// Gets or sets a value indicating whether changes to this view model are automatically persisted to the model.
 	/// </summary>
 	protected bool AutoSave { get; set; } = true;
 
-	protected abstract ModelBase? UndoTarget { get; }
+	/// <summary>
+	/// Gets a value indicating whether this object is currently in a call to <see cref="ApplyToModel"/>.
+	/// </summary>
+	protected bool IsApplyingToModel { get; private set; }
 
 	public virtual string this[string columnName]
 	{
@@ -101,11 +109,11 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 	public void Save()
 	{
-		this.ApplyToModel();
+		Verify.Operation(this.IsReadyToSave, "This view model is not ready to save.");
 		if (!this.MoneyFile.IsDisposed)
 		{
 			bool wasPersisted = this.IsPersisted;
-			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this.UndoTarget);
+			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this);
 
 			this.SaveCore();
 
@@ -122,20 +130,29 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// Writes this view model to the underlying model.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown if <see cref="Error"/> is non-empty.</exception>
-	public virtual void ApplyToModel()
+	public void ApplyToModel()
 	{
-		Verify.Operation(string.IsNullOrEmpty(this.Error), "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
-		this.ApplyToCore();
-		this.IsDirty = false;
+		Verify.Operation(this.IsReadyToSave, "View model is not in a valid state. Check the " + nameof(this.Error) + " property. " + this.Error);
+		Verify.Operation(!this.IsApplyingToModel, "This view model is already in this call.");
+		using (this.ApplyingToModel())
+		{
+			this.ApplyToCore();
+			this.IsDirty = false;
+		}
 	}
 
 	protected abstract void SaveCore();
 
+	/// <summary>
+	/// Writes the properties in this view model (and possibly associated view models) to the underlying model(s).
+	/// </summary>
 	protected abstract void ApplyToCore();
 
-	protected virtual bool IsPersistedProperty(string propertyName) => true;
+	protected virtual bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.IsReadyToSave) or nameof(this.IsDirty) or nameof(this.IsPersisted) or nameof(this.AutoSave));
 
 	protected AutoSaveSuspension SuspendAutoSave(bool saveOnDisposal = true) => new(this, saveOnDisposal);
+
+	protected IsApplyingToModelBlock ApplyingToModel() => new(this);
 
 	protected struct AutoSaveSuspension : IDisposable
 	{
@@ -158,6 +175,24 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 			{
 				this.entity.Save();
 			}
+		}
+	}
+
+	protected struct IsApplyingToModelBlock : IDisposable
+	{
+		private readonly EntityViewModel entity;
+		private readonly bool oldIsApplyingToModel;
+
+		internal IsApplyingToModelBlock(EntityViewModel entity)
+		{
+			this.entity = entity;
+			this.oldIsApplyingToModel = entity.IsApplyingToModel;
+			entity.IsApplyingToModel = true;
+		}
+
+		public void Dispose()
+		{
+			this.entity.IsApplyingToModel = this.oldIsApplyingToModel;
 		}
 	}
 }
