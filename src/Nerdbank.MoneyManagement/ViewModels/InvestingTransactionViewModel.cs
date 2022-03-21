@@ -480,44 +480,34 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
 			case TransactionAction.Dividend:
-				if (this.DepositFullyInitialized)
+				if (TryEnsureEntryCount(1, this.DepositFullyInitialized))
 				{
-					while (this.Entries.Count < 1)
-					{
-						this.EntriesMutable.Add(new(this));
-					}
-
-					while (this.Entries.Count > 1)
-					{
-						this.EntriesMutable.RemoveAt(1);
-					}
-
 					this.Entries[0].Account = this.ThisAccount;
 					this.Entries[0].Asset = this.DepositAsset;
 					this.Entries[0].Amount = this.DepositAmount ?? 0;
 				}
-				else
+
+				break;
+			case TransactionAction.Transfer:
+				if (TryEnsureEntryCount(2, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
 				{
-					this.EntriesMutable.Clear();
+					bool deposit = this.DepositAccount == this.ThisAccount;
+					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
+					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+					ourEntry.Account = this.ThisAccount;
+					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
+					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
+					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
+					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
+					otherEntry.Amount = deposit ? (this.WithdrawAmount ?? 0) : -(this.DepositAmount ?? 0);
 				}
 
 				break;
 			case TransactionAction.Sell:
 			case TransactionAction.Buy:
-			case TransactionAction.Transfer:
 			case TransactionAction.Exchange:
-				if (this.DepositFullyInitialized && this.WithdrawFullyInitialized)
+				if (TryEnsureEntryCount(2, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
 				{
-					while (this.Entries.Count < 2)
-					{
-						this.EntriesMutable.Add(new(this));
-					}
-
-					while (this.Entries.Count > 2)
-					{
-						this.EntriesMutable.RemoveAt(2);
-					}
-
 					bool deposit = this.DepositAccount == this.ThisAccount;
 					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
@@ -528,38 +518,41 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
 					otherEntry.Amount = deposit ? -(this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
 				}
-				else
-				{
-					this.EntriesMutable.Clear();
-				}
 
 				break;
 			case TransactionAction.Withdraw:
 			case TransactionAction.Remove:
-				if (this.WithdrawFullyInitialized)
+				if (TryEnsureEntryCount(1, this.WithdrawFullyInitialized))
 				{
-					while (this.Entries.Count < 1)
-					{
-						this.EntriesMutable.Add(new(this));
-					}
-
-					while (this.Entries.Count > 1)
-					{
-						this.EntriesMutable.RemoveAt(1);
-					}
-
 					this.Entries[0].Account = this.ThisAccount;
 					this.Entries[0].Asset = this.WithdrawAsset;
 					this.Entries[0].Amount = -this.WithdrawAmount ?? 0;
-				}
-				else
-				{
-					this.EntriesMutable.Clear();
 				}
 
 				break;
 			default:
 				throw new NotImplementedException("Action: " + this.Action.Value);
+		}
+
+		bool TryEnsureEntryCount(int requiredCount, bool condition)
+		{
+			if (condition)
+			{
+				while (this.Entries.Count < requiredCount)
+				{
+					this.EntriesMutable.Add(new(this));
+				}
+
+				while (this.Entries.Count > requiredCount)
+				{
+					this.EntriesMutable.RemoveAt(requiredCount);
+				}
+
+				return true;
+			}
+
+			this.EntriesMutable.Clear();
+			return false;
 		}
 	}
 

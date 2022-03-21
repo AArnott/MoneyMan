@@ -558,6 +558,9 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.checking.Transactions.Count);
 		Assert.Equal(-10, this.checking.Transactions[0].Balance);
 
+		tx1.SimpleAmount = -10;
+		Assert.Equal(10, this.checking.Transactions[0].Balance);
+
 		tx1.SimpleAccount = this.otherAccount;
 		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
 		Assert.Equal(2, this.otherAccount.Transactions.Count);
