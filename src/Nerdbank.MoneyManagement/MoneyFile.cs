@@ -144,7 +144,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 					}
 					else
 					{
-						DatabaseSchemaUpgradeManager.Upgrade(db);
+						DatabaseSchemaUpgradeManager.Upgrade(db, out _);
 					}
 
 					break;
