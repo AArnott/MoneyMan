@@ -22,7 +22,8 @@ public class MoneyFileTests : IDisposable
 	[Fact]
 	public void Load_ThrowsOnNullOrEmpty()
 	{
-		Assert.Throws<ArgumentNullException>(() => MoneyFile.Load(null!));
+		Assert.Throws<ArgumentNullException>(() => MoneyFile.Load((string)null!));
+		Assert.Throws<ArgumentNullException>(() => MoneyFile.Load((SQLiteConnection)null!));
 		Assert.Throws<ArgumentException>(() => MoneyFile.Load(string.Empty));
 	}
 

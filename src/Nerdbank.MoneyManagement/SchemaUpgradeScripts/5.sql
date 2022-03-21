@@ -21,25 +21,25 @@ INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId], [Cleared])
 SELECT [Id], [CreditAccountId], [CreditAmount], [CreditAssetId], [CreditCleared]
 FROM [Transaction]
-WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1;
+WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND ([CategoryId] != -1 OR [CategoryId] IS NULL);
 
 INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId], [Cleared])
 SELECT [Id], [DebitAccountId], -[DebitAmount], [DebitAssetId], [DebitCleared]
 FROM [Transaction]
-WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1;
+WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND ([CategoryId] != -1 OR [CategoryId] IS NULL);
 
 INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId])
 SELECT [Id], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), [DebitAmount], [DebitAssetId]
 FROM [Transaction] t
-WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
+WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1; -- implies AND [CategoryId] IS NOT NULL
 
 INSERT INTO "TransactionEntry"
 ([TransactionId], [AccountId], [Amount], [AssetId])
 SELECT [Id], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), -[CreditAmount], [CreditAssetId]
 FROM [Transaction] t
-WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
+WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NULL AND [CategoryId] != -1; -- implies AND [CategoryId] IS NOT NULL
 
 -- Migrate the splits
 

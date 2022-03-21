@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Security.Principal;
 using Nerdbank.MoneyManagement.ViewModels;
 using PCLCommandBase;
 using SQLite;
@@ -131,32 +130,46 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		SQLiteConnection db = new(path);
 		try
 		{
-			switch (DatabaseSchemaUpgradeManager.IsUpgradeRequired(db))
-			{
-				case DatabaseSchemaUpgradeManager.SchemaCompatibility.RequiresAppUpgrade:
-					throw new InvalidOperationException("This file was created with a newer version of the application. Please upgrade your application first.");
-				case DatabaseSchemaUpgradeManager.SchemaCompatibility.RequiresDatabaseUpgrade:
-					if (path != ":memory:")
-					{
-						db.Dispose();
-						DatabaseSchemaUpgradeManager.Upgrade(path);
-						db = new SQLiteConnection(path);
-					}
-					else
-					{
-						DatabaseSchemaUpgradeManager.Upgrade(db, out _);
-					}
-
-					break;
-			}
-
-			return new MoneyFile(db);
+			return Load(db);
 		}
 		catch
 		{
 			db.Dispose();
 			throw;
 		}
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MoneyFile"/> class
+	/// starting with the given connection.
+	/// </summary>
+	/// <param name="db">A connection to the database to connect to. Ownership of this connection is transferred to the returned <see cref="MoneyFile"/> instance.</param>
+	/// <returns>The new instance of <see cref="MoneyFile"/>.</returns>
+	public static MoneyFile Load(SQLiteConnection db)
+	{
+		Requires.NotNull(db, nameof(db));
+
+		switch (DatabaseSchemaManager.IsUpgradeRequired(db))
+		{
+			case DatabaseSchemaManager.SchemaCompatibility.RequiresAppUpgrade:
+				throw new InvalidOperationException("This file was created with a newer version of the application. Please upgrade your application first.");
+			case DatabaseSchemaManager.SchemaCompatibility.RequiresDatabaseUpgrade:
+				if (db.DatabasePath != ":memory:")
+				{
+					string databasePath = db.DatabasePath;
+					db.Dispose();
+					DatabaseSchemaManager.Upgrade(databasePath);
+					db = new SQLiteConnection(databasePath);
+				}
+				else
+				{
+					DatabaseSchemaManager.Upgrade(db);
+				}
+
+				break;
+		}
+
+		return new MoneyFile(db);
 	}
 
 	/// <summary>
