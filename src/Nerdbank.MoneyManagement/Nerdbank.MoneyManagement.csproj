@@ -15,6 +15,6 @@
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
     <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.0.7" />
     <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
-    <PackageReference Include="Validation" Version="2.5.42" />
+    <PackageReference Include="Validation" Version="2.5.51" />
   </ItemGroup>
 </Project>
