@@ -15,6 +15,7 @@ public class MainPageViewModelBase : BindableBase
 	private string version = ThisAssembly.AssemblyInformationalVersion;
 	private DocumentViewModel? document;
 	private int downloadingUpdatePercentage;
+	private string? updateChannel;
 
 	public MainPageViewModelBase()
 	{
@@ -62,6 +63,12 @@ public class MainPageViewModelBase : BindableBase
 	{
 		get => this.version;
 		set => this.SetProperty(ref this.version, value);
+	}
+
+	public string? UpdateChannel
+	{
+		get => this.updateChannel;
+		set => this.SetProperty(ref this.updateChannel, value);
 	}
 
 	public string FileOpenDialogTitle => "Open MoneyMan file";

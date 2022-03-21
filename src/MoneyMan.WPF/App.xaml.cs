@@ -19,7 +19,7 @@ public partial class App : Application
 	public static void Main()
 	{
 		// Note, in most of these scenarios, the app exits after this method completes!
-		using (UpdateManager mgr = CreateUpdateManager())
+		using (UpdateManager mgr = CreateUpdateManager(out _))
 		{
 			SquirrelAwareApp.HandleEvents(
 				onInitialInstall: v => mgr.CreateShortcutForThisExe(),
@@ -32,9 +32,9 @@ public partial class App : Application
 		app.Run();
 	}
 
-	internal static UpdateManager CreateUpdateManager()
+	internal static UpdateManager CreateUpdateManager(out string channel)
 	{
-		string channel = ThisAssembly.IsPrerelease ? "prerelease" : "release";
+		channel = ThisAssembly.IsPrerelease ? "prerelease" : "release";
 		string channelOverrideFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, "channelname.txt");
 		if (File.Exists(channelOverrideFilePath))
 		{

@@ -145,7 +145,8 @@ public partial class MainWindow : Window
 
 	private async Task UpdateApplicationAsync()
 	{
-		using UpdateManager updateManager = App.CreateUpdateManager();
+		using UpdateManager updateManager = App.CreateUpdateManager(out string channel);
+		this.ViewModel.UpdateChannel = channel;
 		NuGet.SemanticVersion? currentVersion = updateManager.CurrentlyInstalledVersion();
 		if (currentVersion is null)
 		{
