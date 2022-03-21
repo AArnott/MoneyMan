@@ -582,6 +582,10 @@
 						<CollectionViewSource.GroupDescriptions>
 							<PropertyGroupDescription PropertyName="Type" />
 						</CollectionViewSource.GroupDescriptions>
+						<CollectionViewSource.SortDescriptions>
+							<scm:SortDescription PropertyName="Type" />
+							<scm:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
 					</CollectionViewSource>
 				</TabItem.Resources>
 				<Grid>
@@ -729,6 +733,10 @@
 						<CollectionViewSource.GroupDescriptions>
 							<PropertyGroupDescription PropertyName="Type" />
 						</CollectionViewSource.GroupDescriptions>
+						<CollectionViewSource.SortDescriptions>
+							<scm:SortDescription PropertyName="Type" />
+							<scm:SortDescription PropertyName="Name" />
+						</CollectionViewSource.SortDescriptions>
 					</CollectionViewSource>
 				</TabItem.Resources>
 				<DockPanel>
