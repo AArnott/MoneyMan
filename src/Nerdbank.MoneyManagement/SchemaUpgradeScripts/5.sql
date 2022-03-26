@@ -44,26 +44,28 @@ WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentT
 -- Migrate the splits
 
 INSERT INTO "TransactionEntry"
-([TransactionId], [AccountId], [Amount], [AssetId], [Cleared])
-SELECT [ParentTransactionId], [CreditAccountId], [CreditAmount], [CreditAssetId], [CreditCleared]
-FROM [Transaction]
-WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL;
+([TransactionId], [AccountId], [Amount], [AssetId], [Memo], [Cleared])
+SELECT [ParentTransactionId], [CreditAccountId], SUM([CreditAmount]), [CreditAssetId], [Memo], (SELECT [CreditCleared] FROM [Transaction] WHERE [Id] = t.[ParentTransactionId])
+FROM [Transaction] t
+WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL
+GROUP BY [ParentTransactionId], [CreditAccountId], [CreditAssetId];
 
 INSERT INTO "TransactionEntry"
-([TransactionId], [AccountId], [Amount], [AssetId], [Cleared])
-SELECT [ParentTransactionId], [DebitAccountId], -[DebitAmount], [DebitAssetId], [DebitCleared]
-FROM [Transaction]
-WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL;
+([TransactionId], [AccountId], [Amount], [AssetId], [Memo], [Cleared])
+SELECT [ParentTransactionId], [DebitAccountId], SUM(-[DebitAmount]), [DebitAssetId], [Memo], (SELECT [DebitCleared] FROM [Transaction] WHERE [Id] = t.[ParentTransactionId])
+FROM [Transaction] t
+WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL
+GROUP BY [ParentTransactionId], [DebitAccountId], [DebitAssetId];
 
 INSERT INTO "TransactionEntry"
-([TransactionId], [AccountId], [Amount], [AssetId])
-SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), [DebitAmount], [DebitAssetId]
+([TransactionId], [AccountId], [Amount], [AssetId], [Memo], [Cleared])
+SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), [DebitAmount], [DebitAssetId], [Memo], (SELECT [DebitCleared] FROM [Transaction] WHERE [Id] = t.[ParentTransactionId])
 FROM [Transaction] t
 WHERE [DebitAssetId] IS NOT NULL AND [DebitAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
 
 INSERT INTO "TransactionEntry"
-([TransactionId], [AccountId], [Amount], [AssetId])
-SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), -[CreditAmount], [CreditAssetId]
+([TransactionId], [AccountId], [Amount], [AssetId], [Memo], [Cleared])
+SELECT [ParentTransactionId], (SELECT [Id] FROM [Account] a WHERE a.[Type] = 2 AND a.[Name] = (SELECT [Name] FROM [Category] c WHERE c.[Id] = t.[CategoryId])), -[CreditAmount], [CreditAssetId], [Memo], (SELECT [CreditCleared] FROM [Transaction] WHERE [Id] = t.[ParentTransactionId])
 FROM [Transaction] t
 WHERE [CreditAssetId] IS NOT NULL AND [CreditAccountId] IS NOT NULL AND [ParentTransactionId] IS NOT NULL AND [CategoryId] != -1 AND [CategoryId] IS NOT NULL;
 
