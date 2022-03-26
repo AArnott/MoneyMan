@@ -154,6 +154,56 @@ INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,   
 		Assert.Equal(ClearedState.Cleared, split2.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent
 	}
 
+	[Fact]
+	public void UpgradeFromV4()
+	{
+		using SQLiteConnection connection = this.CreateDatabase(4);
+		string sql = @"
+INSERT INTO Account (Id, Name, Type, IsClosed) VALUES (2, 'Checking', 1, 0);
+INSERT INTO Account (Id, Name, Type, IsClosed) VALUES (1, 'Brokerage', 1, 0);
+
+INSERT INTO Asset (Id, Name, TickerSymbol, Type, CurrencySymbol, CurrencyDecimalDigits) VALUES (9, 'Bitcoin', 'BTC', 1, 'B', 9);
+
+INSERT INTO [Transaction] ([When], Action, Memo, CreditAccountId, CreditAmount, CreditAssetId, DebitAccountId, DebitAmount, DebitAssetId) VALUES (637834085886150235, 4, 'top memo', 1, 3, 9, 1, 90, 1);
+INSERT INTO [Transaction] ([When], Action, Memo, DebitAccountId, DebitAmount, DebitAssetId) VALUES (637834085886150236, 2, 'top memo', 1, 2, 9);
+INSERT INTO [Transaction] ([When], Action, Memo, CreditAccountId, CreditAmount, CreditAssetId, DebitAccountId, DebitAmount, DebitAssetId) VALUES (637834075886150236, 3, 'xferFromChecking', 1, 100, 1, 2, 100, 1);
+";
+		this.ExecuteSql(connection, sql);
+		MoneyFile file = MoneyFile.Load(connection);
+		DocumentViewModel documentViewModel = new(file);
+		Assert.Equal(1, documentViewModel.ConfigurationPanel.PreferredAsset!.Id);
+
+		AssetViewModel btc = Assert.Single(documentViewModel.AssetsPanel.Assets, a => a.Name == "Bitcoin");
+		Assert.Equal("BTC", btc.TickerSymbol);
+		Assert.Equal("Bitcoin", btc.Name);
+
+		var brokerage = (InvestingAccountViewModel)Assert.Single(documentViewModel.AccountsPanel.Accounts, a => a.Name == "Brokerage");
+		var checking = (InvestingAccountViewModel)Assert.Single(documentViewModel.AccountsPanel.Accounts, a => a.Name == "Checking");
+
+		Assert.Equal(3, brokerage.Transactions.Count(tx => tx.IsPersisted));
+		InvestingTransactionViewModel tx1 = brokerage.Transactions[0];
+		Assert.Equal(new DateTime(637834075886150236), tx1.When);
+		Assert.Equal(TransactionAction.Transfer, tx1.Action);
+		Assert.Equal(100, tx1.SimpleAmount);
+		Assert.Equal(file.PreferredAssetId, tx1.SimpleAsset!.Id);
+		Assert.Same(checking, tx1.SimpleAccount);
+		Assert.Equal("xferFromChecking", tx1.Memo);
+
+		InvestingTransactionViewModel tx2 = brokerage.Transactions[1];
+		Assert.Equal(new DateTime(637834085886150235), tx2.When);
+		Assert.Equal(TransactionAction.Buy, tx2.Action);
+		Assert.Equal(3, tx2.SimpleAmount);
+		Assert.Same(btc, tx2.SimpleAsset);
+		Assert.Equal("top memo", tx2.Memo);
+
+		InvestingTransactionViewModel tx3 = brokerage.Transactions[2];
+		Assert.Equal(new DateTime(637834085886150236), tx3.When);
+		Assert.Equal(TransactionAction.Withdraw, tx3.Action);
+		Assert.Equal(2, tx3.SimpleAmount);
+		Assert.Same(btc, tx3.SimpleAsset);
+		Assert.Equal("top memo", tx3.Memo);
+	}
+
 	private SQLiteConnection CreateDatabase(int schemaVersion)
 	{
 		SQLiteConnection connection = new(Debugger.IsAttached ? this.dbPath : ":memory:");
