@@ -117,6 +117,10 @@ INSERT INTO Category (Name) VALUES ('cat2');
 INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo, Payee, CategoryId, CreditAccountId, DebitAccountId, Cleared) VALUES (1, NULL, 637834085886150235, 0,  'top memo', 'Microsoft', -1,    1, 1, 1);
 INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,        CategoryId, CreditAccountId, DebitAccountId, Cleared) VALUES (2, 1,    637834085886150235, 3,  'split1',                 1, NULL, 1, 0);
 INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,        CategoryId, CreditAccountId, DebitAccountId, Cleared) VALUES (3, 1,    637834085886150235, 7,  'split2',                 2, NULL, 1, 0);
+
+INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo, Payee, CategoryId, CreditAccountId, DebitAccountId, Cleared) VALUES (4, NULL, 637835085886150235, 0,  'top memo', 'Microsoft', -1, 1, 1,    2);
+INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,        CategoryId, CreditAccountId, DebitAccountId, Cleared) VALUES (5, 4,    637835085886150235, 2,  'split1',                 1, 1, NULL, 0);
+INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,        CategoryId, CreditAccountId, DebitAccountId, Cleared) VALUES (6, 4,    637835085886150235, 6,  'split2',                 2, 1, NULL, 0);
 ";
 		this.ExecuteSql(connection, sql);
 		MoneyFile file = MoneyFile.Load(connection);
@@ -131,7 +135,7 @@ INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,   
 		CategoryAccountViewModel cat1 = Assert.Single(documentViewModel.CategoriesPanel.Categories, cat => cat.Name == "cat1");
 		CategoryAccountViewModel cat2 = Assert.Single(documentViewModel.CategoriesPanel.Categories, cat => cat.Name == "cat2");
 
-		Assert.Equal(1, checking.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(2, checking.Transactions.Count(tx => tx.IsPersisted));
 		BankingTransactionViewModel tx1 = checking.Transactions[0];
 		Assert.Equal(new DateTime(637834085886150235), tx1.When);
 		Assert.Equal(-10, tx1.Amount);
@@ -141,17 +145,38 @@ INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,   
 		Assert.Equal(-10, tx1.Balance);
 
 		Assert.Equal(2, tx1.Splits.Count(s => s.IsPersisted));
-		TransactionEntryViewModel split1 = tx1.Splits[0];
-		Assert.Equal(-3, split1.Amount);
-		Assert.Equal("split1", split1.Memo);
-		Assert.Same(cat1, split1.Account);
-		Assert.Equal(ClearedState.Cleared, split1.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent
+		TransactionEntryViewModel split1a = tx1.Splits[0];
+		Assert.Equal(-3, split1a.Amount);
+		Assert.Equal("split1", split1a.Memo);
+		Assert.Same(cat1, split1a.Account);
+		Assert.Equal(ClearedState.Cleared, split1a.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent
 
-		TransactionEntryViewModel split2 = tx1.Splits[1];
-		Assert.Equal(-7, split2.Amount);
-		Assert.Equal("split2", split2.Memo);
-		Assert.Same(cat2, split2.Account);
-		Assert.Equal(ClearedState.Cleared, split2.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent
+		TransactionEntryViewModel split1b = tx1.Splits[1];
+		Assert.Equal(-7, split1b.Amount);
+		Assert.Equal("split2", split1b.Memo);
+		Assert.Same(cat2, split1b.Account);
+		Assert.Equal(ClearedState.Cleared, split1b.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent
+
+		BankingTransactionViewModel tx2 = checking.Transactions[1];
+		Assert.Equal(new DateTime(637835085886150235), tx2.When);
+		Assert.Equal(8, tx2.Amount);
+		Assert.Equal("top memo", tx2.Memo);
+		Assert.Equal("Microsoft", tx2.Payee);
+		Assert.Equal(ClearedState.Reconciled, tx2.Cleared);
+		Assert.Equal(-2, tx2.Balance);
+
+		Assert.Equal(2, tx2.Splits.Count(s => s.IsPersisted));
+		TransactionEntryViewModel split2a = tx2.Splits[0];
+		Assert.Equal(2, split2a.Amount);
+		Assert.Equal("split1", split2a.Memo);
+		Assert.Same(cat1, split2a.Account);
+		Assert.Equal(ClearedState.Reconciled, split2a.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent
+
+		TransactionEntryViewModel split2b = tx2.Splits[1];
+		Assert.Equal(6, split2b.Amount);
+		Assert.Equal("split2", split2b.Memo);
+		Assert.Same(cat2, split2b.Account);
+		Assert.Equal(ClearedState.Reconciled, split2b.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent
 	}
 
 	[Fact]
