@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using Nerdbank.MoneyManagement.ViewModels;
 using SQLite;
 
 /// <summary>
@@ -184,7 +185,7 @@ INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,   
 	{
 		using SQLiteConnection connection = this.CreateDatabase(4);
 		string sql = @"
-INSERT INTO Account (Id, Name, Type, IsClosed) VALUES (2, 'Checking', 1, 0);
+INSERT INTO Account (Id, Name, Type, IsClosed) VALUES (2, 'Checking', 0, 0);
 INSERT INTO Account (Id, Name, Type, IsClosed) VALUES (1, 'Brokerage', 1, 0);
 
 INSERT INTO Asset (Id, Name, TickerSymbol, Type, CurrencySymbol, CurrencyDecimalDigits) VALUES (9, 'Bitcoin', 'BTC', 1, 'B', 9);
@@ -203,7 +204,7 @@ INSERT INTO [Transaction] ([When], Action, Memo, CreditAccountId, CreditAmount, 
 		Assert.Equal("Bitcoin", btc.Name);
 
 		var brokerage = (InvestingAccountViewModel)Assert.Single(documentViewModel.AccountsPanel.Accounts, a => a.Name == "Brokerage");
-		var checking = (InvestingAccountViewModel)Assert.Single(documentViewModel.AccountsPanel.Accounts, a => a.Name == "Checking");
+		var checking = (BankingAccountViewModel)Assert.Single(documentViewModel.AccountsPanel.Accounts, a => a.Name == "Checking");
 
 		Assert.Equal(3, brokerage.Transactions.Count(tx => tx.IsPersisted));
 		InvestingTransactionViewModel tx1 = brokerage.Transactions[0];
@@ -227,6 +228,31 @@ INSERT INTO [Transaction] ([When], Action, Memo, CreditAccountId, CreditAmount, 
 		Assert.Equal(2, tx3.SimpleAmount);
 		Assert.Same(btc, tx3.SimpleAsset);
 		Assert.Equal("top memo", tx3.Memo);
+	}
+
+	[Fact]
+	public void UpgradeFromV5()
+	{
+		using SQLiteConnection connection = this.CreateDatabase(5);
+		string sql = @"
+INSERT INTO Account (Id, Name, Type, IsClosed) VALUES (2, 'Checking', 0, 0);
+INSERT INTO Account (Id, Name, Type, IsClosed) VALUES (9, 'Salary',   2, 0);
+
+INSERT INTO [Transaction] (Id, [When], Action, Memo) VALUES (1, 637834085886150235, 3, 'top memo');
+INSERT INTO TransactionEntry (TransactionId, Memo, AccountId, Amount, AssetId, Cleared) VALUES (1, 'm1', 2, 123, 1, 1);
+INSERT INTO TransactionEntry (TransactionId, Memo, AccountId, Amount, AssetId, Cleared) VALUES (1, NULL, 9, -123, 1, 1);
+"
+;
+		this.ExecuteSql(connection, sql);
+		MoneyFile file = MoneyFile.Load(connection);
+		DocumentViewModel documentViewModel = new(file);
+
+		var checking = (BankingAccountViewModel)Assert.Single(documentViewModel.AccountsPanel.Accounts, a => a.Name == "Checking");
+		BankingTransactionViewModel tx1 = checking.Transactions[0];
+		Assert.Equal(123, tx1.Amount);
+		Assert.Equal(123, tx1.Balance);
+		Assert.Equal(9, tx1.OtherAccount?.Id);
+		Assert.False(tx1.ContainsSplits);
 	}
 
 	private SQLiteConnection CreateDatabase(int schemaVersion)
