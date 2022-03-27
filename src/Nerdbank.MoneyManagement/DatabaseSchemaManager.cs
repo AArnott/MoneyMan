@@ -5,12 +5,16 @@ using System.Globalization;
 using System.Reflection;
 using SQLite;
 using Validation;
+using static System.FormattableString;
 
 namespace Nerdbank.MoneyManagement;
 
-internal static class DatabaseSchemaUpgradeManager
+/// <summary>
+/// Manages the various database schemas, primarily for purposes of database creation and upgrades.
+/// </summary>
+public static class DatabaseSchemaManager
 {
-	private static int latestVersion = GetLatestVersion();
+	public static readonly int LatestVersion = GetLatestVersion();
 
 	internal enum SchemaCompatibility
 	{
@@ -28,6 +32,45 @@ internal static class DatabaseSchemaUpgradeManager
 		/// The database was created with a newer version of the application. The application requires an upgrade before opening the database.
 		/// </summary>
 		RequiresAppUpgrade = 1,
+	}
+
+	/// <summary>
+	/// Upgrades a database in-place with no backup.
+	/// </summary>
+	/// <param name="db">The database to upgrade.</param>
+	/// <param name="targetVersion">The schema version to upgrade to. Typically <see cref="LatestVersion"/>.</param>
+	/// <returns>Receives the original version of the file before the upgrade.</returns>
+	/// <exception cref="InvalidOperationException">Thrown when an upgrade failure occurs.</exception>
+	public static int Upgrade(SQLiteConnection db, int targetVersion)
+	{
+		int initialFileVersion = GetCurrentSchema(db);
+
+		// The upgrade process is one version at a time.
+		// Every version from the past is represented in a case statement below with the required steps
+		// to upgrade it to the subsequent version. We loop over each version till we reach the current schema.
+		for (int nextVersion = initialFileVersion + 1; nextVersion <= targetVersion; nextVersion++)
+		{
+			// Complete each upgrade step within the context of a transaction.
+			try
+			{
+				string sql = GetSqlUpgradeScript(nextVersion);
+				ExecuteSql(db, sql);
+
+				// Record the successful upgrade.
+				db.Insert(new SchemaHistory
+				{
+					SchemaVersion = nextVersion,
+					AppliedDateUtc = DateTime.UtcNow,
+					AppVersion = ThisAssembly.AssemblyInformationalVersion,
+				});
+			}
+			catch (Exception ex)
+			{
+				throw new InvalidOperationException($"Failed to apply database schema version {nextVersion}. {ex.Message}", ex);
+			}
+		}
+
+		return initialFileVersion;
 	}
 
 	internal static int GetCurrentSchema(SQLiteConnection db)
@@ -48,8 +91,8 @@ internal static class DatabaseSchemaUpgradeManager
 
 	internal static SchemaCompatibility IsUpgradeRequired(SQLiteConnection db)
 	{
-		int initialFileVersion = GetCurrentSchema(db);
-		return (SchemaCompatibility)initialFileVersion.CompareTo(latestVersion);
+		int fileVersion = GetCurrentSchema(db);
+		return (SchemaCompatibility)fileVersion.CompareTo(LatestVersion);
 	}
 
 	/// <summary>
@@ -67,12 +110,14 @@ internal static class DatabaseSchemaUpgradeManager
 		File.Copy(path, tempPath, overwrite: true);
 		try
 		{
+			int originalFileVersion;
 			using (SQLiteConnection tempDb = new(tempPath))
 			{
-				Upgrade(tempDb);
+				originalFileVersion = Upgrade(tempDb);
 			}
 
-			// We were successful. Overwrite the original file with the successfully upgraded database.
+			// We were successful. Rename the original file as a backup and move the successfully upgraded database to the original file.
+			File.Move(path, Invariant($"{path}.v{originalFileVersion}.bak"), overwrite: true);
 			File.Move(tempPath, path, overwrite: true);
 		}
 		catch
@@ -82,40 +127,8 @@ internal static class DatabaseSchemaUpgradeManager
 		}
 	}
 
-	/// <summary>
-	/// Upgrades a database in-place with no backup.
-	/// </summary>
-	/// <param name="db">The database to upgrade.</param>
-	/// <exception cref="InvalidOperationException">Thrown when an upgrade failure occurs.</exception>
-	internal static void Upgrade(SQLiteConnection db)
-	{
-		int initialFileVersion = GetCurrentSchema(db);
-
-		// The upgrade process is one version at a time.
-		// Every version from the past is represented in a case statement below with the required steps
-		// to upgrade it to the subsequent version. We loop over each version till we reach the current schema.
-		for (int targetVersion = initialFileVersion + 1; targetVersion <= latestVersion; targetVersion++)
-		{
-			// Complete each upgrade step within the context of a transaction.
-			try
-			{
-				string sql = GetSqlUpgradeScript(targetVersion);
-				ExecuteSql(db, sql);
-
-				// Record the successful upgrade.
-				db.Insert(new SchemaHistory
-				{
-					SchemaVersion = targetVersion,
-					AppliedDateUtc = DateTime.UtcNow,
-					AppVersion = ThisAssembly.AssemblyInformationalVersion,
-				});
-			}
-			catch (Exception ex)
-			{
-				throw new InvalidOperationException($"Failed to apply database schema version {targetVersion}. {ex.Message}", ex);
-			}
-		}
-	}
+	/// <inheritdoc cref="Upgrade(SQLiteConnection, int)"/>
+	internal static int Upgrade(SQLiteConnection db) => Upgrade(db, LatestVersion);
 
 	private static void ExecuteSql(SQLiteConnection db, string sql)
 	{
