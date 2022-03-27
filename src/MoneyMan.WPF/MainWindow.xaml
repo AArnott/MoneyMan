@@ -125,8 +125,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 											<DataGridTemplateColumn.CellEditingTemplate>
 												<DataTemplate>
-													<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-											            IsEnabled="{Binding WhenIsReadOnly, Converter={StaticResource boolInvertingConverter}}"/>
+													<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
 												</DataTemplate>
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
