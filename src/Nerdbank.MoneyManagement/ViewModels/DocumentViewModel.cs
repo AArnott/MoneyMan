@@ -15,7 +15,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class DocumentViewModel : BindableBase, IDisposable
 {
 	private readonly bool ownsMoneyFile;
-	private readonly SortedObservableCollection<AccountViewModel> transactionTargets = new(TransactionTargetSort.Instance);
+	private readonly SortedObservableCollection<AccountViewModel?> transactionTargets = new(TransactionTargetSort.Instance);
 	private readonly SplitCategoryPlaceholder splitCategory;
 	private decimal netWorth;
 	private IList? selectedTransactions;
@@ -107,7 +107,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		set => this.SetProperty(ref this.selectedViewIndex, value);
 	}
 
-	public IReadOnlyCollection<AccountViewModel> TransactionTargets => this.transactionTargets;
+	public IReadOnlyCollection<AccountViewModel?> TransactionTargets => this.transactionTargets;
 
 	public AssetViewModel? DefaultCurrency => this.AssetsPanel.FindAsset(this.MoneyFile.PreferredAssetId);
 
@@ -215,6 +215,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public void Reset()
 	{
 		this.transactionTargets.Clear();
+		this.transactionTargets.Add(null);
 		this.transactionTargets.Add(this.splitCategory);
 
 		this.AssetsPanel.ClearViewModel();
@@ -536,7 +537,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	private class TransactionTargetSort : IComparer<AccountViewModel>
+	private class TransactionTargetSort : IComparer<AccountViewModel?>
 	{
 		internal static readonly TransactionTargetSort Instance = new();
 

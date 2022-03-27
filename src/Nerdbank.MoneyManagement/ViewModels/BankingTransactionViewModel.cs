@@ -122,7 +122,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	public IEnumerable<AccountViewModel> AvailableTransactionTargets
+	public IEnumerable<AccountViewModel?> AvailableTransactionTargets
 		=> this.ThisAccount.DocumentViewModel.TransactionTargets.Where(tt => tt != this.ThisAccount && tt != this.ThisAccount.DocumentViewModel.SplitCategory);
 
 	////[SplitSumMatchesTransactionAmount]

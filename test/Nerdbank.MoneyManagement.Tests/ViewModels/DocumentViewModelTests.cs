@@ -136,7 +136,7 @@ public class DocumentViewModelTests : MoneyTestBase
 		closed.IsClosed = true;
 		Assert.Contains(closed, this.DocumentViewModel.TransactionTargets);
 		this.ReloadViewModel();
-		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == closed.Name);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == closed.Name);
 	}
 
 	[Fact]
@@ -152,8 +152,8 @@ public class DocumentViewModelTests : MoneyTestBase
 		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewBankingAccount("a");
 		CategoryAccountViewModel categoryA = this.DocumentViewModel.CategoriesPanel.NewCategory("a");
 		CategoryAccountViewModel categoryG = this.DocumentViewModel.CategoriesPanel.NewCategory("g");
-		Assert.Equal<AccountViewModel>(
-			new AccountViewModel[] { categoryA, categoryG, this.DocumentViewModel.SplitCategory, accountA, accountG },
+		Assert.Equal<AccountViewModel?>(
+			new AccountViewModel?[] { null, categoryA, categoryG, this.DocumentViewModel.SplitCategory, accountA, accountG },
 			this.DocumentViewModel.TransactionTargets);
 	}
 
@@ -162,9 +162,10 @@ public class DocumentViewModelTests : MoneyTestBase
 	{
 		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewBankingAccount("checking");
 		this.DocumentViewModel.Reset();
-		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
-		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == account.Name);
-		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt.Name == this.DocumentViewModel.SplitCategory.Name);
+		Assert.Equal(3, this.DocumentViewModel.TransactionTargets.Count);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == account.Name);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == this.DocumentViewModel.SplitCategory.Name);
+		Assert.Contains(null, this.DocumentViewModel.TransactionTargets);
 	}
 
 	protected override void Dispose(bool disposing)

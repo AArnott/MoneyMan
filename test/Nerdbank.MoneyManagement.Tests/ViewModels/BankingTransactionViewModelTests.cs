@@ -396,6 +396,9 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.DocumentViewModel.SplitCategory);
 		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.viewModel.ThisAccount);
 		Assert.NotEmpty(this.viewModel.AvailableTransactionTargets);
+
+		// There should be a way to clear the selected category.
+		Assert.Contains(null, this.viewModel.AvailableTransactionTargets);
 	}
 
 	[Fact]
