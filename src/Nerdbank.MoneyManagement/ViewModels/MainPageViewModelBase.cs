@@ -23,6 +23,7 @@ public class MainPageViewModelBase : BindableBase
 		this.FileCloseCommand = new FileCloseCommandImpl(this);
 
 		this.RegisterDependentProperty(nameof(this.DownloadingUpdatePercentage), nameof(this.UpdateDownloading));
+		this.RegisterDependentProperty(nameof(this.Document), nameof(this.UndoCommand));
 	}
 
 	public event EventHandler? FileClosed;
@@ -38,6 +39,8 @@ public class MainPageViewModelBase : BindableBase
 	public CommandBase FileSaveCommand { get; }
 
 	public ICommand FileCloseCommand { get; }
+
+	public UICommandBase UndoCommand => this.Document?.UndoCommand ?? OutOfContextCommand.Instance;
 
 	public string StatusMessage
 	{
@@ -97,7 +100,7 @@ public class MainPageViewModelBase : BindableBase
 		this.OnPropertyChanged(nameof(this.IsFileOpen));
 	}
 
-	private class SaveCommandImpl : CommandBase
+	private class SaveCommandImpl : UICommandBase
 	{
 		private readonly MainPageViewModelBase viewModel;
 		private MoneyFile? subscribedMoneyFile;
@@ -107,6 +110,12 @@ public class MainPageViewModelBase : BindableBase
 			this.viewModel = viewModel;
 			viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
 		}
+
+		public override string Caption => "Save";
+
+		public override string? InputGestureText => "Ctrl+S";
+
+		public override bool Visible => this.viewModel.Document is not null;
 
 		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.viewModel.Document?.MoneyFile.UndoStack.Any() is true;
 
@@ -133,6 +142,7 @@ public class MainPageViewModelBase : BindableBase
 				}
 
 				this.OnCanExecuteChanged();
+				this.OnPropertyChanged(nameof(this.Visible));
 			}
 		}
 
@@ -145,7 +155,7 @@ public class MainPageViewModelBase : BindableBase
 		}
 	}
 
-	private class FileCloseCommandImpl : ICommand
+	private class FileCloseCommandImpl : UICommandBase
 	{
 		private readonly MainPageViewModelBase viewModel;
 
@@ -155,21 +165,25 @@ public class MainPageViewModelBase : BindableBase
 			this.viewModel.PropertyChanged += this.MainPageViewModelBase_PropertyChanged;
 		}
 
-		public event EventHandler? CanExecuteChanged;
+		public override string Caption => "Close";
 
-		public bool CanExecute(object? parameter) => this.viewModel.IsFileOpen is true;
+		public override bool Visible => this.viewModel.IsFileOpen;
 
-		public void Execute(object? parameter)
+		public override bool CanExecute(object? parameter) => this.viewModel.IsFileOpen;
+
+		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
 			this.viewModel.ReplaceViewModel(null);
 			this.viewModel.FileClosed?.Invoke(this.viewModel, EventArgs.Empty);
+			return Task.CompletedTask;
 		}
 
 		private void MainPageViewModelBase_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
 			if (e.PropertyName == nameof(this.viewModel.IsFileOpen))
 			{
-				this.CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+				this.OnCanExecuteChanged();
+				this.OnPropertyChanged(nameof(this.Visible));
 			}
 		}
 	}

@@ -44,7 +44,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 		if (moneyFile is object)
 		{
 			moneyFile.EntitiesChanged += this.Model_EntitiesChanged;
-			moneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
 		}
 
 		this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
@@ -136,11 +135,9 @@ public class DocumentViewModel : BindableBase, IDisposable
 	/// </summary>
 	public CommandBase DeleteTransactionsCommand { get; }
 
-	public CommandBase UndoCommand { get; }
+	public UICommandBase UndoCommand { get; }
 
 	public string DeleteCommandCaption => "_Delete";
-
-	public string UndoCommandCaption => this.MoneyFile?.UndoStack.FirstOrDefault().Activity is string top ? $"Undo {top}" : "Undo";
 
 	/// <summary>
 	/// Gets or sets a view-supplied mechanism to prompt or notify the user.
@@ -346,14 +343,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-	{
-		if (e.PropertyName == nameof(this.MoneyFile.UndoStack))
-		{
-			this.OnPropertyChanged(nameof(this.UndoCommandCaption));
-		}
-	}
-
 	/// <summary>
 	/// Makes a best effort to select a given entity in the app.
 	/// </summary>
@@ -507,7 +496,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	private class UndoCommandImpl : CommandBase
+	private class UndoCommandImpl : UICommandBase
 	{
 		private readonly DocumentViewModel documentViewModel;
 
@@ -517,7 +506,9 @@ public class DocumentViewModel : BindableBase, IDisposable
 			documentViewModel.MoneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
 		}
 
-		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.MoneyFile?.UndoStack.Any() is true;
+		public override string Caption => this.documentViewModel.MoneyFile.UndoStack.FirstOrDefault().Activity is string top ? $"Undo {top}" : "Undo";
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.MoneyFile.UndoStack.Any() is true;
 
 		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
@@ -534,6 +525,10 @@ public class DocumentViewModel : BindableBase, IDisposable
 		private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
 			this.OnCanExecuteChanged();
+			if (e.PropertyName == nameof(this.documentViewModel.MoneyFile.UndoStack))
+			{
+				this.OnPropertyChanged(nameof(this.Caption));
+			}
 		}
 	}
 
