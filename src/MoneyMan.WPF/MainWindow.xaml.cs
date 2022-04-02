@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,6 +19,8 @@ namespace MoneyMan;
 /// </summary>
 public partial class MainWindow : Window
 {
+	private static readonly PropertyInfo? ContentPresenterTemplateProperty = typeof(ContentPresenter).GetProperty("Template", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
 	private readonly CancellationTokenSource closingTokenSource = new();
 
 	public MainWindow()
@@ -200,14 +203,21 @@ public partial class MainWindow : Window
 				ContentPresenter? presenter = VisualTreeHelper.GetChild(this.BankingSelectedAccountPresenter, 0) as ContentPresenter;
 				Assumes.NotNull(presenter);
 				presenter.ApplyTemplate();
-				try
+
+				// This next step may throw InvalidOperationException, but we can't avoid it through conventional checks.
+				// See https://github.com/dotnet/wpf/issues/6343 for a request to address this.
+				// Since this exception is thrown on the startup path which is a royal pain when debugging, we go to lengths by using Reflection to avoid the exception.
+				if (ContentPresenterTemplateProperty is null || ContentPresenterTemplateProperty.GetValue(presenter) == accountTemplate)
 				{
-					var transactionDataGrid = (DataGrid?)accountTemplate.FindName("TransactionDataGrid", presenter);
-					this.ViewModel.Document.SelectedTransactions = transactionDataGrid?.SelectedItems;
-				}
-				catch (InvalidOperationException)
-				{
-					// Sometimes we lose. I don't know why.
+					try
+					{
+						var transactionDataGrid = (DataGrid?)accountTemplate.FindName("TransactionDataGrid", presenter);
+						this.ViewModel.Document.SelectedTransactions = transactionDataGrid?.SelectedItems;
+					}
+					catch (InvalidOperationException) when (ContentPresenterTemplateProperty is null)
+					{
+						// Sometimes the template hasn't been applied yet, and this throws (if our Reflection approach didn't work).
+					}
 				}
 			}
 		}
