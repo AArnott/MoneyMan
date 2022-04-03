@@ -58,6 +58,24 @@ public interface IUserNotification
 	Task<UserAction> AskOrCancelAsync(string text, UserAction defaultButton, CancellationToken cancellationToken = default);
 
 	/// <summary>
+	/// Invites the user to select an account to apply an operation to.
+	/// </summary>
+	/// <param name="prompt">The message to present to the user that explains what the user is picking for.</param>
+	/// <param name="defaultAccount">The account that should be selected as the default.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The account the user selected, or <see langword="null" /> if the user canceled.</returns>
+	Task<AccountViewModel?> ChooseAccountAsync(string prompt, AccountViewModel? defaultAccount, CancellationToken cancellationToken = default);
+
+	/// <summary>
+	/// Asks the user to select a file to import.
+	/// </summary>
+	/// <param name="title">The title for the open file dialog.</param>
+	/// <param name="filter">The filter of file types to display.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The selected file name, or <see langword="null" /> if the user cancelled the operation.</returns>
+	Task<string?> PickFileAsync(string title, string filter, CancellationToken cancellationToken = default);
+
+	/// <summary>
 	/// Presents a modal view for a given view model.
 	/// </summary>
 	/// <param name="viewModel">The view model to bind to the view. The runtime type will determine which view is selected to present to the user.</param>

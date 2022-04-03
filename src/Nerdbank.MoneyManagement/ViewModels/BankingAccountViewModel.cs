@@ -109,6 +109,19 @@ public class BankingAccountViewModel : AccountViewModel
 		return null;
 	}
 
+	public TransactionEntryViewModel? FindTransactionEntryByFitId(string fitId)
+	{
+		foreach (BankingTransactionViewModel transaction in this.Transactions)
+		{
+			if (transaction.Entries.FirstOrDefault(e => string.Equals(fitId, e.OfxFitId, StringComparison.Ordinal)) is TransactionEntryViewModel entry)
+			{
+				return entry;
+			}
+		}
+
+		return null;
+	}
+
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		if (this.transactions is object && accountIds.Count > 0)

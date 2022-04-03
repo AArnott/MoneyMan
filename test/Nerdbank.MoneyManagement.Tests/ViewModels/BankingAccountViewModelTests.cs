@@ -130,6 +130,8 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.checking.IsClosed = !this.checking.IsClosed;
 		this.checking.Type = Account.AccountType.Investing;
 		this.checking.CurrencyAsset = this.alternateCurrency;
+		this.checking.OfxBankId = "ABC123";
+		this.checking.OfxAcctId = "DEF456";
 
 		this.checking.ApplyToModel();
 
@@ -137,6 +139,8 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		Assert.Equal(this.checking.IsClosed, this.checking.Model.IsClosed);
 		Assert.Equal(this.checking.Type, this.checking.Model.Type);
 		Assert.Equal(this.checking.CurrencyAsset?.Id, this.checking.Model.CurrencyAssetId);
+		Assert.Equal(this.checking.OfxBankId, this.checking.Model.OfxBankId);
+		Assert.Equal(this.checking.OfxAcctId, this.checking.Model.OfxAcctId);
 	}
 
 	[Fact]
@@ -152,12 +156,15 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.checking.Model.IsClosed = true;
 		this.checking.Model.Type = Account.AccountType.Investing;
 		this.checking.Model.CurrencyAssetId = this.alternateCurrency.Id;
+		this.checking.Model.OfxBankId = "ABC123";
+
 		this.checking.CopyFrom(this.checking.Model);
 
 		Assert.Equal(this.checking.Model.Name, this.checking.Name);
 		Assert.Equal(this.checking.Model.IsClosed, this.checking.IsClosed);
 		Assert.Equal(this.checking.Model.Type, this.checking.Type);
 		Assert.Equal(this.checking.Model.CurrencyAssetId, this.checking.CurrencyAsset?.Id);
+		Assert.Equal(this.checking.Model.OfxBankId, this.checking.OfxBankId);
 	}
 
 	[Fact]

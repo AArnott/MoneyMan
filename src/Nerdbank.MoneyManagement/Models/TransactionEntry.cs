@@ -21,12 +21,21 @@ public class TransactionEntry : ModelBase
 		this.Amount = te.Amount;
 		this.AssetId = te.AssetId;
 		this.Cleared = te.Cleared;
+		this.OfxFitId = te.OfxFitId;
 	}
 
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Transaction"/> that this entry belongs to.
 	/// </summary>
 	public int TransactionId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the transaction ID as determined by the financial institution.
+	/// </summary>
+	/// <remarks>
+	/// This is used to detect duplicate downloads/imports of a transaction.
+	/// </remarks>
+	public string? OfxFitId { get; set; }
 
 	/// <summary>
 	/// Gets or sets a memo to go with this transaction.

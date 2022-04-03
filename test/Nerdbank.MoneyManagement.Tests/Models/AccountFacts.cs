@@ -27,6 +27,12 @@ public class AccountFacts : EntityTestBase
 
 		this.account.CurrencyAssetId = 1; // assumed ID for the "USD" entry added by the sql scripts
 
+		this.account.OfxBankId = "ABC123";
+		Assert.Equal("ABC123", this.account.OfxBankId);
+
+		this.account.OfxAcctId = "DEF456";
+		Assert.Equal("DEF456", this.account.OfxAcctId);
+
 		Account? account2 = this.SaveAndReload(this.account);
 
 		Assert.NotEqual(0, this.account.Id);
@@ -34,6 +40,8 @@ public class AccountFacts : EntityTestBase
 		Assert.Equal(expected, account2.Name);
 		Assert.Equal(this.account.Type, account2.Type);
 		Assert.Equal(this.account.CurrencyAssetId, account2.CurrencyAssetId);
+		Assert.Equal("ABC123", account2.OfxBankId);
+		Assert.Equal("DEF456", account2.OfxAcctId);
 	}
 
 	[Fact]

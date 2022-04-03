@@ -2,18 +2,19 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public abstract class AccountViewModel : EntityViewModel<Account>
+public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableView
 {
 	private AssetViewModel? currencyAsset;
 	private decimal value;
 	private string name = string.Empty;
 	private bool isClosed;
 	private Account.AccountType type;
+	private string? ofxBankId;
+	private string? ofxAcctId;
 
 	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(documentViewModel.MoneyFile, model)
@@ -23,6 +24,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		this.RegisterDependentProperty(nameof(this.Value), nameof(this.ValueFormatted));
 
 		this.DocumentViewModel = documentViewModel;
+		this.BankingViewSelection = new SelectWithinBanking(this);
 		this.CopyFrom(this.Model);
 	}
 
@@ -55,6 +57,20 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 			Verify.Operation(this.type == value || this.IsEmpty, "Cannot change type of account when it contains transactions.");
 			this.SetProperty(ref this.type, value);
 		}
+	}
+
+	/// <inheritdoc cref="Account.OfxBankId"/>
+	public string? OfxBankId
+	{
+		get => this.ofxBankId;
+		set => this.SetProperty(ref this.ofxBankId, value);
+	}
+
+	/// <inheritdoc cref="Account.OfxAcctId"/>
+	public string? OfxAcctId
+	{
+		get => this.ofxAcctId;
+		set => this.SetProperty(ref this.ofxAcctId, value);
 	}
 
 	public bool TypeIsReadOnly => !this.IsEmpty;
@@ -95,6 +111,12 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 
 	public string? ValueFormatted => this.DocumentViewModel.DefaultCurrency?.Format(this.Value);
 
+	/// <summary>
+	/// Gets an object that can be given to <see cref="MoneyFile.UndoableTransaction(string, ISelectableView?)"/>
+	/// so that this account will be selected in the banking panel instead of the accounts panel.
+	/// </summary>
+	internal ISelectableView? BankingViewSelection { get; }
+
 	protected internal DocumentViewModel DocumentViewModel { get; }
 
 	/// <summary>
@@ -114,6 +136,12 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 	public abstract TransactionViewModel? FindTransaction(int? id);
 
 	public override string ToString() => $"Account: {this.Name}";
+
+	void ISelectableView.Select()
+	{
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
+		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.DocumentViewModel.AccountsPanel.FindAccount(this.Id);
+	}
 
 	internal static AccountViewModel Create(Account model, DocumentViewModel documentViewModel)
 	{
@@ -214,6 +242,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		this.Model.IsClosed = this.IsClosed;
 		this.Model.Type = this.Type;
 		this.Model.CurrencyAssetId = this.CurrencyAsset?.Id;
+		this.Model.OfxBankId = this.OfxBankId;
+		this.Model.OfxAcctId = this.OfxAcctId;
 	}
 
 	protected override void CopyFromCore()
@@ -231,6 +261,9 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		{
 			this.Value = this.MoneyFile.GetValue(this.Model);
 		}
+
+		this.OfxBankId = this.Model.OfxBankId;
+		this.OfxAcctId = this.Model.OfxAcctId;
 	}
 
 	protected abstract TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails);
@@ -285,6 +318,22 @@ public abstract class AccountViewModel : EntityViewModel<Account>
 		{
 			int index = this.AddTransaction(this.CreateTransactionViewModel(details));
 			this.UpdateBalances(index);
+		}
+	}
+
+	private class SelectWithinBanking : ISelectableView
+	{
+		private readonly AccountViewModel accountViewModel;
+
+		internal SelectWithinBanking(AccountViewModel accountViewModel)
+		{
+			this.accountViewModel = accountViewModel;
+		}
+
+		public void Select()
+		{
+			this.accountViewModel.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+			this.accountViewModel.DocumentViewModel.BankingPanel.SelectedAccount = this.accountViewModel.DocumentViewModel.GetAccount(this.accountViewModel.Id);
 		}
 	}
 }

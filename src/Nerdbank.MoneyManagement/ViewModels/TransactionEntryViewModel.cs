@@ -11,6 +11,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 {
 	private readonly TransactionViewModel parent;
+	private string? ofxFitId;
 	private string? memo;
 	private AccountViewModel? account;
 	private decimal amount;
@@ -46,6 +47,13 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public AccountViewModel ThisAccount => this.parent.ThisAccount;
+
+	/// <inheritdoc cref="TransactionEntry.OfxFitId"/>
+	public string? OfxFitId
+	{
+		get => this.ofxFitId;
+		set => this.SetProperty(ref this.ofxFitId, value);
+	}
 
 	public string? Memo
 	{
@@ -101,7 +109,8 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.Model.AccountId = this.Account.Id;
 		this.Model.Amount = this.NegateAmountIfAppropriate(this.Amount);
 		this.Model.AssetId = this.Asset.Id;
-		this.Cleared = this.Cleared;
+		this.Model.Cleared = this.Cleared;
+		this.Model.OfxFitId = this.OfxFitId;
 	}
 
 	protected override void CopyFromCore()
@@ -111,6 +120,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.Amount = this.NegateAmountIfAppropriate(this.Model.Amount);
 		this.Asset = this.DocumentViewModel.GetAsset(this.Model.AssetId);
 		this.Cleared = this.Model.Cleared;
+		this.OfxFitId = this.Model.OfxFitId;
 	}
 
 	/// <summary>

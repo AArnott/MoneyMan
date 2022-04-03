@@ -9,7 +9,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	private TransactionEntryViewModel viewModel;
 
 	private decimal amount = 5.5m;
-
+	private string ofxFitId = "someFitId";
 	private string memo = "Some memo";
 
 	public TransactionEntryViewModelTests(ITestOutputHelper logger)
@@ -19,6 +19,16 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		this.spendingCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("Spending");
 		this.transaction = this.checkingAccount.NewTransaction();
 		this.viewModel = this.transaction.NewSplit();
+	}
+
+	[Fact]
+	public void OfxFitId()
+	{
+		TestUtilities.AssertPropertyChangedEvent(
+			this.viewModel,
+			() => this.viewModel.OfxFitId = this.ofxFitId,
+			nameof(this.viewModel.OfxFitId));
+		Assert.Equal(this.ofxFitId, this.viewModel.OfxFitId);
 	}
 
 	[Fact]
@@ -66,10 +76,14 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		this.viewModel.Amount = this.amount;
 		this.viewModel.Asset = this.DocumentViewModel.DefaultCurrency;
 		this.viewModel.Memo = this.memo;
+		this.viewModel.Cleared = ClearedState.Cleared;
+		this.viewModel.OfxFitId = this.ofxFitId;
 		this.viewModel.ApplyToModel();
 
 		Assert.Equal(-this.amount, this.viewModel.Model.Amount);
 		Assert.Equal(this.memo, this.viewModel.Model.Memo);
+		Assert.Equal(ClearedState.Cleared, this.viewModel.Model.Cleared);
+		Assert.Equal(this.ofxFitId, this.viewModel.Model.OfxFitId);
 	}
 
 	[Fact]
@@ -83,6 +97,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 			AssetId = this.checkingAccount.CurrencyAsset!.Id,
 			Memo = this.memo,
 			AccountId = this.spendingCategory.Id,
+			OfxFitId = this.ofxFitId,
+			Cleared = ClearedState.Cleared,
 		};
 
 		this.viewModel.CopyFrom(splitTransaction);
@@ -90,6 +106,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		Assert.Equal(-splitTransaction.Amount, this.viewModel.Amount);
 		Assert.Equal(splitTransaction.Memo, this.viewModel.Memo);
 		Assert.Equal(this.spendingCategory.Id, this.viewModel.Account?.Id);
+		Assert.Equal(this.ofxFitId, this.viewModel.OfxFitId);
+		Assert.Equal(ClearedState.Cleared, this.viewModel.Cleared);
 
 		splitTransaction.AccountId = 0;
 		this.viewModel.CopyFrom(splitTransaction);

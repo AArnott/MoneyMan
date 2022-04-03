@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Reflection;
+
 public abstract class TestBase : IDisposable, IAsyncLifetime
 {
 	protected static readonly TimeSpan ExpectedTimeout = TimeSpan.FromMilliseconds(250);
@@ -28,6 +30,22 @@ public abstract class TestBase : IDisposable, IAsyncLifetime
 		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
 		this.Dispose(disposing: true);
 		GC.SuppressFinalize(this);
+	}
+
+	protected Stream GetTestDataStream(string fileName)
+	{
+		return Assembly.GetExecutingAssembly().GetManifestResourceStream($"{ThisAssembly.RootNamespace}.TestData.{fileName}") ?? throw new ArgumentException("No test data by that path found.");
+	}
+
+	protected string GetTestDataFile(string fileName)
+	{
+		string tempPath = this.GenerateTemporaryFileName();
+		using (FileStream dataFileStream = File.OpenWrite(tempPath))
+		{
+			this.GetTestDataStream(fileName).CopyTo(dataFileStream);
+		}
+
+		return tempPath;
 	}
 
 	protected string GenerateTemporaryFileName()

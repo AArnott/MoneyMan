@@ -44,11 +44,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 		if (moneyFile is object)
 		{
 			moneyFile.EntitiesChanged += this.Model_EntitiesChanged;
-			moneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
 		}
 
 		this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
 		this.UndoCommand = new UndoCommandImpl(this);
+		this.ImportFileCommand = new ImportFileCommandImpl(this);
 	}
 
 	public enum SelectableViews
@@ -136,11 +136,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 	/// </summary>
 	public CommandBase DeleteTransactionsCommand { get; }
 
-	public CommandBase UndoCommand { get; }
+	public UICommandBase UndoCommand { get; }
+
+	public UICommandBase ImportFileCommand { get; }
 
 	public string DeleteCommandCaption => "_Delete";
-
-	public string UndoCommandCaption => this.MoneyFile?.UndoStack.FirstOrDefault().Activity is string top ? $"Undo {top}" : "Undo";
 
 	/// <summary>
 	/// Gets or sets a view-supplied mechanism to prompt or notify the user.
@@ -346,49 +346,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-	{
-		if (e.PropertyName == nameof(this.MoneyFile.UndoStack))
-		{
-			this.OnPropertyChanged(nameof(this.UndoCommandCaption));
-		}
-	}
-
-	/// <summary>
-	/// Makes a best effort to select a given entity in the app.
-	/// </summary>
-	/// <param name="viewModel">The model to select.</param>
-	private void Select(EntityViewModel viewModel)
-	{
-		// Never use the view model we're given except to extract its ID, because it may be a view model from a deleted and resurrected entity,
-		// and therefore a new view model exists to represent it.
-		switch (viewModel)
-		{
-			case TransactionViewModel transaction:
-				this.SelectedViewIndex = SelectableViews.Banking;
-				this.BankingPanel.SelectedAccount = this.BankingPanel.FindAccount(transaction.ThisAccount.Id);
-				this.SelectedTransaction = this.BankingPanel.SelectedAccount?.FindTransaction(transaction.TransactionId);
-				break;
-			case AccountViewModel category when category.Type == Account.AccountType.Category:
-				this.SelectedViewIndex = SelectableViews.Categories;
-				this.CategoriesPanel.SelectedCategory = this.CategoriesPanel.FindCategory(category.Id);
-				break;
-			case AccountViewModel account:
-				this.SelectedViewIndex = SelectableViews.Accounts;
-				this.AccountsPanel.SelectedAccount = this.AccountsPanel.FindAccount(account.Id);
-				break;
-			case AssetViewModel asset:
-				this.SelectedViewIndex = SelectableViews.Assets;
-				this.AssetsPanel.SelectedAsset = this.AssetsPanel.FindAsset(asset.Id);
-				break;
-			case AssetPriceViewModel assetPrice:
-				this.SelectedViewIndex = SelectableViews.Assets;
-				this.AssetsPanel.SelectedAsset = this.GetAsset(assetPrice.Asset?.Id);
-				this.AssetsPanel.SelectedAssetPrice = this.AssetsPanel.AssetPrices.FirstOrDefault(ap => ap.When == assetPrice.When);
-				break;
-		}
-	}
-
 	private abstract class SelectedTransactionCommandBase : CommandBase
 	{
 		private INotifyCollectionChanged? subscribedSelectedTransactions;
@@ -507,7 +464,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	private class UndoCommandImpl : CommandBase
+	private class UndoCommandImpl : UICommandBase
 	{
 		private readonly DocumentViewModel documentViewModel;
 
@@ -517,23 +474,54 @@ public class DocumentViewModel : BindableBase, IDisposable
 			documentViewModel.MoneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
 		}
 
-		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.MoneyFile?.UndoStack.Any() is true;
+		public override string Caption => this.documentViewModel.MoneyFile.UndoStack.FirstOrDefault().Activity is string top ? $"Undo {top}" : "Undo";
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.MoneyFile.UndoStack.Any() is true;
 
 		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
-			EntityViewModel? model = this.documentViewModel.MoneyFile.Undo();
+			ISelectableView? viewModel = this.documentViewModel.MoneyFile.Undo();
 			this.documentViewModel.Reset();
-			if (model is object)
-			{
-				this.documentViewModel.Select(model);
-			}
-
+			viewModel?.Select();
 			return Task.CompletedTask;
 		}
 
 		private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
 			this.OnCanExecuteChanged();
+			if (e.PropertyName == nameof(this.documentViewModel.MoneyFile.UndoStack))
+			{
+				this.OnPropertyChanged(nameof(this.Caption));
+			}
+		}
+	}
+
+	private class ImportFileCommandImpl : UICommandBase
+	{
+		private DocumentViewModel documentViewModel;
+
+		public ImportFileCommandImpl(DocumentViewModel documentViewModel)
+		{
+			this.documentViewModel = documentViewModel;
+		}
+
+		public override string Caption => "Import";
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null && this.documentViewModel.AccountsPanel.Accounts.Count > 0;
+
+		protected override async Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+		{
+			string? fileName = await this.documentViewModel.UserNotification!.PickFileAsync(
+				 "Select file to import",
+				 "Open Financial Exchange (*.qfx)|*.qfx|All files|*.*",
+				 cancellationToken);
+			if (fileName is null)
+			{
+				return;
+			}
+
+			OfxAdapter adapter = new(this.documentViewModel);
+			await adapter.ImportOfxAsync(fileName, cancellationToken);
 		}
 	}
 

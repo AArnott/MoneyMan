@@ -46,13 +46,15 @@
 	<Window.InputBindings>
 		<KeyBinding Command="{Binding FileSaveCommand, Source={StaticResource viewModel}}" Key="S" Modifiers="Ctrl" />
 	</Window.InputBindings>
-	<DockPanel DataContext="{Binding Source={StaticResource viewModel}, Path=Document}">
+	<DockPanel DataContext="{StaticResource viewModel}">
 		<Menu DockPanel.Dock="Top">
 			<MenuItem Header="_File">
 				<MenuItem Header="_New" Command="ApplicationCommands.New" />
 				<MenuItem Header="_Open" Command="ApplicationCommands.Open" />
-				<MenuItem Header="_Save" Command="{Binding FileSaveCommand, Source={StaticResource viewModel}}" InputGestureText="Ctrl+S" />
-				<MenuItem Header="_Close" Command="{Binding FileCloseCommand, Source={StaticResource viewModel}}" />
+				<MenuItem DataContext="{Binding FileSaveCommand}" Header="{Binding Caption}" Command="{Binding}" InputGestureText="{Binding InputGestureText}" Visibility="{Binding Visible, Converter={StaticResource boolToVisibilityConverter}}" />
+				<MenuItem DataContext="{Binding FileCloseCommand}" Header="{Binding Caption}" Command="{Binding}" Visibility="{Binding Visible, Converter={StaticResource boolToVisibilityConverter}}" />
+				<Separator Visibility="{Binding ImportFileCommand.Visible, Converter={StaticResource boolToVisibilityConverter}}" />
+				<MenuItem DataContext="{Binding ImportFileCommand}" Header="{Binding Caption}" Command="{Binding}" Visibility="{Binding Visible, Converter={StaticResource boolToVisibilityConverter}}" />
 			</MenuItem>
 		</Menu>
 		<ToolBarTray DockPanel.Dock="Top">
@@ -63,7 +65,7 @@
 				<Button Command="NavigationCommands.BrowseForward">
 					Forward
 				</Button>
-				<Button Command="{Binding UndoCommand}" Content="{Binding UndoCommandCaption}" />
+				<Button Command="{Binding UndoCommand}" Content="{Binding UndoCommand.Caption}" Visibility="{Binding UndoCommand.Visible, Converter={StaticResource boolToVisibilityConverter}}" />
 			</ToolBar>
 		</ToolBarTray>
 		<StatusBar DockPanel.Dock="Bottom" DataContext="{StaticResource viewModel}">
@@ -75,6 +77,7 @@
 			<StatusBarItem Content="{Binding StatusMessage}" />
 		</StatusBar>
 		<TabControl TabStripPlacement="Bottom"
+					DataContext="{Binding Document}"
 					SelectedIndex="{Binding SelectedViewIndex, Converter={StaticResource enumToOrdinalConverter}}"
 					Visibility="{Binding IsFileOpen, Converter={StaticResource boolToVisibilityConverter}, Source={StaticResource viewModel}}">
 			<TabItem Header="{Binding Title}" DataContext="{Binding BankingPanel}">

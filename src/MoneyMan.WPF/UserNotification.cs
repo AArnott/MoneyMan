@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Windows;
+using Microsoft.Win32;
 using Nerdbank.MoneyManagement.ViewModels;
 
 namespace MoneyMan;
@@ -9,10 +10,12 @@ namespace MoneyMan;
 internal class UserNotification : IUserNotification
 {
 	private readonly Window mainWindow;
+	private readonly DocumentViewModel? documentViewModel;
 
-	internal UserNotification(Window mainWindow)
+	internal UserNotification(Window mainWindow, DocumentViewModel? documentViewModel)
 	{
 		this.mainWindow = mainWindow;
+		this.documentViewModel = documentViewModel;
 	}
 
 	internal string MessageBoxTitle => "MoneyMan";
@@ -82,6 +85,28 @@ internal class UserNotification : IUserNotification
 			{
 				cancellationToken.ThrowIfCancellationRequested();
 			}
+		});
+	}
+
+	public Task<AccountViewModel?> ChooseAccountAsync(string prompt, AccountViewModel? defaultAccount, CancellationToken cancellationToken = default)
+	{
+		return Task.FromResult(this.documentViewModel?.BankingPanel.SelectedAccount);
+	}
+
+	public async Task<string?> PickFileAsync(string title, string filter, CancellationToken cancellationToken = default)
+	{
+		return await this.mainWindow.Dispatcher.InvokeAsync(delegate
+		{
+			OpenFileDialog dialog = new()
+			{
+				CheckFileExists = true,
+				Title = title,
+				CheckPathExists = true,
+				Filter = filter,
+				FilterIndex = 0,
+			};
+
+			return dialog.ShowDialog() is true ? dialog.FileName : null;
 		});
 	}
 }

@@ -7,7 +7,7 @@ using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public abstract class TransactionViewModel : EntityViewModel
+public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 {
 	private ObservableCollection<TransactionEntryViewModel> entries;
 	private DateTime when;
@@ -74,6 +74,14 @@ public abstract class TransactionViewModel : EntityViewModel
 		}
 
 		this.IsDirty = false;
+	}
+
+	void ISelectableView.Select()
+	{
+		DocumentViewModel documentViewModel = this.ThisAccount.DocumentViewModel;
+		documentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+		documentViewModel.BankingPanel.SelectedAccount = documentViewModel.BankingPanel.FindAccount(this.ThisAccount.Id);
+		documentViewModel.SelectedTransaction = documentViewModel.BankingPanel.SelectedAccount?.FindTransaction(this.TransactionId);
 	}
 
 	/// <summary>

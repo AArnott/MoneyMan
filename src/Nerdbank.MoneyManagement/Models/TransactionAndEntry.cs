@@ -18,6 +18,9 @@ public class TransactionAndEntry
 	/// </summary>
 	public int TransactionEntryId { get; set; }
 
+	/// <inheritdoc cref="TransactionEntry.OfxFitId"/>
+	public string? OfxFitId { get; set; }
+
 	/// <inheritdoc cref="Transaction.When"/>
 	public DateTime When { get; set; }
 

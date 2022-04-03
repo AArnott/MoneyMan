@@ -31,13 +31,13 @@ public class DocumentViewModelTests : MoneyTestBase
 	public async Task UndoCommandCaption_PropertyChangeEvent()
 	{
 		await TestUtilities.AssertPropertyChangedEventAsync(
-			this.DocumentViewModel,
+			this.DocumentViewModel.UndoCommand,
 			async delegate
 			{
 				await this.DocumentViewModel.AccountsPanel.AddCommand.ExecuteAsync();
 				this.DocumentViewModel.AccountsPanel.SelectedAccount!.Name = "some new account";
 			},
-			nameof(this.DocumentViewModel.UndoCommandCaption));
+			nameof(this.DocumentViewModel.UndoCommand.Caption));
 	}
 
 	[Fact]

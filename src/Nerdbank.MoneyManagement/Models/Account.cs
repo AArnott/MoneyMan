@@ -63,5 +63,22 @@ public class Account : ModelBase
 	/// </remarks>
 	public int? CurrencyAssetId { get; set; }
 
+	/// <summary>
+	/// Gets or sets the Bank identifier.
+	/// </summary>
+	/// <remarks>
+	/// For USA banks, this is the routing and transit number.
+	/// This should match the <c>BANKID</c> in an OFX document.
+	/// </remarks>
+	public string? OfxBankId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the account number, which should be unique for a given <see cref="OfxBankId"/>.
+	/// </summary>
+	/// <remarks>
+	/// This should match the <c>ACCTID</c> in an OFX document received from this bank.
+	/// </remarks>
+	public string? OfxAcctId { get; set; }
+
 	private string? DebuggerDisplay => this.Name;
 }
