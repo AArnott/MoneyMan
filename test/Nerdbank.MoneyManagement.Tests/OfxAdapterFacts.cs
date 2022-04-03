@@ -6,6 +6,7 @@ using Microsoft;
 public class OfxAdapterFacts : MoneyTestBase
 {
 	private const string Simple1DataFileName = "Simple1.ofx";
+	private const string CapitalOneRealMemosDataFileName = "CapitalOneRealMemos.ofx";
 	private OfxAdapter adapter;
 	private BankingAccountViewModel checking;
 
@@ -126,6 +127,37 @@ public class OfxAdapterFacts : MoneyTestBase
 		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
 		Assert.Equal(DocumentViewModel.SelectableViews.Banking, this.DocumentViewModel.SelectedViewIndex);
 		Assert.Same(this.checking, this.DocumentViewModel.BankingPanel.SelectedAccount);
+	}
+
+	/// <summary>
+	/// Verifies that memos get appropriately modified based on bank tendencies to add fluff the user doesn't want to see.
+	/// </summary>
+	[Fact]
+	public async Task MemoProcessing()
+	{
+		this.UserNotification.ChooseAccountResult = this.checking;
+		await this.adapter.ImportOfxAsync(this.GetTestDataFile(CapitalOneRealMemosDataFileName), this.TimeoutToken);
+
+		BankingTransactionViewModel greenlightWithdrawal = this.checking.Transactions.Single(tx => tx.Amount == -13.94m);
+		Assert.Equal("GREENLIGHT APP", greenlightWithdrawal.Payee);
+		Assert.True(string.IsNullOrEmpty(greenlightWithdrawal.Memo));
+
+		BankingTransactionViewModel checkCashed = this.checking.Transactions.Single(tx => tx.Amount == -35);
+		Assert.Equal(1030, checkCashed.CheckNumber);
+		Assert.True(string.IsNullOrEmpty(checkCashed.Payee));
+		Assert.True(string.IsNullOrEmpty(checkCashed.Memo));
+
+		BankingTransactionViewModel githubCredit = this.checking.Transactions.Single(tx => tx.Amount == 86);
+		Assert.Equal("GitHub Sponsors GitHub Spo", githubCredit.Payee);
+		Assert.True(string.IsNullOrEmpty(githubCredit.Memo));
+
+		BankingTransactionViewModel mobileDeposit = this.checking.Transactions.Single(tx => tx.Amount == 48m);
+		Assert.True(string.IsNullOrEmpty(mobileDeposit.Payee));
+		Assert.Equal("user memo - Check Deposit (Mobile)", mobileDeposit.Memo);
+
+		BankingTransactionViewModel zelleMoneyReturned = this.checking.Transactions.Single(tx => tx.Amount == 10);
+		Assert.Equal("some@email.com", zelleMoneyReturned.Payee);
+		Assert.Equal("Zelle money returned", zelleMoneyReturned.Memo);
 	}
 
 	protected override void ReloadViewModel()

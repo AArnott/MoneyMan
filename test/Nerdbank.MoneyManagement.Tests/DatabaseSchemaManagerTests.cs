@@ -255,6 +255,28 @@ INSERT INTO TransactionEntry (TransactionId, Memo, AccountId, Amount, AssetId, C
 		Assert.False(tx1.ContainsSplits);
 	}
 
+	[Fact]
+	public void UpgradeFromV6()
+	{
+		using SQLiteConnection connection = this.CreateDatabase(6);
+		string sql = @"
+INSERT INTO Account (Id, Name, Type, IsClosed, OfxBankId, OfxAcctId) VALUES (2, 'Checking', 0, 0, 'routnum', 'accountnum');
+
+INSERT INTO [Transaction] (Id, [When], Action, Memo) VALUES (1, 637834085886150235, 3, 'top memo');
+INSERT INTO TransactionEntry (TransactionId, Memo, AccountId, Amount, AssetId, Cleared, OfxFitId) VALUES (1, 'm1', 2, 123, 1, 1, 'fitid');
+"
+;
+		this.ExecuteSql(connection, sql);
+		MoneyFile file = MoneyFile.Load(connection);
+		DocumentViewModel documentViewModel = new(file);
+
+		var checking = (BankingAccountViewModel)Assert.Single(documentViewModel.AccountsPanel.Accounts, a => a.Name == "Checking");
+		Assert.Equal("routnum", checking.OfxBankId);
+		Assert.Equal("accountnum", checking.OfxAcctId);
+		BankingTransactionViewModel tx1 = checking.Transactions[0];
+		Assert.Equal("fitid", tx1.Entries[0].OfxFitId);
+	}
+
 	private SQLiteConnection CreateDatabase(int schemaVersion)
 	{
 		SQLiteConnection connection = new(Debugger.IsAttached ? this.dbPath : ":memory:");

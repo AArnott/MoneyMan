@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
 using OfxNet;
@@ -10,6 +11,8 @@ namespace Nerdbank.MoneyManagement;
 
 public class OfxAdapter
 {
+	private static readonly Regex CheckCashedPattern = new(@"^Check #(?<checkNumber>\d+) Cashed$", RegexOptions.Compiled);
+	private static readonly Regex ZelleMoneyReturnedPattern = new(@"^(?<memo>Zelle money returned) from (?<payee>.+)$", RegexOptions.Compiled);
 	private readonly DocumentViewModel documentViewModel;
 
 	/// <summary>
@@ -104,10 +107,13 @@ public class OfxAdapter
 							bankingTransaction.Memo += $" {transaction.Memo2}";
 						}
 
+						bankingTransaction.Payee = transaction.Payee?.Name;
 						bankingTransaction.When = transaction.DatePosted.LocalDateTime.Date;
 						bankingTransaction.Amount = transaction.Amount;
 						bankingTransaction.Entries[0].OfxFitId = transaction.FitId;
 						bankingTransaction.Cleared = ClearedState.Cleared;
+
+						AdjustTransaction(bankingTransaction);
 					}
 				}
 				else
@@ -124,6 +130,46 @@ public class OfxAdapter
 		finally
 		{
 			batchImportTransaction?.Dispose();
+		}
+	}
+
+	private static void AdjustTransaction(BankingTransactionViewModel bankingTransaction)
+	{
+		if (bankingTransaction.Memo is null)
+		{
+			return;
+		}
+
+		const string DepositFromPrefix = "Deposit from ";
+		if (bankingTransaction.Amount > 0)
+		{
+			if (bankingTransaction.Memo.StartsWith(DepositFromPrefix, StringComparison.OrdinalIgnoreCase))
+			{
+				bankingTransaction.Payee = bankingTransaction.Memo.Substring(DepositFromPrefix.Length);
+				bankingTransaction.Memo = null;
+			}
+			else if (ZelleMoneyReturnedPattern.Match(bankingTransaction.Memo) is { Success: true } match)
+			{
+				bankingTransaction.Payee = match.Groups["payee"].Value;
+				bankingTransaction.Memo = match.Groups["memo"].Value;
+			}
+		}
+		else if (bankingTransaction.Amount < 0)
+		{
+			const string WithdrawalFromPrefix = "Withdrawal from ";
+			if (bankingTransaction.Memo.StartsWith(WithdrawalFromPrefix, StringComparison.OrdinalIgnoreCase) is true)
+			{
+				bankingTransaction.Payee = bankingTransaction.Memo.Substring(WithdrawalFromPrefix.Length);
+				bankingTransaction.Memo = null;
+			}
+			else if (CheckCashedPattern.Match(bankingTransaction.Memo) is { Success: true } match)
+			{
+				if (int.TryParse(match.Groups["checkNumber"].Value, out int checkNumber))
+				{
+					bankingTransaction.CheckNumber = checkNumber;
+					bankingTransaction.Memo = null;
+				}
+			}
 		}
 	}
 
