@@ -19,6 +19,7 @@
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
 		<converters:TypeToVisibilityConverter x:Key="typeToVisibilityConverter" />
 		<Style TargetType="{x:Type TextBox}">
+			<EventSetter Event="GotKeyboardFocus" Handler="TextBox_GotKeyboardFocus"/>
 			<Style.Triggers>
 				<Trigger Property="Validation.HasError" Value="True">
 					<Setter Property="Background" Value="Pink" />

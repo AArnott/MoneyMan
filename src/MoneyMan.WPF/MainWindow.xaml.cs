@@ -212,4 +212,13 @@ public partial class MainWindow : Window
 			}
 		}
 	}
+
+	private void TextBox_GotKeyboardFocus(object? sender, KeyboardFocusChangedEventArgs e)
+	{
+		if (sender is TextBox tb)
+		{
+			// This gives us the desired effect of selecting all text in a textbox when the user selects it.
+			_ = tb.Dispatcher.BeginInvoke(new Action(() => tb.SelectAll()));
+		}
+	}
 }
