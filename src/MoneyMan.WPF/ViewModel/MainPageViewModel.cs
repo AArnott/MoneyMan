@@ -21,7 +21,7 @@ public class MainPageViewModel : MainPageViewModelBase
 
 		if (this.Document is not null)
 		{
-			this.Document.UserNotification = new UserNotification(this.MainWindow);
+			this.Document.UserNotification = new UserNotification(this.MainWindow, documentViewModel);
 			this.Document.AssetsPanel.AddingNewAsset += this.AssetsPanel_AddingNewAsset;
 			this.Document.AccountsPanel.AddingNewAccount += this.AccountsPanel_AddingNewAccount;
 			this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;

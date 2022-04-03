@@ -48,6 +48,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
 		this.UndoCommand = new UndoCommandImpl(this);
+		this.ImportFileCommand = new ImportFileCommandImpl(this);
 	}
 
 	public enum SelectableViews
@@ -136,6 +137,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public CommandBase DeleteTransactionsCommand { get; }
 
 	public UICommandBase UndoCommand { get; }
+
+	public UICommandBase ImportFileCommand { get; }
 
 	public string DeleteCommandCaption => "_Delete";
 
@@ -490,6 +493,35 @@ public class DocumentViewModel : BindableBase, IDisposable
 			{
 				this.OnPropertyChanged(nameof(this.Caption));
 			}
+		}
+	}
+
+	private class ImportFileCommandImpl : UICommandBase
+	{
+		private DocumentViewModel documentViewModel;
+
+		public ImportFileCommandImpl(DocumentViewModel documentViewModel)
+		{
+			this.documentViewModel = documentViewModel;
+		}
+
+		public override string Caption => "Import";
+
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null && this.documentViewModel.AccountsPanel.Accounts.Count > 0;
+
+		protected override async Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
+		{
+			string? fileName = await this.documentViewModel.UserNotification!.PickFileAsync(
+				 "Select file to import",
+				 "Open Financial Exchange (*.qfx)|*.qfx|All files|*.*",
+				 cancellationToken);
+			if (fileName is null)
+			{
+				return;
+			}
+
+			OfxAdapter adapter = new(this.documentViewModel);
+			await adapter.ImportOfxAsync(fileName, cancellationToken);
 		}
 	}
 

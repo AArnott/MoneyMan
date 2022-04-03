@@ -4,7 +4,6 @@
 public class MoneyTestBase : TestBase
 {
 	private readonly Lazy<MoneyFile> money;
-	private Lazy<DocumentViewModel> documentViewModel;
 
 	public MoneyTestBase(ITestOutputHelper logger)
 		: base(logger)
@@ -15,22 +14,34 @@ public class MoneyTestBase : TestBase
 			result.Logger = new TestLoggerAdapter(this.Logger);
 			return result;
 		});
-		this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money, ownsMoneyFile: false) { UserNotification = this.UserNotification });
+		this.UserNotification = new UserNotificationMock(logger);
+		this.MainPageViewModel = new();
 	}
 
 	protected MoneyFile Money => this.money.Value;
 
-	protected DocumentViewModel DocumentViewModel => this.documentViewModel.Value;
+	protected MainPageViewModelBase MainPageViewModel { get; }
 
-	private protected UserNotificationMock UserNotification { get; } = new();
+	protected DocumentViewModel DocumentViewModel
+	{
+		get
+		{
+			if (this.MainPageViewModel.Document is null)
+			{
+				this.MainPageViewModel.Document = new DocumentViewModel(this.Money, ownsMoneyFile: false) { UserNotification = this.UserNotification };
+			}
+
+			return this.MainPageViewModel.Document;
+		}
+	}
+
+	private protected UserNotificationMock UserNotification { get; }
+
+	protected void LoadDocument() => _ = this.DocumentViewModel;
 
 	protected virtual void ReloadViewModel()
 	{
-		if (this.documentViewModel.IsValueCreated is true)
-		{
-			this.documentViewModel.Value.Dispose();
-			this.documentViewModel = new Lazy<DocumentViewModel>(() => new DocumentViewModel(this.Money, ownsMoneyFile: false));
-		}
+		this.MainPageViewModel.ReplaceViewModel(null);
 	}
 
 	protected void AssertNowAndAfterReload(Action assertions)
@@ -44,11 +55,7 @@ public class MoneyTestBase : TestBase
 	{
 		if (disposing)
 		{
-			if (this.documentViewModel.IsValueCreated)
-			{
-				this.documentViewModel.Value.Dispose();
-			}
-
+			this.MainPageViewModel.Document?.Dispose();
 			if (this.money.IsValueCreated)
 			{
 				this.Money.Dispose();

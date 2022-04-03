@@ -2,7 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using Validation;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -14,6 +13,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 	private string name = string.Empty;
 	private bool isClosed;
 	private Account.AccountType type;
+	private string? ofxBankId;
+	private string? ofxAcctId;
 
 	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(documentViewModel.MoneyFile, model)
@@ -56,6 +57,20 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 			Verify.Operation(this.type == value || this.IsEmpty, "Cannot change type of account when it contains transactions.");
 			this.SetProperty(ref this.type, value);
 		}
+	}
+
+	/// <inheritdoc cref="Account.OfxBankId"/>
+	public string? OfxBankId
+	{
+		get => this.ofxBankId;
+		set => this.SetProperty(ref this.ofxBankId, value);
+	}
+
+	/// <inheritdoc cref="Account.OfxAcctId"/>
+	public string? OfxAcctId
+	{
+		get => this.ofxAcctId;
+		set => this.SetProperty(ref this.ofxAcctId, value);
 	}
 
 	public bool TypeIsReadOnly => !this.IsEmpty;
@@ -227,6 +242,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 		this.Model.IsClosed = this.IsClosed;
 		this.Model.Type = this.Type;
 		this.Model.CurrencyAssetId = this.CurrencyAsset?.Id;
+		this.Model.OfxBankId = this.OfxBankId;
+		this.Model.OfxAcctId = this.OfxAcctId;
 	}
 
 	protected override void CopyFromCore()
@@ -244,6 +261,9 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 		{
 			this.Value = this.MoneyFile.GetValue(this.Model);
 		}
+
+		this.OfxBankId = this.Model.OfxBankId;
+		this.OfxAcctId = this.Model.OfxAcctId;
 	}
 
 	protected abstract TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails);

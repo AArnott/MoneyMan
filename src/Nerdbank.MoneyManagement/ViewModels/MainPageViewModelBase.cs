@@ -24,6 +24,8 @@ public class MainPageViewModelBase : BindableBase
 
 		this.RegisterDependentProperty(nameof(this.DownloadingUpdatePercentage), nameof(this.UpdateDownloading));
 		this.RegisterDependentProperty(nameof(this.Document), nameof(this.UndoCommand));
+		this.RegisterDependentProperty(nameof(this.Document), nameof(this.ImportFileCommand));
+		this.RegisterDependentProperty(nameof(this.Document), nameof(this.IsFileOpen));
 	}
 
 	public event EventHandler? FileClosed;
@@ -41,6 +43,8 @@ public class MainPageViewModelBase : BindableBase
 	public ICommand FileCloseCommand { get; }
 
 	public UICommandBase UndoCommand => this.Document?.UndoCommand ?? OutOfContextCommand.Instance;
+
+	public UICommandBase ImportFileCommand => this.Document?.ImportFileCommand ?? OutOfContextCommand.Instance;
 
 	public string StatusMessage
 	{
@@ -97,7 +101,6 @@ public class MainPageViewModelBase : BindableBase
 	{
 		this.Document?.Dispose();
 		this.Document = documentViewModel;
-		this.OnPropertyChanged(nameof(this.IsFileOpen));
 	}
 
 	private class SaveCommandImpl : UICommandBase

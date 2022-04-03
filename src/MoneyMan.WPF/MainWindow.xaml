@@ -53,6 +53,8 @@
 				<MenuItem Header="_Open" Command="ApplicationCommands.Open" />
 				<MenuItem DataContext="{Binding FileSaveCommand}" Header="{Binding Caption}" Command="{Binding}" InputGestureText="{Binding InputGestureText}" Visibility="{Binding Visible, Converter={StaticResource boolToVisibilityConverter}}" />
 				<MenuItem DataContext="{Binding FileCloseCommand}" Header="{Binding Caption}" Command="{Binding}" Visibility="{Binding Visible, Converter={StaticResource boolToVisibilityConverter}}" />
+				<Separator Visibility="{Binding ImportFileCommand.Visible, Converter={StaticResource boolToVisibilityConverter}}" />
+				<MenuItem DataContext="{Binding ImportFileCommand}" Header="{Binding Caption}" Command="{Binding}" Visibility="{Binding Visible, Converter={StaticResource boolToVisibilityConverter}}" />
 			</MenuItem>
 		</Menu>
 		<ToolBarTray DockPanel.Dock="Top">
