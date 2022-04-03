@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public class AssetPriceViewModel : EntityViewModel<AssetPrice>
+public class AssetPriceViewModel : EntityViewModel<AssetPrice>, ISelectableView
 {
 	private readonly DocumentViewModel documentViewModel;
 	private DateTime when;
@@ -50,6 +50,13 @@ public class AssetPriceViewModel : EntityViewModel<AssetPrice>
 	}
 
 	public string? PriceFormatted => this.documentViewModel.DefaultCurrency?.Format(this.Price);
+
+	void ISelectableView.Select()
+	{
+		this.documentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Assets;
+		this.documentViewModel.AssetsPanel.SelectedAsset = this.documentViewModel.GetAsset(this.Asset?.Id);
+		this.documentViewModel.AssetsPanel.SelectedAssetPrice = this.documentViewModel.AssetsPanel.AssetPrices.FirstOrDefault(ap => ap.When == this.When);
+	}
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{

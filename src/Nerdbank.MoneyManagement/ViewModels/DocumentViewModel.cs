@@ -343,41 +343,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
-	/// <summary>
-	/// Makes a best effort to select a given entity in the app.
-	/// </summary>
-	/// <param name="viewModel">The model to select.</param>
-	private void Select(EntityViewModel viewModel)
-	{
-		// Never use the view model we're given except to extract its ID, because it may be a view model from a deleted and resurrected entity,
-		// and therefore a new view model exists to represent it.
-		switch (viewModel)
-		{
-			case TransactionViewModel transaction:
-				this.SelectedViewIndex = SelectableViews.Banking;
-				this.BankingPanel.SelectedAccount = this.BankingPanel.FindAccount(transaction.ThisAccount.Id);
-				this.SelectedTransaction = this.BankingPanel.SelectedAccount?.FindTransaction(transaction.TransactionId);
-				break;
-			case AccountViewModel category when category.Type == Account.AccountType.Category:
-				this.SelectedViewIndex = SelectableViews.Categories;
-				this.CategoriesPanel.SelectedCategory = this.CategoriesPanel.FindCategory(category.Id);
-				break;
-			case AccountViewModel account:
-				this.SelectedViewIndex = SelectableViews.Accounts;
-				this.AccountsPanel.SelectedAccount = this.AccountsPanel.FindAccount(account.Id);
-				break;
-			case AssetViewModel asset:
-				this.SelectedViewIndex = SelectableViews.Assets;
-				this.AssetsPanel.SelectedAsset = this.AssetsPanel.FindAsset(asset.Id);
-				break;
-			case AssetPriceViewModel assetPrice:
-				this.SelectedViewIndex = SelectableViews.Assets;
-				this.AssetsPanel.SelectedAsset = this.GetAsset(assetPrice.Asset?.Id);
-				this.AssetsPanel.SelectedAssetPrice = this.AssetsPanel.AssetPrices.FirstOrDefault(ap => ap.When == assetPrice.When);
-				break;
-		}
-	}
-
 	private abstract class SelectedTransactionCommandBase : CommandBase
 	{
 		private INotifyCollectionChanged? subscribedSelectedTransactions;
@@ -512,13 +477,9 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
-			EntityViewModel? model = this.documentViewModel.MoneyFile.Undo();
+			ISelectableView? viewModel = this.documentViewModel.MoneyFile.Undo();
 			this.documentViewModel.Reset();
-			if (model is object)
-			{
-				this.documentViewModel.Select(model);
-			}
-
+			viewModel?.Select();
 			return Task.CompletedTask;
 		}
 

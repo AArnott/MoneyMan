@@ -113,7 +113,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 		if (!this.MoneyFile.IsDisposed)
 		{
 			bool wasPersisted = this.IsPersisted;
-			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this);
+			using IDisposable? transaction = this.MoneyFile.UndoableTransaction((this.IsPersisted ? "Update" : "Add") + $" {this.GetType().Name}", this as ISelectableView);
 
 			this.SaveCore();
 

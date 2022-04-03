@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class CategoryAccountViewModel : AccountViewModel
+public class CategoryAccountViewModel : AccountViewModel, ISelectableView
 {
 	public CategoryAccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(model ?? new Account { Type = Account.AccountType.Category }, documentViewModel)
@@ -30,6 +30,12 @@ public class CategoryAccountViewModel : AccountViewModel
 	public override TransactionViewModel? FindTransaction(int? id)
 	{
 		throw new NotImplementedException();
+	}
+
+	void ISelectableView.Select()
+	{
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Categories;
+		this.DocumentViewModel.CategoriesPanel.SelectedCategory = this.DocumentViewModel.CategoriesPanel.FindCategory(this.Id);
 	}
 
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)

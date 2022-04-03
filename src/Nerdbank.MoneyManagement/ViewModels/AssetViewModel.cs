@@ -11,9 +11,9 @@ using Microsoft;
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class AssetViewModel : EntityViewModel<Asset>
+public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 {
-	private readonly DocumentViewModel? documentViewModel;
+	private readonly DocumentViewModel documentViewModel;
 	private string name = string.Empty;
 	private string tickerSymbol = string.Empty;
 	private Asset.AssetType type;
@@ -147,6 +147,12 @@ public class AssetViewModel : EntityViewModel<Asset>
 
 	[return: NotNullIfNotNull("value")]
 	public string? Format(decimal? value) => value?.ToString(this.Type == Asset.AssetType.Currency ? "C" : "N", this.NumberFormat);
+
+	void ISelectableView.Select()
+	{
+		this.documentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Assets;
+		this.documentViewModel.AssetsPanel.SelectedAsset = this.documentViewModel.AssetsPanel.FindAsset(this.Id);
+	}
 
 	internal void NotifyUseChange()
 	{
