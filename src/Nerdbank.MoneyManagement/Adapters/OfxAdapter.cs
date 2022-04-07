@@ -7,9 +7,9 @@ using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
 using OfxNet;
 
-namespace Nerdbank.MoneyManagement;
+namespace Nerdbank.MoneyManagement.Adapters;
 
-public class OfxAdapter
+public class OfxAdapter : IFileAdapter
 {
 	private static readonly Regex CheckCashedPattern = new(@"^Check #(?<checkNumber>\d+) Cashed$", RegexOptions.Compiled);
 	private static readonly Regex ZelleMoneyReturnedPattern = new(@"^(?<memo>Zelle money returned) from (?<payee>.+)$", RegexOptions.Compiled);
@@ -26,26 +26,26 @@ public class OfxAdapter
 		this.documentViewModel = documentViewModel;
 	}
 
-	/// <summary>
-	/// Imports an OFX file.
-	/// </summary>
-	/// <param name="ofxFilePath">The path to the OFX file.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	/// <returns>The number of statements that were imported successfully.</returns>
-	public async Task<int> ImportOfxAsync(string ofxFilePath, CancellationToken cancellationToken)
+	public IReadOnlyList<AdapterFileType> FileTypes { get; } = new AdapterFileType[]
 	{
-		Requires.NotNullOrEmpty(ofxFilePath, nameof(ofxFilePath));
+		new("Open Financial Exchange", new[] { "ofx" }),
+		new("Quicken Financial Exchange", new[] { "qfx" }),
+	};
+
+	public async Task<int> ImportAsync(string filePath, CancellationToken cancellationToken)
+	{
+		Requires.NotNullOrEmpty(filePath, nameof(filePath));
 
 		cancellationToken.ThrowIfCancellationRequested();
-		OfxDocument ofx = OfxDocument.Load(ofxFilePath);
-		int convertedStatementsCount = 0;
+		var ofx = OfxDocument.Load(filePath);
+		var importedTransactionsCount = 0;
 		IDisposable? batchImportTransaction = null;
 		try
 		{
 			foreach (OfxStatement? statement in ofx.GetStatements())
 			{
 				cancellationToken.ThrowIfCancellationRequested();
-				OfxBankStatement? bankStatement = statement as OfxBankStatement;
+				var bankStatement = statement as OfxBankStatement;
 				AccountViewModel? account = await this.FindMatchingAccountAsync(bankStatement?.Account, cancellationToken);
 
 				if (account is null)
@@ -69,7 +69,7 @@ public class OfxAdapter
 					}
 				}
 
-				batchImportTransaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Import {Path.GetFileNameWithoutExtension(ofxFilePath)}", account.BankingViewSelection);
+				batchImportTransaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Import {Path.GetFileNameWithoutExtension(filePath)}", account.BankingViewSelection);
 				if (account is BankingAccountViewModel bankingAccount)
 				{
 					foreach (OfxStatementTransaction transaction in statement.TransactionList.Transactions)
@@ -96,6 +96,7 @@ public class OfxAdapter
 							}
 
 							// Eventually we should apply any corrections from the bank.
+							importedTransactionsCount++;
 							continue;
 						}
 
@@ -114,6 +115,7 @@ public class OfxAdapter
 						bankingTransaction.Cleared = ClearedState.Cleared;
 
 						AdjustTransaction(bankingTransaction);
+						importedTransactionsCount++;
 					}
 				}
 				else
@@ -121,11 +123,9 @@ public class OfxAdapter
 					// Unsupported account type.
 					continue;
 				}
-
-				convertedStatementsCount++;
 			}
 
-			return convertedStatementsCount;
+			return importedTransactionsCount;
 		}
 		finally
 		{
@@ -164,7 +164,7 @@ public class OfxAdapter
 			}
 			else if (CheckCashedPattern.Match(bankingTransaction.Memo) is { Success: true } match)
 			{
-				if (int.TryParse(match.Groups["checkNumber"].Value, out int checkNumber))
+				if (int.TryParse(match.Groups["checkNumber"].Value, out var checkNumber))
 				{
 					bankingTransaction.CheckNumber = checkNumber;
 					bankingTransaction.Memo = null;

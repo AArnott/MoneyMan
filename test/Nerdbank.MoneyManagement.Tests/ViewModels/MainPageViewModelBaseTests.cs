@@ -43,7 +43,11 @@ public class MainPageViewModelBaseTests : MoneyTestBase
 		Assert.False(this.MainPageViewModel.ImportFileCommand.CanExecute());
 		Assert.True(this.MainPageViewModel.ImportFileCommand.Visible);
 
-		this.DocumentViewModel.AccountsPanel.NewAccount(Account.AccountType.Banking, "Checking");
+		var account = this.DocumentViewModel.AccountsPanel.NewAccount(Account.AccountType.Banking, "Checking");
+		Assert.False(this.MainPageViewModel.ImportFileCommand.CanExecute());
+		Assert.True(this.MainPageViewModel.ImportFileCommand.Visible);
+
+		this.DocumentViewModel.BankingPanel.SelectedAccount = account;
 		Assert.True(this.MainPageViewModel.ImportFileCommand.CanExecute());
 		Assert.True(this.MainPageViewModel.ImportFileCommand.Visible);
 	}

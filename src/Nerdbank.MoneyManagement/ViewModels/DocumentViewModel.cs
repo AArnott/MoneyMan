@@ -6,7 +6,9 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Microsoft;
+using Nerdbank.MoneyManagement.Adapters;
 using PCLCommandBase;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -503,25 +505,110 @@ public class DocumentViewModel : BindableBase, IDisposable
 		public ImportFileCommandImpl(DocumentViewModel documentViewModel)
 		{
 			this.documentViewModel = documentViewModel;
+			documentViewModel.BankingPanel.PropertyChanged += this.BankingPanel_PropertyChanged;
 		}
 
 		public override string Caption => "Import";
 
-		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null && this.documentViewModel.AccountsPanel.Accounts.Count > 0;
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null && this.documentViewModel.BankingPanel.SelectedAccount is not null;
 
 		protected override async Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
+			var adapters = new IFileAdapter[]
+			{
+				new OfxAdapter(this.documentViewModel),
+				new QifAdapter(this.documentViewModel),
+			};
+
+			Dictionary<string, IFileAdapter> adaptersByFileExtension = new(StringComparer.OrdinalIgnoreCase);
+			StringBuilder filterBuilder = new();
+			int filterCounter = 0;
+			foreach (IFileAdapter adapter in adapters)
+			{
+				foreach (AdapterFileType fileType in adapter.FileTypes)
+				{
+					filterBuilder.Append($"{fileType.DisplayName}");
+					bool firstExtension = true;
+					int extensionCount = 0;
+					foreach (string extension in fileType.FileExtensions)
+					{
+						adaptersByFileExtension.TryAdd(extension, adapter);
+						extensionCount++;
+						if (firstExtension)
+						{
+							filterBuilder.Append(" (");
+						}
+						else
+						{
+							filterBuilder.Append(", ");
+						}
+
+						filterBuilder.Append($"*.{extension}");
+					}
+
+					if (extensionCount > 0)
+					{
+						filterBuilder.Append(")");
+					}
+
+					filterBuilder.Append("|");
+					foreach (string extension in fileType.FileExtensions)
+					{
+						filterBuilder.Append($"*.{extension};");
+					}
+
+					if (extensionCount > 0)
+					{
+						filterBuilder.Length--;
+					}
+
+					filterCounter++;
+					filterBuilder.Append('|');
+				}
+			}
+
+			if (adaptersByFileExtension.Count > 0)
+			{
+				filterBuilder.Append("All supported files|");
+				foreach (string extension in adaptersByFileExtension.Keys)
+				{
+					filterBuilder.Append($"*.{extension};");
+				}
+
+				filterBuilder.Length--;
+				filterBuilder.Append('|');
+				filterCounter++;
+			}
+
+			filterBuilder.Append("All files|*.*");
+			filterCounter++;
+
 			string? fileName = await this.documentViewModel.UserNotification!.PickFileAsync(
 				 "Select file to import",
-				 "Open Financial Exchange (*.qfx)|*.qfx|All files|*.*",
+				 filterBuilder.ToString(),
+				 Math.Max(0, filterCounter - 1), // Select the second-to-last one (all supported formats)
 				 cancellationToken);
 			if (fileName is null)
 			{
 				return;
 			}
 
-			OfxAdapter adapter = new(this.documentViewModel);
-			await adapter.ImportOfxAsync(fileName, cancellationToken);
+			if (adaptersByFileExtension.TryGetValue(Path.GetExtension(fileName).Substring(1), out IFileAdapter? selectedAdapter))
+			{
+				await selectedAdapter.ImportAsync(fileName, cancellationToken);
+			}
+			else
+			{
+				await this.documentViewModel.UserNotification.NotifyAsync("Unsupported file type.", cancellationToken);
+			}
+		}
+
+		private void BankingPanel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == nameof(BankingPanelViewModel.SelectedAccount))
+			{
+				this.OnCanExecuteChanged();
+			}
 		}
 	}
 
