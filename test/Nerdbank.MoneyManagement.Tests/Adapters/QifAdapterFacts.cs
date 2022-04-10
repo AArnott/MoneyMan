@@ -6,6 +6,7 @@ using Nerdbank.MoneyManagement.Adapters;
 public class QifAdapterFacts : AdapterTestBase
 {
 	private const string Simple1DataFileName = "Simple1.qif";
+	private const string CategoriesDataFileName = "categories.qif";
 	private QifAdapter adapter;
 
 	public QifAdapterFacts(ITestOutputHelper logger)
@@ -22,7 +23,7 @@ public class QifAdapterFacts : AdapterTestBase
 	}
 
 	[Fact]
-	public async Task ImportAsync()
+	public async Task ImportTransactions()
 	{
 		int chooseAccountFuncInvocationCount = 0;
 		this.UserNotification.ChooseAccountFunc = (string prompt, AccountViewModel? defaultAccount, CancellationToken cancellationToken) =>
@@ -30,10 +31,10 @@ public class QifAdapterFacts : AdapterTestBase
 			chooseAccountFuncInvocationCount++;
 			return Task.FromResult<AccountViewModel?>(this.Checking);
 		};
-		int result = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		int count = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
 		Assert.Equal(1, chooseAccountFuncInvocationCount);
-		Assert.Equal(3, result);
-		Assert.Equal(result, this.Checking.Transactions.Count(t => t.IsPersisted));
+		Assert.Equal(3, count);
+		Assert.Equal(count, this.Checking.Transactions.Count(t => t.IsPersisted));
 
 		BankingTransactionViewModel tx1 = this.Checking.Transactions[0];
 		Assert.Equal(ExpectedDateTime(2022, 3, 24), tx1.When);
@@ -57,6 +58,24 @@ public class QifAdapterFacts : AdapterTestBase
 		Assert.Equal(ClearedState.None, tx3.Cleared);
 
 		static DateTime ExpectedDateTime(int year, int month, int day) => new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Local);
+	}
+
+	[Fact]
+	public async Task ImportCategories()
+	{
+		int count = await this.adapter.ImportAsync(this.GetTestDataFile(CategoriesDataFileName), this.TimeoutToken);
+		Assert.Equal(3, count);
+
+		Assert.Equal(3, this.DocumentViewModel.CategoriesPanel.Categories.Count);
+		Assert.Equal("Bonus", this.DocumentViewModel.CategoriesPanel.Categories[0].Name);
+		Assert.Equal("Citi Cards Credit Card", this.DocumentViewModel.CategoriesPanel.Categories[1].Name);
+		Assert.Equal("Consulting", this.DocumentViewModel.CategoriesPanel.Categories[2].Name);
+
+		// Delete a category and re-import to see if it will import just the missing one.
+		this.DocumentViewModel.CategoriesPanel.DeleteCategory(this.DocumentViewModel.CategoriesPanel.Categories[1]);
+		count = await this.adapter.ImportAsync(this.GetTestDataFile(CategoriesDataFileName), this.TimeoutToken);
+		Assert.Equal(1, count);
+		Assert.Equal("Citi Cards Credit Card", this.DocumentViewModel.CategoriesPanel.Categories[1].Name);
 	}
 
 	protected override void RefetchViewModels()

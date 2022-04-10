@@ -199,15 +199,17 @@ public class DocumentViewModel : BindableBase, IDisposable
 	[return: NotNullIfNotNull("accountId")]
 	public AccountViewModel? GetAccount(int? accountId) => accountId is null ? null : this.GetAccount(accountId.Value);
 
-	public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
+	public AccountViewModel GetAccount(int accountId) => this.BankingPanel.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
 
 	[return: NotNullIfNotNull("assetId")]
 	public AssetViewModel? GetAsset(int? assetId) => assetId is null ? null : this.AssetsPanel.FindAsset(assetId.Value);
 
-	public CategoryAccountViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
+	public CategoryAccountViewModel GetCategory(int categoryId) => this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
 
 	[return: NotNullIfNotNull("categoryId")]
 	public CategoryAccountViewModel? GetCategory(int? categoryId) => categoryId is null ? null : this.GetCategory(categoryId.Value);
+
+	public CategoryAccountViewModel? FindCategory(string name) => this.GetCategory(this.MoneyFile.Categories.FirstOrDefault(cat => cat.Name == name)?.Id);
 
 	public void Save() => this.MoneyFile.Save();
 

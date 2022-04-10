@@ -30,18 +30,29 @@ public class QifAdapter : IFileAdapter
 		Requires.NotNullOrEmpty(filePath, nameof(filePath));
 		using FileStream file = File.OpenRead(filePath);
 		var document = QifDocument.Load(file);
+		int records = 0;
+
+		foreach (CategoryListTransaction category in document.CategoryListTransactions)
+		{
+			CategoryAccountViewModel? viewModel = this.documentViewModel.FindCategory(category.CategoryName);
+			if (viewModel is null)
+			{
+				viewModel = this.documentViewModel.CategoriesPanel.NewCategory(category.CategoryName);
+				records++;
+			}
+		}
 
 		if (this.documentViewModel.UserNotification is null)
 		{
 			// Unable to ask the user to confirm the account to import into.
-			return 0;
+			return records;
 		}
 
 		StringBuilder prompt = new("Which account should this statement be imported into?");
 		AccountViewModel? account = await this.documentViewModel.UserNotification.ChooseAccountAsync(prompt.ToString(), null, cancellationToken);
 		if (account is not BankingAccountViewModel bankingAccount)
 		{
-			return 0;
+			return records;
 		}
 
 		int transactionsImported = 0;
