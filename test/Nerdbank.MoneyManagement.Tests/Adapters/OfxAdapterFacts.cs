@@ -34,7 +34,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 	[Fact]
 	public async Task ImportAsync_NoMatch()
 	{
-		int result = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		int result = await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(0, result);
 	}
 
@@ -47,7 +47,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 			chooseAccountFuncInvocationCount++;
 			return Task.FromResult<AccountViewModel?>(this.Checking);
 		};
-		int result = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		int result = await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(1, chooseAccountFuncInvocationCount);
 		Assert.Equal(3, result);
 
@@ -55,7 +55,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 		Assert.Equal("031176110", this.Checking.OfxBankId);
 
 		// Verify that the second time we import a file for this account, we don't need to ask the user which account to use.
-		result = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		result = await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(1, chooseAccountFuncInvocationCount);
 		Assert.Equal(0, result);
 	}
@@ -64,7 +64,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 	public async Task ImportAsync_BringsInTransactions()
 	{
 		this.UserNotification.ChooseAccountResult = this.Checking;
-		int result = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		int result = await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(3, result);
 
 		Assert.Equal(3, this.Checking.Transactions.Count(t => t.IsPersisted));
@@ -101,7 +101,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 	public async Task ImportAsync_DeDupesTransactions(bool acrossSessions)
 	{
 		this.UserNotification.ChooseAccountResult = this.Checking;
-		await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(3, this.Checking.Transactions.Count(t => t.IsPersisted));
 
 		if (acrossSessions)
@@ -111,7 +111,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 		}
 
 		this.Checking.DeleteTransaction(this.Checking.Transactions[2]);
-		await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(3, this.Checking.Transactions.Count(t => t.IsPersisted));
 	}
 
@@ -119,7 +119,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 	public async Task ImportOfx_UndoEntireBatch()
 	{
 		this.UserNotification.ChooseAccountResult = this.Checking;
-		int result = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		int result = await this.ImportAsync(Simple1DataFileName);
 
 		Assert.Equal(3, this.Checking.Transactions.Count(t => t.IsPersisted));
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
@@ -136,7 +136,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 	public async Task MemoProcessing()
 	{
 		this.UserNotification.ChooseAccountResult = this.Checking;
-		await this.adapter.ImportAsync(this.GetTestDataFile(CapitalOneRealMemosDataFileName), this.TimeoutToken);
+		await this.ImportAsync(CapitalOneRealMemosDataFileName);
 
 		BankingTransactionViewModel greenlightWithdrawal = this.Checking.Transactions.Single(tx => tx.Amount == -13.94m);
 		Assert.Equal("GREENLIGHT APP", greenlightWithdrawal.Payee);

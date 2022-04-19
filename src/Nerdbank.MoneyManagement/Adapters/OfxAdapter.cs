@@ -13,6 +13,8 @@ public class OfxAdapter : IFileAdapter
 {
 	private static readonly Regex CheckCashedPattern = new(@"^Check #(?<checkNumber>\d+) Cashed$", RegexOptions.Compiled);
 	private static readonly Regex ZelleMoneyReturnedPattern = new(@"^(?<memo>Zelle money returned) from (?<payee>.+)$", RegexOptions.Compiled);
+	private readonly MoneyFile moneyFile;
+	private readonly IUserNotification? userNotification;
 	private readonly DocumentViewModel documentViewModel;
 
 	/// <summary>
@@ -23,6 +25,8 @@ public class OfxAdapter : IFileAdapter
 	{
 		Requires.NotNull(documentViewModel, nameof(documentViewModel));
 
+		this.moneyFile = documentViewModel.MoneyFile;
+		this.userNotification = documentViewModel.UserNotification;
 		this.documentViewModel = documentViewModel;
 	}
 
@@ -42,15 +46,17 @@ public class OfxAdapter : IFileAdapter
 		IDisposable? batchImportTransaction = null;
 		try
 		{
+			List<Transaction> newTransactions = new();
+			List<(Transaction, TransactionEntry)> newEntryTuples = new();
 			foreach (OfxStatement? statement in ofx.GetStatements())
 			{
 				cancellationToken.ThrowIfCancellationRequested();
 				var bankStatement = statement as OfxBankStatement;
-				AccountViewModel? account = await this.FindMatchingAccountAsync(bankStatement?.Account, cancellationToken);
+				Account? account = await this.FindMatchingAccountAsync(bankStatement?.Account, cancellationToken);
 
 				if (account is null)
 				{
-					if (this.documentViewModel.UserNotification is null)
+					if (this.userNotification is null)
 					{
 						// Unable to ask the user to confirm the account to import into.
 						continue;
@@ -62,19 +68,20 @@ public class OfxAdapter : IFileAdapter
 						prompt.Append($" (Bank routing # {bankStatement.Account.AccountNumber}, {bankStatement.Account.AccountType} account # {bankStatement.Account.AccountNumber})");
 					}
 
-					account = await this.documentViewModel.UserNotification.ChooseAccountAsync(prompt.ToString(), account, cancellationToken);
+					account = await this.userNotification.ChooseAccountAsync(prompt.ToString(), null, cancellationToken);
 					if (account is null)
 					{
 						continue;
 					}
 				}
 
-				batchImportTransaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Import {Path.GetFileNameWithoutExtension(filePath)}", account.BankingViewSelection);
-				if (account is BankingAccountViewModel bankingAccount)
+				batchImportTransaction = this.moneyFile.UndoableTransaction($"Import transactions from {Path.GetFileNameWithoutExtension(filePath)}", this.documentViewModel.GetAccount(account.Id).BankingViewSelection);
+				if (account is { Type: Account.AccountType.Banking } bankingAccount)
 				{
 					foreach (OfxStatementTransaction transaction in statement.TransactionList.Transactions)
 					{
-						if (bankingAccount.FindTransactionEntryByFitId(transaction.FitId) is TransactionEntryViewModel existingEntry)
+						TransactionEntry existingEntry = this.moneyFile.TransactionEntries.FirstOrDefault(e => e.OfxFitId == transaction.FitId);
+						if (existingEntry is not null)
 						{
 							if (existingEntry.Cleared == ClearedState.None)
 							{
@@ -85,7 +92,8 @@ public class OfxAdapter : IFileAdapter
 							continue;
 						}
 
-						if (!string.IsNullOrWhiteSpace(transaction.CorrectFitId) && bankingAccount.FindTransactionEntryByFitId(transaction.CorrectFitId) is TransactionEntryViewModel entryInError)
+						TransactionEntry entryInError = this.moneyFile.TransactionEntries.FirstOrDefault(e => e.OfxFitId == transaction.CorrectFitId);
+						if (!string.IsNullOrWhiteSpace(transaction.CorrectFitId) && entryInError is not null)
 						{
 							// We must update a previously downloaded entry.
 							entryInError.OfxFitId = transaction.FitId;
@@ -97,24 +105,34 @@ public class OfxAdapter : IFileAdapter
 
 							// Eventually we should apply any corrections from the bank.
 							importedTransactionsCount++;
+							this.moneyFile.Update(entryInError);
 							continue;
 						}
 
 						// This is a new transaction. Import it.
-						BankingTransactionViewModel bankingTransaction = bankingAccount.NewTransaction();
-						bankingTransaction.Memo = transaction.Memo; // Memo2?
+						Transaction bankingTransaction = new()
+						{
+							Memo = transaction.Memo, // Memo2?
+							Payee = transaction.Payee?.Name,
+							When = transaction.DatePosted.LocalDateTime.Date,
+						};
 						if (!string.IsNullOrWhiteSpace(transaction.Memo2))
 						{
 							bankingTransaction.Memo += $" {transaction.Memo2}";
 						}
 
-						bankingTransaction.Payee = transaction.Payee?.Name;
-						bankingTransaction.When = transaction.DatePosted.LocalDateTime.Date;
-						bankingTransaction.Amount = transaction.Amount;
-						bankingTransaction.Entries[0].OfxFitId = transaction.FitId;
-						bankingTransaction.Cleared = ClearedState.Cleared;
+						TransactionEntry entry = new()
+						{
+							AccountId = account.Id,
+							AssetId = this.moneyFile.PreferredAssetId,
+							Amount = transaction.Amount,
+							OfxFitId = transaction.FitId,
+							Cleared = ClearedState.Cleared,
+						};
 
-						AdjustTransaction(bankingTransaction);
+						AdjustTransaction(bankingTransaction, entry);
+						newTransactions.Add(bankingTransaction);
+						newEntryTuples.Add((bankingTransaction, entry));
 						importedTransactionsCount++;
 					}
 				}
@@ -125,6 +143,16 @@ public class OfxAdapter : IFileAdapter
 				}
 			}
 
+			this.moneyFile.InsertAll(newTransactions);
+			List<TransactionEntry> newEntries = new(newEntryTuples.Count);
+			foreach ((Transaction, TransactionEntry) item in newEntryTuples)
+			{
+				item.Item2.TransactionId = item.Item1.Id;
+				newEntries.Add(item.Item2);
+			}
+
+			this.moneyFile.InsertAll(newEntries);
+
 			return importedTransactionsCount;
 		}
 		finally
@@ -133,80 +161,83 @@ public class OfxAdapter : IFileAdapter
 		}
 	}
 
-	private static void AdjustTransaction(BankingTransactionViewModel bankingTransaction)
+	private static void AdjustTransaction(Transaction transaction, TransactionEntry ownEntry)
 	{
-		if (bankingTransaction.Memo is null)
+		if (transaction.Memo is null)
 		{
 			return;
 		}
 
 		const string DepositFromPrefix = "Deposit from ";
-		if (bankingTransaction.Amount > 0)
+		if (ownEntry.Amount > 0)
 		{
-			if (bankingTransaction.Memo.StartsWith(DepositFromPrefix, StringComparison.OrdinalIgnoreCase))
+			if (transaction.Memo.StartsWith(DepositFromPrefix, StringComparison.OrdinalIgnoreCase))
 			{
-				bankingTransaction.Payee = bankingTransaction.Memo.Substring(DepositFromPrefix.Length);
-				bankingTransaction.Memo = null;
+				transaction.Payee = transaction.Memo.Substring(DepositFromPrefix.Length);
+				transaction.Memo = null;
 			}
-			else if (ZelleMoneyReturnedPattern.Match(bankingTransaction.Memo) is { Success: true } match)
+			else if (ZelleMoneyReturnedPattern.Match(transaction.Memo) is { Success: true } match)
 			{
-				bankingTransaction.Payee = match.Groups["payee"].Value;
-				bankingTransaction.Memo = match.Groups["memo"].Value;
+				transaction.Payee = match.Groups["payee"].Value;
+				transaction.Memo = match.Groups["memo"].Value;
 			}
 		}
-		else if (bankingTransaction.Amount < 0)
+		else if (ownEntry.Amount < 0)
 		{
 			const string WithdrawalFromPrefix = "Withdrawal from ";
-			if (bankingTransaction.Memo.StartsWith(WithdrawalFromPrefix, StringComparison.OrdinalIgnoreCase) is true)
+			if (transaction.Memo.StartsWith(WithdrawalFromPrefix, StringComparison.OrdinalIgnoreCase) is true)
 			{
-				bankingTransaction.Payee = bankingTransaction.Memo.Substring(WithdrawalFromPrefix.Length);
-				bankingTransaction.Memo = null;
+				transaction.Payee = transaction.Memo.Substring(WithdrawalFromPrefix.Length);
+				transaction.Memo = null;
 			}
-			else if (CheckCashedPattern.Match(bankingTransaction.Memo) is { Success: true } match)
+			else if (CheckCashedPattern.Match(transaction.Memo) is { Success: true } match)
 			{
 				if (int.TryParse(match.Groups["checkNumber"].Value, out var checkNumber))
 				{
-					bankingTransaction.CheckNumber = checkNumber;
-					bankingTransaction.Memo = null;
+					transaction.CheckNumber = checkNumber;
+					transaction.Memo = null;
 				}
 			}
 		}
 	}
 
-	private async ValueTask<AccountViewModel?> FindMatchingAccountAsync(OfxBankAccount? account, CancellationToken cancellationToken)
+	private async ValueTask<Account?> FindMatchingAccountAsync(OfxBankAccount? ofxAccount, CancellationToken cancellationToken)
 	{
-		AccountViewModel? viewModel = account is null ? null : this.documentViewModel.AccountsPanel.Accounts.FirstOrDefault(acct =>
-			acct.OfxBankId == account.BankId && acct.OfxAcctId == account.AccountNumber);
-		if (viewModel is not null)
+		Account? account = ofxAccount is null ? null : this.moneyFile.Accounts.FirstOrDefault(acct =>
+			acct.OfxBankId == ofxAccount.BankId && acct.OfxAcctId == ofxAccount.AccountNumber);
+		if (account is not null)
 		{
 			// We're highly confident about the match. Go for it.
-			return viewModel;
+			return account;
 		}
 
-		if (this.documentViewModel.UserNotification is not null)
+		if (this.userNotification is not null)
 		{
 			StringBuilder prompt = new("Which account should this statement be imported into?");
-			if (account is not null)
+			if (ofxAccount is not null)
 			{
-				prompt.Append($" (Bank routing # \"{account.AccountNumber}\", \"{account.AccountType}\" account # \"{account.AccountNumber}\")");
+				prompt.Append($" (Bank routing # \"{ofxAccount.AccountNumber}\", \"{ofxAccount.AccountType}\" account # \"{ofxAccount.AccountNumber}\")");
 			}
 
-			viewModel = await this.documentViewModel.UserNotification.ChooseAccountAsync(prompt.ToString(), viewModel, cancellationToken);
-			if (viewModel is not null && account is not null)
+			AccountViewModel? accountViewModel = await this.userNotification.ChooseAccountAsync(prompt.ToString(), null, cancellationToken);
+			if (accountViewModel is not null && ofxAccount is not null)
 			{
+				account = accountViewModel.Model;
+
 				// Do what we can to remember user selection for next time.
-				if (!string.IsNullOrWhiteSpace(account.BankId))
+				if (!string.IsNullOrWhiteSpace(ofxAccount.BankId))
 				{
-					viewModel.OfxBankId = account.BankId;
+					account.OfxBankId = ofxAccount.BankId;
 				}
 
-				if (!string.IsNullOrWhiteSpace(account.AccountNumber))
+				if (!string.IsNullOrWhiteSpace(ofxAccount.AccountNumber))
 				{
-					viewModel.OfxAcctId = account.AccountNumber;
+					account.OfxAcctId = ofxAccount.AccountNumber;
+					this.moneyFile.Update(account);
 				}
 			}
 		}
 
-		return viewModel;
+		return account;
 	}
 }

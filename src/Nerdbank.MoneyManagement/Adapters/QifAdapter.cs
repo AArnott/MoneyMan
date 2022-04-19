@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata;
 using System.Text;
 using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
@@ -35,6 +33,7 @@ public class QifAdapter : IFileAdapter
 	{
 		Requires.NotNullOrEmpty(filePath, nameof(filePath));
 
+		IDisposable? batchImportTransaction = null;
 		try
 		{
 			this.importingDocument = QifDocument.Load(filePath);
@@ -55,15 +54,19 @@ public class QifAdapter : IFileAdapter
 				AccountViewModel? account = await this.userNotification.ChooseAccountAsync(prompt.ToString(), null, cancellationToken);
 				if (account is BankingAccountViewModel bankingAccount)
 				{
+					batchImportTransaction = this.moneyFile.UndoableTransaction($"Import transactions from {Path.GetFileNameWithoutExtension(filePath)}", null);
 					records += this.ImportTransactions(bankingAccount, this.importingDocument.Transactions.OfType<BankTransaction>());
 				}
 				else if (account is InvestingAccountViewModel investmentAccount)
 				{
+					batchImportTransaction = this.moneyFile.UndoableTransaction($"Import transactions from {Path.GetFileNameWithoutExtension(filePath)}", null);
 					records += this.ImportTransactions(investmentAccount, this.importingDocument.Transactions.OfType<InvestmentTransaction>());
 				}
 			}
 			else if (this.importingDocument.Transactions.Count == 0 && this.importingDocument.Accounts.Count > 0)
 			{
+				batchImportTransaction = this.moneyFile.UndoableTransaction($"Import accounts from {Path.GetFileNameWithoutExtension(filePath)}", null);
+
 				// We're importing a file that contains accounts, which may each contain transactions.
 				// First, import all accounts so that later we can create transfers.
 				foreach (Qif.Account importingAccount in this.importingDocument.Accounts)
@@ -98,6 +101,7 @@ public class QifAdapter : IFileAdapter
 			else if (this.importingDocument.Categories.Count > 0)
 			{
 				// Just import all the categories.
+				batchImportTransaction = this.moneyFile.UndoableTransaction($"Import categories from {Path.GetFileNameWithoutExtension(filePath)}", null);
 				foreach (Category category in this.importingDocument.Categories)
 				{
 					this.GetOrImportCategory(category.Name, out bool imported);
@@ -113,6 +117,7 @@ public class QifAdapter : IFileAdapter
 		finally
 		{
 			this.ClearImportState();
+			batchImportTransaction?.Dispose();
 		}
 	}
 

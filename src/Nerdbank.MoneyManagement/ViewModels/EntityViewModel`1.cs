@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -26,8 +27,14 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 	/// </summary>
 	public TEntity Model { get; private set; }
 
-	public static implicit operator TEntity(EntityViewModel<TEntity> viewModel)
+	[return: NotNullIfNotNull("viewModel")]
+	public static implicit operator TEntity?(EntityViewModel<TEntity>? viewModel)
 	{
+		if (viewModel is null)
+		{
+			return null;
+		}
+
 		Verify.Operation(!viewModel.IsDirty, "Implicit conversion from view model to model is not allowed when view model is dirty.");
 		return viewModel.Model;
 	}
