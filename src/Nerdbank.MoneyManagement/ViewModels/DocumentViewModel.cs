@@ -201,6 +201,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public AccountViewModel GetAccount(int accountId) => this.BankingPanel.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
 
+	public AccountViewModel? GetAccount(string name) => this.GetAccount(this.MoneyFile.Accounts.FirstOrDefault(acct => acct.Name == name)?.Id);
+
 	[return: NotNullIfNotNull("assetId")]
 	public AssetViewModel? GetAsset(int? assetId) => assetId is null ? null : this.AssetsPanel.FindAsset(assetId.Value);
 
@@ -257,6 +259,21 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			this.MoneyFile.Dispose();
 		}
+	}
+
+	/// <summary>
+	/// Detaches view model event handlers from the database so that changes can be made quickly to the database.
+	/// Upon disposal of the return value, the entire view model is refreshed and the event handlers restored.
+	/// </summary>
+	/// <returns>A value to dispose of when the bulk database changes are completed.</returns>
+	public IDisposable SuspendViewModelUpdates()
+	{
+		this.MoneyFile.EntitiesChanged -= this.Model_EntitiesChanged;
+		return new ActionOnDispose(delegate
+		{
+			this.Reset();
+			this.MoneyFile.EntitiesChanged += this.Model_EntitiesChanged;
+		});
 	}
 
 	internal void AddTransactionTarget(AccountViewModel target) => this.transactionTargets.Add(target);
@@ -597,7 +614,12 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 			if (adaptersByFileExtension.TryGetValue(Path.GetExtension(fileName).Substring(1), out IFileAdapter? selectedAdapter))
 			{
-				await selectedAdapter.ImportAsync(fileName, cancellationToken);
+				// For better performance, we expect the import adapters to work directly at the database level,
+				// so refresh the entire view model so the user sees all the changes.
+				using (this.documentViewModel.SuspendViewModelUpdates())
+				{
+					await selectedAdapter.ImportAsync(fileName, cancellationToken);
+				}
 			}
 			else
 			{

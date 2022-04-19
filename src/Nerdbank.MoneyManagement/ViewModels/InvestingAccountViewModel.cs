@@ -89,6 +89,26 @@ public class InvestingAccountViewModel : AccountViewModel
 		return null;
 	}
 
+	/// <summary>
+	/// Creates a new <see cref="InvestingTransactionViewModel"/> for this account.
+	/// </summary>
+	/// <returns>A new <see cref="InvestingTransactionViewModel"/> for an uninitialized transaction.</returns>
+	public InvestingTransactionViewModel NewTransaction()
+	{
+		// Make sure our collection has been initialized by now.
+		_ = this.Transactions;
+
+		InvestingTransactionViewModel viewModel = new(this)
+		{
+			When = DateTime.Now,
+		};
+
+		_ = this.Transactions; // make sure our collection is initialized.
+		this.transactions!.Add(viewModel);
+
+		return viewModel;
+	}
+
 	internal override void NotifyAccountDeleted(ICollection<int> accountIds)
 	{
 		if (this.transactions is object && accountIds.Count > 0)

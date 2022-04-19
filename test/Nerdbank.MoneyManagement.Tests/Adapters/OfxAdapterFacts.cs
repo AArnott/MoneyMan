@@ -4,7 +4,7 @@
 using Microsoft;
 using Nerdbank.MoneyManagement.Adapters;
 
-public class OfxAdapterFacts : AdapterTestBase
+public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 {
 	private const string Simple1DataFileName = "Simple1.ofx";
 	private const string CapitalOneRealMemosDataFileName = "CapitalOneRealMemos.ofx";
@@ -15,6 +15,8 @@ public class OfxAdapterFacts : AdapterTestBase
 	{
 		this.adapter = new(this.DocumentViewModel);
 	}
+
+	protected override OfxAdapter Adapter => this.adapter;
 
 	[Fact]
 	public void CtorValidatesArgs()

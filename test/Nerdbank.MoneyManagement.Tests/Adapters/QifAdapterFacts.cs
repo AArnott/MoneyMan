@@ -3,7 +3,7 @@
 
 using Nerdbank.MoneyManagement.Adapters;
 
-public class QifAdapterFacts : AdapterTestBase
+public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 {
 	private const string Simple1DataFileName = "Simple1.qif";
 	private const string CategoriesDataFileName = "categories.qif";
@@ -12,14 +12,16 @@ public class QifAdapterFacts : AdapterTestBase
 	public QifAdapterFacts(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.adapter = new(this.DocumentViewModel);
+		this.adapter = new QifAdapter(this.DocumentViewModel);
 	}
+
+	protected override QifAdapter Adapter => this.Adapter;
 
 	[Fact]
 	public async Task ImportAsync_ValidatesArgs()
 	{
-		await Assert.ThrowsAsync<ArgumentNullException>("filePath", () => this.adapter.ImportAsync(null!, this.TimeoutToken));
-		await Assert.ThrowsAsync<ArgumentException>("filePath", () => this.adapter.ImportAsync(string.Empty, this.TimeoutToken));
+		await Assert.ThrowsAsync<ArgumentNullException>("filePath", () => this.Adapter.ImportAsync(null!, this.TimeoutToken));
+		await Assert.ThrowsAsync<ArgumentException>("filePath", () => this.Adapter.ImportAsync(string.Empty, this.TimeoutToken));
 	}
 
 	[Fact]
@@ -31,10 +33,11 @@ public class QifAdapterFacts : AdapterTestBase
 			chooseAccountFuncInvocationCount++;
 			return Task.FromResult<AccountViewModel?>(this.Checking);
 		};
-		int count = await this.adapter.ImportAsync(this.GetTestDataFile(Simple1DataFileName), this.TimeoutToken);
+		int count = await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(1, chooseAccountFuncInvocationCount);
-		Assert.Equal(3, count);
-		Assert.Equal(count, this.Checking.Transactions.Count(t => t.IsPersisted));
+		Assert.Equal(6, count); // Transactions + Categories
+		Assert.Equal(3, this.Checking.Transactions.Count(t => t.IsPersisted));
+		Assert.Equal(3, this.DocumentViewModel.CategoriesPanel.Categories.Count(t => t.IsPersisted));
 
 		BankingTransactionViewModel tx1 = this.Checking.Transactions[0];
 		Assert.Equal(ExpectedDateTime(2022, 3, 24), tx1.When);
@@ -63,8 +66,9 @@ public class QifAdapterFacts : AdapterTestBase
 	[Fact]
 	public async Task ImportCategories()
 	{
-		int count = await this.adapter.ImportAsync(this.GetTestDataFile(CategoriesDataFileName), this.TimeoutToken);
+		int count = await this.ImportAsync(CategoriesDataFileName);
 		Assert.Equal(3, count);
+		this.ReloadViewModel();
 
 		Assert.Equal(3, this.DocumentViewModel.CategoriesPanel.Categories.Count);
 		Assert.Equal("Bonus", this.DocumentViewModel.CategoriesPanel.Categories[0].Name);
@@ -73,7 +77,7 @@ public class QifAdapterFacts : AdapterTestBase
 
 		// Delete a category and re-import to see if it will import just the missing one.
 		this.DocumentViewModel.CategoriesPanel.DeleteCategory(this.DocumentViewModel.CategoriesPanel.Categories[1]);
-		count = await this.adapter.ImportAsync(this.GetTestDataFile(CategoriesDataFileName), this.TimeoutToken);
+		count = await this.ImportAsync(CategoriesDataFileName);
 		Assert.Equal(1, count);
 		Assert.Equal("Citi Cards Credit Card", this.DocumentViewModel.CategoriesPanel.Categories[1].Name);
 	}
@@ -81,6 +85,6 @@ public class QifAdapterFacts : AdapterTestBase
 	protected override void RefetchViewModels()
 	{
 		base.RefetchViewModels();
-		this.adapter = new(this.DocumentViewModel);
+		this.adapter = new QifAdapter(this.DocumentViewModel);
 	}
 }
