@@ -12,8 +12,7 @@ public class QifAdapter : IFileAdapter
 {
 	private readonly MoneyFile moneyFile;
 	private readonly IUserNotification? userNotification;
-	private readonly Dictionary<string, Qif.Category> importingCategoriesByName = new(StringComparer.OrdinalIgnoreCase);
-	private readonly Dictionary<string, Account> existingCategories = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, Account> categories = new(StringComparer.OrdinalIgnoreCase);
 	private QifDocument? importingDocument;
 
 	public QifAdapter(DocumentViewModel documentViewModel)
@@ -39,8 +38,8 @@ public class QifAdapter : IFileAdapter
 			this.importingDocument = QifDocument.Load(filePath);
 			int records = 0;
 
-			this.IndexCategories();
-
+			batchImportTransaction = this.moneyFile.UndoableTransaction($"Import {Path.GetFileNameWithoutExtension(filePath)}", null);
+			records += this.ImportCategories();
 			if (this.importingDocument.Transactions.Count > 0 && this.importingDocument.Accounts.Count == 0)
 			{
 				// We're importing a file that carries transactions with no account information.
@@ -54,19 +53,15 @@ public class QifAdapter : IFileAdapter
 				AccountViewModel? account = await this.userNotification.ChooseAccountAsync(prompt.ToString(), null, cancellationToken);
 				if (account is BankingAccountViewModel bankingAccount)
 				{
-					batchImportTransaction = this.moneyFile.UndoableTransaction($"Import transactions from {Path.GetFileNameWithoutExtension(filePath)}", null);
 					records += this.ImportTransactions(bankingAccount, this.importingDocument.Transactions.OfType<BankTransaction>());
 				}
 				else if (account is InvestingAccountViewModel investmentAccount)
 				{
-					batchImportTransaction = this.moneyFile.UndoableTransaction($"Import transactions from {Path.GetFileNameWithoutExtension(filePath)}", null);
 					records += this.ImportTransactions(investmentAccount, this.importingDocument.Transactions.OfType<InvestmentTransaction>());
 				}
 			}
 			else if (this.importingDocument.Transactions.Count == 0 && this.importingDocument.Accounts.Count > 0)
 			{
-				batchImportTransaction = this.moneyFile.UndoableTransaction($"Import accounts from {Path.GetFileNameWithoutExtension(filePath)}", null);
-
 				// We're importing a file that contains accounts, which may each contain transactions.
 				// First, import all accounts so that later we can create transfers.
 				foreach (Qif.Account importingAccount in this.importingDocument.Accounts)
@@ -98,19 +93,6 @@ public class QifAdapter : IFileAdapter
 					}
 				}
 			}
-			else if (this.importingDocument.Categories.Count > 0)
-			{
-				// Just import all the categories.
-				batchImportTransaction = this.moneyFile.UndoableTransaction($"Import categories from {Path.GetFileNameWithoutExtension(filePath)}", null);
-				foreach (Category category in this.importingDocument.Categories)
-				{
-					this.GetOrImportCategory(category.Name, out bool imported);
-					if (imported)
-					{
-						records++;
-					}
-				}
-			}
 
 			return records;
 		}
@@ -131,46 +113,71 @@ public class QifAdapter : IFileAdapter
 		};
 	}
 
-	private void IndexCategories()
+	private int ImportCategories()
 	{
 		Assumes.NotNull(this.importingDocument);
 
-		// Just import all the categories.
-		foreach (Category category in this.importingDocument.Categories)
+		foreach (Account category in this.moneyFile.Categories)
 		{
-			this.importingCategoriesByName.Add(category.Name, category);
-		}
-	}
-
-	private int GetOrImportCategory(string name, out bool imported)
-	{
-		Requires.NotNullOrEmpty(name, nameof(name));
-
-		imported = false;
-		if (this.existingCategories.TryGetValue(name, out Account? existingCategory))
-		{
-			return existingCategory.Id;
+			this.categories.Add(category.Name, category);
 		}
 
-		existingCategory = this.moneyFile.Categories.FirstOrDefault(cat => cat.Name == name);
-		if (existingCategory is null)
+		// Import the explicit categories, if any.
+		foreach (Qif.Category category in this.importingDocument.Categories)
 		{
-			existingCategory = this.importingCategoriesByName.TryGetValue(name, out Qif.Category? importingCategory)
-				? new() { Name = importingCategory.Name }
-				: new() { Name = name };
-			existingCategory.Type = Account.AccountType.Category;
-			this.moneyFile.Insert(existingCategory);
-			imported = true;
+			if (!this.categories.ContainsKey(category.Name))
+			{
+				this.categories.Add(
+					category.Name,
+					new Account
+					{
+						Name = category.Name,
+						Type = Account.AccountType.Category,
+					});
+			}
 		}
 
-		this.existingCategories.Add(name, existingCategory);
-		return existingCategory.Id;
+		// Also infer the categories that are referenced by the transactions.
+		// These *may* be redundant with the explicit categories, but the explicit categories list
+		// may be absent from the file altogether.
+		IEnumerable<Qif.BankTransaction> allTransactions = this.importingDocument.Transactions
+			.Concat(this.importingDocument.Accounts.SelectMany(a => a.Transactions))
+			.OfType<Qif.BankTransaction>();
+		foreach (Qif.BankTransaction transaction in allTransactions)
+		{
+			AddCategory(transaction.Category);
+			foreach (BankSplit split in transaction.Splits)
+			{
+				AddCategory(split.Category);
+			}
+
+			void AddCategory(string? category)
+			{
+				// Skip empty categories or categories that refer to other accounts involved in a transfer.
+				if (!string.IsNullOrEmpty(category) && category[0] != '[')
+				{
+					if (!this.categories.ContainsKey(category))
+					{
+						this.categories.Add(
+							category,
+							new Account
+							{
+								Name = category,
+								Type = Account.AccountType.Category,
+							});
+					}
+				}
+			}
+		}
+
+		List<Account> newCategories = this.categories.Values.Where(v => v.Id == 0).ToList();
+		this.moneyFile.InsertAll(newCategories);
+		return newCategories.Count;
 	}
 
 	private void ClearImportState()
 	{
-		this.existingCategories.Clear();
-		this.importingCategoriesByName.Clear();
+		this.categories.Clear();
 		this.importingDocument = null;
 	}
 
@@ -184,6 +191,17 @@ public class QifAdapter : IFileAdapter
 		List<(Transaction, TransactionEntry)> newEntryTuples = new();
 		foreach (BankTransaction importingTransaction in transactions)
 		{
+			int? transferAccountId = FindTransferAccountId(importingTransaction.Category);
+			if (transferAccountId is not null && importingTransaction.Amount >= 0)
+			{
+				// When it comes to transfers, skip importing the transaction on the receiving side
+				// so that we don't end up importing them on both ends and ending up with duplicates.
+				// For splits with transfers it's even more important to drop the receiving side because
+				// when it comes to paychecks, there is just one sender and many receiving accounts.
+				// TODO: figure out the splits transfers details. QIF only expresses the split on one account.
+				continue;
+			}
+
 			importedCount++;
 			Transaction newTransaction = new()
 			{
@@ -206,20 +224,58 @@ public class QifAdapter : IFileAdapter
 			};
 			newEntryTuples.Add((newTransaction, newEntry));
 
-			if (!string.IsNullOrEmpty(importingTransaction.Category))
+			if (importingTransaction.Splits.IsEmpty)
 			{
-				TransactionEntry categoryEntry = new()
+				if (!string.IsNullOrEmpty(importingTransaction.Category))
 				{
-					AccountId = this.GetOrImportCategory(importingTransaction.Category, out bool importedCategory),
-					Amount = importingTransaction.Amount,
-					AssetId = this.moneyFile.CurrentConfiguration.PreferredAssetId,
-				};
-				newEntryTuples.Add((newTransaction, categoryEntry));
-				if (importedCategory)
-				{
-					importedCount++;
+					int? categoryId =
+						this.categories.TryGetValue(importingTransaction.Category, out Account? category) ? category.Id :
+						transferAccountId;
+					if (categoryId.HasValue)
+					{
+						TransactionEntry categoryEntry = new()
+						{
+							AccountId = categoryId.Value,
+							Amount = -importingTransaction.Amount,
+							AssetId = this.moneyFile.CurrentConfiguration.PreferredAssetId,
+						};
+						newEntryTuples.Add((newTransaction, categoryEntry));
+					}
 				}
 			}
+			else
+			{
+				// For a split, Quicken uses the first split category as the main transaction category,
+				// which is meaningless so we just ignore the main category in this case.
+				foreach (BankSplit split in importingTransaction.Splits)
+				{
+					int? categoryId =
+						split.Category is not null && this.categories.TryGetValue(split.Category, out Account? category) ? category.Id :
+						FindTransferAccountId(split.Category);
+					if (categoryId.HasValue && split.Amount.HasValue)
+					{
+						TransactionEntry categoryEntry = new()
+						{
+							AccountId = categoryId.Value,
+							Amount = -split.Amount.Value,
+							AssetId = this.moneyFile.CurrentConfiguration.PreferredAssetId,
+							Memo = split.Memo,
+						};
+						newEntryTuples.Add((newTransaction, categoryEntry));
+					}
+				}
+			}
+		}
+
+		int? FindTransferAccountId(string? category)
+		{
+			if (category is not null && category.Length > 2 && category[0] == '[' && category[^1] == ']')
+			{
+				string accountName = category[1..^1];
+				return this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName)?.Id;
+			}
+
+			return null;
 		}
 
 		// We first insert the transactions so we get IDs for all of them.
