@@ -1,12 +1,14 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using Microsoft;
 using Nerdbank.MoneyManagement.Adapters;
 
 public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 {
 	private const string Simple1DataFileName = "Simple1.qif";
 	private const string CategoriesDataFileName = "categories.qif";
+	private const string RealWorldSamplesDataFileName = "RealWorldSamples.qif";
 	private QifAdapter adapter;
 
 	public QifAdapterFacts(ITestOutputHelper logger)
@@ -68,7 +70,6 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	{
 		int count = await this.ImportAsync(CategoriesDataFileName);
 		Assert.Equal(3, count);
-		this.ReloadViewModel();
 
 		Assert.Equal(3, this.DocumentViewModel.CategoriesPanel.Categories.Count);
 		Assert.Equal("Bonus", this.DocumentViewModel.CategoriesPanel.Categories[0].Name);
@@ -80,6 +81,23 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		count = await this.ImportAsync(CategoriesDataFileName);
 		Assert.Equal(1, count);
 		Assert.Equal("Citi Cards Credit Card", this.DocumentViewModel.CategoriesPanel.Categories[1].Name);
+	}
+
+	/// <summary>
+	/// Verifies that a transfer where to and from are the same still gets imported,
+	/// since this is how Quicken represents an account's opening balance.
+	/// </summary>
+	[Fact]
+	public async Task OpeningBalanceRetained()
+	{
+		await this.ImportAsync(RealWorldSamplesDataFileName);
+		BankingAccountViewModel? myHouse = (BankingAccountViewModel?)this.DocumentViewModel.GetAccount("My House");
+		Assert.Equal(2, myHouse?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal("Opening Balance", myHouse!.Transactions[0].Payee);
+		Assert.Equal(10_000, myHouse.Transactions[0].Amount);
+		Assert.Null(myHouse.Transactions[0].OtherAccount);
+		Assert.Equal(-1_000, myHouse.Transactions[1].Amount);
+		Assert.Equal("Mortgage Payment", myHouse.Transactions[1].OtherAccount?.Name);
 	}
 
 	protected override void RefetchViewModels()
