@@ -15,7 +15,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		this.adapter = new QifAdapter(this.DocumentViewModel);
 	}
 
-	protected override QifAdapter Adapter => this.Adapter;
+	protected override QifAdapter Adapter => this.adapter;
 
 	[Fact]
 	public async Task ImportAsync_ValidatesArgs()
