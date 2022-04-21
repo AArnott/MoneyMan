@@ -249,7 +249,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 
 		this.ConfigurationPanel.CopyFrom(this.MoneyFile.CurrentConfiguration);
-		this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+		this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Today });
 	}
 
 	public void Dispose()
