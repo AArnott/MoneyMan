@@ -524,12 +524,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 		public ImportFileCommandImpl(DocumentViewModel documentViewModel)
 		{
 			this.documentViewModel = documentViewModel;
-			documentViewModel.BankingPanel.PropertyChanged += this.BankingPanel_PropertyChanged;
 		}
 
 		public override string Caption => "Import";
 
-		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null && this.documentViewModel.BankingPanel.SelectedAccount is not null;
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null;
 
 		protected override async Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
@@ -624,14 +623,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 			else
 			{
 				await this.documentViewModel.UserNotification.NotifyAsync("Unsupported file type.", cancellationToken);
-			}
-		}
-
-		private void BankingPanel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-		{
-			if (e.PropertyName == nameof(BankingPanelViewModel.SelectedAccount))
-			{
-				this.OnCanExecuteChanged();
 			}
 		}
 	}
