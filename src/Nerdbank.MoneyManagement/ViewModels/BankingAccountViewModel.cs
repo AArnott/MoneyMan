@@ -163,7 +163,7 @@ public class BankingAccountViewModel : AccountViewModel
 
 	protected override int GetTransactionIndex(TransactionViewModel transaction) => this.transactions?.IndexOf((BankingTransactionViewModel)transaction) ?? throw new InvalidOperationException();
 
-	protected override void UpdateBalances(int index) => this.UpdateBalances(index, -1);
+	protected override void UpdateBalances(int index) => this.UpdateBalances(index, null);
 
 	protected override bool IsPersistedProperty(string propertyName)
 	{
@@ -213,15 +213,16 @@ public class BankingAccountViewModel : AccountViewModel
 		}
 	}
 
-	private void UpdateBalances(int changedIndex1, int changedIndex2 = -1)
+	private void UpdateBalances(int changedIndex1, int? changedIndex2 = null)
 	{
-		int startingIndex = changedIndex2 == -1 ? changedIndex1 : Math.Min(changedIndex1, changedIndex2);
+		int startingIndex = changedIndex2 is null ? changedIndex1 : Math.Min(changedIndex1, changedIndex2.Value);
+		int? otherIndex = changedIndex2 is null ? null : Math.Max(changedIndex1, changedIndex2.Value);
 		decimal balance = startingIndex == 0 ? 0m : this.transactions![startingIndex - 1].Balance;
 		for (int i = startingIndex; i < this.transactions!.Count; i++)
 		{
 			BankingTransactionViewModel transaction = this.transactions[i];
 			balance += transaction.Amount;
-			if (transaction.Balance == balance && i >= changedIndex2)
+			if (otherIndex.HasValue && transaction.Balance == balance && i >= otherIndex.Value)
 			{
 				// The balance is already what it needs to be,
 				// and we've already reached the last of the one or two positions where transactions may have changed.
