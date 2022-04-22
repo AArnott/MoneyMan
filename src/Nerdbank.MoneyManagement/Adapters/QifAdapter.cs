@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Text;
+using System.Xml.Serialization;
 using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
 using Nerdbank.Qif;
@@ -191,7 +192,7 @@ public class QifAdapter : IFileAdapter
 		List<(Transaction, TransactionEntry)> newEntryTuples = new();
 		foreach (BankTransaction importingTransaction in transactions)
 		{
-			int? transferAccountId = FindTransferAccountId(importingTransaction.Category);
+			int? transferAccountId = this.FindTransferAccountId(importingTransaction.Category);
 			if (transferAccountId is not null && importingTransaction.Amount >= 0 && target.Id != transferAccountId)
 			{
 				// When it comes to transfers, skip importing the transaction on the receiving side
@@ -251,7 +252,7 @@ public class QifAdapter : IFileAdapter
 				{
 					int? categoryId =
 						split.Category is not null && this.categories.TryGetValue(split.Category, out Account? category) ? category.Id :
-						FindTransferAccountId(split.Category);
+						this.FindTransferAccountId(split.Category);
 					if (categoryId.HasValue && split.Amount.HasValue)
 					{
 						TransactionEntry categoryEntry = new()
@@ -267,28 +268,7 @@ public class QifAdapter : IFileAdapter
 			}
 		}
 
-		int? FindTransferAccountId(string? category)
-		{
-			if (category is not null && category.Length > 2 && category[0] == '[' && category[^1] == ']')
-			{
-				string accountName = category[1..^1];
-				return this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName)?.Id;
-			}
-
-			return null;
-		}
-
-		// We first insert the transactions so we get IDs for all of them.
-		// Then we can set the IDs on each TransactionEntry and insert those as well.
-		this.moneyFile.InsertAll(newTransactions);
-		List<TransactionEntry> newEntries = new(newEntryTuples.Count);
-		foreach ((Transaction, TransactionEntry) item in newEntryTuples)
-		{
-			item.Item2.TransactionId = item.Item1.Id;
-			newEntries.Add(item.Item2);
-		}
-
-		this.moneyFile.InsertAll(newEntries);
+		this.InsertAllTransactions(newTransactions, newEntryTuples);
 
 		return importedCount;
 	}
@@ -296,11 +276,87 @@ public class QifAdapter : IFileAdapter
 	private int ImportTransactions(Account target, IEnumerable<InvestmentTransaction> transactions)
 	{
 		int transactionsImported = 0;
-		foreach (InvestmentTransaction transaction in transactions)
+		List<Transaction> newTransactions = new();
+		List<(Transaction, TransactionEntry)> newEntryTuples = new();
+		foreach (InvestmentTransaction importingTransaction in transactions)
 		{
-			////transactionsImported++;
+			Transaction newTransaction = new()
+			{
+				When = importingTransaction.Date,
+				Payee = importingTransaction.Payee,
+				Memo = importingTransaction.Memo,
+				Action = importingTransaction.Action switch
+				{
+					"XOut" => TransactionAction.Transfer,
+					_ => throw new NotSupportedException("Unsupported investment transaction Action: " + importingTransaction.Action),
+				},
+			};
+
+			switch (importingTransaction.Action)
+			{
+				case "XOut":
+					int? transferAccountId = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
+					if (transferAccountId is null)
+					{
+						throw new InvalidOperationException("The transfer account isn't recognized: " + importingTransaction.AccountForTransfer);
+					}
+
+					if (importingTransaction.AmountTransferred is null)
+					{
+						throw new InvalidOperationException("The transfer amount is unspecified.");
+					}
+
+					TransactionEntry newEntry1 = new()
+					{
+						AccountId = target.Id,
+						Amount = -importingTransaction.AmountTransferred.Value,
+						AssetId = this.moneyFile.PreferredAssetId,
+					};
+
+					TransactionEntry newEntry2 = new()
+					{
+						AccountId = transferAccountId.Value,
+						Amount = importingTransaction.AmountTransferred.Value,
+						AssetId = this.moneyFile.PreferredAssetId,
+					};
+
+					newEntryTuples.Add((newTransaction, newEntry1));
+					newEntryTuples.Add((newTransaction, newEntry2));
+					break;
+			}
+
+			newTransactions.Add(newTransaction);
+			transactionsImported++;
 		}
 
+		this.InsertAllTransactions(newTransactions, newEntryTuples);
+
 		return transactionsImported;
+	}
+
+	private void InsertAllTransactions(List<Transaction> newTransactions, List<(Transaction Transaction, TransactionEntry Entry)> newEntryTuples)
+	{
+		// We first insert the transactions so we get IDs for all of them.
+		// Then we can set the IDs on each TransactionEntry and insert those as well.
+		this.moneyFile.InsertAll(newTransactions);
+		List<TransactionEntry> newEntries = new(newEntryTuples.Count);
+		foreach ((Transaction Transaction, TransactionEntry Entry) item in newEntryTuples)
+		{
+			item.Entry.TransactionId = item.Transaction.Id;
+			newEntries.Add(item.Entry);
+		}
+
+		this.moneyFile.InsertAll(newEntries);
+	}
+
+	private int? FindTransferAccountId(string? category)
+	{
+		if (category is not null && category.Length > 2 && category[0] == '[' && category[^1] == ']')
+		{
+			string accountName = category[1..^1];
+			return this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName)?.Id;
+		}
+
+		return null;
 	}
 }

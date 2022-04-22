@@ -9,6 +9,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	private const string Simple1DataFileName = "Simple1.qif";
 	private const string CategoriesDataFileName = "categories.qif";
 	private const string RealWorldSamplesDataFileName = "RealWorldSamples.qif";
+	private const string BankAndInvestmentTransactionsDataFileName = "BankAndInvestmentTransactions.qif";
 	private QifAdapter adapter;
 
 	public QifAdapterFacts(ITestOutputHelper logger)
@@ -98,6 +99,19 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Null(myHouse.Transactions[0].OtherAccount);
 		Assert.Equal(-1_000, myHouse.Transactions[1].Amount);
 		Assert.Equal("Mortgage Payment", myHouse.Transactions[1].OtherAccount?.Name);
+	}
+
+	[Fact]
+	public async Task InvestmentBasics()
+	{
+		await this.ImportAsync(BankAndInvestmentTransactionsDataFileName);
+		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
+		Assert.Equal(1, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(new DateTime(2008, 1, 4), brokerage!.Transactions[0].When);
+		Assert.Equal(-1000, brokerage.Transactions[0].SimpleAmount);
+		Assert.Equal(TransactionAction.Transfer, brokerage.Transactions[0].Action);
+		Assert.Same(this.Checking, brokerage.Transactions[0].SimpleAccount);
+		////Assert.Equal(ClearedState.Reconciled, brokerage.Transactions[0].Cleared);
 	}
 
 	protected override void RefetchViewModels()

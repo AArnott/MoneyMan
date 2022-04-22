@@ -1,0 +1,13 @@
+!Account
+NBrokerage
+TInvst
+^
+!Type:Invst
+D1/ 4' 8
+NXOut
+CR
+U1,000.00
+T1,000.00
+L[Checking]
+$1,000.00
+^
