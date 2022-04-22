@@ -14,6 +14,7 @@ public class QifAdapter : IFileAdapter
 	private readonly MoneyFile moneyFile;
 	private readonly IUserNotification? userNotification;
 	private readonly Dictionary<string, Account> categories = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, Asset> assetsByName = new(StringComparer.OrdinalIgnoreCase);
 	private QifDocument? importingDocument;
 
 	public QifAdapter(DocumentViewModel documentViewModel)
@@ -41,6 +42,7 @@ public class QifAdapter : IFileAdapter
 
 			batchImportTransaction = this.moneyFile.UndoableTransaction($"Import {Path.GetFileNameWithoutExtension(filePath)}", null);
 			records += this.ImportCategories();
+			records += this.ImportAssets();
 			if (this.importingDocument.Transactions.Count > 0 && this.importingDocument.Accounts.Count == 0)
 			{
 				// We're importing a file that carries transactions with no account information.
@@ -114,6 +116,8 @@ public class QifAdapter : IFileAdapter
 		};
 	}
 
+	private IEnumerable<Qif.Transaction> GetAllTransactions() => this.importingDocument?.Transactions.Concat(this.importingDocument.Accounts.SelectMany(a => a.Transactions)) ?? Enumerable.Empty<Qif.Transaction>();
+
 	private int ImportCategories()
 	{
 		Assumes.NotNull(this.importingDocument);
@@ -141,9 +145,7 @@ public class QifAdapter : IFileAdapter
 		// Also infer the categories that are referenced by the transactions.
 		// These *may* be redundant with the explicit categories, but the explicit categories list
 		// may be absent from the file altogether.
-		IEnumerable<Qif.Transaction> allTransactions = this.importingDocument.Transactions
-			.Concat(this.importingDocument.Accounts.SelectMany(a => a.Transactions));
-		foreach (Qif.Transaction transaction in allTransactions)
+		foreach (Qif.Transaction transaction in this.GetAllTransactions())
 		{
 			if (transaction is Qif.BankTransaction bankTransaction)
 			{
@@ -180,6 +182,37 @@ public class QifAdapter : IFileAdapter
 		List<Account> newCategories = this.categories.Values.Where(v => v.Id == 0).ToList();
 		this.moneyFile.InsertAll(newCategories);
 		return newCategories.Count;
+	}
+
+	private int ImportAssets()
+	{
+		Assumes.NotNull(this.importingDocument);
+
+		foreach (Asset asset in this.moneyFile.Assets)
+		{
+			this.assetsByName.Add(asset.Name, asset);
+		}
+
+		List<Asset> addedAssets = new();
+		foreach (Qif.InvestmentTransaction transaction in this.GetAllTransactions().OfType<Qif.InvestmentTransaction>())
+		{
+			if (!string.IsNullOrEmpty(transaction.Security))
+			{
+				if (!this.assetsByName.TryGetValue(transaction.Security, out Asset? referencedAsset))
+				{
+					Asset asset = new()
+					{
+						Name = transaction.Security,
+						Type = Asset.AssetType.Security,
+					};
+					this.assetsByName.Add(transaction.Security, asset);
+					addedAssets.Add(asset);
+				}
+			}
+		}
+
+		this.moneyFile.InsertAll(addedAssets);
+		return addedAssets.Count;
 	}
 
 	private void ClearImportState()
@@ -356,6 +389,34 @@ public class QifAdapter : IFileAdapter
 					////	};
 					////	newEntryTuples.Add((newTransaction, newEntry2));
 					////}
+
+					break;
+				case "Buy":
+					newTransaction.Action = TransactionAction.Buy;
+					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
+					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from Buy record.");
+					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
+					Assumes.NotNull(target.CurrencyAssetId);
+					if (!this.assetsByName.TryGetValue(importingTransaction.Security, out Asset? asset))
+					{
+						throw new InvalidOperationException("No matching asset: " + importingTransaction.Security);
+					}
+
+					newEntry1 = new()
+					{
+						AccountId = target.Id,
+						Amount = importingTransaction.Quantity.Value,
+						AssetId = asset.Id,
+					};
+					newEntryTuples.Add((newTransaction, newEntry1));
+
+					newEntry2 = new()
+					{
+						AccountId = target.Id,
+						Amount = -importingTransaction.TransactionAmount.Value,
+						AssetId = target.CurrencyAssetId.Value,
+					};
+					newEntryTuples.Add((newTransaction, newEntry2));
 
 					break;
 				default:

@@ -158,7 +158,9 @@ public class AssetsPanelViewModel : BindableBase
 
 	public AssetViewModel? FindAsset(int id) => this.assets?.FirstOrDefault(a => a.Id == id);
 
-	public AssetViewModel? FindAsset(string name) => this.assets?.FirstOrDefault(a => a.Name == name);
+	public AssetViewModel? FindAsset(string name) => this.assets?.FirstOrDefault(a => string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase));
+
+	public AssetViewModel? FindAssetByTicker(string tickerSymbol) => this.assets?.FirstOrDefault(a => string.Equals(a.TickerSymbol, tickerSymbol, StringComparison.OrdinalIgnoreCase));
 
 	public void DeletePrice(AssetPriceViewModel value)
 	{

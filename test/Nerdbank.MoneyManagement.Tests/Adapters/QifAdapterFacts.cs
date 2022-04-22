@@ -105,8 +105,10 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	public async Task InvestmentBasics()
 	{
 		await this.ImportAsync(BankAndInvestmentTransactionsDataFileName);
+		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
+		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(3, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(4, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		InvestingTransactionViewModel tx = brokerage!.Transactions[0];
 		Assert.Equal(new DateTime(2006, 6, 13), tx.When);
@@ -121,6 +123,15 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Same(this.Checking, tx.SimpleAccount);
 
 		tx = brokerage!.Transactions[2];
+		Assert.Equal(new DateTime(2006, 10, 5), tx.When);
+		Assert.Equal(4, tx.SimpleAmount);
+		Assert.Equal(TransactionAction.Buy, tx.Action);
+		Assert.Equal(115.09m, tx.SimplePrice);
+		Assert.Same(msft, tx.SimpleAsset?.Model);
+		Assert.Equal("YOU BOUGHT           ESPP###", tx.Memo);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage!.Transactions[3];
 		Assert.Equal(new DateTime(2008, 1, 4), tx.When);
 		Assert.Equal(-1000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);
