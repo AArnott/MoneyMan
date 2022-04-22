@@ -11,3 +11,14 @@ T1,000.00
 L[Checking]
 $1,000.00
 ^
+!Account
+NChecking
+TBank
+^
+!Type:Bank
+D1/ 4' 8
+U1,000.00
+T1,000.00
+CX
+L[Brokerage]
+^
