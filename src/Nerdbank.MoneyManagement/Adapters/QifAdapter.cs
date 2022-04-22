@@ -141,15 +141,21 @@ public class QifAdapter : IFileAdapter
 		// Also infer the categories that are referenced by the transactions.
 		// These *may* be redundant with the explicit categories, but the explicit categories list
 		// may be absent from the file altogether.
-		IEnumerable<Qif.BankTransaction> allTransactions = this.importingDocument.Transactions
-			.Concat(this.importingDocument.Accounts.SelectMany(a => a.Transactions))
-			.OfType<Qif.BankTransaction>();
-		foreach (Qif.BankTransaction transaction in allTransactions)
+		IEnumerable<Qif.Transaction> allTransactions = this.importingDocument.Transactions
+			.Concat(this.importingDocument.Accounts.SelectMany(a => a.Transactions));
+		foreach (Qif.Transaction transaction in allTransactions)
 		{
-			AddCategory(transaction.Category);
-			foreach (BankSplit split in transaction.Splits)
+			if (transaction is Qif.BankTransaction bankTransaction)
 			{
-				AddCategory(split.Category);
+				AddCategory(bankTransaction.Category);
+				foreach (BankSplit split in bankTransaction.Splits)
+				{
+					AddCategory(split.Category);
+				}
+			}
+			else if (transaction is Qif.InvestmentTransaction investmentTransaction)
+			{
+				AddCategory(investmentTransaction.AccountForTransfer);
 			}
 
 			void AddCategory(string? category)
@@ -229,9 +235,7 @@ public class QifAdapter : IFileAdapter
 			{
 				if (!string.IsNullOrEmpty(importingTransaction.Category))
 				{
-					int? categoryId =
-						this.categories.TryGetValue(importingTransaction.Category, out Account? category) ? category.Id :
-						transferAccountId;
+					int? categoryId = this.FindCategoryId(importingTransaction.Category) ?? transferAccountId;
 					if (categoryId.HasValue && categoryId.Value != target.Id)
 					{
 						TransactionEntry categoryEntry = new()
@@ -285,16 +289,13 @@ public class QifAdapter : IFileAdapter
 				When = importingTransaction.Date,
 				Payee = importingTransaction.Payee,
 				Memo = importingTransaction.Memo,
-				Action = importingTransaction.Action switch
-				{
-					"XOut" => TransactionAction.Transfer,
-					_ => throw new NotSupportedException("Unsupported investment transaction Action: " + importingTransaction.Action),
-				},
 			};
+			newTransactions.Add(newTransaction);
 
 			switch (importingTransaction.Action)
 			{
 				case "XOut":
+					newTransaction.Action = TransactionAction.Transfer;
 					int? transferAccountId = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
 					if (transferAccountId is null)
 					{
@@ -312,6 +313,7 @@ public class QifAdapter : IFileAdapter
 						Amount = -importingTransaction.AmountTransferred.Value,
 						AssetId = this.moneyFile.PreferredAssetId,
 					};
+					newEntryTuples.Add((newTransaction, newEntry1));
 
 					TransactionEntry newEntry2 = new()
 					{
@@ -319,13 +321,40 @@ public class QifAdapter : IFileAdapter
 						Amount = importingTransaction.AmountTransferred.Value,
 						AssetId = this.moneyFile.PreferredAssetId,
 					};
-
-					newEntryTuples.Add((newTransaction, newEntry1));
 					newEntryTuples.Add((newTransaction, newEntry2));
 					break;
+				case "Cash":
+					newTransaction.Action = TransactionAction.Deposit;
+					if (importingTransaction.TransactionAmount is null)
+					{
+						throw new InvalidOperationException("The transfer amount is unspecified.");
+					}
+
+					newEntry1 = new()
+					{
+						AccountId = target.Id,
+						Amount = importingTransaction.TransactionAmount.Value,
+						AssetId = this.moneyFile.PreferredAssetId,
+					};
+					newEntryTuples.Add((newTransaction, newEntry1));
+
+					// Our view model doesn't support categories on deposits yet.
+					////if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
+					////{
+					////	newEntry2 = new()
+					////	{
+					////		AccountId = categoryId,
+					////		Amount = importingTransaction.TransactionAmount.Value,
+					////		AssetId = this.moneyFile.PreferredAssetId,
+					////	};
+					////	newEntryTuples.Add((newTransaction, newEntry2));
+					////}
+
+					break;
+				default:
+					throw new NotSupportedException("Unsupported investment transaction Action: " + importingTransaction.Action);
 			}
 
-			newTransactions.Add(newTransaction);
 			transactionsImported++;
 		}
 
@@ -347,6 +376,11 @@ public class QifAdapter : IFileAdapter
 		}
 
 		this.moneyFile.InsertAll(newEntries);
+	}
+
+	private int? FindCategoryId(string? category)
+	{
+		return category is not null && this.categories.TryGetValue(category, out Account? account) ? account.Id : null;
 	}
 
 	private int? FindTransferAccountId(string? category)

@@ -106,12 +106,20 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	{
 		await this.ImportAsync(BankAndInvestmentTransactionsDataFileName);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(1, brokerage?.Transactions.Count(tx => tx.IsPersisted));
-		Assert.Equal(new DateTime(2008, 1, 4), brokerage!.Transactions[0].When);
-		Assert.Equal(-1000, brokerage.Transactions[0].SimpleAmount);
-		Assert.Equal(TransactionAction.Transfer, brokerage.Transactions[0].Action);
-		Assert.Same(this.Checking, brokerage.Transactions[0].SimpleAccount);
-		////Assert.Equal(ClearedState.Reconciled, brokerage.Transactions[0].Cleared);
+		Assert.Equal(2, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+
+		InvestingTransactionViewModel tx = brokerage!.Transactions[0];
+		Assert.Equal(new DateTime(2006, 6, 13), tx.When);
+		Assert.Equal(2000, tx.SimpleAmount);
+		Assert.Equal(TransactionAction.Deposit, tx.Action);
+		Assert.Null(tx.SimpleAccount);
+
+		tx = brokerage!.Transactions[1];
+		Assert.Equal(new DateTime(2008, 1, 4), tx.When);
+		Assert.Equal(-1000, tx.SimpleAmount);
+		Assert.Equal(TransactionAction.Transfer, tx.Action);
+		Assert.Same(this.Checking, tx.SimpleAccount);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 	}
 
 	protected override void RefetchViewModels()
