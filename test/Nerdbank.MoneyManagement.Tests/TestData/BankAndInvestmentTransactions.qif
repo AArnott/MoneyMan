@@ -10,6 +10,14 @@ U2,000.00
 T2,000.00
 LNetBank Checking
 ^
+D10/ 4' 6
+NXIn
+CR
+U500.00
+T500.00
+L[Checking]
+$500
+^
 D1/ 4' 8
 NXOut
 CR

@@ -106,7 +106,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	{
 		await this.ImportAsync(BankAndInvestmentTransactionsDataFileName);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(2, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(3, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		InvestingTransactionViewModel tx = brokerage!.Transactions[0];
 		Assert.Equal(new DateTime(2006, 6, 13), tx.When);
@@ -115,6 +115,12 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Null(tx.SimpleAccount);
 
 		tx = brokerage!.Transactions[1];
+		Assert.Equal(new DateTime(2006, 10, 4), tx.When);
+		Assert.Equal(500, tx.SimpleAmount);
+		Assert.Equal(TransactionAction.Transfer, tx.Action);
+		Assert.Same(this.Checking, tx.SimpleAccount);
+
+		tx = brokerage!.Transactions[2];
 		Assert.Equal(new DateTime(2008, 1, 4), tx.When);
 		Assert.Equal(-1000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);

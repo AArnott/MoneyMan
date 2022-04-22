@@ -294,7 +294,7 @@ public class QifAdapter : IFileAdapter
 
 			switch (importingTransaction.Action)
 			{
-				case "XOut":
+				case "XOut" or "XIn":
 					newTransaction.Action = TransactionAction.Transfer;
 					int? transferAccountId = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
 					if (transferAccountId is null)
@@ -322,6 +322,13 @@ public class QifAdapter : IFileAdapter
 						AssetId = this.moneyFile.PreferredAssetId,
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
+
+					if (importingTransaction.Action == "XIn")
+					{
+						newEntry1.Amount *= -1;
+						newEntry2.Amount *= -1;
+					}
+
 					break;
 				case "Cash":
 					newTransaction.Action = TransactionAction.Deposit;
