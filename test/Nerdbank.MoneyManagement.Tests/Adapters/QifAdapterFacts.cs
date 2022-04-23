@@ -108,7 +108,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(4, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(5, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		InvestingTransactionViewModel tx = brokerage!.Transactions[0];
 		Assert.Equal(new DateTime(2006, 6, 13), tx.When);
@@ -132,6 +132,16 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage!.Transactions[3];
+		Assert.Equal(new DateTime(2006, 10, 6), tx.When);
+		Assert.Equal(2, tx.SimpleAmount);
+		Assert.Equal(TransactionAction.Sell, tx.Action);
+		Assert.Equal(45.9355m, tx.SimplePrice); // 41.2655m after commission is supported
+		Assert.Same(msft, tx.SimpleAsset?.Model);
+		Assert.Equal("YOU SOLD", tx.Memo);
+		////Assert.Equal(9.34m, tx.Commission);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage!.Transactions[4];
 		Assert.Equal(new DateTime(2008, 1, 4), tx.When);
 		Assert.Equal(-1000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);

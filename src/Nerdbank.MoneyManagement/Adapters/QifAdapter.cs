@@ -391,7 +391,7 @@ public class QifAdapter : IFileAdapter
 					////}
 
 					break;
-				case "Buy":
+				case "Buy" or "Sell":
 					newTransaction.Action = TransactionAction.Buy;
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
 					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from Buy record.");
@@ -417,6 +417,13 @@ public class QifAdapter : IFileAdapter
 						AssetId = target.CurrencyAssetId.Value,
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
+
+					if (importingTransaction.Action == "Sell")
+					{
+						newTransaction.Action = TransactionAction.Sell;
+						newEntry1.Amount *= -1;
+						newEntry2.Amount *= -1;
+					}
 
 					break;
 				default:
