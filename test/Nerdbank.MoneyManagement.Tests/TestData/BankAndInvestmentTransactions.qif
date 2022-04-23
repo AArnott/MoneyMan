@@ -47,6 +47,15 @@ T1,000.00
 L[Checking]
 $1,000.00
 ^
+D4/12'13
+NWithdrwX
+Ppayee
+CR
+U105.00
+T105.00
+L[Checking]
+$105.00
+^
 D4/11'21
 NIntInc
 CR

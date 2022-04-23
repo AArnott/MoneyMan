@@ -108,21 +108,23 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(6, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(7, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
-		InvestingTransactionViewModel tx = brokerage!.Transactions[0];
+		int transactionCounter = 0;
+
+		InvestingTransactionViewModel tx = brokerage!.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2006, 6, 13), tx.When);
 		Assert.Equal(2000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Deposit, tx.Action);
 		Assert.Null(tx.SimpleAccount);
 
-		tx = brokerage!.Transactions[1];
+		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2006, 10, 4), tx.When);
 		Assert.Equal(500, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);
 		Assert.Same(this.Checking, tx.SimpleAccount);
 
-		tx = brokerage!.Transactions[2];
+		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2006, 10, 5), tx.When);
 		Assert.Equal(4, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Buy, tx.Action);
@@ -131,7 +133,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal("YOU BOUGHT           ESPP###", tx.Memo);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
-		tx = brokerage!.Transactions[3];
+		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2006, 10, 6), tx.When);
 		Assert.Equal(2, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Sell, tx.Action);
@@ -141,14 +143,21 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		////Assert.Equal(9.34m, tx.Commission);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
-		tx = brokerage!.Transactions[4];
+		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2008, 1, 4), tx.When);
 		Assert.Equal(-1000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);
 		Assert.Same(this.Checking, tx.SimpleAccount);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
-		tx = brokerage!.Transactions[5];
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2013, 4, 12), tx.When);
+		Assert.Equal(-105, tx.SimpleAmount);
+		Assert.Equal(TransactionAction.Transfer, tx.Action);
+		Assert.Same(this.Checking, tx.SimpleAccount);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2021, 4, 11), tx.When);
 		Assert.Equal(1.99m, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Interest, tx.Action);

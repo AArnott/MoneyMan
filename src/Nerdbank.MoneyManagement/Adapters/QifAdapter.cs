@@ -231,7 +231,7 @@ public class QifAdapter : IFileAdapter
 		List<(Transaction, TransactionEntry)> newEntryTuples = new();
 		foreach (BankTransaction importingTransaction in transactions)
 		{
-			int? transferAccountId = this.FindTransferAccountId(importingTransaction.Category);
+			int? transferAccountId = this.FindTransferAccountId(importingTransaction.Category)?.Id;
 			if (transferAccountId is not null && importingTransaction.Amount >= 0 && target.Id != transferAccountId)
 			{
 				// When it comes to transfers, skip importing the transaction on the receiving side
@@ -289,7 +289,7 @@ public class QifAdapter : IFileAdapter
 				{
 					int? categoryId =
 						split.Category is not null && this.categories.TryGetValue(split.Category, out Account? category) ? category.Id :
-						this.FindTransferAccountId(split.Category);
+						this.FindTransferAccountId(split.Category)?.Id;
 					if (categoryId.HasValue && split.Amount.HasValue)
 					{
 						TransactionEntry categoryEntry = new()
@@ -312,6 +312,8 @@ public class QifAdapter : IFileAdapter
 
 	private int ImportTransactions(Account target, IEnumerable<InvestmentTransaction> transactions)
 	{
+		Assumes.NotNull(target.CurrencyAssetId);
+
 		int transactionsImported = 0;
 		List<Transaction> newTransactions = new();
 		List<(Transaction, TransactionEntry)> newEntryTuples = new();
@@ -327,32 +329,25 @@ public class QifAdapter : IFileAdapter
 
 			switch (importingTransaction.Action)
 			{
-				case "XOut" or "XIn":
+				case "XOut" or "XIn" or "WithdrwX":
 					newTransaction.Action = TransactionAction.Transfer;
-					int? transferAccountId = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
-					if (transferAccountId is null)
-					{
-						throw new InvalidOperationException("The transfer account isn't recognized: " + importingTransaction.AccountForTransfer);
-					}
-
-					if (importingTransaction.AmountTransferred is null)
-					{
-						throw new InvalidOperationException("The transfer amount is unspecified.");
-					}
+					Account? transferAccount = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
+					Verify.Operation(transferAccount is { CurrencyAssetId: not null }, "Transfer account isn't recognized or has not set a currency: {0}", importingTransaction.AccountForTransfer);
+					Verify.Operation(importingTransaction.AmountTransferred is not null, "The transfer amount is unspecified.");
 
 					TransactionEntry newEntry1 = new()
 					{
 						AccountId = target.Id,
 						Amount = -importingTransaction.AmountTransferred.Value,
-						AssetId = this.moneyFile.PreferredAssetId,
+						AssetId = target.CurrencyAssetId.Value,
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
 					TransactionEntry newEntry2 = new()
 					{
-						AccountId = transferAccountId.Value,
+						AccountId = transferAccount.Id,
 						Amount = importingTransaction.AmountTransferred.Value,
-						AssetId = this.moneyFile.PreferredAssetId,
+						AssetId = transferAccount.CurrencyAssetId.Value,
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
 
@@ -396,7 +391,6 @@ public class QifAdapter : IFileAdapter
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
 					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from Buy record.");
 					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
-					Assumes.NotNull(target.CurrencyAssetId);
 					if (!this.assetsByName.TryGetValue(importingTransaction.Security, out Asset? asset))
 					{
 						throw new InvalidOperationException("No matching asset: " + importingTransaction.Security);
@@ -472,12 +466,12 @@ public class QifAdapter : IFileAdapter
 		return category is not null && this.categories.TryGetValue(category, out Account? account) ? account.Id : null;
 	}
 
-	private int? FindTransferAccountId(string? category)
+	private Account? FindTransferAccountId(string? category)
 	{
 		if (category is not null && category.Length > 2 && category[0] == '[' && category[^1] == ']')
 		{
 			string accountName = category[1..^1];
-			return this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName)?.Id;
+			return this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName);
 		}
 
 		return null;
