@@ -8,6 +8,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 {
 	private const string Simple1DataFileName = "Simple1.qif";
 	private const string CategoriesDataFileName = "categories.qif";
+	private const string SecuritiesDataFileName = "securities.qif";
 	private const string RealWorldSamplesDataFileName = "RealWorldSamples.qif";
 	private const string BankAndInvestmentTransactionsDataFileName = "BankAndInvestmentTransactions.qif";
 	private QifAdapter adapter;
@@ -170,6 +171,21 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal("PIMCO INCOME FUND CL D", tx.RelatedAsset?.Name);
 		Assert.Equal("DIVIDEND RECEIVED", tx.Memo);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+	}
+
+	[Fact]
+	public async Task ImportSecurities()
+	{
+		int importedCount = await this.ImportAsync(SecuritiesDataFileName);
+		Assert.Equal(2, importedCount);
+
+		AssetViewModel? msft = this.DocumentViewModel.AssetsPanel.FindAssetByTicker("MSFT");
+		Assert.Equal("Microsoft", msft?.Name);
+		Assert.Equal(Asset.AssetType.Security, msft?.Type);
+
+		AssetViewModel? magjx = this.DocumentViewModel.AssetsPanel.FindAssetByTicker("MAGJX");
+		Assert.Equal("MFS Growth Allocation Fund Class R4", magjx?.Name);
+		Assert.Equal(Asset.AssetType.Security, magjx?.Type);
 	}
 
 	protected override void RefetchViewModels()

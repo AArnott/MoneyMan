@@ -2,7 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Text;
-using System.Xml.Serialization;
 using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
 using Nerdbank.Qif;
@@ -194,6 +193,21 @@ public class QifAdapter : IFileAdapter
 		}
 
 		List<Asset> addedAssets = new();
+		foreach (Qif.Security security in this.importingDocument.Securities)
+		{
+			if (!this.assetsByName.TryGetValue(security.Name, out Asset? referencedAsset))
+			{
+				Asset asset = new()
+				{
+					Name = security.Name,
+					TickerSymbol = security.Symbol,
+					Type = Asset.AssetType.Security,
+				};
+				this.assetsByName.Add(security.Name, asset);
+				addedAssets.Add(asset);
+			}
+		}
+
 		foreach (Qif.InvestmentTransaction transaction in this.GetAllTransactions().OfType<Qif.InvestmentTransaction>())
 		{
 			if (!string.IsNullOrEmpty(transaction.Security))
