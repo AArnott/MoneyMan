@@ -14,6 +14,7 @@ public class QifAdapter : IFileAdapter
 	private readonly IUserNotification? userNotification;
 	private readonly Dictionary<string, Account> categories = new(StringComparer.OrdinalIgnoreCase);
 	private readonly Dictionary<string, Asset> assetsByName = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, Asset> assetsBySymbol = new(StringComparer.OrdinalIgnoreCase);
 	private QifDocument? importingDocument;
 
 	public QifAdapter(DocumentViewModel documentViewModel)
@@ -42,6 +43,7 @@ public class QifAdapter : IFileAdapter
 			batchImportTransaction = this.moneyFile.UndoableTransaction($"Import {Path.GetFileNameWithoutExtension(filePath)}", null);
 			records += this.ImportCategories();
 			records += this.ImportAssets();
+			records += this.ImportPrices();
 			if (this.importingDocument.Transactions.Count > 0 && this.importingDocument.Accounts.Count == 0)
 			{
 				// We're importing a file that carries transactions with no account information.
@@ -189,7 +191,7 @@ public class QifAdapter : IFileAdapter
 
 		foreach (Asset asset in this.moneyFile.Assets)
 		{
-			this.assetsByName.Add(asset.Name, asset);
+			this.RecordAsset(asset);
 		}
 
 		List<Asset> addedAssets = new();
@@ -203,7 +205,7 @@ public class QifAdapter : IFileAdapter
 					TickerSymbol = security.Symbol,
 					Type = Asset.AssetType.Security,
 				};
-				this.assetsByName.Add(security.Name, asset);
+				this.RecordAsset(asset);
 				addedAssets.Add(asset);
 			}
 		}
@@ -219,7 +221,7 @@ public class QifAdapter : IFileAdapter
 						Name = transaction.Security,
 						Type = Asset.AssetType.Security,
 					};
-					this.assetsByName.Add(transaction.Security, asset);
+					this.RecordAsset(asset);
 					addedAssets.Add(asset);
 				}
 			}
@@ -227,6 +229,32 @@ public class QifAdapter : IFileAdapter
 
 		this.moneyFile.InsertAll(addedAssets);
 		return addedAssets.Count;
+	}
+
+	private int ImportPrices()
+	{
+		Assumes.NotNull(this.importingDocument);
+		int recordsImported = 0;
+
+		List<AssetPrice> pricesToAdd = new();
+		foreach (Qif.Price price in this.importingDocument.Prices)
+		{
+			if (this.assetsBySymbol.TryGetValue(price.Symbol, out Asset? asset))
+			{
+				pricesToAdd.Add(new AssetPrice
+				{
+					AssetId = asset.Id,
+					ReferenceAssetId = this.moneyFile.PreferredAssetId,
+					When = price.Date,
+					PriceInReferenceAsset = price.Value,
+				});
+				recordsImported++;
+			}
+		}
+
+		this.moneyFile.InsertAll(pricesToAdd);
+
+		return recordsImported;
 	}
 
 	private void ClearImportState()
@@ -503,5 +531,14 @@ public class QifAdapter : IFileAdapter
 		}
 
 		return null;
+	}
+
+	private void RecordAsset(Asset asset)
+	{
+		this.assetsByName.Add(asset.Name, asset);
+		if (asset.TickerSymbol is not null)
+		{
+			this.assetsBySymbol.Add(asset.TickerSymbol, asset);
+		}
 	}
 }

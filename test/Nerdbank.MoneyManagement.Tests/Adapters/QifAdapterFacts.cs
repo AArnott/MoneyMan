@@ -177,7 +177,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	public async Task ImportSecurities()
 	{
 		int importedCount = await this.ImportAsync(SecuritiesDataFileName);
-		Assert.Equal(2, importedCount);
+		Assert.Equal(4, importedCount);
 
 		AssetViewModel? msft = this.DocumentViewModel.AssetsPanel.FindAssetByTicker("MSFT");
 		Assert.Equal("Microsoft", msft?.Name);
@@ -186,6 +186,22 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		AssetViewModel? magjx = this.DocumentViewModel.AssetsPanel.FindAssetByTicker("MAGJX");
 		Assert.Equal("MFS Growth Allocation Fund Class R4", magjx?.Name);
 		Assert.Equal(Asset.AssetType.Security, magjx?.Type);
+	}
+
+	[Fact]
+	public async Task ImportPrices()
+	{
+		int importedCount = await this.ImportAsync(SecuritiesDataFileName);
+		Assert.Equal(4, importedCount);
+
+		AssetViewModel? msft = this.DocumentViewModel.AssetsPanel.FindAssetByTicker("MSFT");
+		this.DocumentViewModel.AssetsPanel.SelectedAsset = msft;
+		List<(DateTime When, decimal Price)> actualPrices = this.DocumentViewModel.AssetsPanel.AssetPrices.Select(vm => (vm.When, vm.Price)).ToList();
+		List<(DateTime When, decimal Price)> expectedPrices = new()
+		{
+			(new DateTime(2015, 3, 2), 11.94m),
+			(new DateTime(2015, 3, 3), 11.91m),
+		};
 	}
 
 	protected override void RefetchViewModels()
