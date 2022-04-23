@@ -426,6 +426,20 @@ public class QifAdapter : IFileAdapter
 					}
 
 					break;
+				case "IntInc":
+					newTransaction.Action = TransactionAction.Interest;
+					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
+					Assumes.NotNull(target.CurrencyAssetId);
+
+					newEntry1 = new()
+					{
+						AccountId = target.Id,
+						Amount = importingTransaction.TransactionAmount.Value,
+						AssetId = target.CurrencyAssetId.Value,
+					};
+					newEntryTuples.Add((newTransaction, newEntry1));
+
+					break;
 				default:
 					throw new NotSupportedException("Unsupported investment transaction Action: " + importingTransaction.Action);
 			}
