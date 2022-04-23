@@ -329,7 +329,7 @@ public class QifAdapter : IFileAdapter
 
 			switch (importingTransaction.Action)
 			{
-				case "XOut" or "XIn" or "WithdrwX":
+				case InvestmentTransaction.Actions.XOut or InvestmentTransaction.Actions.XIn or InvestmentTransaction.Actions.WithdrwX:
 					newTransaction.Action = TransactionAction.Transfer;
 					Account? transferAccount = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
 					Verify.Operation(transferAccount is { CurrencyAssetId: not null }, "Transfer account isn't recognized or has not set a currency: {0}", importingTransaction.AccountForTransfer);
@@ -358,7 +358,7 @@ public class QifAdapter : IFileAdapter
 					}
 
 					break;
-				case "Cash":
+				case InvestmentTransaction.Actions.Cash:
 					newTransaction.Action = TransactionAction.Deposit;
 					if (importingTransaction.TransactionAmount is null)
 					{
@@ -386,7 +386,7 @@ public class QifAdapter : IFileAdapter
 					////}
 
 					break;
-				case "Buy" or "Sell":
+				case InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell:
 					newTransaction.Action = TransactionAction.Buy;
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
 					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from Buy record.");
@@ -417,7 +417,7 @@ public class QifAdapter : IFileAdapter
 					}
 
 					break;
-				case "IntInc":
+				case InvestmentTransaction.Actions.IntInc:
 					newTransaction.Action = TransactionAction.Interest;
 					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
 					Assumes.NotNull(target.CurrencyAssetId);
@@ -431,7 +431,7 @@ public class QifAdapter : IFileAdapter
 					newEntryTuples.Add((newTransaction, newEntry1));
 
 					break;
-				case "Div":
+				case InvestmentTransaction.Actions.Div:
 					newTransaction.Action = TransactionAction.Dividend;
 					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
