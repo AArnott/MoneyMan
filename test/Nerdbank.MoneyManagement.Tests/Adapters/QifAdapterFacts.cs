@@ -108,7 +108,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(7, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(8, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		int transactionCounter = 0;
 
@@ -161,6 +161,14 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2021, 4, 11), tx.When);
 		Assert.Equal(1.99m, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Interest, tx.Action);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2021, 4, 30), tx.When);
+		Assert.Equal(1.23m, tx.SimpleAmount);
+		Assert.Equal(TransactionAction.Dividend, tx.Action);
+		Assert.Equal("PIMCO INCOME FUND CL D", tx.RelatedAsset?.Name);
+		Assert.Equal("DIVIDEND RECEIVED", tx.Memo);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 	}
 

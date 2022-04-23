@@ -391,10 +391,7 @@ public class QifAdapter : IFileAdapter
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
 					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from Buy record.");
 					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
-					if (!this.assetsByName.TryGetValue(importingTransaction.Security, out Asset? asset))
-					{
-						throw new InvalidOperationException("No matching asset: " + importingTransaction.Security);
-					}
+					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out Asset? asset), "No matching asset: {0}", importingTransaction.Security);
 
 					newEntry1 = new()
 					{
@@ -424,6 +421,23 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.Interest;
 					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
 					Assumes.NotNull(target.CurrencyAssetId);
+
+					newEntry1 = new()
+					{
+						AccountId = target.Id,
+						Amount = importingTransaction.TransactionAmount.Value,
+						AssetId = target.CurrencyAssetId.Value,
+					};
+					newEntryTuples.Add((newTransaction, newEntry1));
+
+					break;
+				case "Div":
+					newTransaction.Action = TransactionAction.Dividend;
+					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
+					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
+					Assumes.NotNull(target.CurrencyAssetId);
+					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out asset), "No matching asset: {0}", importingTransaction.Security);
+					newTransaction.RelatedAssetId = asset.Id;
 
 					newEntry1 = new()
 					{
