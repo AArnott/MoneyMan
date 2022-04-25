@@ -227,10 +227,10 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 	}
 
-	public void InsertAll(IReadOnlyCollection<ModelBase> models)
+	public void InsertAll(IReadOnlyCollection<ModelBase> models, string? extra = null)
 	{
 		Verify.NotDisposed(this);
-		this.connection.InsertAll(models);
+		this.connection.InsertAll(models, extra);
 		this.version++;
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 	}

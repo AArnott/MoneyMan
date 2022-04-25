@@ -252,7 +252,7 @@ public class QifAdapter : IFileAdapter
 			}
 		}
 
-		this.moneyFile.InsertAll(pricesToAdd);
+		this.moneyFile.InsertAll(pricesToAdd, "OR IGNORE");
 
 		return recordsImported;
 	}

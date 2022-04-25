@@ -202,6 +202,11 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 			(new DateTime(2015, 3, 2), 11.94m),
 			(new DateTime(2015, 3, 3), 11.91m),
 		};
+
+		// The Prices table may be huge, and loading it all to understand how many records were actually unique is probably not worth it.
+		// As a result, the imported count may include duplicate price records.
+		importedCount = await this.ImportAsync(SecuritiesDataFileName);
+		Assert.Equal(2, importedCount);
 	}
 
 	protected override void RefetchViewModels()
