@@ -109,7 +109,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(8, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(11, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		int transactionCounter = 0;
 
@@ -156,6 +156,28 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(-105, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);
 		Assert.Same(this.Checking, tx.SimpleAccount);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2014, 4, 1), tx.When);
+		Assert.Equal(2, tx.SimpleAmount);
+		Assert.Equal("Fidelity International Real Estate", tx.SimpleAsset?.Name);
+		Assert.Equal(TransactionAction.Add, tx.Action);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2014, 4, 4), tx.When);
+		Assert.Equal(0.5m, tx.SimpleAmount);
+		Assert.Equal("SPARTAN 500 INDEX FD ADVANTAGE CLASS (FUSVX)", tx.SimpleAsset?.Name);
+		////Assert.Equal(50m, tx.SimplePrice);
+		Assert.Equal(TransactionAction.Dividend, tx.Action);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2021, 2, 11), tx.When);
+		Assert.Equal(100, tx.SimpleAmount);
+		Assert.Equal("USD Coin (USDC)", tx.SimpleAsset?.Name);
+		Assert.Equal(TransactionAction.Remove, tx.Action);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];

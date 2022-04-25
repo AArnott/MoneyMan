@@ -62,6 +62,29 @@ T105.00
 L[Checking]
 $105.00
 ^
+D4/ 1'14
+NShrsIn
+YFidelity International Real Estate
+Q2
+CR
+MTRANSFERRED FROM     VS
+^
+D4/ 4'14
+NReinvDiv
+YSPARTAN 500 INDEX FD ADVANTAGE CLASS (FUSVX)
+I50
+Q0.500
+CR
+U25.00
+T25.00
+^
+D2/11'21
+NShrsOut
+YUSD Coin (USDC)
+Q100
+CR
+MXfr To: Brokerage 2
+^
 D4/11'21
 NIntInc
 CR
