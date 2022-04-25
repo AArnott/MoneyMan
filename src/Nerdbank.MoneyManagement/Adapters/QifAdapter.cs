@@ -367,7 +367,6 @@ public class QifAdapter : IFileAdapter
 				Payee = importingTransaction.Payee,
 				Memo = importingTransaction.Memo,
 			};
-			newTransactions.Add(newTransaction);
 
 			switch (importingTransaction.Action)
 			{
@@ -404,7 +403,8 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.Deposit;
 					if (importingTransaction.TransactionAmount is null)
 					{
-						throw new InvalidOperationException("The transfer amount is unspecified.");
+						// Skip this no-op record, which Quicken may create to represent an Opening Balance.
+						continue;
 					}
 
 					newEntry1 = new()
@@ -494,6 +494,7 @@ public class QifAdapter : IFileAdapter
 					throw new NotSupportedException("Unsupported investment transaction Action: " + importingTransaction.Action);
 			}
 
+			newTransactions.Add(newTransaction);
 			transactionsImported++;
 		}
 
