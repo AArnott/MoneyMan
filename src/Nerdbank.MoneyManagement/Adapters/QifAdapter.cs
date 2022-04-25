@@ -539,7 +539,7 @@ public class QifAdapter : IFileAdapter
 		this.assetsByName.Add(asset.Name, asset);
 		if (asset.TickerSymbol is not null)
 		{
-			this.assetsBySymbol.Add(asset.TickerSymbol, asset);
+			this.assetsBySymbol.TryAdd(asset.TickerSymbol, asset);
 		}
 	}
 }

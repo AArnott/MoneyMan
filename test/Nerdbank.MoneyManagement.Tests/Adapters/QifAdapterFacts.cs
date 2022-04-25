@@ -177,7 +177,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	public async Task ImportSecurities()
 	{
 		int importedCount = await this.ImportAsync(SecuritiesDataFileName);
-		Assert.Equal(4, importedCount);
+		Assert.Equal(5, importedCount);
 
 		AssetViewModel? msft = this.DocumentViewModel.AssetsPanel.FindAssetByTicker("MSFT");
 		Assert.Equal("Microsoft", msft?.Name);
@@ -192,7 +192,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	public async Task ImportPrices()
 	{
 		int importedCount = await this.ImportAsync(SecuritiesDataFileName);
-		Assert.Equal(4, importedCount);
+		Assert.Equal(5, importedCount);
 
 		AssetViewModel? msft = this.DocumentViewModel.AssetsPanel.FindAssetByTicker("MSFT");
 		this.DocumentViewModel.AssetsPanel.SelectedAsset = msft;
