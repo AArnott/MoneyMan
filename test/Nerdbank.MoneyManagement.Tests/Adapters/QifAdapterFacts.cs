@@ -109,7 +109,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(13, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(14, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		int transactionCounter = 0;
 
@@ -187,6 +187,13 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal("NH PORTFOLIO 2030 (FIDELITY FUNDS)", tx.SimpleAsset?.Name);
 		Assert.Equal(17.50m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.Sell, tx.Action);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2021, 1, 31), tx.When);
+		Assert.Equal(0.02m, tx.SimpleAmount);
+		Assert.Equal("USD Coin (USDC)", tx.SimpleAsset?.Name);
+		Assert.Equal(TransactionAction.Dividend, tx.Action); // This ReinvInt record adds a security rather than a currency, so we consider it a dividend instead of interest.
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];

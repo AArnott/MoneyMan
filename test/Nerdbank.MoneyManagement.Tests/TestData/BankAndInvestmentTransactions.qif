@@ -102,6 +102,15 @@ MYOU BOUGHT           CONTRIBUTIO
 L[Checking]
 $31.50
 ^
+D1/31'21
+NReinvInt
+YUSD Coin (USDC)
+I1
+Q0.02
+CR
+U0.02
+T0.02
+^
 D2/11'21
 NShrsOut
 YUSD Coin (USDC)
