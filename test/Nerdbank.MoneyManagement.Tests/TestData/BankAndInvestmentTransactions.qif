@@ -2,6 +2,10 @@
 NBrokerage
 TInvst
 ^
+!Type:Cat
+NMicrosoft Stock Awards (Cash)
+I
+^
 !Type:Invst
 D6/13' 6
 NCash
@@ -44,6 +48,17 @@ U91.871
 T91.871
 MYOU SOLD
 O9.34
+^
+D5/ 9' 7
+NBuyX
+YMicrosoft
+I30.75
+Q20
+CR
+U615.00
+T615.00
+LMicrosoft Stock Awards (Cash)
+$615.00
 ^
 D1/ 4' 8
 NXOut

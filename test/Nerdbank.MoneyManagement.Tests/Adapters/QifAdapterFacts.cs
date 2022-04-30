@@ -109,7 +109,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(14, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(15, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		int transactionCounter = 0;
 
@@ -142,6 +142,16 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Same(msft, tx.SimpleAsset?.Model);
 		Assert.Equal("YOU SOLD", tx.Memo);
 		////Assert.Equal(9.34m, tx.Commission);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		// A BuyX record that used money from a category.
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2007, 5, 9), tx.When);
+		Assert.Equal(20, tx.SimpleAmount);
+		Assert.Equal(30.75m, tx.SimplePrice);
+		Assert.Equal(TransactionAction.Buy, tx.Action);
+		Assert.Equal("Microsoft Stock Awards (Cash)", tx.SimpleAccount?.Name);
+		Assert.Equal(Account.AccountType.Category, tx.SimpleAccount?.Type);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];

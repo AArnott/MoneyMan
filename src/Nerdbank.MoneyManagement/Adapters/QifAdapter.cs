@@ -572,12 +572,19 @@ public class QifAdapter : IFileAdapter
 		return category is not null && this.categories.TryGetValue(category, out Account? account) ? account.Id : null;
 	}
 
-	private Account? FindTransferAccountId(string? category)
+	private Account? FindTransferAccountId(string? categoryOrAccountName)
 	{
-		if (category is not null && category.Length > 2 && category[0] == '[' && category[^1] == ']')
+		if (categoryOrAccountName is not null)
 		{
-			string accountName = category[1..^1];
-			return this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName);
+			if (categoryOrAccountName.Length > 2 && categoryOrAccountName[0] == '[' && categoryOrAccountName[^1] == ']')
+			{
+				string accountName = categoryOrAccountName[1..^1];
+				return this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName);
+			}
+			else if (this.categories.TryGetValue(categoryOrAccountName, out Account? account))
+			{
+				return account;
+			}
 		}
 
 		return null;
