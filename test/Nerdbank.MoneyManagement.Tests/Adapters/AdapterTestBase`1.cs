@@ -28,7 +28,7 @@ public abstract class AdapterTestBase<T> : MoneyTestBase
 		this.Checking = (BankingAccountViewModel)this.DocumentViewModel.GetAccount(this.Checking.Id);
 	}
 
-	protected async Task<int> ImportAsync(string dataFile)
+	protected async Task<int> ImportAsync(string testAssetFileName)
 	{
 		Verify.Operation(this.Adapter is not null, "Set the adapter first.");
 
@@ -36,7 +36,7 @@ public abstract class AdapterTestBase<T> : MoneyTestBase
 		int result;
 		using (this.DocumentViewModel.SuspendViewModelUpdates())
 		{
-			result = await this.Adapter.ImportAsync(this.GetTestDataFile(dataFile), this.TimeoutToken);
+			result = await this.Adapter.ImportAsync(this.GetTestDataFile(testAssetFileName), this.TimeoutToken);
 		}
 
 		this.RefetchViewModels();

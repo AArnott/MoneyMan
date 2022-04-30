@@ -428,8 +428,11 @@ public class QifAdapter : IFileAdapter
 					////}
 
 					break;
-				case InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell:
+				case InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell or InvestmentTransaction.Actions.BuyX or InvestmentTransaction.Actions.SellX:
 					newTransaction.Action = TransactionAction.Buy;
+					transferAccount = importingTransaction.Action is InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell ?
+						target : this.FindTransferAccountId(importingTransaction.AccountForTransfer);
+					Verify.Operation(transferAccount is not null, "Transfer account not known.");
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
 					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from Buy record.");
 					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
@@ -445,13 +448,13 @@ public class QifAdapter : IFileAdapter
 
 					newEntry2 = new()
 					{
-						AccountId = target.Id,
+						AccountId = transferAccount.Id,
 						Amount = -importingTransaction.TransactionAmount.Value,
 						AssetId = target.CurrencyAssetId.Value,
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
 
-					if (importingTransaction.Action == "Sell")
+					if (importingTransaction.Action is InvestmentTransaction.Actions.Sell or InvestmentTransaction.Actions.SellX)
 					{
 						newTransaction.Action = TransactionAction.Sell;
 						newEntry1.Amount *= -1;
