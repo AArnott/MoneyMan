@@ -539,6 +539,52 @@ public class QifAdapter : IFileAdapter
 					newEntryTuples.Add((newTransaction, newEntry1));
 
 					break;
+				case InvestmentTransaction.Actions.ShtSell:
+					newTransaction.Action = TransactionAction.ShortSale;
+					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from ShtSell record.");
+					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from ShtSell record.");
+					Verify.Operation(importingTransaction.Security is not null, "Security is missing from ShtSell record.");
+					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out asset), "No matching asset: {0}", importingTransaction.Security);
+					newEntry1 = new()
+					{
+						AccountId = target.Id,
+						Amount = -importingTransaction.Quantity.Value,
+						AssetId = asset.Id,
+					};
+					newEntryTuples.Add((newTransaction, newEntry1));
+
+					newEntry2 = new()
+					{
+						AccountId = target.Id,
+						Amount = importingTransaction.TransactionAmount.Value,
+						AssetId = target.CurrencyAssetId.Value,
+					};
+					newEntryTuples.Add((newTransaction, newEntry2));
+
+					break;
+				case InvestmentTransaction.Actions.CvrShrt:
+					newTransaction.Action = TransactionAction.CoverShort;
+					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from ShtSell record.");
+					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from ShtSell record.");
+					Verify.Operation(importingTransaction.Security is not null, "Security is missing from ShtSell record.");
+					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out asset), "No matching asset: {0}", importingTransaction.Security);
+					newEntry1 = new()
+					{
+						AccountId = target.Id,
+						Amount = importingTransaction.Quantity.Value,
+						AssetId = asset.Id,
+					};
+					newEntryTuples.Add((newTransaction, newEntry1));
+
+					newEntry2 = new()
+					{
+						AccountId = target.Id,
+						Amount = -importingTransaction.TransactionAmount.Value,
+						AssetId = target.CurrencyAssetId.Value,
+					};
+					newEntryTuples.Add((newTransaction, newEntry2));
+
+					break;
 				default:
 					throw new NotSupportedException("Unsupported investment transaction Action: " + importingTransaction.Action);
 			}

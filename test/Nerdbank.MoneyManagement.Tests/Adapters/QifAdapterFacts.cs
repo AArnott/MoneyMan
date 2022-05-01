@@ -109,7 +109,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(15, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(17, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		int transactionCounter = 0;
 
@@ -152,6 +152,24 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(TransactionAction.Buy, tx.Action);
 		Assert.Equal("Microsoft Stock Awards (Cash)", tx.SimpleAccount?.Name);
 		Assert.Equal(Account.AccountType.Category, tx.SimpleAccount?.Type);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2007, 10, 8), tx.When);
+		Assert.Equal(100, tx.SimpleAmount);
+		Assert.Equal(1.3199m, tx.SimplePrice); // 1.3999 when commision is accounted for
+		Assert.Equal(TransactionAction.ShortSale, tx.Action);
+		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
+		////Assert.Equal(8, tx.Commission);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2007, 10, 26), tx.When);
+		Assert.Equal(100, tx.SimpleAmount);
+		Assert.Equal(5.7875m, tx.SimplePrice); // 5.7075 when commission is accounted for.
+		Assert.Equal(TransactionAction.CoverShort, tx.Action);
+		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
+		////Assert.Equal(8, tx.Commission);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
