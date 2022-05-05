@@ -384,7 +384,7 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
-					TransactionEntry newEntry2 = new()
+					TransactionEntry? newEntry2 = new()
 					{
 						AccountId = transferAccount.Id,
 						Amount = importingTransaction.AmountTransferred.Value,
@@ -434,8 +434,11 @@ public class QifAdapter : IFileAdapter
 						target : this.FindTransferAccountId(importingTransaction.AccountForTransfer);
 					Verify.Operation(transferAccount is not null, "Transfer account not known.");
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from Buy record.");
-					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from Buy record.");
-					Verify.Operation(importingTransaction.TransactionAmount is not null, "TransactionAmount is missing from Buy record.");
+					if (importingTransaction.Quantity is null || importingTransaction.TransactionAmount is null)
+					{
+						continue;
+					}
+
 					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out Asset? asset), "No matching asset: {0}", importingTransaction.Security);
 
 					newEntry1 = new()
@@ -446,6 +449,9 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
+					newEntry2 = null;
+					if (importingTransaction.TransactionAmount.HasValue)
+					{
 					newEntry2 = new()
 					{
 						AccountId = transferAccount.Id,
@@ -453,12 +459,16 @@ public class QifAdapter : IFileAdapter
 						AssetId = target.CurrencyAssetId.Value,
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
+					}
 
 					if (importingTransaction.Action is InvestmentTransaction.Actions.Sell or InvestmentTransaction.Actions.SellX)
 					{
 						newTransaction.Action = TransactionAction.Sell;
 						newEntry1.Amount *= -1;
+						if (newEntry2 is not null)
+						{
 						newEntry2.Amount *= -1;
+					}
 					}
 
 					break;
@@ -515,7 +525,12 @@ public class QifAdapter : IFileAdapter
 					break;
 				case InvestmentTransaction.Actions.ShrsIn:
 					newTransaction.Action = TransactionAction.Add;
-					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from ShrsIn record.");
+					if (importingTransaction.Quantity is null)
+					{
+						// There's nothing we can do without this data.
+						continue;
+					}
+
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from ShrsIn record.");
 					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out asset), "No matching asset: {0}", importingTransaction.Security);
 					newEntry1 = new()
