@@ -496,6 +496,7 @@ public class QifAdapter : IFileAdapter
 				case InvestmentTransaction.Actions.ReinvDiv:
 				case InvestmentTransaction.Actions.ReinvInt:
 				case InvestmentTransaction.Actions.ReinvSh:
+				case InvestmentTransaction.Actions.ReinvLg:
 					newTransaction.Action = TransactionAction.Dividend;
 					Verify.Operation(importingTransaction.Quantity is not null, "Quantity is missing from ReinvDiv record.");
 					Verify.Operation(importingTransaction.Security is not null, "Security is missing from ReinvDiv record.");

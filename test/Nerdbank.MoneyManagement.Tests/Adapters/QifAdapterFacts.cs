@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Microsoft;
 using Nerdbank.MoneyManagement.Adapters;
 
 public class QifAdapterFacts : AdapterTestBase<QifAdapter>
@@ -109,7 +108,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Asset? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft");
 		Assert.NotNull(msft);
 		InvestingAccountViewModel? brokerage = (InvestingAccountViewModel?)this.DocumentViewModel.GetAccount("Brokerage");
-		Assert.Equal(18, brokerage?.Transactions.Count(tx => tx.IsPersisted));
+		Assert.Equal(19, brokerage?.Transactions.Count(tx => tx.IsPersisted));
 
 		int transactionCounter = 0;
 
@@ -176,6 +175,14 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2007, 12, 14), tx.When);
 		Assert.Equal(TransactionAction.Dividend, tx.Action);
 		Assert.Equal(0.101m, tx.SimpleAmount);
+		////Assert.Equal(19.29m, tx.SimplePrice);
+		Assert.Equal("Janus Contrarian Fund", tx.SimpleAsset?.Name);
+		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+
+		tx = brokerage.Transactions[transactionCounter++];
+		Assert.Equal(new DateTime(2007, 12, 15), tx.When);
+		Assert.Equal(TransactionAction.Dividend, tx.Action);
+		Assert.Equal(10.607m, tx.SimpleAmount);
 		////Assert.Equal(19.29m, tx.SimplePrice);
 		Assert.Equal("Janus Contrarian Fund", tx.SimpleAsset?.Name);
 		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
