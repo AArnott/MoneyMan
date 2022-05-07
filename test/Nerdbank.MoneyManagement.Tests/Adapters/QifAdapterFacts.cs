@@ -16,6 +16,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		: base(logger)
 	{
 		this.adapter = new QifAdapter(this.DocumentViewModel);
+		this.Adapter.TraceSource.Listeners.Add(new XunitTraceListener(this.Logger));
 	}
 
 	protected override QifAdapter Adapter => this.adapter;

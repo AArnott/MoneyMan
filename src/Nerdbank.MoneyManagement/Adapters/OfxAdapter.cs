@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft;
@@ -29,6 +30,8 @@ public class OfxAdapter : IFileAdapter
 		this.userNotification = documentViewModel.UserNotification;
 		this.documentViewModel = documentViewModel;
 	}
+
+	public TraceSource TraceSource { get; } = new TraceSource(nameof(OfxAdapter)) { Switch = { Level = SourceLevels.Warning } };
 
 	public IReadOnlyList<AdapterFileType> FileTypes { get; } = new AdapterFileType[]
 	{

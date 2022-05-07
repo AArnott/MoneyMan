@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Diagnostics;
+
 namespace Nerdbank.MoneyManagement.Adapters;
 
 /// <summary>
@@ -8,6 +10,11 @@ namespace Nerdbank.MoneyManagement.Adapters;
 /// </summary>
 public interface IFileAdapter
 {
+	/// <summary>
+	/// Gets a means to monitor for log messages during an import operation.
+	/// </summary>
+	TraceSource TraceSource { get; }
+
 	/// <summary>
 	/// Gets the type of file that this adapter can communicate with.
 	/// </summary>

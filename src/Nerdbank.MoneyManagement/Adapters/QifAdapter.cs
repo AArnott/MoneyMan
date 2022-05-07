@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Text;
 using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
@@ -24,6 +25,8 @@ public class QifAdapter : IFileAdapter
 		this.moneyFile = documentViewModel.MoneyFile;
 		this.userNotification = documentViewModel.UserNotification;
 	}
+
+	public TraceSource TraceSource { get; } = new TraceSource(nameof(QifAdapter)) { Switch = { Level = SourceLevels.Warning } };
 
 	public IReadOnlyList<AdapterFileType> FileTypes { get; } = new AdapterFileType[]
 	{
@@ -370,7 +373,7 @@ public class QifAdapter : IFileAdapter
 
 			switch (importingTransaction.Action)
 			{
-				case InvestmentTransaction.Actions.XOut or InvestmentTransaction.Actions.XIn or InvestmentTransaction.Actions.WithdrwX:
+				case InvestmentTransaction.Actions.XOut or InvestmentTransaction.Actions.XIn or InvestmentTransaction.Actions.WithdrwX or InvestmentTransaction.Actions.ContribX:
 					newTransaction.Action = TransactionAction.Transfer;
 					Account? transferAccount = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
 					Verify.Operation(transferAccount is { CurrencyAssetId: not null }, "Transfer account isn't recognized or has not set a currency: {0}", importingTransaction.AccountForTransfer);
@@ -401,9 +404,9 @@ public class QifAdapter : IFileAdapter
 					break;
 				case InvestmentTransaction.Actions.Cash:
 					newTransaction.Action = TransactionAction.Deposit;
-					if (importingTransaction.TransactionAmount is null)
+					if (importingTransaction is not { TransactionAmount: not null })
 					{
-						// Skip this no-op record, which Quicken may create to represent an Opening Balance.
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -435,6 +438,7 @@ public class QifAdapter : IFileAdapter
 					Verify.Operation(transferAccount is not null, "Transfer account not known.");
 					if (importingTransaction is not { Quantity: not null, TransactionAmount: not null, Security: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -475,6 +479,7 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.Interest;
 					if (importingTransaction is not { TransactionAmount: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -493,6 +498,7 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.Dividend;
 					if (importingTransaction is not { TransactionAmount: not null, Security: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -516,6 +522,7 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.Dividend;
 					if (importingTransaction is not { Quantity: not null, Security: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -536,6 +543,7 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.Add;
 					if (importingTransaction is not { Quantity: not null, Security: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -553,6 +561,7 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.Remove;
 					if (importingTransaction is not { Quantity: not null, Security: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -570,6 +579,7 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.ShortSale;
 					if (importingTransaction is not { Quantity: not null, Security: not null, TransactionAmount: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -595,6 +605,7 @@ public class QifAdapter : IFileAdapter
 					newTransaction.Action = TransactionAction.CoverShort;
 					if (importingTransaction is not { Quantity: not null, Security: not null, TransactionAmount: not null })
 					{
+						LogIncompleteTransaction();
 						continue;
 					}
 
@@ -616,9 +627,16 @@ public class QifAdapter : IFileAdapter
 					newEntryTuples.Add((newTransaction, newEntry2));
 
 					break;
+				case InvestmentTransaction.Actions.StkSplit:
+				case InvestmentTransaction.Actions.CGLong:
+				case InvestmentTransaction.Actions.CGShort:
+				case InvestmentTransaction.Actions.MargInt:
 				default:
-					throw new NotSupportedException("Unsupported investment transaction Action: " + importingTransaction.Action);
+					this.TraceSource.TraceEvent(TraceEventType.Warning, 0, "Unsupported record type: {0}", importingTransaction.Action);
+					break;
 			}
+
+			void LogIncompleteTransaction() => this.TraceSource.TraceEvent(TraceEventType.Warning, 0, "Skipping transaction in account \"{0}\" because it is missing required fields: {1}", target.Name, importingTransaction);
 
 			newTransactions.Add(newTransaction);
 			transactionsImported++;
