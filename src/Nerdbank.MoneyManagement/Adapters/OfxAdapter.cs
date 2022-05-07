@@ -66,7 +66,7 @@ public class OfxAdapter : IFileAdapter
 					}
 
 					StringBuilder prompt = new("Which account should this statement be imported into?");
-					if (bankStatement is not null)
+					if (bankStatement?.Account is not null)
 					{
 						prompt.Append($" (Bank routing # {bankStatement.Account.AccountNumber}, {bankStatement.Account.AccountType} account # {bankStatement.Account.AccountNumber})");
 					}
@@ -81,7 +81,7 @@ public class OfxAdapter : IFileAdapter
 				batchImportTransaction = this.moneyFile.UndoableTransaction($"Import transactions from {Path.GetFileNameWithoutExtension(filePath)}", this.documentViewModel.GetAccount(account.Id).BankingViewSelection);
 				if (account is { Type: Account.AccountType.Banking } bankingAccount)
 				{
-					foreach (OfxStatementTransaction transaction in statement.TransactionList.Transactions)
+					foreach (OfxStatementTransaction transaction in statement.TransactionList?.Transactions ?? Enumerable.Empty<OfxStatementTransaction>())
 					{
 						TransactionEntry existingEntry = this.moneyFile.TransactionEntries.FirstOrDefault(e => e.OfxFitId == transaction.FitId);
 						if (existingEntry is not null)
