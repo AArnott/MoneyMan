@@ -112,7 +112,7 @@
 										<Style TargetType="DataGridRow">
 											<Style.Triggers>
 												<Trigger Property="AlternationIndex" Value="0">
-													<Setter Property="Background" Value="LightBlue" />
+													<Setter Property="Background" Value="AliceBlue" />
 												</Trigger>
 												<DataTrigger Binding="{Binding IsPersisted}" Value="False">
 													<Setter Property="Background" Value="LightYellow" />
@@ -243,7 +243,7 @@
 													<Style TargetType="DataGridRow">
 														<Style.Triggers>
 															<Trigger Property="AlternationIndex" Value="0">
-																<Setter Property="Background" Value="LightGreen" />
+																<Setter Property="Background" Value="BlanchedAlmond" />
 															</Trigger>
 															<DataTrigger Binding="{Binding IsPersisted}" Value="False">
 																<Setter Property="Background" Value="LightYellow" />
@@ -330,7 +330,7 @@
 										<Style TargetType="DataGridRow">
 											<Style.Triggers>
 												<Trigger Property="AlternationIndex" Value="0">
-													<Setter Property="Background" Value="LightBlue" />
+													<Setter Property="Background" Value="AliceBlue" />
 												</Trigger>
 												<DataTrigger Binding="{Binding IsPersisted}" Value="False">
 													<Setter Property="Background" Value="LightYellow" />
@@ -648,7 +648,7 @@
 								<Style TargetType="DataGridRow">
 									<Style.Triggers>
 										<Trigger Property="AlternationIndex" Value="0">
-											<Setter Property="Background" Value="LightBlue" />
+											<Setter Property="Background" Value="AliceBlue" />
 										</Trigger>
 										<DataTrigger Binding="{Binding IsPersisted}" Value="False">
 											<Setter Property="Background" Value="LightYellow" />
