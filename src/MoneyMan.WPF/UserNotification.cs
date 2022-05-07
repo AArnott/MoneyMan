@@ -93,7 +93,7 @@ internal class UserNotification : IUserNotification
 		return Task.FromResult(this.documentViewModel?.BankingPanel.SelectedAccount);
 	}
 
-	public async Task<string?> PickFileAsync(string title, string filter, CancellationToken cancellationToken = default)
+	public async Task<string?> PickFileAsync(string title, string filter, int filterIndex, CancellationToken cancellationToken = default)
 	{
 		return await this.mainWindow.Dispatcher.InvokeAsync(delegate
 		{
@@ -103,7 +103,7 @@ internal class UserNotification : IUserNotification
 				Title = title,
 				CheckPathExists = true,
 				Filter = filter,
-				FilterIndex = 0,
+				FilterIndex = filterIndex,
 			};
 
 			return dialog.ShowDialog() is true ? dialog.FileName : null;

@@ -35,15 +35,19 @@ public class MainPageViewModelBaseTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void ImportCommand_EnabledWithOpenDocumentOnlyWithAccounts()
+	public void ImportCommand_EnabledWithOpenDocumentWithOrWithoutAccounts()
 	{
 		this.LoadDocument();
 
 		Assert.Empty(this.DocumentViewModel.AccountsPanel.Accounts);
-		Assert.False(this.MainPageViewModel.ImportFileCommand.CanExecute());
+		Assert.True(this.MainPageViewModel.ImportFileCommand.CanExecute());
 		Assert.True(this.MainPageViewModel.ImportFileCommand.Visible);
 
-		this.DocumentViewModel.AccountsPanel.NewAccount(Account.AccountType.Banking, "Checking");
+		var account = this.DocumentViewModel.AccountsPanel.NewAccount(Account.AccountType.Banking, "Checking");
+		Assert.True(this.MainPageViewModel.ImportFileCommand.CanExecute());
+		Assert.True(this.MainPageViewModel.ImportFileCommand.Visible);
+
+		this.DocumentViewModel.BankingPanel.SelectedAccount = account;
 		Assert.True(this.MainPageViewModel.ImportFileCommand.CanExecute());
 		Assert.True(this.MainPageViewModel.ImportFileCommand.Visible);
 	}

@@ -321,11 +321,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		get
 		{
-			if (this.Action is TransactionAction.Buy)
+			if (this.Action is TransactionAction.Buy or TransactionAction.CoverShort)
 			{
 				return this.DepositAmount != 0 && this.WithdrawAmount != 0 ? this.WithdrawAmount / this.DepositAmount : null;
 			}
-			else if (this.Action is TransactionAction.Sell)
+			else if (this.Action is TransactionAction.Sell or TransactionAction.ShortSale)
 			{
 				return this.DepositAmount != 0 && this.WithdrawAmount != 0 ? this.DepositAmount / this.WithdrawAmount : null;
 			}
@@ -456,9 +456,9 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	private bool IsDepositOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend;
+	private bool IsDepositOperation => this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Deposit or TransactionAction.Interest or TransactionAction.Dividend or TransactionAction.CoverShort;
 
-	private bool IsWithdrawOperation => this.Action is TransactionAction.Sell or TransactionAction.Remove or TransactionAction.Withdraw;
+	private bool IsWithdrawOperation => this.Action is TransactionAction.Sell or TransactionAction.Remove or TransactionAction.Withdraw or TransactionAction.ShortSale;
 
 	private bool IsCashTransaction => this.Action is TransactionAction.Deposit or TransactionAction.Withdraw;
 
@@ -567,6 +567,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Exchange:
 			case TransactionAction.Sell:
 			case TransactionAction.Buy:
+			case TransactionAction.ShortSale:
+			case TransactionAction.CoverShort:
 				Assumes.True(this.Entries.Count == 2, "Entries.Count is {0}", this.Entries.Count);
 				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
 				TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];

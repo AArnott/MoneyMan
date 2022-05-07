@@ -413,6 +413,26 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		Assert.Equal(5, this.savings!.Value);
 	}
 
+	/// <summary>
+	/// Verifies that every transaction is assigned a balance even when the balance equals 0 midway through.
+	/// </summary>
+	[Fact]
+	public void Balance_ComputedExhaustivelyAcrossZeroBalance()
+	{
+		BankingTransactionViewModel tx = this.checking.NewTransaction();
+		tx.When = new DateTime(2011, 1, 1);
+		tx.Amount = 5;
+		tx = this.checking.NewTransaction();
+		tx.When = new DateTime(2011, 1, 2);
+		tx.Amount = -5;
+		tx = this.checking.NewTransaction();
+		tx.When = new DateTime(2011, 1, 3);
+		tx.Amount = 3;
+
+		this.ReloadViewModel();
+		Assert.Equal(3, this.checking.Transactions[2].Balance);
+	}
+
 	[Fact]
 	public void TransferFromDbAppearsInBothAccounts()
 	{

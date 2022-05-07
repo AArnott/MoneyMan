@@ -6,7 +6,9 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Microsoft;
+using Nerdbank.MoneyManagement.Adapters;
 using PCLCommandBase;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -197,15 +199,19 @@ public class DocumentViewModel : BindableBase, IDisposable
 	[return: NotNullIfNotNull("accountId")]
 	public AccountViewModel? GetAccount(int? accountId) => accountId is null ? null : this.GetAccount(accountId.Value);
 
-	public AccountViewModel GetAccount(int accountId) => this.BankingPanel?.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
+	public AccountViewModel GetAccount(int accountId) => this.BankingPanel.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
+
+	public AccountViewModel? GetAccount(string name) => this.GetAccount(this.MoneyFile.Accounts.FirstOrDefault(acct => acct.Name == name)?.Id);
 
 	[return: NotNullIfNotNull("assetId")]
 	public AssetViewModel? GetAsset(int? assetId) => assetId is null ? null : this.AssetsPanel.FindAsset(assetId.Value);
 
-	public CategoryAccountViewModel GetCategory(int categoryId) => this.CategoriesPanel?.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
+	public CategoryAccountViewModel GetCategory(int categoryId) => this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == categoryId) ?? throw new ArgumentException("No match found.");
 
 	[return: NotNullIfNotNull("categoryId")]
 	public CategoryAccountViewModel? GetCategory(int? categoryId) => categoryId is null ? null : this.GetCategory(categoryId.Value);
+
+	public CategoryAccountViewModel? FindCategory(string name) => this.GetCategory(this.MoneyFile.Categories.FirstOrDefault(cat => cat.Name == name)?.Id);
 
 	public void Save() => this.MoneyFile.Save();
 
@@ -243,7 +249,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 
 		this.ConfigurationPanel.CopyFrom(this.MoneyFile.CurrentConfiguration);
-		this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+		this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Today });
 	}
 
 	public void Dispose()
@@ -253,6 +259,21 @@ public class DocumentViewModel : BindableBase, IDisposable
 		{
 			this.MoneyFile.Dispose();
 		}
+	}
+
+	/// <summary>
+	/// Detaches view model event handlers from the database so that changes can be made quickly to the database.
+	/// Upon disposal of the return value, the entire view model is refreshed and the event handlers restored.
+	/// </summary>
+	/// <returns>A value to dispose of when the bulk database changes are completed.</returns>
+	public IDisposable SuspendViewModelUpdates()
+	{
+		this.MoneyFile.EntitiesChanged -= this.Model_EntitiesChanged;
+		return new ActionOnDispose(delegate
+		{
+			this.Reset();
+			this.MoneyFile.EntitiesChanged += this.Model_EntitiesChanged;
+		});
 	}
 
 	internal void AddTransactionTarget(AccountViewModel target) => this.transactionTargets.Add(target);
@@ -507,21 +528,102 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 		public override string Caption => "Import";
 
-		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null && this.documentViewModel.AccountsPanel.Accounts.Count > 0;
+		public override bool CanExecute(object? parameter = null) => base.CanExecute(parameter) && this.documentViewModel.UserNotification is not null;
 
 		protected override async Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
+			var adapters = new IFileAdapter[]
+			{
+				new OfxAdapter(this.documentViewModel),
+				new QifAdapter(this.documentViewModel),
+			};
+
+			Dictionary<string, IFileAdapter> adaptersByFileExtension = new(StringComparer.OrdinalIgnoreCase);
+			StringBuilder filterBuilder = new();
+			int filterCounter = 0;
+			foreach (IFileAdapter adapter in adapters)
+			{
+				foreach (AdapterFileType fileType in adapter.FileTypes)
+				{
+					filterBuilder.Append($"{fileType.DisplayName}");
+					bool firstExtension = true;
+					int extensionCount = 0;
+					foreach (string extension in fileType.FileExtensions)
+					{
+						adaptersByFileExtension.TryAdd(extension, adapter);
+						extensionCount++;
+						if (firstExtension)
+						{
+							filterBuilder.Append(" (");
+						}
+						else
+						{
+							filterBuilder.Append(", ");
+						}
+
+						filterBuilder.Append($"*.{extension}");
+					}
+
+					if (extensionCount > 0)
+					{
+						filterBuilder.Append(")");
+					}
+
+					filterBuilder.Append("|");
+					foreach (string extension in fileType.FileExtensions)
+					{
+						filterBuilder.Append($"*.{extension};");
+					}
+
+					if (extensionCount > 0)
+					{
+						filterBuilder.Length--;
+					}
+
+					filterCounter++;
+					filterBuilder.Append('|');
+				}
+			}
+
+			if (adaptersByFileExtension.Count > 0)
+			{
+				filterBuilder.Append("All supported files|");
+				foreach (string extension in adaptersByFileExtension.Keys)
+				{
+					filterBuilder.Append($"*.{extension};");
+				}
+
+				filterBuilder.Length--;
+				filterBuilder.Append('|');
+				filterCounter++;
+			}
+
+			filterBuilder.Append("All files|*.*");
+			filterCounter++;
+
 			string? fileName = await this.documentViewModel.UserNotification!.PickFileAsync(
 				 "Select file to import",
-				 "Open Financial Exchange (*.qfx)|*.qfx|All files|*.*",
+				 filterBuilder.ToString(),
+				 Math.Max(0, filterCounter - 1), // Select the second-to-last one (all supported formats)
 				 cancellationToken);
 			if (fileName is null)
 			{
 				return;
 			}
 
-			OfxAdapter adapter = new(this.documentViewModel);
-			await adapter.ImportOfxAsync(fileName, cancellationToken);
+			if (adaptersByFileExtension.TryGetValue(Path.GetExtension(fileName).Substring(1), out IFileAdapter? selectedAdapter))
+			{
+				// For better performance, we expect the import adapters to work directly at the database level,
+				// so refresh the entire view model so the user sees all the changes.
+				using (this.documentViewModel.SuspendViewModelUpdates())
+				{
+					await selectedAdapter.ImportAsync(fileName, cancellationToken);
+				}
+			}
+			else
+			{
+				await this.documentViewModel.UserNotification.NotifyAsync("Unsupported file type.", cancellationToken);
+			}
 		}
 	}
 

@@ -64,7 +64,7 @@ internal class UserNotificationMock : IUserNotification
 			: Task.FromResult(this.ChooseAccountResult);
 	}
 
-	public Task<string?> PickFileAsync(string title, string filter, CancellationToken cancellationToken = default)
+	public Task<string?> PickFileAsync(string title, string filter, int filterIndex, CancellationToken cancellationToken = default)
 	{
 		throw new NotImplementedException();
 	}

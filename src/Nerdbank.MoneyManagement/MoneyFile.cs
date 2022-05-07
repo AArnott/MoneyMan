@@ -30,6 +30,9 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	private bool inUndoableTransaction;
 
+	private long version;
+	private (long Version, NetWorthQueryOptions Options)? lastRefreshedBalances;
+
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MoneyFile"/> class.
 	/// </summary>
@@ -196,6 +199,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		this.OnPropertyChanged(nameof(this.UndoStack));
 		this.Logger?.WriteLine("Rolling back: {0}", savepoint.Activity);
 		this.connection.RollbackTo(savepoint.SavepointName);
+		this.version++;
 		return savepoint.ViewModel;
 	}
 
@@ -210,6 +214,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 		this.connection.Insert(model);
+		this.version++;
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		return model;
 	}
@@ -218,6 +223,15 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 		this.connection.InsertAll(models);
+		this.version++;
+		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
+	}
+
+	public void InsertAll(IReadOnlyCollection<ModelBase> models, string? extra = null)
+	{
+		Verify.NotDisposed(this);
+		this.connection.InsertAll(models, extra);
+		this.version++;
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 	}
 
@@ -226,6 +240,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Verify.NotDisposed(this);
 		ModelBase before = (ModelBase)this.connection.Get(model.Id, this.GetTableMapping(model));
 		this.connection.Update(model);
+		this.version++;
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
 	}
 
@@ -237,11 +252,13 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		ModelBase before = (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model));
 		if (this.connection.Update(model) > 0)
 		{
+			this.version++;
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
 		}
 		else
 		{
 			this.connection.Insert(model);
+			this.version++;
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		}
 	}
@@ -256,6 +273,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 
 		int deletedCount = this.connection.Delete(primaryKey, mapping);
+		this.version++;
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
 		return deletedCount > 0;
 	}
@@ -264,6 +282,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 		int deletedCount = model.IsPersisted ? this.connection.Delete(model) : 0;
+		this.version++;
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
 		return deletedCount > 0;
 	}
@@ -322,7 +341,7 @@ INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
 	/// <returns>The value of the account, measured in the user's preferred units.</returns>
 	public decimal GetValue(Account account, DateTime? asOfDate = null)
 	{
-		asOfDate ??= DateTime.Now;
+		asOfDate ??= DateTime.Today;
 		this.RefreshBalances(new NetWorthQueryOptions { AsOfDate = asOfDate });
 		this.RefreshAssetValues(asOfDate.Value);
 
@@ -347,6 +366,7 @@ WHERE [Balances].[AccountId] = ?
 	{
 		string sql = $"DELETE FROM [TransactionEntry] WHERE [TransactionId] = {transactionId} AND [Id] NOT IN ({string.Join(',', entryIdsToPreserve)})";
 		this.ExecuteSql(sql);
+		this.version++;
 	}
 
 	/// <summary>
@@ -482,6 +502,13 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 
 	private void RefreshBalances(NetWorthQueryOptions options = default(NetWorthQueryOptions))
 	{
+		(long, NetWorthQueryOptions) currentVersion = (this.version, options);
+		if (this.lastRefreshedBalances == currentVersion)
+		{
+			return;
+		}
+
+		this.lastRefreshedBalances = currentVersion;
 		List<object> args = new();
 		string dateFilter = string.Empty;
 		if (options.BeforeDate.HasValue)
@@ -554,7 +581,7 @@ WHERE [Id] != ?
 		}
 	}
 
-	public struct NetWorthQueryOptions
+	public record struct NetWorthQueryOptions
 	{
 		/// <summary>
 		/// Gets or sets the date to calculate the net worth for, considering all transactions that occurred on the specified date.

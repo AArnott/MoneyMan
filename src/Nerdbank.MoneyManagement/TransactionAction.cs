@@ -62,4 +62,14 @@ public enum TransactionAction
 	/// Shares removed.
 	/// </summary>
 	Remove,
+
+	/// <summary>
+	/// Sale of borrowed securities.
+	/// </summary>
+	ShortSale,
+
+	/// <summary>
+	/// Covers a prior short sale.
+	/// </summary>
+	CoverShort,
 }

@@ -71,9 +71,10 @@ public interface IUserNotification
 	/// </summary>
 	/// <param name="title">The title for the open file dialog.</param>
 	/// <param name="filter">The filter of file types to display.</param>
+	/// <param name="filterIndex">The default filter to select. 1-based index.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The selected file name, or <see langword="null" /> if the user cancelled the operation.</returns>
-	Task<string?> PickFileAsync(string title, string filter, CancellationToken cancellationToken = default);
+	Task<string?> PickFileAsync(string title, string filter, int filterIndex, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Presents a modal view for a given view model.

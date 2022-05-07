@@ -1,0 +1,198 @@
+!Account
+NBrokerage
+TInvst
+^
+!Type:Cat
+NMicrosoft Stock Awards (Cash)
+I
+^
+!Type:Invst
+D6/13' 6
+NCash
+CR
+U2,000.00
+T2,000.00
+LNetBank Checking
+^
+!Type:Invst
+D6/13' 6
+NCash
+CR
+LNetBank Checking
+^
+D10/ 4' 6
+NXIn
+CR
+U500.00
+T500.00
+L[Checking]
+$500
+^
+D10/ 5' 6
+NBuy
+YMicrosoft
+I115.09
+Q4
+CR
+U460.36
+T460.36
+MYOU BOUGHT           ESPP###
+^
+D10/ 6' 6
+NSell
+YMicrosoft
+I41.2655
+Q2
+CR
+U91.871
+T91.871
+MYOU SOLD
+O9.34
+^
+D5/ 9' 7
+NBuyX
+YMicrosoft
+I30.75
+Q20
+CR
+U615.00
+T615.00
+LMicrosoft Stock Awards (Cash)
+$615.00
+^
+D10/ 8' 7
+NShtSell
+YCALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)
+I1.3999
+Q100
+CR
+U131.99
+T131.99
+O8.00
+^
+D10/26' 7
+NCvrShrt
+YCALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)
+I5.7075
+Q100
+CR
+U578.75
+T578.75
+O8.00
+^
+D12/14' 7
+NReinvSh
+YJanus Contrarian Fund
+I19.29
+Q0.101
+CR
+U1.95
+T1.95
+^
+D12/15' 7
+NReinvLg
+YJanus Contrarian Fund
+I19.29
+Q10.607
+CR
+U204.61
+T204.61
+^
+D1/ 4' 8
+NXOut
+CR
+U1,000.00
+T1,000.00
+L[Checking]
+$1,000.00
+^
+D4/12'13
+NWithdrwX
+Ppayee
+CR
+U105.00
+T105.00
+L[Checking]
+$105.00
+^
+D4/ 1'14
+NShrsIn
+YFidelity International Real Estate
+Q2
+CR
+MTRANSFERRED FROM     VS
+^
+D4/ 4'14
+NReinvDiv
+YSPARTAN 500 INDEX FD ADVANTAGE CLASS (FUSVX)
+I50
+Q0.500
+CR
+U25.00
+T25.00
+^
+D5/16'17
+NBuyX
+YNH PORTFOLIO 2030 (FIDELITY FUNDS)
+I17.10
+Q1.8
+CR
+U30.78
+T30.78
+MYOU BOUGHT           CONTRIBUTIO
+L[Checking]
+$30.78
+^
+D5/17'17
+NSellX
+YNH PORTFOLIO 2030 (FIDELITY FUNDS)
+I17.50
+Q1.8
+CR
+U31.50
+T31.50
+MYOU BOUGHT           CONTRIBUTIO
+L[Checking]
+$31.50
+^
+D1/31'21
+NReinvInt
+YUSD Coin (USDC)
+I1
+Q0.02
+CR
+U0.02
+T0.02
+^
+D2/11'21
+NShrsOut
+YUSD Coin (USDC)
+Q100
+CR
+MXfr To: Brokerage 2
+^
+D4/11'21
+NIntInc
+CR
+U1.99
+T1.99
+^
+D4/30'21
+NDiv
+YPIMCO INCOME FUND CL D
+CR
+U1.23
+T1.23
+MDIVIDEND RECEIVED
+^
+!Account
+NChecking
+TBank
+^
+!Type:Bank
+D1/ 4' 8
+U1,000.00
+T1,000.00
+CX
+L[Brokerage]
+^
