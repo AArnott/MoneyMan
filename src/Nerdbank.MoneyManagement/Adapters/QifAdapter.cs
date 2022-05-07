@@ -283,7 +283,8 @@ public class QifAdapter : IFileAdapter
 				// so that we don't end up importing them on both ends and ending up with duplicates.
 				// For splits with transfers it's even more important to drop the receiving side because
 				// when it comes to paychecks, there is just one sender and many receiving accounts.
-				// TODO: figure out the splits transfers details. QIF only expresses the split on one account.
+				// QIF only expresses the split on one account, so we always import a transaction with splits.
+				// We get that for free because splits don't (tend to?) have transfer accounts mentioned in the Category.
 				continue;
 			}
 
