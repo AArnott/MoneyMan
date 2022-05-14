@@ -313,7 +313,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 
 	private void AddTransactionIfAppropriate(int transactionId)
 	{
-		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(this.Id, transactionId);
+		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(transactionId, this.Id);
 		if (details.Count > 0)
 		{
 			int index = this.AddTransaction(this.CreateTransactionViewModel(details));
