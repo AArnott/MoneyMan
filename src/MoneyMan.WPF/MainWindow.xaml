@@ -532,6 +532,7 @@
 					</Grid.Resources>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="1*" />
+						<ColumnDefinition Width="auto" />
 						<ColumnDefinition Width="4*" />
 					</Grid.ColumnDefinitions>
 					<DockPanel Grid.Column="0">
@@ -576,7 +577,8 @@
 							</ListView.ItemTemplate>
 						</ListView>
 					</DockPanel>
-					<local:ContentControlWithEvents Grid.Column="1" Content="{Binding SelectedAccount}" x:Name="BankingSelectedAccountPresenter" TemplateApplied="BankingSelectedAccountPresenter_TemplateApplied" />
+					<GridSplitter Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" Width="5" />
+					<local:ContentControlWithEvents Grid.Column="2" Content="{Binding SelectedAccount}" x:Name="BankingSelectedAccountPresenter" TemplateApplied="BankingSelectedAccountPresenter_TemplateApplied" />
 				</Grid>
 			</TabItem>
 			<TabItem Header="{Binding Title}" DataContext="{Binding AssetsPanel}">
@@ -594,6 +596,7 @@
 				<Grid>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="1*" />
+						<ColumnDefinition Width="auto" />
 						<ColumnDefinition Width="2*" />
 						<ColumnDefinition Width="1*" />
 					</Grid.ColumnDefinitions>
@@ -630,7 +633,8 @@
 							</ListView.GroupStyle>
 						</ListView>
 					</DockPanel>
-					<DockPanel Grid.Column="1"
+					<GridSplitter Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" Width="5" />
+					<DockPanel Grid.Column="2"
 							   Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
 						<DataGrid Name="AssetPricesGrid"
 						          ItemsSource="{Binding AssetPrices}"
@@ -685,7 +689,7 @@
 							</DataGrid.Columns>
 						</DataGrid>
 					</DockPanel>
-					<StackPanel Grid.Column="2" 
+					<StackPanel Grid.Column="3" 
 								Margin="5,0,5,0" 
 								DataContext="{Binding SelectedAsset}"
 								Visibility="{Binding Converter={StaticResource nullToVisibilityConverter}}">
@@ -836,7 +840,7 @@
 				</DockPanel>
 			</TabItem>
 			<TabItem Header="{Binding Title}" DataContext="{Binding ConfigurationPanel}">
-				<StackPanel>
+				<StackPanel MaxWidth="300pt">
 					<Label Content="{Binding PreferredAssetLabel}" Target="{Binding ElementName=PreferredAssetPicker}" />
 					<ComboBox Name="PreferredAssetPicker"
 							  ItemsSource="{Binding Document.AssetsPanel.Assets, Source={StaticResource viewModel}}"
