@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using PCLCommandBase;
 using Validation;
 
@@ -19,7 +20,6 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 		{
 			if (e.PropertyName is object && this.IsPersistedProperty(e.PropertyName))
 			{
-				this.IsDirty = true;
 				if (this.MoneyFile.IsDisposed is not true && this.AutoSave && this.IsReadyToSave)
 				{
 					this.Save();
@@ -147,6 +147,16 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	/// Writes the properties in this view model (and possibly associated view models) to the underlying model(s).
 	/// </summary>
 	protected abstract void ApplyToCore();
+
+	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+	{
+		if (propertyName is object && this.IsPersistedProperty(propertyName))
+		{
+			this.IsDirty = true;
+		}
+
+		base.OnPropertyChanged(propertyName);
+	}
 
 	protected virtual bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.IsReadyToSave) or nameof(this.IsDirty) or nameof(this.IsPersisted) or nameof(this.AutoSave));
 

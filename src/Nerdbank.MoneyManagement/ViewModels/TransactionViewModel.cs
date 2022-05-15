@@ -213,7 +213,10 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 
 			foreach (TransactionEntryViewModel entry in this.entries)
 			{
-				entry.Save();
+				if (entry.IsDirty)
+				{
+					entry.Save();
+				}
 			}
 
 			// Purge any entries from the db that are no longer supposed to be there.
