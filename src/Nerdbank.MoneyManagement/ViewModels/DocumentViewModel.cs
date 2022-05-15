@@ -290,6 +290,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	private void Model_EntitiesChanged(object? sender, MoneyFile.EntitiesChangedEventArgs e)
 	{
+		Dictionary<int, List<TransactionAndEntry>> entriesCache = new();
+
 		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 		{
 			accountViewModel.RefreshValue();
@@ -299,19 +301,19 @@ public class DocumentViewModel : BindableBase, IDisposable
 			{
 				if (models is { Before: Transaction beforeTransaction, After: Transaction afterTransaction })
 				{
-					accountViewModel.NotifyTransactionChanged(beforeTransaction.Id);
+					RaiseNotifyTransactionChanged(beforeTransaction.Id);
 					if (afterTransaction.Id != beforeTransaction.Id)
 					{
-						accountViewModel.NotifyTransactionChanged(afterTransaction.Id);
+						RaiseNotifyTransactionChanged(afterTransaction.Id);
 					}
 				}
 
 				if (models is { Before: TransactionEntry beforeEntry, After: TransactionEntry afterEntry })
 				{
-					accountViewModel.NotifyTransactionChanged(beforeEntry.TransactionId);
+					RaiseNotifyTransactionChanged(beforeEntry.TransactionId);
 					if (afterEntry.TransactionId != beforeEntry.TransactionId)
 					{
-						accountViewModel.NotifyTransactionChanged(afterEntry.TransactionId);
+						RaiseNotifyTransactionChanged(afterEntry.TransactionId);
 					}
 				}
 			}
@@ -325,7 +327,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 				if (model is TransactionEntry entry)
 				{
-					accountViewModel.NotifyTransactionChanged(entry.TransactionId);
+					RaiseNotifyTransactionChanged(entry.TransactionId);
 				}
 			}
 
@@ -338,8 +340,19 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 				if (model is TransactionEntry entry)
 				{
-					accountViewModel.NotifyTransactionChanged(entry.TransactionId);
+					RaiseNotifyTransactionChanged(entry.TransactionId);
 				}
+			}
+
+			void RaiseNotifyTransactionChanged(int transactionId)
+			{
+				if (!entriesCache.TryGetValue(transactionId, out List<TransactionAndEntry>? entries))
+				{
+					entries = this.MoneyFile.GetTransactionDetails(transactionId);
+					entriesCache.Add(transactionId, entries);
+				}
+
+				accountViewModel.NotifyTransactionChanged(transactionId, entries.Where(e => e.ContextAccountId == accountViewModel.Id).ToList());
 			}
 		}
 

@@ -178,7 +178,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 		}
 	}
 
-	internal virtual void NotifyTransactionChanged(int transactionId)
+	internal virtual void NotifyTransactionChanged(int transactionId, IReadOnlyList<TransactionAndEntry> entries)
 	{
 		if (this.IsPopulated)
 		{
@@ -202,7 +202,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 			else
 			{
 				// This may be a new transaction (a transfer) that we should add.
-				this.AddTransactionIfAppropriate(transactionId);
+				this.AddTransactionIfAppropriate(transactionId, entries);
 			}
 		}
 	}
@@ -311,9 +311,8 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 		};
 	}
 
-	private void AddTransactionIfAppropriate(int transactionId)
+	private void AddTransactionIfAppropriate(int transactionId, IReadOnlyList<TransactionAndEntry> details)
 	{
-		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(transactionId, this.Id);
 		if (details.Count > 0)
 		{
 			int index = this.AddTransaction(this.CreateTransactionViewModel(details));
