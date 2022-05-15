@@ -15,6 +15,8 @@ namespace MoneyMan;
 /// </summary>
 public partial class App : Application
 {
+	private static bool enableSingleClickEditing = false;
+
 	[STAThread]
 	public static void Main()
 	{
@@ -60,9 +62,12 @@ public partial class App : Application
 	{
 		base.OnStartup(e);
 
-		EventManager.RegisterClassHandler(
-			typeof(DataGrid),
-			DataGrid.PreviewMouseLeftButtonDownEvent,
-			new RoutedEventHandler(WpfHelpers.DataGridPreviewMouseLeftButtonDownEvent));
+		if (enableSingleClickEditing)
+		{
+			EventManager.RegisterClassHandler(
+				typeof(DataGrid),
+				DataGrid.PreviewMouseLeftButtonDownEvent,
+				new RoutedEventHandler(WpfHelpers.DataGridPreviewMouseLeftButtonDownEvent));
+		}
 	}
 }
