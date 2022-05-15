@@ -36,6 +36,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		this.category2 = this.DocumentViewModel.GetCategory(category2AccountModel.Id);
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
 		this.viewModel = this.account.Transactions[^1];
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

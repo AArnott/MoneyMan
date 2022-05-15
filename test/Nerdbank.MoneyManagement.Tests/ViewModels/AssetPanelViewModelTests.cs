@@ -8,6 +8,7 @@ public class AssetPanelViewModelTests : MoneyTestBase
 	public AssetPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	private AssetsPanelViewModel ViewModel => this.DocumentViewModel.AssetsPanel;

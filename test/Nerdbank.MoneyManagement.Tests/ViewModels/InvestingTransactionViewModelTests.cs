@@ -23,6 +23,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		this.viewModel = this.account.Transactions[^1];
 		this.msft = this.DocumentViewModel.AssetsPanel.NewAsset("Microsoft", "MSFT");
 		this.appl = this.DocumentViewModel.AssetsPanel.NewAsset("Apple", "AAPL");
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

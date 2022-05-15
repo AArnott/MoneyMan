@@ -6,6 +6,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	public CategoriesPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	private CategoriesPanelViewModel ViewModel => this.DocumentViewModel.CategoriesPanel;

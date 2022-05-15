@@ -8,15 +8,18 @@ public class MoneyTestBase : TestBase
 	public MoneyTestBase(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.MoneyFileTraceListener = new MoneyFileTraceListener(this.Logger);
 		this.money = new Lazy<MoneyFile>(delegate
 		{
 			MoneyFile result = MoneyFile.Load(":memory:");
-			result.Logger = new TestLoggerAdapter(this.Logger);
+			result.TraceSource.Listeners.Add(this.MoneyFileTraceListener);
 			return result;
 		});
 		this.UserNotification = new UserNotificationMock(logger);
 		this.MainPageViewModel = new();
 	}
+
+	internal MoneyFileTraceListener MoneyFileTraceListener { get; }
 
 	protected MoneyFile Money => this.money.Value;
 
@@ -37,6 +40,11 @@ public class MoneyTestBase : TestBase
 
 	private protected UserNotificationMock UserNotification { get; }
 
+	protected void EnableSqlLogging()
+	{
+		this.Money.TraceSource.Switch.Level = SourceLevels.Verbose;
+	}
+
 	protected void LoadDocument() => _ = this.DocumentViewModel;
 
 	protected virtual void ReloadViewModel()
@@ -55,6 +63,7 @@ public class MoneyTestBase : TestBase
 	{
 		if (disposing)
 		{
+			this.MoneyFileTraceListener.LogCounters();
 			this.MainPageViewModel.Document?.Dispose();
 			if (this.money.IsValueCreated)
 			{

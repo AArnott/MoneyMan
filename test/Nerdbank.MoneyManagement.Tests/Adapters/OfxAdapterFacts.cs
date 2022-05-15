@@ -14,6 +14,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 		: base(logger)
 	{
 		this.adapter = new(this.DocumentViewModel);
+		this.EnableSqlLogging();
 	}
 
 	protected override OfxAdapter Adapter => this.adapter;

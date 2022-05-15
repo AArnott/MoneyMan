@@ -21,6 +21,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.savings = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
 		this.rainyDay = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Rainy Day");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

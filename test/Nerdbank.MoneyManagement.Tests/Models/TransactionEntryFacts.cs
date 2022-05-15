@@ -6,6 +6,7 @@ public class TransactionEntryFacts : EntityTestBase
 	public TransactionEntryFacts(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

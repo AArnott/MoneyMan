@@ -6,6 +6,7 @@ public class BankingPanelViewModelTests : MoneyTestBase
 	public BankingPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	private BankingPanelViewModel ViewModel => this.DocumentViewModel.BankingPanel;

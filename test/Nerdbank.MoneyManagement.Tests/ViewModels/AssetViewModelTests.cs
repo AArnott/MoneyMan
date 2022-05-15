@@ -11,6 +11,7 @@ public class AssetViewModelTests : MoneyTestBase
 		: base(logger)
 	{
 		this.viewModel = this.DocumentViewModel.AssetsPanel.NewAsset();
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

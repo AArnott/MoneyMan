@@ -9,6 +9,7 @@ public class AssetPriceViewModelTests : MoneyTestBase
 		: base(logger)
 	{
 		this.msft = this.DocumentViewModel.AssetsPanel.NewAsset("MSFT");
+		this.EnableSqlLogging();
 	}
 
 	[Fact]
