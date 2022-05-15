@@ -298,8 +298,8 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Requires.Argument(model.Id >= 0, nameof(model), "This model has a negative ID and therefore should never be persisted.");
 		Verify.NotDisposed(this);
 
-		ModelBase before = (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model));
-		if (this.connection.Update(model) > 0)
+		ModelBase? before = model.Id > 0 ? (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model)) : null;
+		if (before is not null && this.connection.Update(model) > 0)
 		{
 			this.LogUpdate(model);
 			this.version++;
