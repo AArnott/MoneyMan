@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace Nerdbank.MoneyManagement;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class TransactionAndEntry
+public record TransactionAndEntry
 {
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Transaction"/> this belongs to.

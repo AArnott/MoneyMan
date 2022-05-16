@@ -5,7 +5,7 @@ using SQLite;
 
 namespace Nerdbank.MoneyManagement;
 
-public abstract class ModelBase
+public abstract record ModelBase
 {
 	/// <summary>
 	/// Gets or sets the primary key of this database entity.

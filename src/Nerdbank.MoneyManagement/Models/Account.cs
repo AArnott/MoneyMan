@@ -10,7 +10,7 @@ namespace Nerdbank.MoneyManagement;
 /// Describes a bank account.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class Account : ModelBase
+public record Account : ModelBase
 {
 	/// <summary>
 	/// Enumerates the kinds of accounts.
