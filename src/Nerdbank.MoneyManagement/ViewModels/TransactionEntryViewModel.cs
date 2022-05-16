@@ -99,6 +99,8 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 	private string DebuggerDisplay => $"TransactionEntry: ({this.Id}): {this.Memo} {this.Account?.Name} {this.Amount}";
 
+	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not nameof(this.AmountFormatted);
+
 	protected override void ApplyToCore()
 	{
 		Verify.Operation(this.Account is not null, "{0} must be set first.", nameof(this.Account));

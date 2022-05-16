@@ -389,18 +389,6 @@ public class BankingAccountViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void SettingBalanceDoesNotPersistAccount()
-	{
-		var account = new Account { Name = "some account" };
-		this.Money.Insert(account);
-		this.checking = new BankingAccountViewModel(account, this.DocumentViewModel);
-		bool eventRaised = false;
-		this.Money.EntitiesChanged += (s, e) => eventRaised = true;
-		this.checking.Value = 10;
-		Assert.False(eventRaised);
-	}
-
-	[Fact]
 	public void Balance_ChangesFromTransactionChangeInOtherAccount()
 	{
 		BankingTransactionViewModel txViewModel = this.checking.NewTransaction();

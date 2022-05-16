@@ -33,6 +33,13 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	private long version;
 	private (long Version, NetWorthQueryOptions Options)? lastRefreshedBalances;
+	private AggregateData? aggregateData;
+
+	/// <summary>
+	/// Indicates whether a <see cref="TriggerAggregateDataRefresh"/> was deferred because we were in an undoable transaction
+	/// and should be run at its conclusion.
+	/// </summary>
+	private bool pendingAggregateDataRefresh;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MoneyFile"/> class.
@@ -98,6 +105,27 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	public TraceSource TraceSource { get; } = new(nameof(MoneyFile));
 
 	public string Path => this.connection.DatabasePath;
+
+	/// <summary>
+	/// Gets an object that describes aggregate data that may be expensive to calculate, such as net worth or account balances.
+	/// </summary>
+	public AggregateData? AggregateData
+	{
+		get
+		{
+			if (this.aggregateData is null)
+			{
+				this.TriggerAggregateDataRefresh();
+			}
+
+			return this.aggregateData;
+		}
+
+		private set
+		{
+			this.SetProperty(ref this.aggregateData, value);
+		}
+	}
 
 	public TransactionOperations Action { get; }
 
@@ -244,7 +272,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		this.OnPropertyChanged(nameof(this.UndoStack));
 		this.connection.RollbackTo(savepoint.SavepointName);
 		this.LogSqlEvent(EventType.Rollback, savepoint.Activity, null);
-		this.version++;
+		this.IncrementDataVersion();
 		return savepoint.ViewModel;
 	}
 
@@ -261,7 +289,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Verify.NotDisposed(this);
 		this.connection.Insert(model);
 		this.LogInsert(model);
-		this.version++;
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		return model;
 	}
@@ -271,7 +299,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Verify.NotDisposed(this);
 		this.connection.InsertAll(models);
 		this.LogInsert(models);
-		this.version++;
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 	}
 
@@ -279,7 +307,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		this.connection.InsertAll(models, extra);
 		this.LogInsert(models);
-		this.version++;
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 	}
 
@@ -289,7 +317,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		ModelBase before = (ModelBase)this.connection.Get(model.Id, this.GetTableMapping(model));
 		this.connection.Update(model);
 		this.LogUpdate(model);
-		this.version++;
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
 	}
 
@@ -302,14 +330,14 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		if (before is not null && this.connection.Update(model) > 0)
 		{
 			this.LogUpdate(model);
-			this.version++;
+			this.IncrementDataVersion();
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
 		}
 		else
 		{
 			this.connection.Insert(model);
 			this.LogInsert(model);
-			this.version++;
+			this.IncrementDataVersion();
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		}
 	}
@@ -319,7 +347,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Verify.NotDisposed(this);
 		int deletedCount = model.IsPersisted ? this.connection.Delete(model) : 0;
 		this.LogDelete(model);
-		this.version++;
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
 		return deletedCount > 0;
 	}
@@ -407,7 +435,7 @@ WHERE [Balances].[AccountId] = ?
 		string sql = $"DELETE FROM [TransactionEntry] WHERE [TransactionId] = {transactionId} AND [Id] NOT IN ({string.Join(',', entryIdsToPreserve)})";
 		this.ExecuteSql(sql);
 		this.LogSqlEvent(EventType.DeleteQuery, nameof(TransactionEntry), sql);
-		this.version++;
+		this.IncrementDataVersion();
 	}
 
 	/// <summary>
@@ -426,7 +454,14 @@ WHERE [Balances].[AccountId] = ?
 
 		this.inUndoableTransaction = true;
 		this.RecordSavepoint(description, viewModel);
-		return new ActionOnDispose(() => this.inUndoableTransaction = false);
+		return new ActionOnDispose(() =>
+		{
+			this.inUndoableTransaction = false;
+			if (this.pendingAggregateDataRefresh)
+			{
+				this.TriggerAggregateDataRefresh();
+			}
+		});
 	}
 
 	internal bool IsAccountInUse(int accountId)
@@ -551,6 +586,28 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 
 	private static DateTime GetSqlBeforeDateOperand(DateTime asOfDate) => asOfDate.AddDays(1).Date;
 
+	/// <summary>
+	/// Increments the <see cref="version"/> field and triggers a refresh of <see cref="AggregateData"/>.
+	/// </summary>
+	private void IncrementDataVersion()
+	{
+		this.version++;
+		this.TriggerAggregateDataRefresh();
+	}
+
+	private AggregateData ComputeAggregateData(NetWorthQueryOptions netWorthQueryOptions = default)
+	{
+		long version = this.version;
+		decimal netWorth = this.GetNetWorth(netWorthQueryOptions);
+		Dictionary<int, decimal> accountBalances = new();
+		foreach (Account account in this.Accounts)
+		{
+			accountBalances.Add(account.Id, this.GetValue(account, netWorthQueryOptions.AsOfDate));
+		}
+
+		return new AggregateData(accountBalances, netWorth, version);
+	}
+
 	private TableMapping GetTableMapping(ModelBase model) => this.connection.GetMapping(model.GetType());
 
 	private void LogSqlEvent(EventType queryType, string? message, string? sql)
@@ -666,6 +723,22 @@ WHERE [Id] != ?
 		{
 			string errMsg = SQLitePCL.raw.sqlite3_errmsg(this.connection.Handle).utf8_to_string();
 			throw new Exception(errMsg);
+		}
+	}
+
+	/// <summary>
+	/// Refreshes <see cref="AggregateData"/>, or records that one should occur if we're in an undoable transaction.
+	/// </summary>
+	private void TriggerAggregateDataRefresh()
+	{
+		if (this.inUndoableTransaction)
+		{
+			this.pendingAggregateDataRefresh = true;
+		}
+		else
+		{
+			this.AggregateData = this.ComputeAggregateData(new NetWorthQueryOptions { AsOfDate = DateTime.Today });
+			this.pendingAggregateDataRefresh = false;
 		}
 	}
 

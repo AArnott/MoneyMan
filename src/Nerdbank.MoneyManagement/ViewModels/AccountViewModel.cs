@@ -9,7 +9,6 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableView
 {
 	private AssetViewModel? currencyAsset;
-	private decimal value;
 	private string name = string.Empty;
 	private bool isClosed;
 	private Account.AccountType type;
@@ -97,17 +96,13 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 	public bool CurrencyAssetIsReadOnly => !this.IsEmpty;
 
 	/// <summary>
-	/// Gets or sets the value of this account, measured in the user's preferred currency.
+	/// Gets the value of this account, measured in the user's preferred currency.
 	/// </summary>
 	/// <remarks>
 	/// For ordinary banking accounts, this is simply the balance on the account (converted to the user's preferred currency as appropriate).
 	/// For investment accounts, this so the net value of all positions held in that account.
 	/// </remarks>
-	public decimal Value
-	{
-		get => this.value;
-		set => this.SetProperty(ref this.value, value);
-	}
+	public decimal Value => this.MoneyFile.AggregateData?.AccountBalances.TryGetValue(this.Id, out decimal value) is true ? value : 0;
 
 	public string? ValueFormatted => this.DocumentViewModel.DefaultCurrency?.Format(this.Value);
 
@@ -209,10 +204,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 
 	internal abstract void NotifyAccountDeleted(ICollection<int> accountIds);
 
-	internal void RefreshValue()
-	{
-		this.Value = this.MoneyFile.GetValue(this.Model);
-	}
+	internal void NotifyValueChanged() => this.OnPropertyChanged(nameof(this.Value));
 
 	protected static void ThrowOnUnexpectedAccountType(string parameterName, Account.AccountType expectedType, Account.AccountType actualType)
 	{
@@ -257,10 +249,6 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 		}
 
 		this.CurrencyAsset = this.DocumentViewModel.GetAsset(this.Model.CurrencyAssetId);
-		if (this.Model.IsPersisted)
-		{
-			this.Value = this.MoneyFile.GetValue(this.Model);
-		}
 
 		this.OfxBankId = this.Model.OfxBankId;
 		this.OfxAcctId = this.Model.OfxAcctId;
