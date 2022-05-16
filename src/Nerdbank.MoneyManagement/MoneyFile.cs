@@ -348,7 +348,7 @@ INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
 ";
 
 		decimal netWorth = this.connection.ExecuteScalar<decimal>(sql);
-		this.LogSqlEvent(EventType.SelectQuery, "Balances", sql);
+		this.LogSqlEvent(EventType.SelectQuery, "Balances (GetNetWorth)", sql);
 		return netWorth;
 	}
 
@@ -367,7 +367,7 @@ INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
 		this.RefreshBalances(new NetWorthQueryOptions { AsOfDate = asOfDate });
 		string sql = "SELECT [AssetId], TOTAL([Balance]) AS [Balance] FROM [Balances] WHERE [AccountId] = ? AND [AssetId] IS NOT NULL GROUP BY [AssetId]";
 		List<BalancesRow> balances = this.connection.Query<BalancesRow>(sql, account.Id);
-		this.LogSqlEvent(EventType.SelectQuery, "Balances", sql);
+		this.LogSqlEvent(EventType.SelectQuery, $"Balances (GetBalances({account.Id}))", sql);
 		return balances.ToDictionary(b => b.AssetId, b => b.Balance);
 	}
 
@@ -391,7 +391,7 @@ INNER JOIN [AssetValue] ON [AssetValue].[AssetId] = [Balances].[AssetId]
 WHERE [Balances].[AccountId] = ?
 ";
 		decimal value = this.connection.ExecuteScalar<decimal>(sql, account.Id);
-		this.LogSqlEvent(EventType.SelectQuery, "Balances", sql);
+		this.LogSqlEvent(EventType.SelectQuery, $"Balances (GetValue({account.Id}))", sql);
 		return value;
 	}
 
@@ -569,7 +569,10 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 
 	private void LogDelete(ModelBase model)
 	{
-		this.TraceSource.TraceEvent(TraceEventType.Verbose, (int)EventType.DeleteQuery, "{0} {1}", model.GetType().Name, model.Id);
+		if (model.IsPersisted)
+		{
+			this.TraceSource.TraceEvent(TraceEventType.Verbose, (int)EventType.DeleteQuery, "{0} {1}", model.GetType().Name, model.Id);
+		}
 	}
 
 	private void LogInsert(ModelBase model)
