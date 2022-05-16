@@ -292,9 +292,14 @@ public class DocumentViewModel : BindableBase, IDisposable
 	{
 		Dictionary<int, List<TransactionAndEntry>> entriesCache = new();
 
+		bool valuesImpacted = e.Inserted.Concat(e.Deleted).Concat(e.Changed.Select(c => c.Before)).Any(e => e is Account { Type: not Account.AccountType.Category } or Transaction or TransactionEntry or AssetPrice);
 		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 		{
-			accountViewModel.RefreshValue();
+			if (valuesImpacted)
+			{
+				accountViewModel.RefreshValue();
+			}
+
 			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().Select(a => a.Id).ToHashSet());
 
 			foreach ((ModelBase Before, ModelBase After) models in e.Changed)
@@ -356,7 +361,10 @@ public class DocumentViewModel : BindableBase, IDisposable
 			}
 		}
 
-		this.NetWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+		if (valuesImpacted)
+		{
+			this.NetWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+		}
 	}
 
 	private void Categories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
