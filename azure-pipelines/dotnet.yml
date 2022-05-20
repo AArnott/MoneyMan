@@ -1,53 +1,26 @@
 steps:
 
-- script: dotnet build --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
-  displayName: dotnet build
+- script: dotnet build -t:build,pack --no-restore -c $(BuildConfiguration) /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
+  displayName: 🛠 dotnet build
 
-- script: dotnet pack --no-build -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/pack.binlog"
-  displayName: dotnet pack
-
-- task: DotNetCoreCLI@2
-  displayName: dotnet test
-  inputs:
-    command: test
-    arguments: --no-build -c $(BuildConfiguration) --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings" /bl:"$(Build.ArtifactStagingDirectory)/build_logs/test.binlog"
-    testRunTitle: $(Agent.JobName)
-  condition: succeededOrFailed()
+- powershell: azure-pipelines/dotnet-test-cloud.ps1 -Configuration $(BuildConfiguration) -Agent $(Agent.JobName) -PublishResults
+  displayName: 🧪 dotnet test
 
 - script: dotnet pack installers -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build_installers.binlog"
-  displayName: dotnet pack installers
+  displayName: 📦 dotnet pack installers
   condition: eq(variables['Agent.OS'], 'Windows_NT')
-
 - powershell: azure-pipelines/variables/_pipelines.ps1
   failOnStderr: true
-  displayName: Update pipeline variables based on build outputs
+  displayName: ⚙ Update pipeline variables based on build outputs
   condition: succeededOrFailed()
 
 - powershell: azure-pipelines/artifacts/_pipelines.ps1 -ArtifactNameSuffix "-$(Agent.JobName)"
   failOnStderr: true
-  displayName: Publish artifacts
+  displayName: 📢 Publish artifacts
   condition: succeededOrFailed()
 
-- task: PublishSymbols@2
-  inputs:
-    SymbolsFolder: $(Build.ArtifactStagingDirectory)/symbols-$(Agent.JobName)
-    SearchPattern: '**/*.pdb'
-    IndexSources: false
-    SymbolServerType: TeamServices
-  displayName: Publish symbols to symbol server
-  condition: eq(variables['Agent.OS'], 'Windows_NT') # Execute on failed test runs too. Windows-only till https://github.com/microsoft/azure-pipelines-tasks/issues/13821 is fixed.
-
-- task: PublishSymbols@2
-  inputs:
-    SymbolsFolder: $(Build.ArtifactStagingDirectory)/test_symbols-$(Agent.JobName)
-    SearchPattern: '**/*.pdb'
-    IndexSources: false
-    SymbolServerType: TeamServices
-  displayName: Publish test symbols to symbol server
-  condition: and(failed(), eq(variables['Agent.OS'], 'Windows_NT')) # Execute on failed test runs only.
-
 - bash: bash <(curl -s https://codecov.io/bash)
-  displayName: Publish code coverage results to codecov.io
+  displayName: 📢 Publish code coverage results to codecov.io
   condition: ne(variables['codecov_token'], '')
   timeoutInMinutes: 3
   continueOnError: true
