@@ -1,18 +1,18 @@
 <Project>
-	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, Directory.Build.props))\Directory.Build.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, Directory.Build.props))' != '' " />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, Directory.Build.props))\Directory.Build.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, Directory.Build.props))' != '' " />
 
-	<PropertyGroup>
-		<IsPackable>false</IsPackable>
-		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-	</PropertyGroup>
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<Using Include="Nerdbank.MoneyManagement" />
-		<Using Include="Nerdbank.MoneyManagement.Tests" />
-		<Using Include="Nerdbank.MoneyManagement.ViewModels" />
-		<Using Include="System.Diagnostics" />
-		<Using Include="Xunit" />
-		<Using Include="Xunit.Abstractions" />
-	</ItemGroup>
+  <ItemGroup>
+    <Using Include="Nerdbank.MoneyManagement" />
+    <Using Include="Nerdbank.MoneyManagement.Tests" />
+    <Using Include="Nerdbank.MoneyManagement.ViewModels" />
+    <Using Include="System.Diagnostics" />
+    <Using Include="Xunit" />
+    <Using Include="Xunit.Abstractions" />
+  </ItemGroup>
 
 </Project>
