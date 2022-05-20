@@ -6,6 +6,7 @@ public class TemplateDataFacts : MoneyTestBase
 	public TemplateDataFacts(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

@@ -13,6 +13,7 @@ public class MainPageViewModelBaseTests : MoneyTestBase
 	{
 		MainPageViewModelBase viewModel = new();
 		Assert.False(viewModel.IsFileOpen);
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

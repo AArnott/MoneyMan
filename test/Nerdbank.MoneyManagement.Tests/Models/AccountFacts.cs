@@ -13,6 +13,7 @@ public class AccountFacts : EntityTestBase
 			Name = "test",
 			CurrencyAssetId = this.Money.PreferredAssetId,
 		};
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

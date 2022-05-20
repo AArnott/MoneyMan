@@ -6,6 +6,7 @@ public class IntegrityChecksFacts : MoneyTestBase
 	public IntegrityChecksFacts(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

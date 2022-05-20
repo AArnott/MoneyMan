@@ -15,6 +15,7 @@ public class UserStoryTests : MoneyTestBase
 		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.savingsAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checkingAccount;
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

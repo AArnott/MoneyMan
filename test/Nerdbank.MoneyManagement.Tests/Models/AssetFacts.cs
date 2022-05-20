@@ -6,6 +6,7 @@ public class AssetFacts : EntityTestBase
 	public AssetFacts(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

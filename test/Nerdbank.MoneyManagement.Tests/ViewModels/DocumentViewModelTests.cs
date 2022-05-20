@@ -6,6 +6,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public DocumentViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

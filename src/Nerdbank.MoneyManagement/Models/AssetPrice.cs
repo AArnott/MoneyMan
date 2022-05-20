@@ -9,7 +9,7 @@ namespace Nerdbank.MoneyManagement;
 /// A price point for an <see cref="Asset"/>.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class AssetPrice : ModelBase
+public record AssetPrice : ModelBase
 {
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> being described.

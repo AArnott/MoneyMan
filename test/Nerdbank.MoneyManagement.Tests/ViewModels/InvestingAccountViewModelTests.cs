@@ -12,6 +12,7 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 	{
 		this.checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.brokerage = this.DocumentViewModel.AccountsPanel.NewInvestingAccount("Brokerage");
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

@@ -9,7 +9,7 @@ namespace Nerdbank.MoneyManagement;
 /// Describes a deposit, withdrawal, or transfer regarding one or two accounts.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class Transaction : ModelBase
+public record Transaction : ModelBase
 {
 	public Transaction()
 	{

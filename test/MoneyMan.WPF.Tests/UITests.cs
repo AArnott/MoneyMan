@@ -9,6 +9,7 @@ public class UITests : UITestBase
 	public UITests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	[WpfFact]

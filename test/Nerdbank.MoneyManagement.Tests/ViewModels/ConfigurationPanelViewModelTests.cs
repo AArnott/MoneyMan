@@ -6,6 +6,7 @@ public class ConfigurationPanelViewModelTests : MoneyTestBase
 	public ConfigurationPanelViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
+		this.EnableSqlLogging();
 	}
 
 	protected ConfigurationPanelViewModel ViewModel => this.DocumentViewModel.ConfigurationPanel;

@@ -9,6 +9,7 @@ public class CategoryViewModelTests : MoneyTestBase
 		: base(logger)
 	{
 		this.viewModel = new CategoryAccountViewModel(null, this.DocumentViewModel);
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

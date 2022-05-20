@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace Nerdbank.MoneyManagement;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class TransactionEntry : ModelBase
+public record TransactionEntry : ModelBase
 {
 	public TransactionEntry()
 	{

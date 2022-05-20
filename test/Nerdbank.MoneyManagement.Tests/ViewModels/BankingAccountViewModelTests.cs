@@ -21,6 +21,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.savings = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Savings");
 		this.rainyDay = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Rainy Day");
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.checking;
+		this.EnableSqlLogging();
 	}
 
 	[Fact]
@@ -385,18 +386,6 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		this.ReloadViewModel();
 		Assert.Equal(5m, this.checking.Transactions[0].Balance);
 		Assert.Equal(13m, this.checking.Transactions[1].Balance);
-	}
-
-	[Fact]
-	public void SettingBalanceDoesNotPersistAccount()
-	{
-		var account = new Account { Name = "some account" };
-		this.Money.Insert(account);
-		this.checking = new BankingAccountViewModel(account, this.DocumentViewModel);
-		bool eventRaised = false;
-		this.Money.EntitiesChanged += (s, e) => eventRaised = true;
-		this.checking.Value = 10;
-		Assert.False(eventRaised);
 	}
 
 	[Fact]

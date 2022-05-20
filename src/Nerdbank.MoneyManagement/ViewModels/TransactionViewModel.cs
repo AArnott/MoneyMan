@@ -97,7 +97,7 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 			return true;
 		}
 
-		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(this.ThisAccount.Id, this.TransactionId);
+		List<TransactionAndEntry> details = this.MoneyFile.GetTransactionDetails(this.TransactionId, this.ThisAccount.Id);
 		if (details.Count == 0)
 		{
 			return false;

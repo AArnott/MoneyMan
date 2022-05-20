@@ -6,12 +6,17 @@ using System.Diagnostics;
 namespace Nerdbank.MoneyManagement;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class TransactionAndEntry
+public record TransactionAndEntry
 {
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Transaction"/> this belongs to.
 	/// </summary>
 	public int TransactionId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the <see cref="ModelBase.Id"/> of the account that is considered the context for this transaction-entry tuple.
+	/// </summary>
+	public int? ContextAccountId { get; set; }
 
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="TransactionEntry"/> this belongs to.

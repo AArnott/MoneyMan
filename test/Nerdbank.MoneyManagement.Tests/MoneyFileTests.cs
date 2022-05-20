@@ -2,14 +2,17 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using SQLite;
+using static SQLite.SQLite3;
 
 public class MoneyFileTests : IDisposable
 {
 	private readonly ITestOutputHelper logger;
+	private readonly MoneyFileTraceListener moneyFileTraceListener;
 	private string dbPath;
 
 	public MoneyFileTests(ITestOutputHelper logger)
 	{
+		this.moneyFileTraceListener = new MoneyFileTraceListener(logger);
 		this.logger = logger;
 		this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 	}
@@ -309,7 +312,8 @@ public class MoneyFileTests : IDisposable
 	private MoneyFile Load(bool alwaysOnDisk = false)
 	{
 		var file = MoneyFile.Load(alwaysOnDisk || Debugger.IsAttached ? this.dbPath : ":memory:");
-		file.Logger = new TestLoggerAdapter(this.logger);
+		file.TraceSource.Switch.Level = SourceLevels.Verbose;
+		file.TraceSource.Listeners.Add(this.moneyFileTraceListener);
 		return file;
 	}
 }

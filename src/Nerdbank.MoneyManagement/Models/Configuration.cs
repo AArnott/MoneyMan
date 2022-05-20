@@ -3,7 +3,7 @@
 
 namespace Nerdbank.MoneyManagement;
 
-public class Configuration : ModelBase
+public record Configuration : ModelBase
 {
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> that is used for displaying the value of accounts.

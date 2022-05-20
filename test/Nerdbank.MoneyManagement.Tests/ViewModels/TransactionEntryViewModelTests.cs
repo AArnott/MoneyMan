@@ -19,6 +19,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		this.spendingCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("Spending");
 		this.transaction = this.checkingAccount.NewTransaction();
 		this.viewModel = this.transaction.NewSplit();
+		this.EnableSqlLogging();
 	}
 
 	[Fact]

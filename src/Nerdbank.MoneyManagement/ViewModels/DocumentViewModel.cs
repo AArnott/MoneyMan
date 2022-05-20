@@ -19,7 +19,6 @@ public class DocumentViewModel : BindableBase, IDisposable
 	private readonly bool ownsMoneyFile;
 	private readonly SortedObservableCollection<AccountViewModel?> transactionTargets = new(TransactionTargetSort.Instance);
 	private readonly SplitCategoryPlaceholder splitCategory;
-	private decimal netWorth;
 	private IList? selectedTransactions;
 	private TransactionViewModel? selectedTransaction;
 	private SelectableViews selectedViewIndex;
@@ -43,10 +42,8 @@ public class DocumentViewModel : BindableBase, IDisposable
 		this.splitCategory = new(this);
 		this.Reset();
 
-		if (moneyFile is object)
-		{
-			moneyFile.EntitiesChanged += this.Model_EntitiesChanged;
-		}
+		this.MoneyFile.EntitiesChanged += this.Model_EntitiesChanged;
+		this.MoneyFile.PropertyChanged += this.MoneyFile_PropertyChanged;
 
 		this.DeleteTransactionsCommand = new DeleteTransactionCommandImpl(this);
 		this.UndoCommand = new UndoCommandImpl(this);
@@ -83,11 +80,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public string Title => this.MoneyFile is { Path: string path } ? $"Nerdbank Money Management - {Path.GetFileNameWithoutExtension(path)}" : "Nerdbank Money Management";
 
-	public decimal NetWorth
-	{
-		get => this.netWorth;
-		set => this.SetProperty(ref this.netWorth, value);
-	}
+	public decimal NetWorth => this.MoneyFile.AggregateData?.NetWorth ?? 0;
 
 	public string? NetWorthFormatted => this.DefaultCurrency?.Format(this.NetWorth);
 
@@ -249,12 +242,12 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 
 		this.ConfigurationPanel.CopyFrom(this.MoneyFile.CurrentConfiguration);
-		this.netWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Today });
 	}
 
 	public void Dispose()
 	{
 		this.MoneyFile.EntitiesChanged -= this.Model_EntitiesChanged;
+		this.MoneyFile.PropertyChanged -= this.MoneyFile_PropertyChanged;
 		if (this.ownsMoneyFile)
 		{
 			this.MoneyFile.Dispose();
@@ -288,30 +281,44 @@ public class DocumentViewModel : BindableBase, IDisposable
 		}
 	}
 
+	private void MoneyFile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName is nameof(this.MoneyFile.AggregateData))
+		{
+			this.OnPropertyChanged(nameof(this.NetWorth));
+			foreach (AccountViewModel account in this.BankingPanel.Accounts)
+			{
+				account.NotifyValueChanged();
+			}
+		}
+	}
+
 	private void Model_EntitiesChanged(object? sender, MoneyFile.EntitiesChangedEventArgs e)
 	{
+		Dictionary<int, List<TransactionAndEntry>> entriesCache = new();
+
+		bool valuesImpacted = e.Inserted.Concat(e.Deleted).Concat(e.Changed.Select(c => c.Before)).Any(e => e is Account { Type: not Account.AccountType.Category } or Transaction or TransactionEntry or AssetPrice);
 		foreach (AccountViewModel accountViewModel in this.BankingPanel.Accounts)
 		{
-			accountViewModel.RefreshValue();
 			accountViewModel.NotifyAccountDeleted(e.Deleted.OfType<Account>().Select(a => a.Id).ToHashSet());
 
 			foreach ((ModelBase Before, ModelBase After) models in e.Changed)
 			{
 				if (models is { Before: Transaction beforeTransaction, After: Transaction afterTransaction })
 				{
-					accountViewModel.NotifyTransactionChanged(beforeTransaction.Id);
+					RaiseNotifyTransactionChanged(beforeTransaction.Id);
 					if (afterTransaction.Id != beforeTransaction.Id)
 					{
-						accountViewModel.NotifyTransactionChanged(afterTransaction.Id);
+						RaiseNotifyTransactionChanged(afterTransaction.Id);
 					}
 				}
 
 				if (models is { Before: TransactionEntry beforeEntry, After: TransactionEntry afterEntry })
 				{
-					accountViewModel.NotifyTransactionChanged(beforeEntry.TransactionId);
+					RaiseNotifyTransactionChanged(beforeEntry.TransactionId);
 					if (afterEntry.TransactionId != beforeEntry.TransactionId)
 					{
-						accountViewModel.NotifyTransactionChanged(afterEntry.TransactionId);
+						RaiseNotifyTransactionChanged(afterEntry.TransactionId);
 					}
 				}
 			}
@@ -325,7 +332,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 				if (model is TransactionEntry entry)
 				{
-					accountViewModel.NotifyTransactionChanged(entry.TransactionId);
+					RaiseNotifyTransactionChanged(entry.TransactionId);
 				}
 			}
 
@@ -338,12 +345,21 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 				if (model is TransactionEntry entry)
 				{
-					accountViewModel.NotifyTransactionChanged(entry.TransactionId);
+					RaiseNotifyTransactionChanged(entry.TransactionId);
 				}
 			}
-		}
 
-		this.NetWorth = this.MoneyFile.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Now });
+			void RaiseNotifyTransactionChanged(int transactionId)
+			{
+				if (!entriesCache.TryGetValue(transactionId, out List<TransactionAndEntry>? entries))
+				{
+					entries = this.MoneyFile.GetTransactionDetails(transactionId);
+					entriesCache.Add(transactionId, entries);
+				}
+
+				accountViewModel.NotifyTransactionChanged(transactionId, entries.Where(e => e.ContextAccountId == accountViewModel.Id).ToList());
+			}
+		}
 	}
 
 	private void Categories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

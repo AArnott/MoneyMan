@@ -10,7 +10,7 @@ namespace Nerdbank.MoneyManagement;
 /// An asset, which may be a share of a company, a car, a cryptocurrency, etc.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class Asset : ModelBase
+public record Asset : ModelBase
 {
 	public enum AssetType
 	{

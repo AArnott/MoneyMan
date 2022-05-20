@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using Nerdbank.MoneyManagement.ViewModels;
 using PCLCommandBase;
 using SQLite;
@@ -32,6 +33,13 @@ public class MoneyFile : BindableBase, IDisposableObservable
 
 	private long version;
 	private (long Version, NetWorthQueryOptions Options)? lastRefreshedBalances;
+	private AggregateData? aggregateData;
+
+	/// <summary>
+	/// Indicates whether a <see cref="TriggerAggregateDataRefresh"/> was deferred because we were in an undoable transaction
+	/// and should be run at its conclusion.
+	/// </summary>
+	private bool pendingAggregateDataRefresh;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MoneyFile"/> class.
@@ -51,9 +59,73 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	/// </summary>
 	public event EventHandler<EntitiesChangedEventArgs>? EntitiesChanged;
 
+	public enum EventType
+	{
+		/// <summary>
+		/// Notifies of a SELECT query that was sent to the database.
+		/// </summary>
+		SelectQuery,
+
+		/// <summary>
+		/// Notifies of an INSERT query that was sent to the database.
+		/// </summary>
+		InsertQuery,
+
+		/// <summary>
+		/// Notifies of a DELETE query that was sent to the database.
+		/// </summary>
+		DeleteQuery,
+
+		/// <summary>
+		/// Notifies of an UPDATE query that was sent to the database.
+		/// </summary>
+		UpdateQuery,
+
+		/// <summary>
+		/// Carries an actual SQL query that was sent to the database.
+		/// </summary>
+		Sql,
+
+		/// <summary>
+		/// Writing a savepoint.
+		/// </summary>
+		Savepoint,
+
+		/// <summary>
+		/// Rolling back to a prior <see cref="Savepoint"/>.
+		/// </summary>
+		Rollback,
+
+		/// <summary>
+		/// Commits a transaction or prior savepoints.
+		/// </summary>
+		Commit,
+	}
+
+	public TraceSource TraceSource { get; } = new(nameof(MoneyFile));
+
 	public string Path => this.connection.DatabasePath;
 
-	public TextWriter? Logger { get; set; }
+	/// <summary>
+	/// Gets an object that describes aggregate data that may be expensive to calculate, such as net worth or account balances.
+	/// </summary>
+	public AggregateData? AggregateData
+	{
+		get
+		{
+			if (this.aggregateData is null)
+			{
+				this.TriggerAggregateDataRefresh();
+			}
+
+			return this.aggregateData;
+		}
+
+		private set
+		{
+			this.SetProperty(ref this.aggregateData, value);
+		}
+	}
 
 	public TransactionOperations Action { get; }
 
@@ -184,6 +256,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		{
 			this.undoStack.Clear();
 			this.connection.Commit();
+			this.LogSqlEvent(EventType.Commit, null, null);
 			this.OnPropertyChanged(nameof(this.UndoStack));
 		}
 	}
@@ -197,15 +270,16 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		(string SavepointName, string Activity, ISelectableView? ViewModel) savepoint = this.undoStack.Count > 0 ? this.undoStack.Pop() : throw new InvalidOperationException("Nothing to undo.");
 		this.OnPropertyChanged(nameof(this.UndoStack));
-		this.Logger?.WriteLine("Rolling back: {0}", savepoint.Activity);
 		this.connection.RollbackTo(savepoint.SavepointName);
-		this.version++;
+		this.LogSqlEvent(EventType.Rollback, savepoint.Activity, null);
+		this.IncrementDataVersion();
 		return savepoint.ViewModel;
 	}
 
 	public T Get<T>(object primaryKey)
 		where T : new()
 	{
+		this.LogSqlEvent(EventType.SelectQuery, typeof(T).Name, null);
 		return this.connection.Get<T>(primaryKey);
 	}
 
@@ -214,7 +288,8 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 		this.connection.Insert(model);
-		this.version++;
+		this.LogInsert(model);
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		return model;
 	}
@@ -223,15 +298,16 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	{
 		Verify.NotDisposed(this);
 		this.connection.InsertAll(models);
-		this.version++;
+		this.LogInsert(models);
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 	}
 
-	public void InsertAll(IReadOnlyCollection<ModelBase> models, string? extra = null)
+	public void InsertAll(IReadOnlyList<ModelBase> models, string? extra = null)
 	{
-		Verify.NotDisposed(this);
 		this.connection.InsertAll(models, extra);
-		this.version++;
+		this.LogInsert(models);
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: models));
 	}
 
@@ -240,7 +316,8 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Verify.NotDisposed(this);
 		ModelBase before = (ModelBase)this.connection.Get(model.Id, this.GetTableMapping(model));
 		this.connection.Update(model);
-		this.version++;
+		this.LogUpdate(model);
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
 	}
 
@@ -249,40 +326,28 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Requires.Argument(model.Id >= 0, nameof(model), "This model has a negative ID and therefore should never be persisted.");
 		Verify.NotDisposed(this);
 
-		ModelBase before = (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model));
-		if (this.connection.Update(model) > 0)
+		ModelBase? before = model.Id > 0 ? (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model)) : null;
+		if (before is not null && this.connection.Update(model) > 0)
 		{
-			this.version++;
+			this.LogUpdate(model);
+			this.IncrementDataVersion();
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
 		}
 		else
 		{
 			this.connection.Insert(model);
-			this.version++;
+			this.LogInsert(model);
+			this.IncrementDataVersion();
 			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
 		}
-	}
-
-	public bool Delete(Type modelType, object primaryKey)
-	{
-		TableMapping mapping = this.connection.GetMapping(modelType);
-		ModelBase? model = (ModelBase?)this.connection.Get(primaryKey, mapping);
-		if (model is null)
-		{
-			return false;
-		}
-
-		int deletedCount = this.connection.Delete(primaryKey, mapping);
-		this.version++;
-		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
-		return deletedCount > 0;
 	}
 
 	public bool Delete(ModelBase model)
 	{
 		Verify.NotDisposed(this);
 		int deletedCount = model.IsPersisted ? this.connection.Delete(model) : 0;
-		this.version++;
+		this.LogDelete(model);
+		this.IncrementDataVersion();
 		this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(deleted: new[] { model }));
 		return deletedCount > 0;
 	}
@@ -311,6 +376,7 @@ INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
 ";
 
 		decimal netWorth = this.connection.ExecuteScalar<decimal>(sql);
+		this.LogSqlEvent(EventType.SelectQuery, "Balances (GetNetWorth)", sql);
 		return netWorth;
 	}
 
@@ -329,6 +395,7 @@ INNER JOIN [Account] ON [Account].[Id] = [Balances].[AccountId]
 		this.RefreshBalances(new NetWorthQueryOptions { AsOfDate = asOfDate });
 		string sql = "SELECT [AssetId], TOTAL([Balance]) AS [Balance] FROM [Balances] WHERE [AccountId] = ? AND [AssetId] IS NOT NULL GROUP BY [AssetId]";
 		List<BalancesRow> balances = this.connection.Query<BalancesRow>(sql, account.Id);
+		this.LogSqlEvent(EventType.SelectQuery, $"Balances (GetBalances({account.Id}))", sql);
 		return balances.ToDictionary(b => b.AssetId, b => b.Balance);
 	}
 
@@ -351,7 +418,8 @@ FROM [Balances]
 INNER JOIN [AssetValue] ON [AssetValue].[AssetId] = [Balances].[AssetId]
 WHERE [Balances].[AccountId] = ?
 ";
-		decimal value = this.ExecuteScalar<decimal>(sql, account.Id);
+		decimal value = this.connection.ExecuteScalar<decimal>(sql, account.Id);
+		this.LogSqlEvent(EventType.SelectQuery, $"Balances (GetValue({account.Id}))", sql);
 		return value;
 	}
 
@@ -366,7 +434,8 @@ WHERE [Balances].[AccountId] = ?
 	{
 		string sql = $"DELETE FROM [TransactionEntry] WHERE [TransactionId] = {transactionId} AND [Id] NOT IN ({string.Join(',', entryIdsToPreserve)})";
 		this.ExecuteSql(sql);
-		this.version++;
+		this.LogSqlEvent(EventType.DeleteQuery, nameof(TransactionEntry), sql);
+		this.IncrementDataVersion();
 	}
 
 	/// <summary>
@@ -385,7 +454,14 @@ WHERE [Balances].[AccountId] = ?
 
 		this.inUndoableTransaction = true;
 		this.RecordSavepoint(description, viewModel);
-		return new ActionOnDispose(() => this.inUndoableTransaction = false);
+		return new ActionOnDispose(() =>
+		{
+			this.inUndoableTransaction = false;
+			if (this.pendingAggregateDataRefresh)
+			{
+				this.TriggerAggregateDataRefresh();
+			}
+		});
 	}
 
 	internal bool IsAccountInUse(int accountId)
@@ -396,7 +472,9 @@ WHERE [Balances].[AccountId] = ?
 		}
 
 		string sql = $@"SELECT [Id] FROM ""{nameof(TransactionEntry)}"" WHERE ""{nameof(TransactionEntry.AccountId)}"" == ? LIMIT 1";
-		return this.connection.Query<int>(sql, accountId).Any();
+		bool result = this.connection.Query<int>(sql, accountId).Any();
+		this.LogSqlEvent(EventType.SelectQuery, nameof(TransactionEntry), sql);
+		return result;
 	}
 
 	internal bool IsAssetInUse(int assetId)
@@ -407,13 +485,15 @@ WHERE [Balances].[AccountId] = ?
 		}
 
 		string sql = $@"SELECT COUNT(*) FROM ""{nameof(Account)}"" WHERE ""{nameof(Account.CurrencyAssetId)}"" == ? LIMIT 1";
-		if (this.ExecuteScalar<int>(sql, assetId) > 0)
+		this.LogSqlEvent(EventType.SelectQuery, nameof(Account), sql);
+		if (this.connection.ExecuteScalar<int>(sql, assetId) > 0)
 		{
 			return true;
 		}
 
 		sql = $@"SELECT COUNT(*) FROM ""{nameof(TransactionEntry)}"" WHERE ""{nameof(TransactionEntry.AssetId)}"" == ? LIMIT 1";
-		if (this.ExecuteScalar<int>(sql, assetId) > 0)
+		this.LogSqlEvent(EventType.SelectQuery, nameof(TransactionEntry), sql);
+		if (this.connection.ExecuteScalar<int>(sql, assetId) > 0)
 		{
 			return true;
 		}
@@ -430,6 +510,7 @@ WHERE [Balances].[AccountId] = ?
 			string sql = $@"DELETE FROM ""{nameof(TransactionEntry)}""
 WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
 			this.connection.Execute(sql);
+			this.LogSqlEvent(EventType.DeleteQuery, nameof(TransactionEntry), sql);
 		}
 		else
 		{
@@ -437,6 +518,7 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 SET ""{nameof(TransactionEntry.AccountId)}"" = ?
 WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategoryIds.Select(c => c.ToString(CultureInfo.InvariantCulture)))})";
 			this.connection.Execute(sql, newId == 0 ? null : newId);
+			this.LogSqlEvent(EventType.UpdateQuery, nameof(TransactionEntry), sql);
 		}
 	}
 
@@ -444,14 +526,27 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 	{
 		string sql = $@"SELECT * FROM ""{nameof(TransactionAndEntry)}"""
 			+ $@" WHERE [ContextAccountId] == ?";
-		return this.connection.Query<TransactionAndEntry>(sql, accountId);
+		List<TransactionAndEntry> result = this.connection.Query<TransactionAndEntry>(sql, accountId);
+		this.LogSqlEvent(EventType.SelectQuery, nameof(TransactionAndEntry), sql);
+		return result;
 	}
 
-	internal List<TransactionAndEntry> GetTransactionDetails(int accountId, int transactionId)
+	internal List<TransactionAndEntry> GetTransactionDetails(int transactionId)
+	{
+		string sql = $@"SELECT * FROM ""{nameof(TransactionAndEntry)}"""
+			+ $@" WHERE [TransactionId] == ?";
+		List<TransactionAndEntry> result = this.connection.Query<TransactionAndEntry>(sql, transactionId);
+		this.LogSqlEvent(EventType.SelectQuery, nameof(TransactionAndEntry), sql);
+		return result;
+	}
+
+	internal List<TransactionAndEntry> GetTransactionDetails(int transactionId, int accountId)
 	{
 		string sql = $@"SELECT * FROM ""{nameof(TransactionAndEntry)}"""
 			+ $@" WHERE [ContextAccountId] == ? AND [TransactionId] == ?";
-		return this.connection.Query<TransactionAndEntry>(sql, accountId, transactionId);
+		List<TransactionAndEntry> result = this.connection.Query<TransactionAndEntry>(sql, accountId, transactionId);
+		this.LogSqlEvent(EventType.SelectQuery, nameof(TransactionAndEntry), sql);
+		return result;
 	}
 
 	internal List<TransactionEntry> GetTransactionEntries(int transactionId) => this.TransactionEntries.Where(te => te.TransactionId == transactionId).ToList();
@@ -463,7 +558,10 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 	/// <returns>The list of account IDs.</returns>
 	internal List<int> GetAccountIdsImpactedByTransaction(IReadOnlyCollection<int> transactionIds)
 	{
-		return this.connection.Query<int>("SELECT DISTINCT [ContextAccountId] AS [AccountId] FROM [TransactionAndEntry] WHERE [TransactionId] IN ?", transactionIds);
+		const string query = "SELECT DISTINCT [ContextAccountId] AS [AccountId] FROM [TransactionAndEntry] WHERE [TransactionId] IN ?";
+		List<int> result = this.connection.Query<int>(query, transactionIds);
+		this.LogSqlEvent(EventType.SelectQuery, nameof(TransactionAndEntry), query);
+		return result;
 	}
 
 	/// <summary>
@@ -474,8 +572,9 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 	/// <param name="viewModel">The model that is about to be changed, that should be selected if the database is ever rolled back to this point.</param>
 	internal void RecordSavepoint(string nextActivityDescription, ISelectableView? viewModel)
 	{
-		this.Logger?.WriteLine("Writing savepoint before: {0}", nextActivityDescription);
-		this.undoStack.Push((this.connection.SaveTransactionPoint(), nextActivityDescription, viewModel));
+		string savepoint = this.connection.SaveTransactionPoint();
+		this.LogSqlEvent(EventType.Savepoint, savepoint, null);
+		this.undoStack.Push((savepoint, nextActivityDescription, viewModel));
 		this.OnPropertyChanged(nameof(this.UndoStack));
 	}
 
@@ -487,17 +586,63 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 
 	private static DateTime GetSqlBeforeDateOperand(DateTime asOfDate) => asOfDate.AddDays(1).Date;
 
-	private TableMapping GetTableMapping(ModelBase model) => this.connection.GetMapping(model.GetType());
-
-	private T ExecuteScalar<T>(string query, params object[] args)
+	/// <summary>
+	/// Increments the <see cref="version"/> field and triggers a refresh of <see cref="AggregateData"/>.
+	/// </summary>
+	private void IncrementDataVersion()
 	{
-		this.Logger?.WriteLine(query);
-		if (args?.Length > 0)
+		this.version++;
+		this.TriggerAggregateDataRefresh();
+	}
+
+	private AggregateData ComputeAggregateData(NetWorthQueryOptions netWorthQueryOptions = default)
+	{
+		long version = this.version;
+		decimal netWorth = this.GetNetWorth(netWorthQueryOptions);
+		Dictionary<int, decimal> accountBalances = new();
+		foreach (Account account in this.Accounts)
 		{
-			this.Logger?.WriteLine("With parameters: " + string.Join(", ", args));
+			accountBalances.Add(account.Id, this.GetValue(account, netWorthQueryOptions.AsOfDate));
 		}
 
-		return this.connection.ExecuteScalar<T>(query, args);
+		return new AggregateData(accountBalances, netWorth, version);
+	}
+
+	private TableMapping GetTableMapping(ModelBase model) => this.connection.GetMapping(model.GetType());
+
+	private void LogSqlEvent(EventType queryType, string? message, string? sql)
+	{
+		this.TraceSource.TraceEvent(TraceEventType.Information, (int)queryType, message);
+		if (sql is not null)
+		{
+			this.TraceSource.TraceData(TraceEventType.Verbose, (int)EventType.Sql, sql);
+		}
+	}
+
+	private void LogUpdate(ModelBase model)
+	{
+		this.TraceSource.TraceEvent(TraceEventType.Verbose, (int)EventType.UpdateQuery, "{0} {1}", model.GetType().Name, model.Id);
+	}
+
+	private void LogDelete(ModelBase model)
+	{
+		if (model.IsPersisted)
+		{
+			this.TraceSource.TraceEvent(TraceEventType.Verbose, (int)EventType.DeleteQuery, "{0} {1}", model.GetType().Name, model.Id);
+		}
+	}
+
+	private void LogInsert(ModelBase model)
+	{
+		this.TraceSource.TraceEvent(TraceEventType.Verbose, (int)EventType.InsertQuery, "{0} {1}", model.GetType().Name, model.Id);
+	}
+
+	private void LogInsert(IReadOnlyList<ModelBase> models)
+	{
+		if (models.Count > 0)
+		{
+			this.TraceSource.TraceEvent(TraceEventType.Verbose, (int)EventType.InsertQuery, "{0} {1}", models[0].GetType().Name, string.Join(", ", models.Select(m => m.Id)));
+		}
 	}
 
 	private void RefreshBalances(NetWorthQueryOptions options = default(NetWorthQueryOptions))
@@ -578,6 +723,22 @@ WHERE [Id] != ?
 		{
 			string errMsg = SQLitePCL.raw.sqlite3_errmsg(this.connection.Handle).utf8_to_string();
 			throw new Exception(errMsg);
+		}
+	}
+
+	/// <summary>
+	/// Refreshes <see cref="AggregateData"/>, or records that one should occur if we're in an undoable transaction.
+	/// </summary>
+	private void TriggerAggregateDataRefresh()
+	{
+		if (this.inUndoableTransaction)
+		{
+			this.pendingAggregateDataRefresh = true;
+		}
+		else
+		{
+			this.AggregateData = this.ComputeAggregateData(new NetWorthQueryOptions { AsOfDate = DateTime.Today });
+			this.pendingAggregateDataRefresh = false;
 		}
 	}
 
