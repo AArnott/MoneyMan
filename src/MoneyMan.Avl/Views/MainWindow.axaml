@@ -44,7 +44,7 @@
 					<Button Content="{Binding AddCommandCaption}" DockPanel.Dock="Bottom" Command="{Binding AddCommand}" />
 					<ListBox Name="CategoriesListView" Items="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" SelectionMode="Multiple">
 						<ListBox.DataTemplates>
-							<DataTemplate DataType="{x:Type vm:CategoryViewModel}">
+							<DataTemplate DataType="{x:Type vm:CategoryAccountViewModel}">
 								<TextBlock Text="{Binding Name}">
 									<TextBlock.ContextMenu>
 										<ContextMenu>
