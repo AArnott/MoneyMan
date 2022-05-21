@@ -23,7 +23,7 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BuildConfiguration: Release
   codecov_token: 042b0b39-5508-4c6f-9085-5298203a5392
-  ci_feed: https://pkgs.dev.azure.com/andrewarnott/_packaging/PublicCI/nuget/v3/index.json # Azure Artifacts feed URL
+  ci_feed: https://pkgs.dev.azure.com/andrewarnott/OSS/_packaging/PublicCI/nuget/v3/index.json
   NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages/
 
 jobs:
