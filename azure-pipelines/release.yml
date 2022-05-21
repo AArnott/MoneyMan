@@ -13,7 +13,9 @@ variables:
 - group: Publishing secrets
 
 jobs:
+- template: release_squirrel.yml
 - job: release
+  dependsOn: squirrel
   pool:
     vmImage: ubuntu-latest
   steps:
@@ -57,3 +59,4 @@ jobs:
   - script: dotnet nuget push $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg -s https://api.nuget.org/v3/index.json --api-key $(NuGetOrgApiKey) --skip-duplicate
     displayName: 📦 Push packages to nuget.org
     condition: and(succeeded(), ne(variables['NuGetOrgApiKey'], ''))
+    enabled: false # suppress until it's worth sharing.
