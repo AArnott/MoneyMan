@@ -137,6 +137,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 				{
 					foreach (TransactionEntryViewModel entry in this.Entries)
 					{
+						entry.PropertyChanged += this.Splits_PropertyChanged;
 						if (entry.Account != this.ThisAccount)
 						{
 							this.splits.Add(entry);

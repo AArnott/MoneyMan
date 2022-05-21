@@ -99,6 +99,12 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 
 		this.ReloadViewModel();
 		Assert.Equal(-70, this.viewModel.Amount);
+
+		split1 = this.viewModel.Splits[0];
+		split2 = this.viewModel.Splits[1];
+
+		split2.Amount += 10;
+		Assert.Equal(split1.Amount + split2.Amount, this.viewModel.Amount);
 	}
 
 	[Fact]
