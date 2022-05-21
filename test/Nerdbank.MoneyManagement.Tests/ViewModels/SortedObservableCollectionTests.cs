@@ -1,18 +1,11 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft;
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
 
 public class SortedObservableCollectionTests : TestBase
 {
@@ -62,6 +55,84 @@ public class SortedObservableCollectionTests : TestBase
 		IList collection = this.collection;
 		collection.Add(5);
 		Assert.Equal(5, Assert.Single(collection));
+	}
+
+	[Fact]
+	public void AddRange()
+	{
+		List<NotifyCollectionChangedEventArgs> collectionEvents = new();
+		this.collection.CollectionChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+			Assert.Null(e.OldItems);
+
+			// As we save it, copy the NewItems collection because its content is only guaranteed while raising the event.
+			collectionEvents.Add(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, e.NewItems?.Cast<int>().ToArray(), e.NewStartingIndex));
+		};
+		List<PropertyChangedEventArgs> propertyEvents = new();
+		this.collection.PropertyChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			propertyEvents.Add(e);
+		};
+
+		this.collection.AddRange(new[] { 1, 5 });
+		Assert.Equal(nameof(this.collection.Count), Assert.Single(propertyEvents).PropertyName);
+		Assert.Equal(2, collectionEvents.Count);
+		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems));
+		Assert.Equal(5, Assert.Single(collectionEvents[1].NewItems));
+		Assert.Equal(0, collectionEvents[0].NewStartingIndex);
+		Assert.Equal(0, collectionEvents[1].NewStartingIndex);
+
+		Assert.Equal(new[] { 5, 1 }, this.collection);
+	}
+
+	[Fact]
+	public void AddRange_ToNonEmptyCollection()
+	{
+		this.collection.Add(7);
+
+		List<NotifyCollectionChangedEventArgs> collectionEvents = new();
+		this.collection.CollectionChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+			Assert.Null(e.OldItems);
+
+			// As we save it, copy the NewItems collection because its content is only guaranteed while raising the event.
+			collectionEvents.Add(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, e.NewItems?.Cast<int>().ToArray(), e.NewStartingIndex));
+		};
+		List<PropertyChangedEventArgs> propertyEvents = new();
+		this.collection.PropertyChanged += (s, e) =>
+		{
+			Assert.Same(this.collection, s);
+			propertyEvents.Add(e);
+		};
+
+		this.collection.AddRange(new[] { 1, 9, 3 });
+		Assert.Equal(nameof(this.collection.Count), Assert.Single(propertyEvents).PropertyName);
+		Assert.Equal(3, collectionEvents.Count);
+		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems));
+		Assert.Equal(9, Assert.Single(collectionEvents[1].NewItems));
+		Assert.Equal(3, Assert.Single(collectionEvents[2].NewItems));
+		Assert.Equal(1, collectionEvents[0].NewStartingIndex);
+		Assert.Equal(0, collectionEvents[1].NewStartingIndex);
+		Assert.Equal(2, collectionEvents[2].NewStartingIndex);
+
+		Assert.Equal(new[] { 9, 7, 3, 1 }, this.collection);
+	}
+
+	[Fact]
+	public void AddRange_EmptyInput()
+	{
+		TestUtilities.AssertNoCollectionChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()));
+		TestUtilities.AssertPropertyChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()), invertExpectation: true, nameof(this.collection.Count));
+		Assert.Empty(this.collection);
+
+		this.collection.Add(3);
+		TestUtilities.AssertNoCollectionChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()));
+		TestUtilities.AssertPropertyChangedEvent(this.collection, () => this.collection.AddRange(Enumerable.Empty<int>()), invertExpectation: true, nameof(this.collection.Count));
 	}
 
 	[Fact]
@@ -151,6 +222,25 @@ public class SortedObservableCollectionTests : TestBase
 	}
 
 	[Fact]
+	public void Contains_IList_WrongType()
+	{
+		IList collection = this.collection;
+		Assert.False(collection.Contains("wrong type"));
+	}
+
+	[Fact]
+	public void Contains_IList_NullValue()
+	{
+		IList collection = this.collection;
+		Assert.False(collection.Contains(null));
+
+		collection = new SortedObservableCollection<object?>();
+		Assert.False(collection.Contains(null));
+		collection.Add(null);
+		Assert.True(collection.Contains(null));
+	}
+
+	[Fact]
 	public void Remove()
 	{
 		Assert.Equal(~0, this.collection.Remove(1));
@@ -236,6 +326,7 @@ public class SortedObservableCollectionTests : TestBase
 	[Fact]
 	public void IndexOf()
 	{
+		// The concrete public method returns the bitwise complement of the sorted location of where an item *would* be when not found.
 		Assert.Equal(~0, this.collection.IndexOf(3));
 		this.collection.Add(5);
 		this.collection.Add(10);
@@ -247,13 +338,27 @@ public class SortedObservableCollectionTests : TestBase
 	[Fact]
 	public void IndexOf_IList()
 	{
+		// This interface is documented as returning exactly -1 when items are not found.
 		IList collection = this.collection;
 		Assert.Equal(~0, collection.IndexOf(3));
 		this.collection.Add(5);
 		this.collection.Add(10);
-		Assert.Equal(~0, collection.IndexOf(15));
-		Assert.Equal(~1, collection.IndexOf(7));
-		Assert.Equal(~2, collection.IndexOf(3));
+		Assert.Equal(-1, collection.IndexOf(15));
+		Assert.Equal(-1, collection.IndexOf(7));
+		Assert.Equal(-1, collection.IndexOf(3));
+	}
+
+	[Fact]
+	public void IndexOf_IListOfT()
+	{
+		// This interface is documented as returning exactly -1 when items are not found.
+		IList<int> collection = this.collection;
+		Assert.Equal(~0, collection.IndexOf(3));
+		this.collection.Add(5);
+		this.collection.Add(10);
+		Assert.Equal(-1, collection.IndexOf(15));
+		Assert.Equal(-1, collection.IndexOf(7));
+		Assert.Equal(-1, collection.IndexOf(3));
 	}
 
 	[Fact]
@@ -409,8 +514,7 @@ public class SortedObservableCollectionTests : TestBase
 		collection.Add(b);
 
 		int oldCount = comparer.InvocationCount;
-		ArgumentException ex = Assert.Throws<ArgumentException>("sender", () => a.RaisePropertyChanged(new ObservableMutableClass(1), nameof(ObservableMutableClass.Value)));
-		this.Logger.WriteLine(ex.ToString());
+		a.RaisePropertyChanged(new ObservableMutableClass(1), nameof(ObservableMutableClass.Value));
 		Assert.Equal(oldCount, comparer.InvocationCount);
 	}
 

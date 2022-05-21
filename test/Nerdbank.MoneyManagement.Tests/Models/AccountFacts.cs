@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using Nerdbank.MoneyManagement;
-using Xunit;
-using Xunit.Abstractions;
-
 public class AccountFacts : EntityTestBase
 {
 	private Account account;
@@ -15,7 +11,9 @@ public class AccountFacts : EntityTestBase
 		this.account = new Account
 		{
 			Name = "test",
+			CurrencyAssetId = this.Money.PreferredAssetId,
 		};
+		this.EnableSqlLogging();
 	}
 
 	[Fact]
@@ -23,14 +21,28 @@ public class AccountFacts : EntityTestBase
 	{
 		string expected = "some name";
 		this.account.Name = expected;
-
 		Assert.Equal(expected, this.account.Name);
+
+		this.account.Type = Account.AccountType.Investing;
+		Assert.Equal(Account.AccountType.Investing, this.account.Type);
+
+		this.account.CurrencyAssetId = 1; // assumed ID for the "USD" entry added by the sql scripts
+
+		this.account.OfxBankId = "ABC123";
+		Assert.Equal("ABC123", this.account.OfxBankId);
+
+		this.account.OfxAcctId = "DEF456";
+		Assert.Equal("DEF456", this.account.OfxAcctId);
 
 		Account? account2 = this.SaveAndReload(this.account);
 
 		Assert.NotEqual(0, this.account.Id);
 		Assert.Equal(this.account.Id, account2.Id);
 		Assert.Equal(expected, account2.Name);
+		Assert.Equal(this.account.Type, account2.Type);
+		Assert.Equal(this.account.CurrencyAssetId, account2.CurrencyAssetId);
+		Assert.Equal("ABC123", account2.OfxBankId);
+		Assert.Equal("DEF456", account2.OfxAcctId);
 	}
 
 	[Fact]
@@ -41,38 +53,38 @@ public class AccountFacts : EntityTestBase
 	}
 
 	[Fact]
-	public void GetBalance_AcrossTransactions()
+	public void GetBalances_AcrossTransactions()
 	{
 		this.Money.Insert(this.account);
 
 		decimal expected = 0;
-		Assert.Equal(expected, this.Money.GetBalance(this.account));
+		Assert.Empty(this.Money.GetBalances(this.account));
 
-		this.Money.Insert(this.account.Deposit(5));
+		this.Money.Action.Deposit(this.account, new Amount(5, this.account.CurrencyAssetId!.Value));
 		expected += 5;
-		Assert.Equal(expected, this.Money.GetBalance(this.account));
+		Assert.Equal(expected, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 
-		this.Money.Insert(this.account.Withdraw(2.5m));
+		this.Money.Action.Withdraw(this.account, new Amount(2.5m, this.account.CurrencyAssetId!.Value));
 		expected -= 2.5m;
-		Assert.Equal(expected, this.Money.GetBalance(this.account));
+		Assert.Equal(expected, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
 	}
 
 	[Fact]
-	public void GetBalance_AcrossAccounts()
+	public void GetBalances_AcrossAccounts()
 	{
-		var account2 = new Account { Name = "test2" };
+		var account2 = new Account { Name = "test2", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(this.account);
 		this.Money.Insert(account2);
 
-		this.Money.Insert(this.account.Deposit(5));
-		this.Money.Insert(this.account.Transfer(account2, 2.2m));
+		this.Money.Action.Deposit(this.account, new Amount(5, this.account.CurrencyAssetId!.Value));
+		this.Money.Action.Transfer(this.account, account2, new Amount(2.2m, this.account.CurrencyAssetId!.Value));
 
-		Assert.Equal(2.8m, this.Money.GetBalance(this.account));
-		Assert.Equal(2.2m, this.Money.GetBalance(account2));
+		Assert.Equal(2.8m, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
+		Assert.Equal(2.2m, this.Money.GetBalances(account2)[this.account.CurrencyAssetId!.Value]);
 
-		this.Money.Insert(account2.Transfer(this.account, 0.4m));
+		this.Money.Action.Transfer(account2, this.account, new Amount(0.4m, this.account.CurrencyAssetId!.Value));
 
-		Assert.Equal(3.2m, this.Money.GetBalance(this.account));
-		Assert.Equal(1.8m, this.Money.GetBalance(account2));
+		Assert.Equal(3.2m, this.Money.GetBalances(this.account)[this.account.CurrencyAssetId!.Value]);
+		Assert.Equal(1.8m, this.Money.GetBalances(account2)[this.account.CurrencyAssetId!.Value]);
 	}
 }

@@ -10,6 +10,7 @@ trigger:
     - '*.md'
     - .vscode/
     - .github/
+    - azure-pipelines/release*.yml
 
 parameters:
 - name: includeMacOS
@@ -22,8 +23,8 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BuildConfiguration: Release
   codecov_token: 042b0b39-5508-4c6f-9085-5298203a5392
-  ci_feed: OSS/PublicCI
-  NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
+  ci_feed: https://pkgs.dev.azure.com/andrewarnott/OSS/_packaging/PublicCI/nuget/v3/index.json
+  NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages/
 
 jobs:
 - template: azure-pipelines/build.yml

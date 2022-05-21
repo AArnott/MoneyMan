@@ -1,11 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System.Collections.Generic;
-using Nerdbank.MoneyManagement;
-using Xunit;
-using Xunit.Abstractions;
-
 public class UtilitiesTests : TestBase
 {
 	public UtilitiesTests(ITestOutputHelper logger)

@@ -1,19 +1,18 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System;
-using System.IO;
-using Nerdbank.MoneyManagement;
-using Xunit;
-using Xunit.Abstractions;
+using SQLite;
+using static SQLite.SQLite3;
 
 public class MoneyFileTests : IDisposable
 {
 	private readonly ITestOutputHelper logger;
+	private readonly MoneyFileTraceListener moneyFileTraceListener;
 	private string dbPath;
 
 	public MoneyFileTests(ITestOutputHelper logger)
 	{
+		this.moneyFileTraceListener = new MoneyFileTraceListener(logger);
 		this.logger = logger;
 		this.dbPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 	}
@@ -26,14 +25,15 @@ public class MoneyFileTests : IDisposable
 	[Fact]
 	public void Load_ThrowsOnNullOrEmpty()
 	{
-		Assert.Throws<ArgumentNullException>(() => MoneyFile.Load(null!));
+		Assert.Throws<ArgumentNullException>(() => MoneyFile.Load((string)null!));
+		Assert.Throws<ArgumentNullException>(() => MoneyFile.Load((SQLiteConnection)null!));
 		Assert.Throws<ArgumentException>(() => MoneyFile.Load(string.Empty));
 	}
 
 	[Fact]
 	public void Load_NonExistentFile()
 	{
-		using (MoneyFile? money = this.Load())
+		using (MoneyFile? money = this.Load(alwaysOnDisk: true))
 		{
 			Assert.NotNull(money);
 			Assert.True(File.Exists(this.dbPath));
@@ -44,7 +44,7 @@ public class MoneyFileTests : IDisposable
 	public void Account_StoreReloadAndChange()
 	{
 		int accountKey;
-		using (MoneyFile money = this.Load())
+		using (MoneyFile money = this.Load(alwaysOnDisk: true))
 		{
 			var account = new Account { Name = "foo" };
 			money.Insert(account);
@@ -52,7 +52,7 @@ public class MoneyFileTests : IDisposable
 			accountKey = account.Id;
 		}
 
-		using (MoneyFile money = this.Load())
+		using (MoneyFile money = this.Load(alwaysOnDisk: true))
 		{
 			Account? account = money.Accounts.First();
 			Assert.Equal(accountKey, account.Id);
@@ -61,7 +61,7 @@ public class MoneyFileTests : IDisposable
 			money.Update(account);
 		}
 
-		using (MoneyFile money = this.Load())
+		using (MoneyFile money = this.Load(alwaysOnDisk: true))
 		{
 			Assert.Equal(1, money.Accounts.Count());
 			Account? account = money.Get<Account>(accountKey);
@@ -71,18 +71,17 @@ public class MoneyFileTests : IDisposable
 	}
 
 	[Fact]
-	public void GetBalance()
+	public void GetBalances()
 	{
 		using MoneyFile money = this.Load();
-		Assert.Throws<ArgumentNullException>(() => money.GetBalance(null!));
-		Assert.Throws<ArgumentException>(() => money.GetBalance(new Account()));
+		Assert.Throws<ArgumentNullException>(() => money.GetBalances(null!));
+		Assert.Throws<ArgumentException>(() => money.GetBalances(new Account()));
 
-		Account account = new() { Name = "Checking" };
+		Account account = new() { Name = "Checking", CurrencyAssetId = money.PreferredAssetId };
 		money.Insert(account);
-		Assert.Equal(0, money.GetBalance(account));
-		Transaction tx = new() { CreditAccountId = account.Id, Amount = 3 };
-		money.Insert(tx);
-		Assert.Equal(3, money.GetBalance(account));
+		Assert.Empty(money.GetBalances(account));
+		money.Action.Deposit(account, new Amount(3, account.CurrencyAssetId.Value));
+		Assert.Equal(3, money.GetBalances(account)[account.CurrencyAssetId!.Value]);
 	}
 
 	[Fact]
@@ -90,20 +89,21 @@ public class MoneyFileTests : IDisposable
 	{
 		using (MoneyFile? money = this.Load())
 		{
-			var acct1 = new Account { Name = "first" };
-			var acct2 = new Account { Name = "second" };
+			var acct1 = new Account { Name = "first", CurrencyAssetId = money.PreferredAssetId };
+			var acct2 = new Account { Name = "second", CurrencyAssetId = money.PreferredAssetId };
 
 			money.InsertAll(acct1, acct2);
-			money.Insert(new Transaction { CreditAccountId = acct1.Id, When = DateTime.Parse("1/1/2015"), Amount = 7 });
-			money.Insert(new Transaction { CreditAccountId = acct2.Id, When = DateTime.Parse("1/1/2016"), Amount = 3 });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016"), Amount = 2.5m });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, CreditAccountId = acct2.Id, When = DateTime.Parse("2/1/2016"), Amount = 1 });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/1/2016 11:59 PM"), Amount = 1.3m });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2016"), Amount = 4m });
-			money.Insert(new Transaction { DebitAccountId = acct1.Id, When = DateTime.Parse("2/2/2222"), Amount = 0.3m });
+			money.Action.Deposit(acct1, 7, DateTime.Parse("1/1/2015"));
+			money.Action.Deposit(acct2, 3, DateTime.Parse("1/1/2016"));
+			money.Action.Withdraw(acct1, 2.5m, DateTime.Parse("2/1/2016"));
+			money.Action.Transfer(acct1, acct2, 1, DateTime.Parse("2/1/2016"));
+			money.Action.Withdraw(acct1, 1.3m, DateTime.Parse("2/1/2016 11:59 PM"));
+			money.Action.Withdraw(acct1, 4m, DateTime.Parse("2/2/2016"));
+			money.Action.Withdraw(acct1, 0.3m, DateTime.Parse("2/2/2222"));
 
 			Assert.Equal(6.2m, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Parse("2/1/2016") }));
-			Assert.Equal(1.9m, money.GetNetWorth());
+			Assert.Equal(2.2m, money.GetNetWorth());
+			Assert.Equal(1.9m, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = DateTime.Parse("2/2/2222") }));
 		}
 	}
 
@@ -112,16 +112,84 @@ public class MoneyFileTests : IDisposable
 	{
 		using (MoneyFile? money = this.Load())
 		{
-			var openAccount = new Account { Name = "first" };
-			var closedAccount = new Account { Name = "second", IsClosed = true };
+			var openAccount = new Account { Name = "first", Type = Account.AccountType.Banking, CurrencyAssetId = money.PreferredAssetId };
+			var closedAccount = new Account { Name = "second", Type = Account.AccountType.Banking, CurrencyAssetId = money.PreferredAssetId, IsClosed = true };
 
 			money.InsertAll(openAccount, closedAccount);
-			money.Insert(openAccount.Deposit(7));
-			money.Insert(closedAccount.Deposit(3));
+			money.Action.Deposit(openAccount, 7);
+			money.Action.Deposit(closedAccount, 3);
 
 			Assert.Equal(7, money.GetNetWorth());
 			Assert.Equal(10, money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { IncludeClosedAccounts = true }));
 		}
+	}
+
+	[Fact]
+	public void GetNetWorth_IncludingSecurities()
+	{
+		using MoneyFile money = this.Load();
+
+		Account brokerage = new Account { Name = "brokerage", CurrencyAssetId = money.PreferredAssetId, Type = Account.AccountType.Investing };
+		Asset msft = new Asset { Name = "Microsoft" };
+		Asset aapl = new Asset { Name = "Aaple" };
+		money.InsertAll(brokerage, msft, aapl);
+
+		decimal expectedWorth = 0;
+		DateTime when = DateTime.Today.AddDays(-2);
+
+		decimal amount = 7;
+		money.Action.Deposit(brokerage, amount, when);
+		expectedWorth += amount;
+
+		amount = 2;
+		money.Action.Add(brokerage, new Amount(amount, msft.Id), when);
+		AssetPrice msftPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
+		AssetPrice msftPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
+		expectedWorth += amount * msftPriceBefore.PriceInReferenceAsset;
+
+		amount = 2;
+		money.Action.Add(brokerage, new Amount(amount, aapl.Id), when);
+		AssetPrice aaplPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
+		AssetPrice aaplPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
+		expectedWorth += amount * aaplPriceBefore.PriceInReferenceAsset;
+
+		money.InsertAll(msftPriceBefore, msftPriceAfter, aaplPriceBefore, aaplPriceAfter);
+
+		decimal netWorth = money.GetNetWorth(new MoneyFile.NetWorthQueryOptions { AsOfDate = when });
+		Assert.Equal(expectedWorth, netWorth);
+	}
+
+	[Fact]
+	public void GetValue_IncludingSecurities()
+	{
+		using MoneyFile money = this.Load();
+
+		Account brokerage = new Account { Name = "brokerage", CurrencyAssetId = money.PreferredAssetId, Type = Account.AccountType.Investing };
+		Asset msft = new Asset { Name = "Microsoft" };
+		Asset aapl = new Asset { Name = "Aaple" };
+		money.InsertAll(brokerage, msft, aapl);
+
+		decimal expectedWorth = 0;
+		DateTime when = DateTime.Today.AddDays(-2);
+		decimal amount = 7;
+		money.Action.Deposit(brokerage, amount, when);
+		expectedWorth += amount;
+
+		amount = 2;
+		money.Action.Add(brokerage, new Amount(amount, msft.Id), when);
+		AssetPrice msftPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
+		AssetPrice msftPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = msft.Id };
+		expectedWorth += amount * msftPriceBefore.PriceInReferenceAsset;
+
+		money.Action.Add(brokerage, new Amount(amount, aapl.Id), when);
+		AssetPrice aaplPriceBefore = new AssetPrice { When = when.AddDays(-1), PriceInReferenceAsset = 13, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
+		AssetPrice aaplPriceAfter = new AssetPrice { When = when.AddDays(1), PriceInReferenceAsset = 11, ReferenceAssetId = money.PreferredAssetId, AssetId = aapl.Id };
+		expectedWorth += amount * aaplPriceBefore.PriceInReferenceAsset;
+
+		money.InsertAll(msftPriceBefore, msftPriceAfter, aaplPriceBefore, aaplPriceAfter);
+
+		decimal value = money.GetValue(brokerage, when);
+		Assert.Equal(expectedWorth, value);
 	}
 
 	[Fact]
@@ -199,10 +267,9 @@ public class MoneyFileTests : IDisposable
 		Assert.Throws<ObjectDisposedException>(() => money.InsertOrReplace(new Account { Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Delete(new Account { Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.GetNetWorth());
-		Assert.Throws<ObjectDisposedException>(() => money.GetBalance(new Account { Id = 3, Name = "Checking" }));
+		Assert.Throws<ObjectDisposedException>(() => money.GetBalances(new Account { Id = 3, Name = "Checking" }));
 		Assert.Throws<ObjectDisposedException>(() => money.Categories);
 		Assert.Throws<ObjectDisposedException>(() => money.Accounts);
-		Assert.Throws<ObjectDisposedException>(() => money.SplitTransactions);
 		Assert.Throws<ObjectDisposedException>(() => money.Transactions);
 		Assert.Throws<ObjectDisposedException>(() => money.CheckIntegrity());
 	}
@@ -215,10 +282,38 @@ public class MoneyFileTests : IDisposable
 		money.Dispose();
 	}
 
-	private MoneyFile Load()
+	[Fact]
+	public void LoadNewerThanCurrentFileFormatThrows()
 	{
-		var file = MoneyFile.Load(this.dbPath);
-		file.Logger = new TestLoggerAdapter(this.logger);
+		this.Load(alwaysOnDisk: true).Dispose();
+		using (SQLiteConnection db = new(this.dbPath))
+		{
+			int currentVersion = db.ExecuteScalar<int>("SELECT MAX(SchemaVersion) FROM SchemaHistory");
+			db.Execute("INSERT INTO SchemaHistory VALUES (?, ?, ?)", currentVersion + 1, DateTime.Now, "test");
+		}
+
+		MoneyFile? money = null;
+		try
+		{
+			Assert.Throws<InvalidOperationException>(() => money = this.Load(alwaysOnDisk: true));
+		}
+		catch (InvalidOperationException)
+		{
+			// Expected exception thrown.
+		}
+		finally
+		{
+#pragma warning disable CA1508 // Avoid dead conditional code
+			money?.Dispose();
+#pragma warning restore CA1508 // Avoid dead conditional code
+		}
+	}
+
+	private MoneyFile Load(bool alwaysOnDisk = false)
+	{
+		var file = MoneyFile.Load(alwaysOnDisk || Debugger.IsAttached ? this.dbPath : ":memory:");
+		file.TraceSource.Switch.Level = SourceLevels.Verbose;
+		file.TraceSource.Listeners.Add(this.moneyFileTraceListener);
 		return file;
 	}
 }

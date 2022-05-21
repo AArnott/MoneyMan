@@ -1,322 +1,326 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace Nerdbank.MoneyManagement.ViewModels
+using System.ComponentModel.DataAnnotations;
+using Validation;
+
+namespace Nerdbank.MoneyManagement.ViewModels;
+
+public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableView
 {
-	using System;
-	using System.Collections.Generic;
-	using System.ComponentModel.DataAnnotations;
-	using System.Diagnostics;
-	using Validation;
+	private AssetViewModel? currencyAsset;
+	private string name = string.Empty;
+	private bool isClosed;
+	private Account.AccountType type;
+	private string? ofxBankId;
+	private string? ofxAcctId;
 
-	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class AccountViewModel : EntityViewModel<Account>, ITransactionTarget
+	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
+		: base(documentViewModel.MoneyFile, model)
 	{
-		private SortedObservableCollection<TransactionViewModel>? transactions;
-		private string name = string.Empty;
-		private bool isClosed;
-		private decimal balance;
+		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
+		this.RegisterDependentProperty(nameof(this.IsEmpty), nameof(this.TypeIsReadOnly));
+		this.RegisterDependentProperty(nameof(this.Value), nameof(this.ValueFormatted));
 
-		public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
-			: base(documentViewModel.MoneyFile)
+		this.DocumentViewModel = documentViewModel;
+		this.BankingViewSelection = new SelectWithinBanking(this);
+		this.CopyFrom(this.Model);
+	}
+
+	[Required]
+	public string Name
+	{
+		get => this.name;
+		set
 		{
-			this.RegisterDependentProperty(nameof(this.Name), nameof(this.TransferTargetName));
-			this.AutoSave = true;
+			Requires.NotNull(value, nameof(value));
+			this.SetProperty(ref this.name, value);
+		}
+	}
 
-			this.DocumentViewModel = documentViewModel;
-			if (model is object)
+	public abstract string? TransferTargetName { get; }
+
+	/// <inheritdoc cref="Account.IsClosed"/>
+	public bool IsClosed
+	{
+		get => this.isClosed;
+		set => this.SetProperty(ref this.isClosed, value);
+	}
+
+	/// <inheritdoc cref="Account.Type"/>
+	public Account.AccountType Type
+	{
+		get => this.type;
+		set
+		{
+			Verify.Operation(this.type == value || this.IsEmpty, "Cannot change type of account when it contains transactions.");
+			this.SetProperty(ref this.type, value);
+		}
+	}
+
+	/// <inheritdoc cref="Account.OfxBankId"/>
+	public string? OfxBankId
+	{
+		get => this.ofxBankId;
+		set => this.SetProperty(ref this.ofxBankId, value);
+	}
+
+	/// <inheritdoc cref="Account.OfxAcctId"/>
+	public string? OfxAcctId
+	{
+		get => this.ofxAcctId;
+		set => this.SetProperty(ref this.ofxAcctId, value);
+	}
+
+	public bool TypeIsReadOnly => !this.IsEmpty;
+
+	public string CurrencyAssetLabel => "Currency";
+
+	public AssetViewModel? CurrencyAsset
+	{
+		get => this.currencyAsset;
+		set
+		{
+			if (this.currencyAsset != value)
 			{
-				this.CopyFrom(model);
+				AssetViewModel? before = this.currencyAsset;
+				this.SetProperty(ref this.currencyAsset, value);
+				before?.NotifyUseChange();
+				value?.NotifyUseChange();
 			}
 		}
+	}
 
-		[Required]
-		public string Name
+	public IEnumerable<AssetViewModel> CurrencyAssets => this.DocumentViewModel.AssetsPanel.Assets.Where(a => a.Type == Asset.AssetType.Currency);
+
+	public bool CurrencyAssetIsReadOnly => !this.IsEmpty;
+
+	/// <summary>
+	/// Gets the value of this account, measured in the user's preferred currency.
+	/// </summary>
+	/// <remarks>
+	/// For ordinary banking accounts, this is simply the balance on the account (converted to the user's preferred currency as appropriate).
+	/// For investment accounts, this so the net value of all positions held in that account.
+	/// </remarks>
+	public decimal Value => this.MoneyFile.AggregateData?.AccountBalances.TryGetValue(this.Id, out decimal value) is true ? value : 0;
+
+	public string? ValueFormatted => this.DocumentViewModel.DefaultCurrency?.Format(this.Value);
+
+	/// <summary>
+	/// Gets an object that can be given to <see cref="MoneyFile.UndoableTransaction(string, ISelectableView?)"/>
+	/// so that this account will be selected in the banking panel instead of the accounts panel.
+	/// </summary>
+	internal ISelectableView? BankingViewSelection { get; }
+
+	protected internal DocumentViewModel DocumentViewModel { get; }
+
+	/// <summary>
+	/// Gets a value indicating whether the account is empty, and therefore able to change to another type.
+	/// </summary>
+	protected abstract bool IsEmpty { get; }
+
+	/// <summary>
+	/// Gets a value indicating whether this account has a populated collection of transaction view models.
+	/// </summary>
+	protected abstract bool IsPopulated { get; }
+
+	protected string? DebuggerDisplay => this.Name;
+
+	public abstract void DeleteTransaction(TransactionViewModel transaction);
+
+	public abstract TransactionViewModel? FindTransaction(int? id);
+
+	public override string ToString() => $"Account: {this.Name}";
+
+	void ISelectableView.Select()
+	{
+		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Accounts;
+		this.DocumentViewModel.AccountsPanel.SelectedAccount = this.DocumentViewModel.AccountsPanel.FindAccount(this.Id);
+	}
+
+	internal static AccountViewModel Create(Account model, DocumentViewModel documentViewModel)
+	{
+		AccountViewModel accountViewModel = Create(model, model.Type, documentViewModel);
+		return accountViewModel;
+	}
+
+	/// <summary>
+	/// Creates a new instance of this account of the appropriate derived runtime type to match the current value of <see cref="Type"/>.
+	/// </summary>
+	/// <returns>A new instance of <see cref="AccountViewModel"/>.</returns>
+	internal AccountViewModel Recreate()
+	{
+		this.Model.Type = this.Type;
+		AccountViewModel newViewModel = Create(this.Model, this.Type, this.DocumentViewModel);
+
+		// Copy over the base view model properties manually in case it wasn't in a valid state to copy to the model.
+		newViewModel.type = this.Type;
+		newViewModel.name = this.Name;
+		newViewModel.isClosed = this.IsClosed;
+
+		return newViewModel;
+	}
+
+	internal virtual void NotifyTransactionAdded(int transactionId)
+	{
+	}
+
+	internal virtual void NotifyTransactionDeleted(int transactionId)
+	{
+		if (this.FindTransaction(transactionId) is TransactionViewModel transactionViewModel)
 		{
-			get => this.name;
-			set => this.SetProperty(ref this.name, value);
+			this.RemoveTransactionFromViewModel(transactionViewModel);
 		}
+	}
 
-		public string? TransferTargetName => $"[{this.Name}]";
-
-		public bool IsClosed
+	internal virtual void NotifyTransactionChanged(int transactionId, IReadOnlyList<TransactionAndEntry> entries)
+	{
+		if (this.IsPopulated)
 		{
-			get => this.isClosed;
-			set => this.SetProperty(ref this.isClosed, value);
-		}
-
-		public decimal Balance
-		{
-			get => this.balance;
-			set => this.SetProperty(ref this.balance, value);
-		}
-
-		[DebuggerBrowsable(DebuggerBrowsableState.Never)] // It's lazily initialized, and we don't want the debugger to trip over it.
-		public IReadOnlyList<TransactionViewModel> Transactions
-		{
-			get
+			TransactionViewModel? transactionViewModel = this.FindTransaction(transactionId);
+			if (transactionViewModel is not null)
 			{
-				if (this.transactions is null)
+				int index;
+				bool removed = !transactionViewModel.Refresh();
+				index = this.GetTransactionIndex(transactionViewModel);
+
+				if (removed)
 				{
-					this.transactions = new(TransactionSort.Instance);
-					if (this.MoneyFile is object)
-					{
-						SQLite.TableQuery<Transaction> transactions = this.MoneyFile.Transactions.Where(tx => tx.CreditAccountId == this.Id || tx.DebitAccountId == this.Id);
-						foreach (Transaction transaction in transactions)
-						{
-							TransactionViewModel transactionViewModel = new(this, transaction);
-							this.transactions.Add(transactionViewModel);
-						}
-
-						this.UpdateBalances(0);
-					}
-
-					this.transactions.CollectionChanged += this.Transactions_CollectionChanged;
+					this.RemoveTransactionFromViewModel(transactionViewModel);
 				}
 
-				return this.transactions;
-			}
-		}
-
-		internal DocumentViewModel DocumentViewModel { get; }
-
-		private string? DebuggerDisplay => this.Name;
-
-		/// <summary>
-		/// Creates a new <see cref="TransactionViewModel"/> for this account,
-		/// but does <em>not</em> add it to the collection.
-		/// </summary>
-		/// <param name="volatileOnly"><see langword="true"/> to only create the view model without adding it to the <see cref="Transactions"/> collection or saving it to the database; <see langword="false"/> otherwise.</param>
-		/// <returns>A new <see cref="TransactionViewModel"/> for an uninitialized transaction.</returns>
-		public TransactionViewModel NewTransaction(bool volatileOnly = false)
-		{
-			// Make sure our collection has been initialized by now.
-			_ = this.Transactions;
-
-			TransactionViewModel viewModel = new(this, null);
-			viewModel.When = DateTime.Now;
-			viewModel.Model = new();
-
-			if (!volatileOnly)
-			{
-				_ = this.Transactions; // make sure our collection is initialized.
-				this.transactions!.Add(viewModel);
-				viewModel.Save();
-			}
-
-			return viewModel;
-		}
-
-		public int Add(TransactionViewModel transaction)
-		{
-			_ = this.Transactions;
-			return this.transactions!.Add(transaction);
-		}
-
-		public void DeleteTransaction(TransactionViewModel transaction)
-		{
-			Requires.Argument(transaction.ThisAccount == this, nameof(transaction), "This transaction does not belong to this account.");
-			Verify.Operation(this.transactions is object, "Our transactions are not initialized yet.");
-
-			if (this.MoneyFile is object && transaction.Model is object)
-			{
-				if (!this.MoneyFile.Delete(transaction.Model))
-				{
-					// We may be removing a view model whose model was never persisted. Make sure we directly remove the view model from our own collection.
-					this.RemoveTransactionFromViewModel(transaction);
-				}
-			}
-			else
-			{
-				int index = this.transactions.Remove(transaction);
 				if (index >= 0)
 				{
 					this.UpdateBalances(index);
 				}
 			}
-		}
-
-		internal void NotifyTransactionDeleted(Transaction transaction)
-		{
-			if (this.transactions is null)
+			else
 			{
-				// Nothing to refresh.
-				return;
-			}
-
-			if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
-			{
-				this.RemoveTransactionFromViewModel(transactionViewModel);
+				// This may be a new transaction (a transfer) that we should add.
+				this.AddTransactionIfAppropriate(transactionId, entries);
 			}
 		}
+	}
 
-		internal void NotifyTransactionChanged(Transaction transaction)
+	internal abstract void NotifyAccountDeleted(ICollection<int> accountIds);
+
+	internal void NotifyValueChanged() => this.OnPropertyChanged(nameof(this.Value));
+
+	protected static void ThrowOnUnexpectedAccountType(string parameterName, Account.AccountType expectedType, Account.AccountType actualType)
+	{
+		Requires.Argument(expectedType == actualType, parameterName, "Type mismatch. Expected {0} but was {1}.", expectedType, actualType);
+	}
+
+	protected abstract int AddTransaction(TransactionViewModel transactionViewModel);
+
+	protected virtual void UpdateBalances(int fromIndex)
+	{
+	}
+
+	protected virtual int GetTransactionIndex(TransactionViewModel transaction) => throw new NotSupportedException();
+
+	protected abstract void RemoveTransactionFromViewModel(TransactionViewModel transaction);
+
+	protected override bool IsPersistedProperty(string propertyName)
+	{
+		return base.IsPersistedProperty(propertyName)
+			&& propertyName is not (nameof(this.TransferTargetName) or nameof(this.IsEmpty) or nameof(this.IsPopulated) or nameof(this.Value))
+			&& !propertyName.EndsWith("Formatted");
+	}
+
+	protected override void ApplyToCore()
+	{
+		this.Model.Name = this.name;
+		this.Model.IsClosed = this.IsClosed;
+		this.Model.Type = this.Type;
+		this.Model.CurrencyAssetId = this.CurrencyAsset?.Id;
+		this.Model.OfxBankId = this.OfxBankId;
+		this.Model.OfxAcctId = this.OfxAcctId;
+	}
+
+	protected override void CopyFromCore()
+	{
+		this.Name = this.Model.Name;
+		this.IsClosed = this.Model.IsClosed;
+		if (this.Model.Type != this.type)
 		{
-			if (this.transactions is null)
-			{
-				// Nothing to refresh.
-				return;
-			}
-
-			// This transaction may have added or dropped our account as a transfer
-			bool removedFromAccount = transaction.CreditAccountId != this.Id && transaction.DebitAccountId != this.Id;
-			if (this.FindTransaction(transaction.Id) is { } transactionViewModel)
-			{
-				if (removedFromAccount)
-				{
-					this.transactions.Remove(transactionViewModel);
-				}
-				else
-				{
-					transactionViewModel.CopyFrom(transaction);
-					int index = this.transactions.IndexOf(transactionViewModel);
-					if (index >= 0)
-					{
-						this.UpdateBalances(index);
-					}
-				}
-			}
-			else if (!removedFromAccount)
-			{
-				// This may be a new transaction we need to add.
-				this.transactions.Add(new TransactionViewModel(this, transaction));
-			}
+			this.type = this.Model.Type;
+			this.OnPropertyChanged(nameof(this.Type));
 		}
 
-		protected override void ApplyToCore(Account account)
+		this.CurrencyAsset = this.DocumentViewModel.GetAsset(this.Model.CurrencyAssetId);
+
+		this.OfxBankId = this.Model.OfxBankId;
+		this.OfxAcctId = this.Model.OfxAcctId;
+	}
+
+	protected abstract TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails);
+
+	protected IEnumerable<T> CreateEntryViewModels<T>()
+		where T : TransactionViewModel
+	{
+		// Our looping algorithm here depends on the enumerated transactions being sorted by TransactionId.
+		List<TransactionAndEntry> group = new();
+		foreach (TransactionAndEntry transactionAndEntry in this.MoneyFile.GetTopLevelTransactionsFor(this.Id))
 		{
-			Requires.NotNull(account, nameof(account));
-
-			account.Name = this.name;
-			account.IsClosed = this.IsClosed;
-		}
-
-		protected override void CopyFromCore(Account account)
-		{
-			Requires.NotNull(account, nameof(account));
-
-			this.Name = account.Name;
-			this.IsClosed = account.IsClosed;
-
-			if (this.MoneyFile is object && account is object)
+			if (group.Count == 0 || group[^1].TransactionId == transactionAndEntry.TransactionId)
 			{
-				this.balance = this.MoneyFile.GetBalance(account);
+				// This entry belongs to this new or existing group.
+				group.Add(transactionAndEntry);
 			}
-
-			// Force reinitialization.
-			this.transactions = null;
-		}
-
-		protected override bool IsPersistedProperty(string propertyName) => propertyName is not nameof(this.Balance);
-
-		private void Transactions_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-		{
-			if (e.NewStartingIndex >= 0)
+			else
 			{
-				if (e.OldStartingIndex >= 0)
-				{
-					this.UpdateBalances(e.NewStartingIndex, e.OldStartingIndex);
-				}
-				else
-				{
-					this.UpdateBalances(e.NewStartingIndex);
-				}
-			}
-			else if (e.OldStartingIndex >= 0)
-			{
-				this.UpdateBalances(e.OldStartingIndex);
+				// We have reached the first element of the next group, so flush the one we've been building up.
+				T transactionViewModel = (T)this.CreateTransactionViewModel(group);
+				yield return transactionViewModel;
+
+				// Now add this new row to the next group.
+				group.Clear();
+				group.Add(transactionAndEntry);
 			}
 		}
 
-		private void RemoveTransactionFromViewModel(TransactionViewModel transactionViewModel)
+		// Flush out whatever makes up the last group.
+		if (group.Count > 0)
 		{
-			if (this.transactions is null)
-			{
-				// Nothing to remove when the collection isn't initialized.
-				return;
-			}
+			T transactionViewModel = (T)this.CreateTransactionViewModel(group);
+			yield return transactionViewModel;
+		}
+	}
 
-			int index = this.transactions.IndexOf(transactionViewModel);
-			this.transactions.RemoveAt(index);
+	private static AccountViewModel Create(Account model, Account.AccountType type, DocumentViewModel documentViewModel)
+	{
+		return type switch
+		{
+			Account.AccountType.Banking => new BankingAccountViewModel(model, documentViewModel),
+			Account.AccountType.Investing => new InvestingAccountViewModel(model, documentViewModel),
+			Account.AccountType.Category => new CategoryAccountViewModel(model, documentViewModel),
+			_ => throw new NotSupportedException("Unexpected account type."),
+		};
+	}
+
+	private void AddTransactionIfAppropriate(int transactionId, IReadOnlyList<TransactionAndEntry> details)
+	{
+		if (details.Count > 0)
+		{
+			int index = this.AddTransaction(this.CreateTransactionViewModel(details));
 			this.UpdateBalances(index);
 		}
+	}
 
-		private TransactionViewModel? FindTransaction(int id)
+	private class SelectWithinBanking : ISelectableView
+	{
+		private readonly AccountViewModel accountViewModel;
+
+		internal SelectWithinBanking(AccountViewModel accountViewModel)
 		{
-			foreach (TransactionViewModel transactionViewModel in this.Transactions)
-			{
-				if (transactionViewModel.Model?.Id == id)
-				{
-					return transactionViewModel;
-				}
-			}
-
-			return null;
+			this.accountViewModel = accountViewModel;
 		}
 
-		private void UpdateBalances(int changedIndex1, int changedIndex2 = -1)
+		public void Select()
 		{
-			int startingIndex = changedIndex2 == -1 ? changedIndex1 : Math.Min(changedIndex1, changedIndex2);
-			decimal balance = startingIndex == 0 ? 0m : this.transactions![startingIndex - 1].Balance;
-			for (int i = startingIndex; i < this.transactions!.Count; i++)
-			{
-				TransactionViewModel transaction = this.transactions[i];
-				balance += transaction.Amount;
-				if (transaction.Balance == balance && i >= changedIndex2)
-				{
-					// The balance is already what it needs to be,
-					// and we've already reached the last of the one or two positions where transactions may have changed.
-					// Short circuit as a perf win.
-					return;
-				}
-
-				transaction.Balance = balance;
-			}
-		}
-
-		private class TransactionSort : IOptimizedComparer<TransactionViewModel>
-		{
-			internal static readonly TransactionSort Instance = new();
-
-			private TransactionSort()
-			{
-			}
-
-			public int Compare(TransactionViewModel? x, TransactionViewModel? y)
-			{
-				if (x is null)
-				{
-					return y is null ? 0 : -1;
-				}
-				else if (y is null)
-				{
-					return 1;
-				}
-
-				int order = x.When.CompareTo(y.When);
-				if (order != 0)
-				{
-					return order;
-				}
-
-				order = -x.Amount.CompareTo(y.Amount);
-				if (order != 0)
-				{
-					return order;
-				}
-
-				order = x.Id is null
-					? (y.Id is null ? 0 : -1)
-					: (y.Id is null) ? 1 : 0;
-				if (order != 0)
-				{
-					return order;
-				}
-
-				return x.Payee?.CompareTo(y.Payee) ?? 0;
-			}
-
-			public bool IsPropertySignificant(string propertyName) => propertyName is nameof(TransactionViewModel.When) or nameof(TransactionViewModel.Amount) or nameof(TransactionViewModel.Id) or nameof(TransactionViewModel.Payee);
+			this.accountViewModel.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
+			this.accountViewModel.DocumentViewModel.BankingPanel.SelectedAccount = this.accountViewModel.DocumentViewModel.GetAccount(this.accountViewModel.Id);
 		}
 	}
 }

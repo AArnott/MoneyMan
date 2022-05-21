@@ -1,36 +1,47 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace MoneyMan.ViewModel
+using Nerdbank.MoneyManagement.ViewModels;
+
+namespace MoneyMan.ViewModel;
+
+public class MainPageViewModel : MainPageViewModelBase
 {
-	using System;
-	using Nerdbank.MoneyManagement.ViewModels;
+	internal MainWindow MainWindow { get; set; } = null!;
 
-	public class MainPageViewModel : MainPageViewModelBase
+	public override void ReplaceViewModel(DocumentViewModel? documentViewModel)
 	{
-		internal MainWindow MainWindow { get; set; } = null!;
-
-		public override void ReplaceViewModel(DocumentViewModel documentViewModel)
+		if (this.Document is not null)
 		{
 			this.Document.AccountsPanel.AddingNewAccount -= this.AccountsPanel_AddingNewAccount;
 			this.Document.CategoriesPanel.AddingNewCategory -= this.CategoriesPanel_AddingNewCategory;
+		}
 
-			base.ReplaceViewModel(documentViewModel);
+		base.ReplaceViewModel(documentViewModel);
 
+		if (this.Document is not null)
+		{
+			this.Document.UserNotification = new UserNotification(this.MainWindow, documentViewModel);
+			this.Document.AssetsPanel.AddingNewAsset += this.AssetsPanel_AddingNewAsset;
 			this.Document.AccountsPanel.AddingNewAccount += this.AccountsPanel_AddingNewAccount;
 			this.Document.CategoriesPanel.AddingNewCategory += this.CategoriesPanel_AddingNewCategory;
 			this.Document.CategoriesPanel.SelectedCategories = this.MainWindow.CategoriesListView.SelectedItems;
-			this.Document.SelectedTransactions = this.MainWindow.TransactionDataGrid.SelectedItems;
+			this.Document.AssetsPanel.SelectedAssetPrices = this.MainWindow.AssetPricesGrid.SelectedItems;
 		}
+	}
 
-		private void AccountsPanel_AddingNewAccount(object? sender, EventArgs e)
-		{
-			this.MainWindow.AccountName.Focus();
-		}
+	private void AssetsPanel_AddingNewAsset(object? sender, EventArgs e)
+	{
+		this.MainWindow.AssetName.Focus();
+	}
 
-		private void CategoriesPanel_AddingNewCategory(object? sender, System.EventArgs e)
-		{
-			this.MainWindow.CategoryName.Focus();
-		}
+	private void AccountsPanel_AddingNewAccount(object? sender, EventArgs e)
+	{
+		this.MainWindow.AccountName.Focus();
+	}
+
+	private void CategoriesPanel_AddingNewCategory(object? sender, System.EventArgs e)
+	{
+		this.MainWindow.CategoryName.Focus();
 	}
 }

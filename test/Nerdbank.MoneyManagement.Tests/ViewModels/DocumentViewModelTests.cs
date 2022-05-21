@@ -1,30 +1,12 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Nerdbank.MoneyManagement;
-using Nerdbank.MoneyManagement.Tests;
-using Nerdbank.MoneyManagement.ViewModels;
-using Xunit;
-using Xunit.Abstractions;
-
 public class DocumentViewModelTests : MoneyTestBase
 {
 	public DocumentViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-	}
-
-	[Fact]
-	public void InitialState()
-	{
-		DocumentViewModel documentViewModel = new DocumentViewModel();
-		Assert.False(documentViewModel.IsFileOpen);
+		this.EnableSqlLogging();
 	}
 
 	[Fact]
@@ -33,11 +15,30 @@ public class DocumentViewModelTests : MoneyTestBase
 		this.Money.InsertAll(new ModelBase[]
 		{
 			new Account { Name = "Checking" },
-			new Category { Name = "Cat1" },
+			new Account { Name = "Cat1", Type = Account.AccountType.Category },
 		});
 		DocumentViewModel documentViewModel = new(this.Money);
 		Assert.Contains(documentViewModel.BankingPanel?.Accounts, acct => acct.Name == "Checking");
 		Assert.Contains(documentViewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
+	}
+
+	[Fact]
+	public void Undo_NewFile()
+	{
+		Assert.False(this.DocumentViewModel.UndoCommand.CanExecute());
+	}
+
+	[Fact]
+	public async Task UndoCommandCaption_PropertyChangeEvent()
+	{
+		await TestUtilities.AssertPropertyChangedEventAsync(
+			this.DocumentViewModel.UndoCommand,
+			async delegate
+			{
+				await this.DocumentViewModel.AccountsPanel.AddCommand.ExecuteAsync();
+				this.DocumentViewModel.AccountsPanel.SelectedAccount!.Name = "some new account";
+			},
+			nameof(this.DocumentViewModel.UndoCommand.Caption));
 	}
 
 	[Fact]
@@ -50,14 +51,12 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NetWorth()
 	{
-		Account account = new() { Name = "Checking" };
+		Account account = new() { Name = "Checking", CurrencyAssetId = this.Money.PreferredAssetId };
 		this.Money.Insert(account);
-		Transaction tx1 = new() { When = DateTime.Now, CreditAccountId = account.Id, Amount = 10 };
-		this.Money.Insert(tx1);
+		this.Money.Action.Deposit(account, 10);
 		Assert.Equal(10, this.DocumentViewModel.NetWorth);
 
-		Transaction tx2 = new() { When = DateTime.Now, DebitAccountId = account.Id, Amount = 3 };
-		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Insert(tx2), nameof(this.DocumentViewModel.NetWorth));
+		TestUtilities.AssertPropertyChangedEvent(this.DocumentViewModel, () => this.Money.Action.Withdraw(account, 3), nameof(this.DocumentViewModel.NetWorth));
 		Assert.Equal(7, this.DocumentViewModel.NetWorth);
 
 		this.DocumentViewModel.AccountsPanel.Accounts.Single().IsClosed = true;
@@ -67,67 +66,63 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void NewAccount()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
 	}
 
-	[Fact]
-	public void AddedAccountAddsToTransactionTargets()
+	[Theory]
+	[InlineData(Account.AccountType.Banking)]
+	[InlineData(Account.AccountType.Investing)]
+	public void AddedAccountAddsToTransactionTargets(Account.AccountType type)
 	{
-		Assert.Empty(this.DocumentViewModel.TransactionTargets);
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
 		accountViewModel.Name = "some new account";
 		Account account = Assert.Single(this.Money.Accounts);
 		Assert.Equal(accountViewModel.Name, account.Name);
-
-		ITransactionTarget accountTarget = Assert.Single(this.DocumentViewModel.TransactionTargets);
-		Assert.Same(accountViewModel, accountTarget);
+		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
-	[Fact]
-	public void DeletedAccountRemovesFromTransactionTargets()
+	[Theory]
+	[InlineData(Account.AccountType.Banking)]
+	[InlineData(Account.AccountType.Investing)]
+	public void DeletedAccountRemovesFromTransactionTargets(Account.AccountType type)
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(type);
 		accountViewModel.Name = "some new account";
-
-		Assert.Single(this.DocumentViewModel.TransactionTargets);
+		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 
 		this.DocumentViewModel.AccountsPanel.DeleteAccount(accountViewModel);
-		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+		Assert.DoesNotContain(accountViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
 	[Fact]
 	public void AddedCategoryAddsToTransactionTargets()
 	{
-		Assert.Empty(this.DocumentViewModel.TransactionTargets);
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
-		Category category = Assert.Single(this.Money.Categories);
+		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
+		Account category = Assert.Single(this.Money.Categories);
 		Assert.Equal(categoryViewModel.Name, category.Name);
-
-		ITransactionTarget categoryTarget = Assert.Single(this.DocumentViewModel.TransactionTargets);
-		Assert.Equal(categoryViewModel, categoryTarget);
+		Assert.Contains(categoryViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
 	[Fact]
 	public void DeletedCategoryRemovesFromTransactionTargets()
 	{
-		CategoryViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
-
-		Assert.Single(this.DocumentViewModel.TransactionTargets);
+		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
+		Assert.Contains(categoryViewModel, this.DocumentViewModel.TransactionTargets);
 
 		this.DocumentViewModel.CategoriesPanel.DeleteCategory(categoryViewModel);
-		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+		Assert.DoesNotContain(categoryViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
 	[Fact]
 	public void TransactionTargets_DoesNotIncludeVolatileAccounts()
 	{
-		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount();
-		Assert.Empty(this.DocumentViewModel.TransactionTargets);
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewBankingAccount();
+		Assert.DoesNotContain(accountViewModel, this.DocumentViewModel.TransactionTargets);
 		accountViewModel.Name = "Checking";
-		Assert.Single(this.DocumentViewModel.TransactionTargets);
+		Assert.Contains(accountViewModel, this.DocumentViewModel.TransactionTargets);
 	}
 
 	/// <summary>
@@ -137,13 +132,41 @@ public class DocumentViewModelTests : MoneyTestBase
 	[Fact]
 	public void TransactionTargetsIncludesClosedAccounts()
 	{
-		AccountViewModel closed = this.DocumentViewModel.AccountsPanel.NewAccount("ToBeClosed");
-		AccountViewModel open = this.DocumentViewModel.AccountsPanel.NewAccount("ToRemainOpen");
-		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
+		AccountViewModel closed = this.DocumentViewModel.AccountsPanel.NewBankingAccount("ToBeClosed");
+		Assert.Contains(closed, this.DocumentViewModel.TransactionTargets);
 		closed.IsClosed = true;
-		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
+		Assert.Contains(closed, this.DocumentViewModel.TransactionTargets);
 		this.ReloadViewModel();
-		Assert.Equal(2, this.DocumentViewModel.TransactionTargets.Count);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == closed.Name);
+	}
+
+	[Fact]
+	public void TransactionTargets_IncludesSplitSingleton()
+	{
+		Assert.Contains(this.DocumentViewModel.SplitCategory, this.DocumentViewModel.TransactionTargets);
+	}
+
+	[Fact]
+	public void TransactionTargets_IsSorted()
+	{
+		AccountViewModel accountG = this.DocumentViewModel.AccountsPanel.NewBankingAccount("g");
+		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewBankingAccount("a");
+		CategoryAccountViewModel categoryA = this.DocumentViewModel.CategoriesPanel.NewCategory("a");
+		CategoryAccountViewModel categoryG = this.DocumentViewModel.CategoriesPanel.NewCategory("g");
+		Assert.Equal<AccountViewModel?>(
+			new AccountViewModel?[] { null, categoryA, categoryG, this.DocumentViewModel.SplitCategory, accountA, accountG },
+			this.DocumentViewModel.TransactionTargets);
+	}
+
+	[Fact]
+	public void Reset()
+	{
+		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewBankingAccount("checking");
+		this.DocumentViewModel.Reset();
+		Assert.Equal(3, this.DocumentViewModel.TransactionTargets.Count);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == account.Name);
+		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == this.DocumentViewModel.SplitCategory.Name);
+		Assert.Contains(null, this.DocumentViewModel.TransactionTargets);
 	}
 
 	protected override void Dispose(bool disposing)

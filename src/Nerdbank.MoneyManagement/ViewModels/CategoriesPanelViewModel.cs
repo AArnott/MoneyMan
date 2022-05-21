@@ -1,258 +1,337 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-namespace Nerdbank.MoneyManagement.ViewModels
+using System.Collections;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using PCLCommandBase;
+using Validation;
+
+namespace Nerdbank.MoneyManagement.ViewModels;
+
+public class CategoriesPanelViewModel : BindableBase
 {
-	using System;
-	using System.Collections;
-	using System.Collections.Specialized;
-	using System.ComponentModel;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using PCLCommandBase;
-	using Validation;
+	private readonly DocumentViewModel documentViewModel;
+	private readonly SortedObservableCollection<CategoryAccountViewModel> categories = new(CategorySort.Instance);
+	private CategoryAccountViewModel? selectedCategory;
+	private IList? selectedCategories;
 
-	public class CategoriesPanelViewModel : BindableBase
+	public CategoriesPanelViewModel(DocumentViewModel documentViewModel)
 	{
-		private readonly DocumentViewModel documentViewModel;
-		private readonly SortedObservableCollection<CategoryViewModel> categories = new(CategorySort.Instance);
-		private CategoryViewModel? selectedCategory;
-		private IList? selectedCategories;
+		this.AddCommand = new AddCategoryCommand(this);
+		this.DeleteCommand = new DeleteCategoryCommand(this);
+		this.documentViewModel = documentViewModel;
+	}
 
-		public CategoriesPanelViewModel(DocumentViewModel documentViewModel)
+	/// <summary>
+	/// Occurs when <see cref="NewCategory(string)"/> is called or the <see cref="AddCommand" /> command is invoked.
+	/// </summary>
+	/// <remarks>
+	/// Views are expected to set focus on the Name text field in response to this event.
+	/// </remarks>
+	public event EventHandler? AddingNewCategory;
+
+	public string Title => "Categories";
+
+	public CommandBase AddCommand { get; }
+
+	public string AddCommandCaption => "_Add new";
+
+	public string NameLabel => "_Name";
+
+	public int NameMaxLength => 100;
+
+	/// <summary>
+	/// Gets a command that deletes all categories in the <see cref="SelectedCategories"/> collection, if that property is set;
+	/// otherwise the <see cref="SelectedCategory"/> is deleted.
+	/// </summary>
+	public CommandBase DeleteCommand { get; }
+
+	public IReadOnlyList<CategoryAccountViewModel> Categories => this.categories;
+
+	/// <summary>
+	/// Gets or sets the selected category, or one of the selected categories.
+	/// </summary>
+	public CategoryAccountViewModel? SelectedCategory
+	{
+		get => this.selectedCategory;
+		set => this.SetProperty(ref this.selectedCategory, value);
+	}
+
+	/// <summary>
+	/// Gets or sets a collection of selected categories.
+	/// </summary>
+	/// <remarks>
+	/// This is optional. When set, the <see cref="DeleteCommand"/> will use this collection as the set of categories to delete.
+	/// When not set, the <see cref="SelectedCategory"/> will be used by the <see cref="DeleteCommand"/>.
+	/// </remarks>
+	public IList? SelectedCategories
+	{
+		get => this.selectedCategories;
+		set => this.SetProperty(ref this.selectedCategories, value);
+	}
+
+	internal CategoryAccountViewModel? AddingCategory { get; set; }
+
+	public CategoryAccountViewModel NewCategory(string name = "")
+	{
+		this.AddingNewCategory?.Invoke(this, EventArgs.Empty);
+		if (this.AddingCategory is object)
 		{
-			this.AddCommand = new AddCategoryCommand(this);
-			this.DeleteCommand = new DeleteCategoryCommand(this);
-			this.documentViewModel = documentViewModel;
+			this.SelectedCategory = this.AddingCategory;
+			return this.AddingCategory;
 		}
 
-		/// <summary>
-		/// Occurs when <see cref="NewCategory(string)"/> is called or the <see cref="AddCommand" /> command is invoked.
-		/// </summary>
-		/// <remarks>
-		/// Views are expected to set focus on the Name text field in response to this event.
-		/// </remarks>
-		public event EventHandler? AddingNewCategory;
+		CategoryAccountViewModel newCategoryAccountViewModel = new(null, this.documentViewModel);
 
-		public string Title => "Categories";
-
-		public CommandBase AddCommand { get; }
-
-		public string AddCommandCaption => "_Add new";
-
-		public string NameLabel => "_Name";
-
-		public int NameMaxLength => 100;
-
-		/// <summary>
-		/// Gets a command that deletes all categories in the <see cref="SelectedCategories"/> collection, if that property is set;
-		/// otherwise the <see cref="SelectedCategory"/> is deleted.
-		/// </summary>
-		public CommandBase DeleteCommand { get; }
-
-		public SortedObservableCollection<CategoryViewModel> Categories => this.categories;
-
-		/// <summary>
-		/// Gets or sets the selected category, or one of the selected categories.
-		/// </summary>
-		public CategoryViewModel? SelectedCategory
+		this.categories.Add(newCategoryAccountViewModel);
+		this.SelectedCategory = newCategoryAccountViewModel;
+		if (string.IsNullOrEmpty(name))
 		{
-			get => this.selectedCategory;
-			set => this.SetProperty(ref this.selectedCategory, value);
-		}
-
-		/// <summary>
-		/// Gets or sets a collection of selected categories.
-		/// </summary>
-		/// <remarks>
-		/// This is optional. When set, the <see cref="DeleteCommand"/> will use this collection as the set of categories to delete.
-		/// When not set, the <see cref="SelectedCategory"/> will be used by the <see cref="DeleteCommand"/>.
-		/// </remarks>
-		public IList? SelectedCategories
-		{
-			get => this.selectedCategories;
-			set => this.SetProperty(ref this.selectedCategories, value);
-		}
-
-		internal CategoryViewModel? AddingCategory { get; set; }
-
-		public CategoryViewModel NewCategory(string name = "")
-		{
-			this.AddingNewCategory?.Invoke(this, EventArgs.Empty);
-			if (this.AddingCategory is object)
+			this.AddingCategory = newCategoryAccountViewModel;
+			newCategoryAccountViewModel.NotifyWhenValid(s =>
 			{
-				this.SelectedCategory = this.AddingCategory;
-				return this.AddingCategory;
+				if (this.AddingCategory == s)
+				{
+					this.AddingCategory = null;
+				}
+			});
+		}
+		else
+		{
+			newCategoryAccountViewModel.Name = name;
+		}
+
+		return newCategoryAccountViewModel;
+	}
+
+	public void DeleteCategory(CategoryAccountViewModel categoryViewModel)
+	{
+		this.categories.Remove(categoryViewModel);
+		using IDisposable? transaction = this.documentViewModel.MoneyFile.UndoableTransaction($"Deleted category \"{categoryViewModel.Name}\"", categoryViewModel);
+		this.documentViewModel.MoneyFile.Delete(categoryViewModel.Model);
+
+		if (this.SelectedCategory == categoryViewModel)
+		{
+			this.SelectedCategory = null;
+		}
+
+		if (this.AddingCategory == categoryViewModel)
+		{
+			this.AddingCategory = null;
+		}
+	}
+
+	internal void AddCategory(CategoryAccountViewModel viewModel)
+	{
+		this.categories.Add(viewModel);
+	}
+
+	/// <summary>
+	/// Clears the view model without deleting anything from the database.
+	/// </summary>
+	internal void ClearViewModel()
+	{
+		this.categories.Clear();
+		this.selectedCategory = null;
+		this.selectedCategories?.Clear();
+	}
+
+	internal CategoryAccountViewModel? FindCategory(int id) => this.Categories.FirstOrDefault(cat => cat.Id == id);
+
+	private class AddCategoryCommand : CommandBase
+	{
+		private readonly CategoriesPanelViewModel viewModel;
+
+		public AddCategoryCommand(CategoriesPanelViewModel viewModel)
+		{
+			this.viewModel = viewModel;
+		}
+
+		protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
+		{
+			this.viewModel.NewCategory();
+			return Task.CompletedTask;
+		}
+
+		private void NewCategoryAccountViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+		{
+			CategoryAccountViewModel newCategory = (CategoryAccountViewModel)Requires.NotNull(sender!, nameof(sender));
+			if (!string.IsNullOrEmpty(newCategory.Name))
+			{
+				newCategory.PropertyChanged -= this.NewCategoryAccountViewModel_PropertyChanged;
 			}
 
-			CategoryViewModel newCategoryViewModel = new(null, this.documentViewModel.MoneyFile)
+			if (this.viewModel.AddingCategory == newCategory)
 			{
-				Model = new(),
-			};
+				this.viewModel.AddingCategory = null;
+			}
+		}
+	}
 
-			this.categories.Add(newCategoryViewModel);
-			this.SelectedCategory = newCategoryViewModel;
-			if (string.IsNullOrEmpty(name))
+	private class DeleteCategoryCommand : CommandBase
+	{
+		private readonly CategoriesPanelViewModel viewModel;
+		private INotifyCollectionChanged? subscribedSelectedCategories;
+
+		public DeleteCategoryCommand(CategoriesPanelViewModel viewModel)
+		{
+			this.viewModel = viewModel;
+			this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
+			this.SubscribeToSelectionChanged();
+		}
+
+		public string Caption => "_Delete";
+
+		public override bool CanExecute(object? parameter) => base.CanExecute(parameter) && (this.viewModel.SelectedCategories?.Count > 0 || this.viewModel.SelectedCategory is object);
+
+		protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
+		{
+			if (this.viewModel.SelectedCategories is object)
 			{
-				this.AddingCategory = newCategoryViewModel;
-				newCategoryViewModel.NotifyWhenValid(s =>
+				return this.ExecuteCoreAsync(this.viewModel.SelectedCategories, cancellationToken);
+			}
+
+			if (this.viewModel.SelectedCategory is object)
+			{
+				return this.ExecuteCoreAsync(new CategoryAccountViewModel[] { this.viewModel.SelectedCategory }, cancellationToken);
+			}
+
+			return Task.CompletedTask;
+		}
+
+		private async Task ExecuteCoreAsync(IList categoryViewModels, CancellationToken cancellationToken)
+		{
+			using IDisposable? transaction = this.viewModel.documentViewModel.MoneyFile.UndoableTransaction($"Deleted {categoryViewModels.Count} categories.", categoryViewModels.OfType<CategoryAccountViewModel>().FirstOrDefault());
+			IEnumerable<CategoryAccountViewModel> categories = categoryViewModels.OfType<CategoryAccountViewModel>();
+			List<CategoryAccountViewModel> inUse = new(), notInUse = new();
+			foreach (CategoryAccountViewModel category in categories)
+			{
+				if (this.viewModel.documentViewModel.MoneyFile.IsAccountInUse(category.Id) is true)
 				{
-					if (this.AddingCategory == s)
+					inUse.Add(category);
+				}
+				else
+				{
+					notInUse.Add(category);
+				}
+			}
+
+			foreach (CategoryAccountViewModel category in notInUse)
+			{
+				this.viewModel.DeleteCategory(category);
+			}
+
+			if (inUse.Count > 0)
+			{
+				// Ask the user what they want to do about the categories that are in use.
+				CategoryAccountViewModel? redirectedCategory = null;
+				if (this.viewModel.documentViewModel.UserNotification is { } userNotification)
+				{
+					List<CategoryAccountViewModel> options = new(this.viewModel.Categories);
+					options.RemoveAll(cat => inUse.Contains(cat));
+					options.Insert(0, new CategoryAccountViewModel(new Account { Id = -1, Name = "(clear assigned category)", Type = Account.AccountType.Category }, this.viewModel.documentViewModel));
+
+					if (options.Count > 1)
 					{
-						this.AddingCategory = null;
+						var pickerViewModel = new PickerWindowViewModel("One or more of the categories selected are applied to transactions. How do you want to reassign those transactions?", options)
+						{
+							Title = "Category in use",
+						};
+						await userNotification.PresentAsync(pickerViewModel, cancellationToken);
+						redirectedCategory = (CategoryAccountViewModel)pickerViewModel.GetSelectedOptionOrThrowCancelled();
 					}
-				});
-			}
-			else
-			{
-				newCategoryViewModel.Name = name;
-			}
+					else
+					{
+						// No need to ask the user what to do when there is only one option.
+						redirectedCategory = options[0];
+					}
 
-			return newCategoryViewModel;
-		}
-
-		public void DeleteCategory(CategoryViewModel categoryViewModel)
-		{
-			this.categories.Remove(categoryViewModel);
-			if (categoryViewModel.Model is object)
-			{
-				this.documentViewModel.MoneyFile?.Delete(categoryViewModel.Model);
-			}
-
-			if (this.SelectedCategory == categoryViewModel)
-			{
-				this.SelectedCategory = null;
-			}
-
-			if (this.AddingCategory == categoryViewModel)
-			{
-				this.AddingCategory = null;
-			}
-		}
-
-		private class AddCategoryCommand : CommandBase
-		{
-			private readonly CategoriesPanelViewModel viewModel;
-
-			public AddCategoryCommand(CategoriesPanelViewModel viewModel)
-			{
-				this.viewModel = viewModel;
-			}
-
-			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
-			{
-				this.viewModel.NewCategory();
-				return Task.CompletedTask;
-			}
-
-			private void NewCategoryViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-			{
-				CategoryViewModel newCategory = (CategoryViewModel)Requires.NotNull(sender!, nameof(sender));
-				if (!string.IsNullOrEmpty(newCategory.Name))
+					// Update every transaction in the database, including those for which no view model has been created.
+					if (redirectedCategory.Id == -1)
+					{
+						redirectedCategory = null;
+					}
+				}
+				else
 				{
-					newCategory.PropertyChanged -= this.NewCategoryViewModel_PropertyChanged;
+					throw new NotSupportedException("Some categories are used by transactions but no UI is attached to prompt the user for how to deal with it.");
 				}
 
-				if (this.viewModel.AddingCategory == newCategory)
+				this.viewModel.documentViewModel.MoneyFile.ReassignCategory(inUse.Where(cat => cat.IsPersisted).Select(cat => cat.Id), redirectedCategory?.Id);
+
+				// Also update the live view models.
+				foreach (BankingAccountViewModel account in this.viewModel.documentViewModel.BankingPanel.BankingAccounts)
 				{
-					this.viewModel.AddingCategory = null;
+					account.NotifyReassignCategory(inUse, redirectedCategory?.Id > 0 ? redirectedCategory : null);
+				}
+
+				// Now actually delete the categories.
+				foreach (CategoryAccountViewModel category in inUse)
+				{
+					this.viewModel.DeleteCategory(category);
 				}
 			}
 		}
 
-		private class DeleteCategoryCommand : CommandBase
+		private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
-			private readonly CategoriesPanelViewModel viewModel;
-			private INotifyCollectionChanged? subscribedSelectedCategories;
-
-			public DeleteCategoryCommand(CategoriesPanelViewModel viewModel)
+			if (e.PropertyName is nameof(this.viewModel.SelectedCategories))
 			{
-				this.viewModel = viewModel;
-				this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
 				this.SubscribeToSelectionChanged();
 			}
-
-			public string Caption => "_Delete";
-
-			public override bool CanExecute(object? parameter) => base.CanExecute(parameter) && (this.viewModel.SelectedCategories?.Count > 0 || this.viewModel.SelectedCategory is object);
-
-			protected override Task ExecuteCoreAsync(object? parameter, CancellationToken cancellationToken)
+			else if (e.PropertyName is nameof(this.viewModel.SelectedCategory))
 			{
-				if (this.viewModel.SelectedCategories is object)
-				{
-					foreach (CategoryViewModel category in this.viewModel.SelectedCategories.OfType<CategoryViewModel>().ToList())
-					{
-						this.viewModel.DeleteCategory(category);
-					}
-				}
-				else if (this.viewModel.SelectedCategory is object)
-				{
-					this.viewModel.DeleteCategory(this.viewModel.SelectedCategory);
-				}
-
-				return Task.CompletedTask;
-			}
-
-			private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-			{
-				if (e.PropertyName is nameof(this.viewModel.SelectedCategories))
-				{
-					this.SubscribeToSelectionChanged();
-				}
-				else if (e.PropertyName is nameof(this.viewModel.SelectedCategory))
-				{
-					this.OnCanExecuteChanged();
-				}
-			}
-
-			private void SelectedCategories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => this.OnCanExecuteChanged();
-
-			private void SubscribeToSelectionChanged()
-			{
-				if (this.subscribedSelectedCategories is object)
-				{
-					this.subscribedSelectedCategories.CollectionChanged -= this.SelectedCategories_CollectionChanged;
-				}
-
-				this.subscribedSelectedCategories = this.viewModel.SelectedCategories as INotifyCollectionChanged;
-
-				if (this.subscribedSelectedCategories is object)
-				{
-					this.subscribedSelectedCategories.CollectionChanged += this.SelectedCategories_CollectionChanged;
-				}
+				this.OnCanExecuteChanged();
 			}
 		}
 
-		private class CategorySort : IOptimizedComparer<CategoryViewModel>
+		private void SelectedCategories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => this.OnCanExecuteChanged();
+
+		private void SubscribeToSelectionChanged()
 		{
-			internal static readonly CategorySort Instance = new();
-
-			private CategorySort()
+			if (this.subscribedSelectedCategories is object)
 			{
+				this.subscribedSelectedCategories.CollectionChanged -= this.SelectedCategories_CollectionChanged;
 			}
 
-			public int Compare(CategoryViewModel? x, CategoryViewModel? y)
+			this.subscribedSelectedCategories = this.viewModel.SelectedCategories as INotifyCollectionChanged;
+
+			if (this.subscribedSelectedCategories is object)
 			{
-				if (x is null)
-				{
-					return y is null ? 0 : -1;
-				}
-				else if (y is null)
-				{
-					return 1;
-				}
-
-				int order = x.Name.CompareTo(y.Name);
-				if (order != 0)
-				{
-					return order;
-				}
-
-				return 0;
+				this.subscribedSelectedCategories.CollectionChanged += this.SelectedCategories_CollectionChanged;
 			}
-
-			public bool IsPropertySignificant(string propertyName) => propertyName is nameof(CategoryViewModel.Name);
 		}
+	}
+
+	private class CategorySort : IOptimizedComparer<CategoryAccountViewModel>
+	{
+		internal static readonly CategorySort Instance = new();
+
+		private CategorySort()
+		{
+		}
+
+		public int Compare(CategoryAccountViewModel? x, CategoryAccountViewModel? y)
+		{
+			if (x is null)
+			{
+				return y is null ? 0 : -1;
+			}
+			else if (y is null)
+			{
+				return 1;
+			}
+
+			int order = x.Name.CompareTo(y.Name);
+			if (order != 0)
+			{
+				return order;
+			}
+
+			return 0;
+		}
+
+		public bool IsPropertySignificant(string propertyName) => propertyName is nameof(CategoryAccountViewModel.Name);
 	}
 }

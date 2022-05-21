@@ -1,10 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System;
-using System.Diagnostics;
 using System.Text;
-using Xunit.Abstractions;
 
 public class XunitTraceListener : TraceListener
 {
@@ -33,7 +30,7 @@ public class XunitTraceListener : TraceListener
 		base.TraceEvent(eventCache, source, eventType, id, message);
 	}
 
-	public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
+	public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? format, params object?[]? args)
 	{
 		this.HasLoggedErrors |= eventType == TraceEventType.Error;
 		base.TraceEvent(eventCache, source, eventType, id, format, args);

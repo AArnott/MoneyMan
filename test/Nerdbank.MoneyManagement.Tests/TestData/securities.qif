@@ -1,0 +1,21 @@
+!Type:Security
+NMFS Growth Allocation Fund Class R4
+SMAGJX
+TMutual Fund
+^
+!Type:Security
+NMFS Growth Allocation Fund Class R4 Tracking
+SMAGJX
+TStock
+^
+!Type:Security
+NMicrosoft
+SMSFT
+TStock
+^
+!Type:Prices
+"MSFT",11.94," 3/ 2'15"
+^
+!Type:Prices
+"MSFT",11.91," 3/ 3'15"
+^
