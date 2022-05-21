@@ -169,6 +169,7 @@ INSERT INTO [Transaction] ([Id], [ParentTransactionId], [When], Amount, Memo,   
 		Assert.Equal(2, tx2.Splits.Count(s => s.IsPersisted));
 		TransactionEntryViewModel split2a = tx2.Splits[0];
 		Assert.Equal(2, split2a.Amount);
+		Assert.Equal("$2.00", split2a.AmountFormatted);
 		Assert.Equal("split1", split2a.Memo);
 		Assert.Same(cat1, split2a.Account);
 		Assert.Equal(ClearedState.Reconciled, split2a.Cleared); // V2 didn't store cleared status per-split, so it inherits from the parent

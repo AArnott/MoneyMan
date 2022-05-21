@@ -16,6 +16,7 @@ ALTER TABLE "Account" ADD "Type" INTEGER NOT NULL DEFAULT(0);
 
 -- Asset.Id of the currency used for this account if Type = 0 (Banking).
 ALTER TABLE "Account" ADD "CurrencyAssetId" INTEGER REFERENCES "Asset"("Id") ON DELETE RESTRICT;
+UPDATE "Account" SET "CurrencyAssetId" = 1 WHERE Type = 0;
 
 CREATE TABLE "Configuration" (
 	"PreferredAssetId"    INTEGER REFERENCES "Asset"("Id")           ON DELETE RESTRICT
