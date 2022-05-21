@@ -54,14 +54,16 @@ public class MainPageViewModel : MainPageViewModelBase
 				new FileDialogFilter { Name = "MoneyMan Files", Extensions = { "moneyman" } },
 			},
 		};
-		string path = await dlg.ShowAsync(this.MainWindow);
-
-		// Create the new file in a temporary location so we don't conflict with the currently open document.
-		string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-		DocumentViewModel.CreateNew(tempFile).Dispose();
-		this.Document?.Dispose();
-		File.Move(tempFile, path, overwrite: true);
-		this.ReplaceViewModel(DocumentViewModel.Open(path));
+		string? path = await dlg.ShowAsync(this.MainWindow);
+		if (path is not null)
+		{
+			// Create the new file in a temporary location so we don't conflict with the currently open document.
+			string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+			DocumentViewModel.CreateNew(tempFile).Dispose();
+			this.Document?.Dispose();
+			File.Move(tempFile, path, overwrite: true);
+			this.ReplaceViewModel(DocumentViewModel.Open(path));
+		}
 	}
 
 	private async Task FileOpenAsync()
@@ -74,8 +76,8 @@ public class MainPageViewModel : MainPageViewModelBase
 				new FileDialogFilter { Name = "MoneyMan Files", Extensions = { "moneyman" } },
 			},
 		};
-		string[] result = await dlg.ShowAsync(this.MainWindow);
-		if (result.Length == 1)
+		string[]? result = await dlg.ShowAsync(this.MainWindow);
+		if (result?.Length == 1)
 		{
 			this.FileOpen(result[0]);
 		}
