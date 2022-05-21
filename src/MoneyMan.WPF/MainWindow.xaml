@@ -747,7 +747,8 @@
 					</CollectionViewSource>
 				</TabItem.Resources>
 				<DockPanel>
-					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource accounts}">
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource accounts}"
+					            Visibility="{Binding Document.AccountsPanel.SelectedAccount, Source={StaticResource viewModel}, Converter={StaticResource nullToVisibilityConverter}}">
 						<StackPanel.Resources>
 							<DataTemplate DataType="{x:Type vm:BankingAccountViewModel}">
 								<StackPanel>
@@ -812,7 +813,8 @@
 					<CollectionViewSource Source="{Binding Categories}" x:Key="categories" />
 				</TabItem.Resources>
 				<DockPanel>
-					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}"
+					            Visibility="{Binding Document.CategoriesPanel.SelectedCategory, Source={StaticResource viewModel}, Converter={StaticResource nullToVisibilityConverter}}">
 						<Label Content="{Binding Document.CategoriesPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
 								 MaxLength="{Binding Document.CategoriesPanel.NameMaxLength, Source={StaticResource viewModel}}"
