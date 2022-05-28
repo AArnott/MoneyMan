@@ -276,8 +276,8 @@ public class QifAdapter : IFileAdapter
 		List<(Transaction, TransactionEntry)> newEntryTuples = new();
 		foreach (BankTransaction importingTransaction in transactions)
 		{
-			int? transferAccountId = this.FindTransferAccountId(importingTransaction.Category)?.Id;
-			if (transferAccountId is not null && importingTransaction.Amount >= 0 && target.Id != transferAccountId)
+			Account? transferAccount = this.FindTransferAccountId(importingTransaction.Category);
+			if (transferAccount is not null && transferAccount.Type != Account.AccountType.Category && importingTransaction.Amount >= 0 && target.Id != transferAccount.Id)
 			{
 				// When it comes to transfers, skip importing the transaction on the receiving side
 				// so that we don't end up importing them on both ends and ending up with duplicates.
@@ -314,7 +314,7 @@ public class QifAdapter : IFileAdapter
 			{
 				if (!string.IsNullOrEmpty(importingTransaction.Category))
 				{
-					int? categoryId = this.FindCategoryId(importingTransaction.Category) ?? transferAccountId;
+					int? categoryId = this.FindCategoryId(importingTransaction.Category) ?? transferAccount?.Id;
 					if (categoryId.HasValue && categoryId.Value != target.Id)
 					{
 						TransactionEntry categoryEntry = new()
