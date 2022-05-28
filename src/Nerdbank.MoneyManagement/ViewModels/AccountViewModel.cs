@@ -14,6 +14,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 	private Account.AccountType type;
 	private string? ofxBankId;
 	private string? ofxAcctId;
+	private Exception? faulted;
 
 	public AccountViewModel(Account? model, DocumentViewModel documentViewModel)
 		: base(documentViewModel.MoneyFile, model)
@@ -105,6 +106,15 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 	public decimal Value => this.MoneyFile.AggregateData?.AccountBalances.TryGetValue(this.Id, out decimal value) is true ? value : 0;
 
 	public string? ValueFormatted => this.DocumentViewModel.DefaultCurrency?.Format(this.Value);
+
+	/// <summary>
+	/// Gets or sets the exception that horked this account and made it unusable.
+	/// </summary>
+	public Exception? Faulted
+	{
+		get => this.faulted;
+		protected set => this.SetProperty(ref this.faulted, value);
+	}
 
 	/// <summary>
 	/// Gets an object that can be given to <see cref="MoneyFile.UndoableTransaction(string, ISelectableView?)"/>
