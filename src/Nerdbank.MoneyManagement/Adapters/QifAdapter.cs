@@ -450,6 +450,7 @@ public class QifAdapter : IFileAdapter
 						AccountId = target.Id,
 						Amount = importingTransaction.Quantity.Value,
 						AssetId = asset.Id,
+						Cleared = FromQifClearedState(importingTransaction.ClearedStatus),
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
@@ -461,6 +462,7 @@ public class QifAdapter : IFileAdapter
 							AccountId = transferAccount.Id,
 							Amount = -importingTransaction.TransactionAmount.Value,
 							AssetId = target.CurrencyAssetId.Value,
+							Cleared = FromQifClearedState(importingTransaction.ClearedStatus),
 						};
 						newEntryTuples.Add((newTransaction, newEntry2));
 					}
