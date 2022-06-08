@@ -641,6 +641,11 @@ public class QifAdapter : IFileAdapter
 
 			newTransactions.Add(newTransaction);
 			transactionsImported++;
+
+			foreach ((Transaction _, TransactionEntry entry) in newEntryTuples)
+			{
+				entry.Cleared = FromQifClearedState(importingTransaction.ClearedStatus);
+			}
 		}
 
 		this.InsertAllTransactions(newTransactions, newEntryTuples);

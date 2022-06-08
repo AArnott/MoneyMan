@@ -143,7 +143,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(115.09m, tx.SimplePrice);
 		Assert.Same(msft, tx.SimpleAsset?.Model);
 		Assert.Equal("YOU BOUGHT           ESPP###", tx.Memo);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2006, 10, 6), tx.When);
@@ -153,7 +153,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Same(msft, tx.SimpleAsset?.Model);
 		Assert.Equal("YOU SOLD", tx.Memo);
 		////Assert.Equal(9.34m, tx.Commission);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		// A BuyX record that used money from a category.
 		tx = brokerage.Transactions[transactionCounter++];
@@ -163,7 +163,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(TransactionAction.Buy, tx.Action);
 		Assert.Equal("Microsoft Stock Awards (Cash)", tx.SimpleAccount?.Name);
 		Assert.Equal(Account.AccountType.Category, tx.SimpleAccount?.Type);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 10, 8), tx.When);
@@ -172,7 +172,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(TransactionAction.ShortSale, tx.Action);
 		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
 		////Assert.Equal(8, tx.Commission);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 10, 26), tx.When);
@@ -181,7 +181,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(TransactionAction.CoverShort, tx.Action);
 		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
 		////Assert.Equal(8, tx.Commission);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 12, 14), tx.When);
@@ -189,7 +189,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(0.101m, tx.SimpleAmount);
 		////Assert.Equal(19.29m, tx.SimplePrice);
 		Assert.Equal("Janus Contrarian Fund", tx.SimpleAsset?.Name);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 12, 15), tx.When);
@@ -197,28 +197,28 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(10.607m, tx.SimpleAmount);
 		////Assert.Equal(19.29m, tx.SimplePrice);
 		Assert.Equal("Janus Contrarian Fund", tx.SimpleAsset?.Name);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2008, 1, 4), tx.When);
 		Assert.Equal(-1000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);
 		Assert.Same(this.Checking, tx.SimpleAccount);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2013, 4, 12), tx.When);
 		Assert.Equal(-105, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Transfer, tx.Action);
 		Assert.Same(this.Checking, tx.SimpleAccount);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2014, 4, 1), tx.When);
 		Assert.Equal(2, tx.SimpleAmount);
 		Assert.Equal("Fidelity International Real Estate", tx.SimpleAsset?.Name);
 		Assert.Equal(TransactionAction.Add, tx.Action);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2014, 4, 4), tx.When);
@@ -226,7 +226,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal("SPARTAN 500 INDEX FD ADVANTAGE CLASS (FUSVX)", tx.SimpleAsset?.Name);
 		////Assert.Equal(50m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.Dividend, tx.Action);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2017, 5, 16), tx.When);
@@ -234,7 +234,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal("NH PORTFOLIO 2030 (FIDELITY FUNDS)", tx.SimpleAsset?.Name);
 		Assert.Equal(17.10m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.Buy, tx.Action);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2017, 5, 17), tx.When);
@@ -242,27 +242,27 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal("NH PORTFOLIO 2030 (FIDELITY FUNDS)", tx.SimpleAsset?.Name);
 		Assert.Equal(17.50m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.Sell, tx.Action);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2021, 1, 31), tx.When);
 		Assert.Equal(0.02m, tx.SimpleAmount);
 		Assert.Equal("USD Coin (USDC)", tx.SimpleAsset?.Name);
 		Assert.Equal(TransactionAction.Dividend, tx.Action); // This ReinvInt record adds a security rather than a currency, so we consider it a dividend instead of interest.
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2021, 2, 11), tx.When);
 		Assert.Equal(100, tx.SimpleAmount);
 		Assert.Equal("USD Coin (USDC)", tx.SimpleAsset?.Name);
 		Assert.Equal(TransactionAction.Remove, tx.Action);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2021, 4, 11), tx.When);
 		Assert.Equal(1.99m, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Interest, tx.Action);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2021, 4, 30), tx.When);
@@ -270,7 +270,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(TransactionAction.Dividend, tx.Action);
 		Assert.Equal("PIMCO INCOME FUND CL D", tx.RelatedAsset?.Name);
 		Assert.Equal("DIVIDEND RECEIVED", tx.Memo);
-		////Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 	}
 
 	[Fact]

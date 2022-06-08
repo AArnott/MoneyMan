@@ -15,17 +15,9 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class BankingTransactionViewModel : TransactionViewModel
 {
-	private static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new ClearedStateViewModel[]
-	{
-		new(ClearedState.None, "None", string.Empty),
-		new(ClearedState.Cleared, "Cleared", "C"),
-		new(ClearedState.Reconciled, "Reconciled", "R"),
-	});
-
 	private ObservableCollection<TransactionEntryViewModel>? splits;
 	private int? checkNumber;
 	private decimal amount;
-	private ClearedState cleared = ClearedState.None;
 	private string? payee;
 	private decimal balance;
 	private TransactionEntryViewModel? selectedSplit;
@@ -49,7 +41,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 		this.DeleteSplitCommand = new DeleteSplitCommandImpl(this);
 
 		this.RegisterDependentProperty(nameof(this.ContainsSplits), nameof(this.SplitCommandToolTip));
-		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
 		this.RegisterDependentProperty(nameof(this.Balance), nameof(this.BalanceFormatted));
 		this.RegisterDependentProperty(nameof(this.Payee), nameof(this.IsEmpty));
@@ -79,8 +70,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 	/// </summary>
 	public string DeleteSplitCommandCaption => "_Delete split";
 
-	public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
-
 	public int? CheckNumber
 	{
 		get => this.checkNumber;
@@ -94,14 +83,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 	}
 
 	public string? AmountFormatted => this.ThisAccount.CurrencyAsset?.Format(this.Amount);
-
-	public ClearedState Cleared
-	{
-		get => this.cleared;
-		set => this.SetProperty(ref this.cleared, value);
-	}
-
-	public string ClearedShortCaption => SharedClearedStates[(int)this.Cleared].ShortCaption;
 
 	public string? Payee
 	{
@@ -533,20 +514,6 @@ public class BankingTransactionViewModel : TransactionViewModel
 
 		// We need a new volatile transaction.
 		this.CreateVolatileSplit();
-	}
-
-	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-	public class ClearedStateViewModel : EnumValueViewModel<ClearedState>
-	{
-		public ClearedStateViewModel(ClearedState value, string caption, string shortCaption)
-			: base(value, caption)
-		{
-			this.ShortCaption = shortCaption;
-		}
-
-		public string ShortCaption { get; }
-
-		private string DebuggerDisplay => this.Caption;
 	}
 
 	private class SplitCommandImpl : CommandBase

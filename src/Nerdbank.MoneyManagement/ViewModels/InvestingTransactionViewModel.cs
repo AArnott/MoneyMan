@@ -466,6 +466,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	private bool WithdrawFullyInitialized => this.WithdrawAmount.HasValue && this.WithdrawAccount is not null && this.WithdrawAsset is not null;
 
+	/// <summary>
+	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
+	/// </summary>
+	private TransactionEntryViewModel? TopLevelEntry => this.Entries.FirstOrDefault(e => e.Account == this.ThisAccount);
+
 	protected override void ApplyToCore()
 	{
 		Verify.Operation(this.Action.HasValue, $"{nameof(this.Action)} must be set first.");
@@ -534,6 +539,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				throw new NotImplementedException("Action: " + this.Action.Value);
 		}
 
+		if (this.TopLevelEntry is object)
+		{
+			this.TopLevelEntry.Cleared = this.Cleared;
+		}
+
 		bool TryEnsureEntryCount(int requiredCount, bool condition)
 		{
 			if (condition)
@@ -561,6 +571,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		base.CopyFromCore();
 		this.SetProperty(ref this.action, this.Transaction.Action, nameof(this.Action));
 		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Transaction.RelatedAssetId);
+		this.Cleared = this.TopLevelEntry?.Cleared ?? ClearedState.None;
 		switch (this.Action)
 		{
 			case TransactionAction.Transfer:

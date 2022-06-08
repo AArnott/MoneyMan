@@ -852,7 +852,7 @@ WHERE [Id] != ?
 		{
 			Transaction tx = new()
 			{
-				Action = TransactionAction.Withdraw,
+				Action = TransactionAction.Transfer,
 				When = when ?? DateTime.Today,
 			};
 			this.money.Insert(tx);

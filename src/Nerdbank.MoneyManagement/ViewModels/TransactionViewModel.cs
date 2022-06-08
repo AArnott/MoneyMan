@@ -3,14 +3,23 @@
 
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
 public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 {
+	private static readonly ReadOnlyCollection<ClearedStateViewModel> SharedClearedStates = new(new ClearedStateViewModel[]
+	{
+		new(ClearedState.None, "None", string.Empty),
+		new(ClearedState.Cleared, "Cleared", "C"),
+		new(ClearedState.Reconciled, "Reconciled", "R"),
+	});
+
 	private ObservableCollection<TransactionEntryViewModel> entries;
 	private DateTime when;
+	private ClearedState cleared = ClearedState.None;
 	private string? memo;
 	private Transaction transaction;
 	private bool saving;
@@ -20,6 +29,8 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 	{
 		this.ThisAccount = thisAccount;
 		this.SplitModels(models, out this.transaction, out this.entries);
+
+		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
 	}
 
 	/// <summary>
@@ -33,6 +44,8 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		private set => this.transaction = value;
 	}
 
+	public ReadOnlyCollection<ClearedStateViewModel> ClearedStates => SharedClearedStates;
+
 	public IReadOnlyList<TransactionEntryViewModel> Entries => this.entries;
 
 	public int TransactionId => this.Transaction.Id;
@@ -45,6 +58,14 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		get => this.when;
 		set => this.SetProperty(ref this.when, value);
 	}
+
+	public ClearedState Cleared
+	{
+		get => this.cleared;
+		set => this.SetProperty(ref this.cleared, value);
+	}
+
+	public string ClearedShortCaption => SharedClearedStates[(int)this.Cleared].ShortCaption;
 
 	public string? Memo
 	{
@@ -240,5 +261,19 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 			transaction = new Transaction(models[0]);
 			entries = new ObservableCollection<TransactionEntryViewModel>(models.Select(te => new TransactionEntryViewModel(this, new TransactionEntry(te))));
 		}
+	}
+
+	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+	public class ClearedStateViewModel : EnumValueViewModel<ClearedState>
+	{
+		public ClearedStateViewModel(ClearedState value, string caption, string shortCaption)
+			: base(value, caption)
+		{
+			this.ShortCaption = shortCaption;
+		}
+
+		public string ShortCaption { get; }
+
+		private string DebuggerDisplay => this.Caption;
 	}
 }
