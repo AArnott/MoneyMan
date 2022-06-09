@@ -467,9 +467,9 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private bool WithdrawFullyInitialized => this.WithdrawAmount.HasValue && this.WithdrawAccount is not null && this.WithdrawAsset is not null;
 
 	/// <summary>
-	/// Gets the first entry that impacts <see cref="ThisAccount"/>.
+	/// Gets the entries that impact <see cref="ThisAccount"/>.
 	/// </summary>
-	private TransactionEntryViewModel? TopLevelEntry => this.Entries.FirstOrDefault(e => e.Account == this.ThisAccount);
+	private IEnumerable<TransactionEntryViewModel> TopLevelEntries => this.Entries.Where(e => e.Account == this.ThisAccount);
 
 	protected override void ApplyToCore()
 	{
@@ -490,6 +490,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					this.Entries[0].Account = this.ThisAccount;
 					this.Entries[0].Asset = this.DepositAsset;
 					this.Entries[0].Amount = this.DepositAmount ?? 0;
+					this.Entries[0].Cleared = this.Cleared;
 				}
 
 				break;
@@ -505,6 +506,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
 					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
 					otherEntry.Amount = deposit ? (this.WithdrawAmount ?? 0) : -(this.DepositAmount ?? 0);
+					ourEntry.Cleared = this.Cleared;
 				}
 
 				break;
@@ -539,9 +541,9 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				throw new NotImplementedException("Action: " + this.Action.Value);
 		}
 
-		if (this.TopLevelEntry is object)
+		foreach (TransactionEntryViewModel entry in this.TopLevelEntries)
 		{
-			this.TopLevelEntry.Cleared = this.Cleared;
+			entry.Cleared = this.Cleared;
 		}
 
 		bool TryEnsureEntryCount(int requiredCount, bool condition)
@@ -571,7 +573,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		base.CopyFromCore();
 		this.SetProperty(ref this.action, this.Transaction.Action, nameof(this.Action));
 		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Transaction.RelatedAssetId);
-		this.Cleared = this.TopLevelEntry?.Cleared ?? ClearedState.None;
+		this.Cleared = this.TopLevelEntries.FirstOrDefault(e => e.Cleared != ClearedState.None)?.Cleared ?? ClearedState.None;
 		switch (this.Action)
 		{
 			case TransactionAction.Transfer:

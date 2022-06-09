@@ -231,14 +231,7 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		{
 			this.ApplyToModel();
 			this.MoneyFile.InsertOrReplace(this.Transaction);
-
-			foreach (TransactionEntryViewModel entry in this.entries)
-			{
-				if (entry.IsDirty)
-				{
-					entry.Save();
-				}
-			}
+			TransactionEntryViewModel.SaveAll(this.entries);
 
 			// Purge any entries from the db that are no longer supposed to be there.
 			this.MoneyFile.PurgeTransactionEntries(this.TransactionId, this.entries.Select(e => e.Id));

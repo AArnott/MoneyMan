@@ -117,7 +117,7 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 			this.SaveCore();
 
-			this.Saved?.Invoke(this, EventArgs.Empty);
+			this.OnSaved();
 
 			if (!wasPersisted)
 			{
@@ -157,6 +157,8 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 		base.OnPropertyChanged(propertyName);
 	}
+
+	protected virtual void OnSaved() => this.Saved?.Invoke(this, EventArgs.Empty);
 
 	protected virtual bool IsPersistedProperty(string propertyName) => propertyName is not (nameof(this.IsReadyToSave) or nameof(this.IsDirty) or nameof(this.IsPersisted) or nameof(this.AutoSave));
 
