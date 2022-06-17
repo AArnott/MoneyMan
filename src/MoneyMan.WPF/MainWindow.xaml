@@ -527,6 +527,21 @@
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.ClearedHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Margin="3pt" Text="{Binding ClearedShortCaption}" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<ComboBox SelectedValue="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+																  ItemsSource="{Binding ClearedStates}"
+																  DisplayMemberPath="Caption" 
+																  SelectedValuePath="Value" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
 									</DataGrid.Columns>
 									<DataGrid.ContextMenu>
 										<ContextMenu>
