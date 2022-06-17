@@ -158,6 +158,20 @@ public class DocumentViewModelTests : MoneyTestBase
 			this.DocumentViewModel.TransactionTargets);
 	}
 
+	[Theory, PairwiseData]
+	public void GetAccount(bool closed)
+	{
+		AccountViewModel accountViewModel = this.DocumentViewModel.AccountsPanel.NewAccount(Account.AccountType.Banking, "account");
+		if (closed)
+		{
+			accountViewModel.IsClosed = true;
+		}
+
+		Assert.Same(accountViewModel, this.DocumentViewModel.GetAccount(accountViewModel.Id));
+		this.ReloadViewModel();
+		Assert.Equal(accountViewModel.Id, this.DocumentViewModel.GetAccount(accountViewModel.Id).Id);
+	}
+
 	[Fact]
 	public void Reset()
 	{
