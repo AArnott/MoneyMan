@@ -12,6 +12,8 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 
 public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 {
+	private Exception? faulted;
+
 	public EntityViewModel(MoneyFile moneyFile)
 	{
 		this.MoneyFile = moneyFile ?? throw new ArgumentNullException(nameof(moneyFile));
@@ -45,6 +47,11 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 	{
 		get
 		{
+			if (this.faulted is not null)
+			{
+				return this.faulted.Message;
+			}
+
 			PropertyInfo[] propertyInfos = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
 			foreach (PropertyInfo propertyInfo in propertyInfos)
@@ -61,6 +68,15 @@ public abstract class EntityViewModel : BindableBase, IDataErrorInfo
 
 			return string.Empty;
 		}
+	}
+
+	/// <summary>
+	/// Gets or sets the exception that horked this view model and made it unusable.
+	/// </summary>
+	public Exception? Faulted
+	{
+		get => this.faulted;
+		protected set => this.SetProperty(ref this.faulted, value);
 	}
 
 	/// <summary>
