@@ -63,9 +63,11 @@ public class AssetViewModelTests : MoneyTestBase
 	[Fact]
 	public void CurrencyDecimalDigits()
 	{
-		Assert.Null(this.viewModel.CurrencyDecimalDigits);
+		Assert.Equal(3, this.viewModel.CurrencyDecimalDigits);
 		this.viewModel.CurrencyDecimalDigits = 8;
 		Assert.Equal(8, this.viewModel.CurrencyDecimalDigits);
+		this.viewModel.CurrencyDecimalDigits = null;
+		Assert.Null(this.viewModel.CurrencyDecimalDigits);
 	}
 
 	[Fact]
@@ -141,13 +143,17 @@ public class AssetViewModelTests : MoneyTestBase
 		try
 		{
 			CultureInfo.CurrentCulture = controlled;
+			this.viewModel.CurrencyDecimalDigits = null;
+			Assert.Equal("$2,345", this.viewModel.Format(2345.123m));
+			this.viewModel.CurrencyDecimalDigits = 0;
 			Assert.Equal("$2,345", this.viewModel.Format(2345.123m));
 			this.viewModel.CurrencyDecimalDigits = 4;
 			this.viewModel.CurrencySymbol = "ⓩ";
 			Assert.Equal("ⓩ2,345.1230", this.viewModel.Format(2345.123m));
+			Assert.Equal("ⓩ2,345.1237", this.viewModel.Format(2345.12369m));
 
 			this.viewModel.Type = Asset.AssetType.Security;
-			Assert.Equal("2,345.1230", this.viewModel.Format(2345.123m));
+			Assert.Equal("2,345.123", this.viewModel.Format(2345.123m));
 		}
 		finally
 		{

@@ -146,7 +146,29 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 	protected string? DebuggerDisplay => this.Name;
 
 	[return: NotNullIfNotNull("value")]
-	public string? Format(decimal? value) => value?.ToString(this.Type == Asset.AssetType.Currency ? "C" : "N", this.NumberFormat);
+	public string? Format(decimal? value)
+	{
+		return this.Type switch
+		{
+			Asset.AssetType.Security => TrimPrecision(value?.ToString("N", this.NumberFormat)),
+			Asset.AssetType.Currency => value?.ToString("C", this.NumberFormat),
+			_ => throw new NotSupportedException($"Unsupported type: {this.Type}"),
+		};
+
+		string? TrimPrecision(string? value)
+		{
+			if (this.CurrencyDecimalDigits > 0 && value is not null)
+			{
+				value = value.TrimEnd('0');
+				if (value.EndsWith(this.NumberFormat.NumberDecimalSeparator, StringComparison.CurrentCulture))
+				{
+					value = value.Substring(0, value.Length - this.NumberFormat.NumberDecimalSeparator.Length);
+				}
+			}
+
+			return value;
+		}
+	}
 
 	void ISelectableView.Select()
 	{

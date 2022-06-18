@@ -112,8 +112,9 @@ public class AssetsPanelViewModel : BindableBase
 			return this.AddingAsset;
 		}
 
+		const int StockSharePrecision = 3;
 		AssetViewModel newAssetViewModel = new(
-			new Asset { Type = Asset.AssetType.Security },
+			new Asset { Type = Asset.AssetType.Security, CurrencyDecimalDigits = StockSharePrecision },
 			this.documentViewModel);
 
 		this.assets.Add(newAssetViewModel);

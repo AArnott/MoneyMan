@@ -48,7 +48,6 @@ public record Asset : ModelBase
 
 	/// <summary>
 	/// Gets or sets the value to use for <see cref="NumberFormatInfo.CurrencyDecimalDigits"/>.
-	/// Applicable when <see cref="Type"/> is set to <see cref="AssetType.Currency"/>.
 	/// </summary>
 	public int? CurrencyDecimalDigits { get; set; }
 

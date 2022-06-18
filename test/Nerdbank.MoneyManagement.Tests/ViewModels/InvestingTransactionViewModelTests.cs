@@ -338,24 +338,46 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void Dividend()
+	public void Dividend_Cash()
 	{
 		InvestingTransactionViewModel tx = this.account.Transactions[^1];
 		tx.Action = TransactionAction.Dividend;
-		tx.SimpleAsset = this.msft;
+		tx.RelatedAsset = this.msft;
+		tx.SimpleAsset = this.account.CurrencyAsset;
 		tx.SimpleAmount = 15; // $15 dividend in cash
 
 		this.AssertNowAndAfterReload(delegate
 		{
 			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(TransactionAction.Dividend, tx.Action);
-			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Same(this.account.CurrencyAsset, tx.SimpleAsset);
+			Assert.Same(this.msft, tx.RelatedAsset);
 			Assert.Equal(15, tx.SimpleAmount);
-			Assert.False(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
-			Assert.Throws<InvalidOperationException>(() => tx.SimplePrice = 10);
-			Assert.Equal(15, tx.SimpleCurrencyImpact);
 			Assert.Equal("MSFT +$15.00", tx.Description);
+		});
+	}
+
+	[Fact]
+	public void Dividend_Reinvested()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Dividend;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 0.8m; // shares reinvested from cash value
+		tx.CashValue = 50;
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			tx = this.account.FindTransaction(tx.TransactionId)!;
+			Assert.Equal(TransactionAction.Dividend, tx.Action);
+			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Equal(0.8m, tx.SimpleAmount);
+			Assert.Equal(50, tx.SimpleCurrencyImpact);
+			Assert.Equal(50, tx.CashValue);
+			Assert.Equal(tx.CashValue / tx.SimpleAmount, tx.SimplePrice);
+			Assert.Equal("MSFT +0.8 ($50.00)", tx.Description);
 		});
 	}
 

@@ -18,6 +18,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private AssetViewModel? relatedAsset;
 	private decimal? depositAmount;
 	private decimal? withdrawAmount;
+	private decimal? cashValue;
 	private bool wasEverNonEmpty;
 
 	/// <summary>
@@ -43,6 +44,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.SimpleCurrencyImpact));
 		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.SimplePrice));
+		this.RegisterDependentProperty(nameof(this.CashValue), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.SimpleAccount), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Accounts));
@@ -60,6 +62,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DepositAsset), nameof(this.DepositAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.WithdrawAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.WithdrawAmountFormatted));
+		this.RegisterDependentProperty(nameof(this.CashValue), nameof(this.CashValueFormatted));
 		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
 
 		this.PropertyChanged += (s, e) => this.wasEverNonEmpty |= !this.IsEmpty;
@@ -282,18 +285,14 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	public AssetViewModel? SimpleAsset
 	{
 		get =>
-			this.Action == TransactionAction.Dividend ? this.RelatedAsset :
+			this.Action == TransactionAction.Dividend ? this.DepositAsset :
 			this.IsDepositOperation ? this.DepositAsset :
 			this.IsWithdrawOperation ? this.WithdrawAsset :
 			this.Action == TransactionAction.Transfer && this.DepositAsset == this.WithdrawAsset ? this.DepositAsset :
 			null;
 		set
 		{
-			if (this.Action == TransactionAction.Dividend)
-			{
-				this.RelatedAsset = value;
-			}
-			else if (this.Action is TransactionAction.Buy or TransactionAction.Add)
+			if (this.Action is TransactionAction.Buy or TransactionAction.Add or TransactionAction.Dividend)
 			{
 				this.DepositAsset = value;
 			}
@@ -329,6 +328,16 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				return this.DepositAmount != 0 && this.WithdrawAmount != 0 ? this.DepositAmount / this.WithdrawAmount : null;
 			}
+			else if (this.Action is TransactionAction.Dividend && this.CashValue.HasValue && this.DepositAmount.HasValue)
+			{
+				decimal value = this.CashValue.Value / this.DepositAmount.Value;
+				if (this.ThisAccount.CurrencyAsset?.CurrencyDecimalDigits is int precision)
+				{
+					value = Math.Round(value, precision);
+				}
+
+				return value;
+			}
 			else
 			{
 				return null;
@@ -345,6 +354,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				this.DepositAmount = value * this.WithdrawAmount;
 			}
+			else if (this.Action is TransactionAction.Dividend)
+			{
+				this.CashValue = value * this.DepositAmount;
+			}
 			else
 			{
 				throw ThrowNotSimpleAction();
@@ -354,7 +367,15 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	public bool IsSimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell;
+	public bool IsSimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell or TransactionAction.CoverShort or TransactionAction.ShortSale or TransactionAction.Dividend;
+
+	public decimal? CashValue
+	{
+		get => this.cashValue;
+		set => this.SetProperty(ref this.cashValue, value);
+	}
+
+	public string? CashValueFormatted => this.ThisAccount.CurrencyAsset?.Format(this.CashValue);
 
 	public AccountViewModel? SimpleAccount
 	{
@@ -385,6 +406,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		get
 		{
+			if (this.CashValue is not null)
+			{
+				return this.CashValue;
+			}
+
 			if (this.Action == TransactionAction.Dividend && this.DepositAsset == this.ThisAccount.CurrencyAsset)
 			{
 				return this.DepositAmount;
@@ -416,6 +442,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				TransactionAction.Add => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName}",
 				TransactionAction.Remove => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName}",
 				TransactionAction.Interest => $"+{this.DepositAmountFormatted}",
+				TransactionAction.Dividend when this.CashValue is not null => $"{this.DepositAsset?.TickerOrName} +{this.DepositAmountFormatted} ({this.CashValueFormatted})",
 				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.DepositAmountFormatted}",
 				TransactionAction.Sell => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
 				TransactionAction.Buy => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
@@ -485,12 +512,36 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
 			case TransactionAction.Dividend:
-				if (TryEnsureEntryCount(1, this.DepositFullyInitialized))
+				if (this.CashValue is null)
 				{
-					this.Entries[0].Account = this.ThisAccount;
-					this.Entries[0].Asset = this.DepositAsset;
-					this.Entries[0].Amount = this.DepositAmount ?? 0;
-					this.Entries[0].Cleared = this.Cleared;
+					if (TryEnsureEntryCount(1, this.DepositFullyInitialized))
+					{
+						this.Entries[0].Account = this.ThisAccount;
+						this.Entries[0].Asset = this.DepositAsset;
+						this.Entries[0].Amount = this.DepositAmount ?? 0;
+						this.Entries[0].Cleared = this.Cleared;
+					}
+				}
+				else
+				{
+					if (TryEnsureEntryCount(3, this.DepositFullyInitialized))
+					{
+						this.Entries[0].Account = this.ThisAccount;
+						this.Entries[1].Account = this.ThisAccount;
+						this.Entries[2].Account = this.ThisAccount;
+
+						this.Entries[0].Cleared = this.Cleared;
+						this.Entries[1].Cleared = this.Cleared;
+						this.Entries[2].Cleared = this.Cleared;
+
+						this.Entries[0].Asset = this.DepositAsset;
+						this.Entries[0].Amount = this.DepositAmount ?? 0;
+
+						this.Entries[1].Asset = this.ThisAccount.CurrencyAsset;
+						this.Entries[1].Amount = this.CashValue.Value;
+						this.Entries[2].Asset = this.ThisAccount.CurrencyAsset;
+						this.Entries[2].Amount = -this.CashValue.Value;
+					}
 				}
 
 				break;
@@ -596,14 +647,33 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
 			case TransactionAction.Interest:
-			case TransactionAction.Dividend:
-				Assumes.True(this.Entries.Count == 1);
-				this.DepositAccount = this.Entries[0].Account;
-				this.DepositAmountWithValidation = Math.Abs(this.Entries[0].Amount);
-				this.DepositAsset = this.Entries[0].Asset;
+				TransactionEntryViewModel securityAddEntry = this.Entries[0];
+				this.DepositAccount = securityAddEntry.Account;
+				this.DepositAmountWithValidation = Math.Abs(securityAddEntry.Amount);
+				this.DepositAsset = securityAddEntry.Asset;
 				this.WithdrawAccount = null;
 				this.WithdrawAmountWithValidation = null;
 				this.WithdrawAsset = null;
+				break;
+			case TransactionAction.Dividend:
+				securityAddEntry = this.Entries.Count switch
+				{
+					1 => this.Entries[0],
+					3 => this.Entries.Single(e => e.Asset != this.ThisAccount.CurrencyAsset),
+					_ => throw new NotSupportedException($"Transaction action {this.Action} with {this.Entries.Count} entries is not supported."),
+				};
+				this.DepositAccount = securityAddEntry.Account;
+				this.DepositAmountWithValidation = Math.Abs(securityAddEntry.Amount);
+				this.DepositAsset = securityAddEntry.Asset;
+				this.WithdrawAccount = null;
+				this.WithdrawAmountWithValidation = null;
+				this.WithdrawAsset = null;
+				if (this.Entries.Count == 3)
+				{
+					// We know the cash value of this dividend.
+					this.CashValue = this.Entries.Single(e => e.Asset == this.ThisAccount.CurrencyAsset && e.Amount > 0).Amount;
+				}
+
 				break;
 			case TransactionAction.Remove:
 			case TransactionAction.Withdraw:

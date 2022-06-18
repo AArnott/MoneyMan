@@ -372,6 +372,7 @@ public class QifAdapter : IFileAdapter
 				Memo = importingTransaction.Memo,
 			};
 
+			TransactionEntry? newEntry1, newEntry2, newEntry3;
 			switch (importingTransaction.Action)
 			{
 				case InvestmentTransaction.Actions.XOut or InvestmentTransaction.Actions.XIn or InvestmentTransaction.Actions.WithdrwX or InvestmentTransaction.Actions.ContribX:
@@ -380,7 +381,7 @@ public class QifAdapter : IFileAdapter
 					Verify.Operation(transferAccount is { CurrencyAssetId: not null }, "Transfer account isn't recognized or has not set a currency: {0}", importingTransaction.AccountForTransfer);
 					Verify.Operation(importingTransaction.AmountTransferred is not null, "The transfer amount is unspecified.");
 
-					TransactionEntry newEntry1 = new()
+					newEntry1 = new()
 					{
 						AccountId = target.Id,
 						Amount = -importingTransaction.AmountTransferred.Value,
@@ -388,7 +389,7 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
-					TransactionEntry? newEntry2 = new()
+					newEntry2 = new()
 					{
 						AccountId = transferAccount.Id,
 						Amount = importingTransaction.AmountTransferred.Value,
@@ -529,15 +530,34 @@ public class QifAdapter : IFileAdapter
 
 					Assumes.NotNull(target.CurrencyAssetId);
 					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out asset), "No matching asset: {0}", importingTransaction.Security);
-					newTransaction.RelatedAssetId = asset.Id;
 
 					newEntry1 = new()
 					{
 						AccountId = target.Id,
 						Amount = importingTransaction.Quantity.Value,
-						AssetId = target.CurrencyAssetId.Value,
+						AssetId = asset.Id,
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
+
+					if (importingTransaction.TransactionAmount is not null)
+					{
+						// Create 2 more entries to represent that cash value was given,
+						// then spent on the asset that was added to account.
+						newEntry2 = new()
+						{
+							AccountId = target.Id,
+							Amount = importingTransaction.TransactionAmount.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry2));
+						newEntry3 = new()
+						{
+							AccountId = target.Id,
+							Amount = -importingTransaction.TransactionAmount.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
+					}
 
 					break;
 				case InvestmentTransaction.Actions.ShrsIn:

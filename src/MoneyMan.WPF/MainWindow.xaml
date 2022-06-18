@@ -447,15 +447,19 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="30pt" />
 																	<ColumnDefinition Width="*" />
+																	<ColumnDefinition Width="auto" />
 																	<ColumnDefinition Width="30pt" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding CashValue, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
-																	Grid.Column="0"
+																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
 																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
+																<TextBlock Grid.Column="2" Text="Reinvested as shares:" />
+																<TextBox Grid.Column="3" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 															</Grid>
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.Dividend>

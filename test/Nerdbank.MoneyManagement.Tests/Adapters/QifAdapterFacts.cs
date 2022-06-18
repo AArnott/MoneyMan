@@ -187,7 +187,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2007, 12, 14), tx.When);
 		Assert.Equal(TransactionAction.Dividend, tx.Action);
 		Assert.Equal(0.101m, tx.SimpleAmount);
-		////Assert.Equal(19.29m, tx.SimplePrice);
+		Assert.Equal(19.31m, tx.SimplePrice);
 		Assert.Equal("Janus Contrarian Fund", tx.SimpleAsset?.Name);
 		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
@@ -195,7 +195,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2007, 12, 15), tx.When);
 		Assert.Equal(TransactionAction.Dividend, tx.Action);
 		Assert.Equal(10.607m, tx.SimpleAmount);
-		////Assert.Equal(19.29m, tx.SimplePrice);
+		Assert.Equal(19.29m, tx.SimplePrice);
 		Assert.Equal("Janus Contrarian Fund", tx.SimpleAsset?.Name);
 		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
@@ -224,7 +224,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2014, 4, 4), tx.When);
 		Assert.Equal(0.5m, tx.SimpleAmount);
 		Assert.Equal("SPARTAN 500 INDEX FD ADVANTAGE CLASS (FUSVX)", tx.SimpleAsset?.Name);
-		////Assert.Equal(50m, tx.SimplePrice);
+		Assert.Equal(50m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.Dividend, tx.Action);
 		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
