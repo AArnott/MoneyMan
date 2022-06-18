@@ -19,7 +19,7 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 	private Asset.AssetType type;
 	private decimal currentPrice;
 	private bool? typeIsReadOnly;
-	private int? currencyDecimalDigits;
+	private int? decimalDigits;
 	private string? currencySymbol;
 	private NumberFormatInfo? numberFormat;
 
@@ -29,7 +29,7 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 		this.RegisterDependentProperty(nameof(this.TickerSymbol), nameof(this.TickerOrName));
 		this.RegisterDependentProperty(nameof(this.Name), nameof(this.TickerOrName));
 		this.RegisterDependentProperty(nameof(this.CurrencySymbol), nameof(this.NumberFormat));
-		this.RegisterDependentProperty(nameof(this.CurrencyDecimalDigits), nameof(this.NumberFormat));
+		this.RegisterDependentProperty(nameof(this.DecimalDigits), nameof(this.NumberFormat));
 		this.RegisterDependentProperty(nameof(this.CurrentPrice), nameof(this.CurrentPriceFormatted));
 
 		this.documentViewModel = documentViewModel;
@@ -93,15 +93,15 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 		}
 	}
 
-	/// <inheritdoc cref="Asset.CurrencyDecimalDigits"/>
-	public int? CurrencyDecimalDigits
+	/// <inheritdoc cref="Asset.DecimalDigits"/>
+	public int? DecimalDigits
 	{
-		get => this.currencyDecimalDigits;
+		get => this.decimalDigits;
 		set
 		{
-			if (this.currencyDecimalDigits != value)
+			if (this.decimalDigits != value)
 			{
-				this.SetProperty(ref this.currencyDecimalDigits, value);
+				this.SetProperty(ref this.decimalDigits, value);
 				this.numberFormat = null;
 			}
 		}
@@ -136,8 +136,8 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 				numberFormat.CurrencySymbol = this.CurrencySymbol;
 			}
 
-			numberFormat.CurrencyDecimalDigits = this.CurrencyDecimalDigits ?? 0;
-			numberFormat.NumberDecimalDigits = this.CurrencyDecimalDigits ?? 0;
+			numberFormat.CurrencyDecimalDigits = this.DecimalDigits ?? 0;
+			numberFormat.NumberDecimalDigits = this.DecimalDigits ?? 0;
 
 			return this.numberFormat = numberFormat;
 		}
@@ -157,7 +157,7 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 
 		string? TrimPrecision(string? value)
 		{
-			if (this.CurrencyDecimalDigits > 0 && value is not null)
+			if (this.DecimalDigits > 0 && value is not null)
 			{
 				value = value.TrimEnd('0');
 				if (value.EndsWith(this.NumberFormat.NumberDecimalSeparator, StringComparison.CurrentCulture))
@@ -193,7 +193,7 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 		this.Model.TickerSymbol = string.IsNullOrWhiteSpace(this.TickerSymbol) ? null : this.TickerSymbol;
 		this.Model.Type = this.Type;
 		this.Model.CurrencySymbol = this.CurrencySymbol;
-		this.Model.CurrencyDecimalDigits = this.CurrencyDecimalDigits;
+		this.Model.DecimalDigits = this.DecimalDigits;
 	}
 
 	protected override void CopyFromCore()
@@ -202,6 +202,6 @@ public class AssetViewModel : EntityViewModel<Asset>, ISelectableView
 		this.TickerSymbol = this.Model.TickerSymbol ?? string.Empty;
 		this.SetProperty(ref this.type, this.Model.Type);
 		this.CurrencySymbol = this.Model.CurrencySymbol;
-		this.CurrencyDecimalDigits = this.Model.CurrencyDecimalDigits;
+		this.DecimalDigits = this.Model.DecimalDigits;
 	}
 }

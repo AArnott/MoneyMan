@@ -748,13 +748,13 @@
 									 Grid.Column="1"
 									 MaxLength="1"
 									 Text="{Binding CurrencySymbol, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
-							<Label Content="{Binding Document.AssetsPanel.CurrencyDecimalDigitsLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CurrencyDecimalDigits}" 
+							<Label Content="{Binding Document.AssetsPanel.DecimalDigitsLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=DecimalDigits}" 
 								   Grid.Row="1" />
-							<TextBox Name="CurrencyDecimalDigits"
+							<TextBox Name="DecimalDigits"
 									 Grid.Row="1"
 									 Grid.Column="1"
 									 MaxLength="2"
-									 Text="{Binding CurrencyDecimalDigits, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
+									 Text="{Binding DecimalDigits, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
 									 InputScope="Number"/>
 						</Grid>
 					</StackPanel>

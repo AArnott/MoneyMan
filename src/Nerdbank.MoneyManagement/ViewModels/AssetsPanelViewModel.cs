@@ -51,7 +51,7 @@ public class AssetsPanelViewModel : BindableBase
 
 	public string CurrencySymbolLabel => "Currency symbol";
 
-	public string CurrencyDecimalDigitsLabel => "Decimal digits";
+	public string DecimalDigitsLabel => "Decimal digits";
 
 	public string PriceGridWhenColumnHeader => "Date";
 
@@ -114,7 +114,7 @@ public class AssetsPanelViewModel : BindableBase
 
 		const int StockSharePrecision = 3;
 		AssetViewModel newAssetViewModel = new(
-			new Asset { Type = Asset.AssetType.Security, CurrencyDecimalDigits = StockSharePrecision },
+			new Asset { Type = Asset.AssetType.Security, DecimalDigits = StockSharePrecision },
 			this.documentViewModel);
 
 		this.assets.Add(newAssetViewModel);

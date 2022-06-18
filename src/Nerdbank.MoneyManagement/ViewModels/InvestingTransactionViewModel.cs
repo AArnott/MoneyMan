@@ -331,7 +331,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			else if (this.Action is TransactionAction.Dividend && this.CashValue.HasValue && this.DepositAmount.HasValue)
 			{
 				decimal value = this.CashValue.Value / this.DepositAmount.Value;
-				if (this.ThisAccount.CurrencyAsset?.CurrencyDecimalDigits is int precision)
+				if (this.ThisAccount.CurrencyAsset?.DecimalDigits is int precision)
 				{
 					value = Math.Round(value, precision);
 				}
