@@ -342,6 +342,49 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	public void InsertOrReplace(IReadOnlyList<ModelBase> models)
+	{
+		Verify.NotDisposed(this);
+
+		foreach (ModelBase model in models)
+		{
+			Requires.Argument(model.Id >= 0, nameof(model), "This model has a negative ID and therefore should never be persisted.");
+		}
+
+		List<ModelBase> inserted = new(models.Count);
+		List<(ModelBase, ModelBase)> changed = new(models.Count);
+		foreach (ModelBase model in models)
+		{
+			ModelBase? before = model.Id > 0 ? (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model)) : null;
+			if (before is not null && this.connection.Update(model) > 0)
+			{
+				this.LogUpdate(model);
+				changed.Add((before, model));
+			}
+			else
+			{
+				this.connection.Insert(model);
+				this.LogInsert(model);
+				inserted.Add(model);
+			}
+		}
+
+		if (changed.Count > 0 || inserted.Count > 0)
+		{
+			this.IncrementDataVersion();
+		}
+
+		if (changed.Count > 0)
+		{
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: changed));
+		}
+
+		if (inserted.Count > 0)
+		{
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: inserted));
+		}
+	}
+
 	public bool Delete(ModelBase model)
 	{
 		Verify.NotDisposed(this);
@@ -852,7 +895,7 @@ WHERE [Id] != ?
 		{
 			Transaction tx = new()
 			{
-				Action = TransactionAction.Withdraw,
+				Action = TransactionAction.Transfer,
 				When = when ?? DateTime.Today,
 			};
 			this.money.Insert(tx);

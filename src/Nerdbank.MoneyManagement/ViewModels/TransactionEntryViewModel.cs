@@ -99,6 +99,40 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 	private string DebuggerDisplay => $"TransactionEntry: ({this.Id}): {this.Memo} {this.Account?.Name} {this.Amount}";
 
+	internal static void SaveAll(IReadOnlyList<TransactionEntryViewModel> entries)
+	{
+		if (entries.Count == 0)
+		{
+			return;
+		}
+
+		List<TransactionEntry> dirtyModels = new(entries.Count);
+		bool[] wasPersisted = new bool[entries.Count];
+		for (int i = 0; i < entries.Count; i++)
+		{
+			wasPersisted[i] = entries[i].IsPersisted;
+			if (entries[i].IsDirty)
+			{
+				entries[i].ApplyToModel();
+				dirtyModels.Add(entries[i].Model);
+			}
+		}
+
+		entries[0].MoneyFile.InsertOrReplace(dirtyModels);
+
+		for (int i = 0; i < entries.Count; i++)
+		{
+			if (dirtyModels.Contains(entries[i].Model))
+			{
+				entries[i].OnSaved();
+				if (!wasPersisted[i])
+				{
+					entries[i].OnPropertyChanged(nameof(IsPersisted));
+				}
+			}
+		}
+	}
+
 	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && propertyName is not nameof(this.AmountFormatted);
 
 	protected override void ApplyToCore()

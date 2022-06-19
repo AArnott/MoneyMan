@@ -51,7 +51,7 @@ public class BankingPanelViewModel : BindableBase
 
 	public string BalanceHeader => "Balance";
 
-	public AccountViewModel? FindAccount(int id) => this.Accounts.FirstOrDefault(acct => acct.Id == id);
+	public AccountViewModel? FindAccount(int id) => this.Accounts.Concat(this.closedAccounts).FirstOrDefault(acct => acct.Id == id);
 
 	internal void Add(AccountViewModel account)
 	{

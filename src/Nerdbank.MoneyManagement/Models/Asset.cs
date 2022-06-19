@@ -47,10 +47,10 @@ public record Asset : ModelBase
 	public string? CurrencySymbol { get; set; }
 
 	/// <summary>
-	/// Gets or sets the value to use for <see cref="NumberFormatInfo.CurrencyDecimalDigits"/>.
-	/// Applicable when <see cref="Type"/> is set to <see cref="AssetType.Currency"/>.
+	/// Gets or sets the value to use for <see cref="NumberFormatInfo.CurrencyDecimalDigits"/> or <see cref="NumberFormatInfo.NumberDecimalDigits"/>.
 	/// </summary>
-	public int? CurrencyDecimalDigits { get; set; }
+	[SQLite.Column("CurrencyDecimalDigits")] // db schema compatibility with old property name
+	public int? DecimalDigits { get; set; }
 
 	private string? DebuggerDisplay => string.IsNullOrEmpty(this.TickerSymbol) ? this.Name : $"{this.Name} ({this.TickerSymbol})";
 }

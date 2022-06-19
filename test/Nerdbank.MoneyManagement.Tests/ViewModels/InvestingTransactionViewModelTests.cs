@@ -338,24 +338,46 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void Dividend()
+	public void Dividend_Cash()
 	{
 		InvestingTransactionViewModel tx = this.account.Transactions[^1];
 		tx.Action = TransactionAction.Dividend;
-		tx.SimpleAsset = this.msft;
+		tx.RelatedAsset = this.msft;
+		tx.SimpleAsset = this.account.CurrencyAsset;
 		tx.SimpleAmount = 15; // $15 dividend in cash
 
 		this.AssertNowAndAfterReload(delegate
 		{
 			tx = this.account.FindTransaction(tx.TransactionId)!;
 			Assert.Equal(TransactionAction.Dividend, tx.Action);
-			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Same(this.account.CurrencyAsset, tx.SimpleAsset);
+			Assert.Same(this.msft, tx.RelatedAsset);
 			Assert.Equal(15, tx.SimpleAmount);
-			Assert.False(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
-			Assert.Throws<InvalidOperationException>(() => tx.SimplePrice = 10);
-			Assert.Equal(15, tx.SimpleCurrencyImpact);
 			Assert.Equal("MSFT +$15.00", tx.Description);
+		});
+	}
+
+	[Fact]
+	public void Dividend_Reinvested()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Dividend;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 0.8m; // shares reinvested from cash value
+		tx.CashValue = 50;
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			tx = this.account.FindTransaction(tx.TransactionId)!;
+			Assert.Equal(TransactionAction.Dividend, tx.Action);
+			Assert.Same(this.msft, tx.SimpleAsset);
+			Assert.Equal(0.8m, tx.SimpleAmount);
+			Assert.Equal(50, tx.SimpleCurrencyImpact);
+			Assert.Equal(50, tx.CashValue);
+			Assert.Equal(tx.CashValue / tx.SimpleAmount, tx.SimplePrice);
+			Assert.Equal("MSFT +0.8 ($50.00)", tx.Description);
 		});
 	}
 
@@ -608,20 +630,77 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void ApplyTo()
+	public void ApplyTo_Dividend()
+	{
+		InvestingTransactionViewModel viewModel = new(this.account);
+
+		viewModel.When = this.when;
+		viewModel.Memo = "my memo";
+		viewModel.Action = TransactionAction.Dividend;
+		viewModel.RelatedAsset = this.msft;
+		viewModel.Cleared = ClearedState.Cleared;
+		viewModel.SimpleAmount = 3;
+		viewModel.ApplyToModel();
+
+		Assert.Equal(this.when, viewModel.Transaction.When);
+		Assert.Equal(viewModel.Memo, viewModel.Transaction.Memo);
+		Assert.Equal(TransactionAction.Dividend, viewModel.Transaction.Action);
+		Assert.Equal(this.msft.Id, viewModel.Transaction.RelatedAssetId);
+		Assert.NotEmpty(viewModel.Entries);
+		Assert.All(viewModel.Entries, e => Assert.Equal(ClearedState.Cleared, e.Model.Cleared));
+	}
+
+	[Fact]
+	public void ApplyTo_Sell()
 	{
 		InvestingTransactionViewModel viewModel = new(this.account);
 
 		viewModel.When = this.when;
 		viewModel.Memo = "my memo";
 		viewModel.Action = TransactionAction.Sell;
-		viewModel.RelatedAsset = this.msft;
+		viewModel.Cleared = ClearedState.Cleared;
+		viewModel.SimpleAmount = 3;
+		viewModel.SimpleAsset = this.msft;
+		viewModel.SimplePrice = 100m;
 		viewModel.ApplyToModel();
 
 		Assert.Equal(this.when, viewModel.Transaction.When);
 		Assert.Equal(viewModel.Memo, viewModel.Transaction.Memo);
 		Assert.Equal(TransactionAction.Sell, viewModel.Transaction.Action);
-		Assert.Equal(this.msft.Id, viewModel.Transaction.RelatedAssetId);
+		Assert.Null(viewModel.Transaction.RelatedAssetId);
+
+		TransactionEntryViewModel cashEntry = Assert.Single(viewModel.Entries, e => e.Asset == this.account.CurrencyAsset);
+		TransactionEntryViewModel stockEntry = Assert.Single(viewModel.Entries, e => e.Asset == this.msft);
+
+		Assert.All(viewModel.Entries, e => Assert.Equal(ClearedState.Cleared, e.Model.Cleared));
+		Assert.Equal(-3, stockEntry.Amount);
+		Assert.Equal(300, cashEntry.Amount);
+	}
+
+	[Fact]
+	public void ApplyTo_Transfer()
+	{
+		InvestingTransactionViewModel viewModel = new(this.account);
+
+		viewModel.When = this.when;
+		viewModel.Memo = "my memo";
+		viewModel.Action = TransactionAction.Transfer;
+		viewModel.Cleared = ClearedState.Cleared;
+		viewModel.SimpleAmount = 3;
+		viewModel.SimpleAsset = this.msft;
+		viewModel.SimpleAccount = this.otherAccount;
+		viewModel.ApplyToModel();
+
+		Assert.Equal(this.when, viewModel.Transaction.When);
+		Assert.Equal(viewModel.Memo, viewModel.Transaction.Memo);
+		Assert.Equal(TransactionAction.Transfer, viewModel.Transaction.Action);
+		Assert.Null(viewModel.Transaction.RelatedAssetId);
+
+		TransactionEntryViewModel localEntry = Assert.Single(viewModel.Entries, e => e.Account == this.account);
+		TransactionEntryViewModel otherEntry = Assert.Single(viewModel.Entries, e => e.Account == this.otherAccount);
+
+		Assert.Equal(ClearedState.Cleared, localEntry.Cleared);
+		Assert.Equal(ClearedState.None, otherEntry.Cleared);
 	}
 
 	[Fact]
@@ -644,6 +723,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 				AssetId = this.msft.Id,
 				Amount = -2,
 				AccountId = this.account.Id,
+				Cleared = ClearedState.Cleared,
 			},
 			new TransactionAndEntry
 			{
@@ -654,6 +734,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 				AssetId = this.account.CurrencyAsset!.Id,
 				Amount = 250,
 				AccountId = this.account.Id,
+				Cleared = ClearedState.Cleared,
 			},
 		};
 
@@ -662,6 +743,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(this.when, this.viewModel.When);
 		Assert.Equal(transactionAndEntries[0].TransactionMemo, this.viewModel.Memo);
 		Assert.Equal(TransactionAction.Sell, this.viewModel.Action);
+		Assert.Equal(ClearedState.Cleared, this.viewModel.Cleared);
 		Assert.Same(this.msft, this.viewModel.SimpleAsset);
 	}
 
