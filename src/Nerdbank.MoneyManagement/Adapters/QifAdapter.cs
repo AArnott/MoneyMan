@@ -476,12 +476,12 @@ public class QifAdapter : IFileAdapter
 						}
 					}
 
-					if (false && importingTransaction.Commission.HasValue)
+					if (importingTransaction.Commission.HasValue)
 					{
 						newEntry3 = new()
 						{
 							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
-							Amount = -importingTransaction.Commission.Value,
+							Amount = importingTransaction.Commission.Value,
 							AssetId = target.CurrencyAssetId.Value,
 						};
 						newEntryTuples.Add((newTransaction, newEntry3));

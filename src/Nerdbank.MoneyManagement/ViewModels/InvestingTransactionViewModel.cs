@@ -19,6 +19,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private decimal? depositAmount;
 	private decimal? withdrawAmount;
 	private decimal? cashValue;
+	private decimal? commission;
 	private bool wasEverNonEmpty;
 
 	/// <summary>
@@ -411,14 +412,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	/// </remarks>
 	public decimal? Commission
 	{
-		get
-		{
-			return 0;
-		}
-
-		set
-		{
-		}
+		get => this.commission;
+		set => this.SetProperty(ref this.commission, value);
 	}
 
 	public decimal? SimpleCurrencyImpact
@@ -583,17 +578,24 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Sell:
 			case TransactionAction.Buy:
 			case TransactionAction.Exchange:
-				if (TryEnsureEntryCount(2, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
+				int countRequired = this.Commission is null ? 2 : 3;
+				if (TryEnsureEntryCount(countRequired, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
 				{
 					bool deposit = this.DepositAccount == this.ThisAccount;
-					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
-					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+					this.TrySortOutEntriesWithPossibleCommission(out TransactionEntryViewModel ourEntry, out TransactionEntryViewModel otherEntry, out TransactionEntryViewModel? commissionEntry);
 					ourEntry.Account = this.ThisAccount;
 					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
 					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
 					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
 					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
 					otherEntry.Amount = deposit ? -(this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
+					if (this.Commission is not null)
+					{
+						Assumes.NotNull(commissionEntry);
+						commissionEntry.Account = this.ThisAccount.DocumentViewModel.ConfigurationPanel.CommissionCategory;
+						commissionEntry.Asset = this.ThisAccount.CurrencyAsset;
+						commissionEntry.Amount = -this.Commission.Value;
+					}
 				}
 
 				break;
@@ -652,9 +654,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Buy:
 			case TransactionAction.ShortSale:
 			case TransactionAction.CoverShort:
-				Assumes.True(this.Entries.Count == 2, "Entries.Count is {0}", this.Entries.Count);
-				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
-				TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+				this.SortOutEntriesWithPossibleCommission(out TransactionEntryViewModel ourEntry, out TransactionEntryViewModel otherEntry, out TransactionEntryViewModel? commissionEntry);
 				bool deposit = ourEntry.Amount > 0;
 				this.DepositAmountWithValidation = Math.Abs(deposit ? ourEntry.Amount : otherEntry.Amount);
 				this.DepositAccount = deposit ? ourEntry.Account : otherEntry.Account;
@@ -662,6 +662,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				this.WithdrawAmountWithValidation = Math.Abs(deposit ? otherEntry.Amount : ourEntry.Amount);
 				this.WithdrawAccount = deposit ? otherEntry.Account : ourEntry.Account;
 				this.WithdrawAsset = deposit ? otherEntry.Asset : ourEntry.Asset;
+				this.Commission = -commissionEntry?.Amount;
 				break;
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
@@ -720,4 +721,95 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	[DoesNotReturn]
 	private static Exception ThrowNotSimpleAction() => throw new InvalidOperationException("Not a simple operation.");
+
+	private void SortOutEntriesWithPossibleCommission([NotNull] out TransactionEntryViewModel? ourEntry, [NotNull] out TransactionEntryViewModel? otherEntry, out TransactionEntryViewModel? commissionEntry)
+	{
+		ourEntry = null;
+		otherEntry = null;
+		commissionEntry = null;
+		foreach (TransactionEntryViewModel entryViewModel in this.Entries)
+		{
+			if (entryViewModel.Account == this.ThisAccount)
+			{
+				// Two entries are allowed to reference this account.
+				if (ourEntry is null)
+				{
+					SetOnce(ref ourEntry, entryViewModel);
+				}
+				else
+				{
+					SetOnce(ref otherEntry, entryViewModel);
+				}
+			}
+			else if (entryViewModel.Account == this.ThisAccount.DocumentViewModel.ConfigurationPanel.CommissionCategory)
+			{
+				SetOnce(ref commissionEntry, entryViewModel);
+			}
+			else
+			{
+				SetOnce(ref otherEntry, entryViewModel);
+			}
+
+			void SetOnce(ref TransactionEntryViewModel? local, TransactionEntryViewModel newValue)
+			{
+				Verify.Operation(local is null, "Only one entry is allowed per account.");
+				local = newValue;
+			}
+		}
+
+		Verify.Operation(ourEntry is not null && otherEntry is not null, "Required entries not found.");
+	}
+
+	private void TrySortOutEntriesWithPossibleCommission([NotNull] out TransactionEntryViewModel? ourEntry, [NotNull] out TransactionEntryViewModel? otherEntry, out TransactionEntryViewModel? commissionEntry)
+	{
+		ourEntry = null;
+		otherEntry = null;
+		commissionEntry = null;
+
+		List<TransactionEntryViewModel> unclaimedEntries = this.Entries.ToList();
+		for (int i = unclaimedEntries.Count - 1; i >= 0; i--)
+		{
+			if (unclaimedEntries[i].Account == this.ThisAccount)
+			{
+				if (ourEntry is null)
+				{
+					Claim(ref ourEntry);
+				}
+				else if (otherEntry is null)
+				{
+					Claim(ref otherEntry);
+				}
+			}
+			else if (unclaimedEntries[i].Account == this.ThisAccount.DocumentViewModel.ConfigurationPanel.CommissionCategory)
+			{
+				Claim(ref commissionEntry);
+			}
+
+			void Claim(ref TransactionEntryViewModel? local)
+			{
+				local = unclaimedEntries[i];
+				unclaimedEntries.RemoveAt(i);
+			}
+		}
+
+		// Now assign unclaimed entries as required.
+		FillNeed(ref ourEntry);
+		FillNeed(ref otherEntry);
+		if (unclaimedEntries.Count > 0)
+		{
+			FillNeed(ref commissionEntry);
+		}
+
+		void FillNeed(ref TransactionEntryViewModel? local)
+		{
+			if (local is null)
+			{
+				Index idx = ^1;
+				local = unclaimedEntries[idx];
+				unclaimedEntries.RemoveAt(idx.GetOffset(unclaimedEntries.Count));
+			}
+		}
+
+		Verify.Operation(ourEntry is not null && otherEntry is not null, "Required entries not found.");
+	}
 }
