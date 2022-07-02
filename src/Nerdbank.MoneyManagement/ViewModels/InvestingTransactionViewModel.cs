@@ -402,6 +402,25 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
+	/// <summary>
+	/// Gets or sets the commission for this transaction.
+	/// </summary>
+	/// <remarks>
+	/// The commission is stored as an <see cref="TransactionEntryViewModel"/>,
+	/// attributed to the category identified by <see cref="ConfigurationPanelViewModel.CommissionCategory"/>.
+	/// </remarks>
+	public decimal? Commission
+	{
+		get
+		{
+			return 0;
+		}
+
+		set
+		{
+		}
+	}
+
 	public decimal? SimpleCurrencyImpact
 	{
 		get

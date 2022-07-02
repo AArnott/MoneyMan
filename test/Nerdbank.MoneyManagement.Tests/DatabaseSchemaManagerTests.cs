@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using Nerdbank.MoneyManagement.ViewModels;
+using NuGet.Frameworks;
 using SQLite;
 
 /// <summary>
@@ -61,7 +62,7 @@ INSERT INTO [Transaction] ([When], CheckNumber, Amount, Memo, Payee, CategoryId,
 		Assert.True(old.IsClosed);
 
 		// Category assertions
-		Assert.Equal(2, documentViewModel.CategoriesPanel.Categories.Count);
+		Assert.Equal(MoneyTestBase.DefaultCategoryCount + 2, documentViewModel.CategoriesPanel.Categories.Count);
 		CategoryAccountViewModel cat1 = Assert.Single(documentViewModel.CategoriesPanel.Categories, cat => cat.Name == "cat1");
 		CategoryAccountViewModel cat2 = Assert.Single(documentViewModel.CategoriesPanel.Categories, cat => cat.Name == "cat2");
 
@@ -276,6 +277,22 @@ INSERT INTO TransactionEntry (TransactionId, Memo, AccountId, Amount, AssetId, C
 		Assert.Equal("accountnum", checking.OfxAcctId);
 		BankingTransactionViewModel tx1 = checking.Transactions[0];
 		Assert.Equal("fitid", tx1.Entries[0].OfxFitId);
+	}
+
+	[Fact]
+	public void UpgradeFromV7()
+	{
+		using SQLiteConnection connection = this.CreateDatabase(7);
+		string sql = @"
+INSERT INTO Account (Name, IsClosed, Type) VALUES ('My commission', 0, 2);
+UPDATE Configuration SET CommissionAccountId = last_insert_rowid();
+";
+
+		this.ExecuteSql(connection, sql);
+		MoneyFile file = MoneyFile.Load(connection);
+		DocumentViewModel documentViewModel = new(file);
+
+		Assert.Equal("My commission", documentViewModel.ConfigurationPanel.CommissionCategory?.Name);
 	}
 
 	private SQLiteConnection CreateDatabase(int schemaVersion)

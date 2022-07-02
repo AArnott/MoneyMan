@@ -139,7 +139,7 @@ public class CategoryViewModelTests : MoneyTestBase
 
 		Account fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
 		Assert.Equal(category.Name, fromDb.Name);
-		Assert.Single(this.Money.Categories);
+		Assert.Single(this.Money.Categories, cat => cat.Name != DefaultCommissionCategoryName);
 	}
 
 	[Fact]
@@ -163,6 +163,6 @@ public class CategoryViewModelTests : MoneyTestBase
 
 		Account fromDb = this.Money.Categories.First(cat => cat.Id == category.Id);
 		Assert.Equal(category.Name, fromDb.Name);
-		Assert.Single(this.Money.Categories);
+		Assert.Single(this.Money.Categories, cat => cat.Name != DefaultCommissionCategoryName);
 	}
 }

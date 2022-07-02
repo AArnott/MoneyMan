@@ -420,7 +420,7 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
-					// Our view model doesn't support categories on deposits yet.
+					// Our view model doesn't support categories on deposits yet. (TODO: address this)
 					////if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
 					////{
 					////	newEntry2 = new()
@@ -474,6 +474,17 @@ public class QifAdapter : IFileAdapter
 						{
 							newEntry2.Amount *= -1;
 						}
+					}
+
+					if (false && importingTransaction.Commission.HasValue)
+					{
+						newEntry3 = new()
+						{
+							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
+							Amount = -importingTransaction.Commission.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
 					}
 
 					break;

@@ -101,7 +101,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public void AddedCategoryAddsToTransactionTargets()
 	{
 		CategoryAccountViewModel categoryViewModel = this.DocumentViewModel.CategoriesPanel.NewCategory("some new category");
-		Account category = Assert.Single(this.Money.Categories);
+		Account category = Assert.Single(this.Money.Categories, cat => cat.Name != DefaultCommissionCategoryName);
 		Assert.Equal(categoryViewModel.Name, category.Name);
 		Assert.Contains(categoryViewModel, this.DocumentViewModel.TransactionTargets);
 	}
@@ -153,8 +153,9 @@ public class DocumentViewModelTests : MoneyTestBase
 		AccountViewModel accountA = this.DocumentViewModel.AccountsPanel.NewBankingAccount("a");
 		CategoryAccountViewModel categoryA = this.DocumentViewModel.CategoriesPanel.NewCategory("a");
 		CategoryAccountViewModel categoryG = this.DocumentViewModel.CategoriesPanel.NewCategory("g");
+		CategoryAccountViewModel commission = this.DocumentViewModel.CategoriesPanel.Categories.Single(cat => cat.Name == DefaultCommissionCategoryName);
 		Assert.Equal<AccountViewModel?>(
-			new AccountViewModel?[] { null, categoryA, categoryG, this.DocumentViewModel.SplitCategory, accountA, accountG },
+			new AccountViewModel?[] { null, categoryA, commission, categoryG, this.DocumentViewModel.SplitCategory, accountA, accountG },
 			this.DocumentViewModel.TransactionTargets);
 	}
 
@@ -177,7 +178,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	{
 		AccountViewModel account = this.DocumentViewModel.AccountsPanel.NewBankingAccount("checking");
 		this.DocumentViewModel.Reset();
-		Assert.Equal(3, this.DocumentViewModel.TransactionTargets.Count);
+		Assert.Equal(DefaultCategoryCount + 3, this.DocumentViewModel.TransactionTargets.Count);
 		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == account.Name);
 		Assert.Contains(this.DocumentViewModel.TransactionTargets, tt => tt?.Name == this.DocumentViewModel.SplitCategory.Name);
 		Assert.Contains(null, this.DocumentViewModel.TransactionTargets);
