@@ -310,4 +310,17 @@ public class AccountsPanelViewModelTests : MoneyTestBase
 		Assert.Throws<InvalidOperationException>(() => newAccount.Type = Account.AccountType.Investing);
 		Assert.Equal(Account.AccountType.Banking, newAccount.Type);
 	}
+
+	[Fact]
+	public void NameUniqueness()
+	{
+		AccountViewModel acct1 = this.ViewModel.NewBankingAccount("Checking");
+		AccountViewModel acct2 = this.ViewModel.NewBankingAccount();
+		acct2.Name = "Checkin";
+		Assert.True(acct2.IsReadyToSave);
+		acct2.Name = "Checking";
+		Assert.False(acct2.IsReadyToSave);
+		acct2.Name = "Checking2";
+		Assert.True(acct2.IsReadyToSave);
+	}
 }
