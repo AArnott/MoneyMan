@@ -667,13 +667,37 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
 			case TransactionAction.Interest:
-				TransactionEntryViewModel securityAddEntry = this.Entries[0];
+				TransactionEntryViewModel? securityAddEntry = null;
+				TransactionEntryViewModel? categoryEntry = null;
+				foreach (TransactionEntryViewModel entry in this.Entries)
+				{
+					if (entry.Account?.Id == this.ThisAccount.Id)
+					{
+						if (securityAddEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with this account.");
+						}
+
+						securityAddEntry = entry;
+					}
+					else
+					{
+						if (categoryEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with another account.");
+						}
+
+						categoryEntry = entry;
+					}
+				}
+
+				Assumes.NotNull(securityAddEntry); // we wouldn't see this transaction at all if it didn't have an entry linked to this account.
 				this.DepositAccount = securityAddEntry.Account;
 				this.DepositAmountWithValidation = Math.Abs(securityAddEntry.Amount);
 				this.DepositAsset = securityAddEntry.Asset;
-				this.WithdrawAccount = null;
-				this.WithdrawAmountWithValidation = null;
-				this.WithdrawAsset = null;
+				this.WithdrawAccount = categoryEntry?.Account;
+				this.WithdrawAmountWithValidation = categoryEntry?.Amount;
+				this.WithdrawAsset = categoryEntry?.Asset;
 				break;
 			case TransactionAction.Dividend:
 				securityAddEntry = this.Entries.Count switch

@@ -420,17 +420,17 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
-					// Our view model doesn't support categories on deposits yet. (TODO: address this)
-					////if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
-					////{
-					////	newEntry2 = new()
-					////	{
-					////		AccountId = categoryId,
-					////		Amount = importingTransaction.TransactionAmount.Value,
-					////		AssetId = this.moneyFile.PreferredAssetId,
-					////	};
-					////	newEntryTuples.Add((newTransaction, newEntry2));
-					////}
+					// Our view model doesn't support categories on deposits yet.
+					if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
+					{
+						newEntry2 = new()
+						{
+							AccountId = categoryId,
+							Amount = -importingTransaction.TransactionAmount.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry2));
+					}
 
 					break;
 				case InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell or InvestmentTransaction.Actions.BuyX or InvestmentTransaction.Actions.SellX:

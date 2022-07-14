@@ -129,7 +129,8 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2006, 6, 13), tx.When);
 		Assert.Equal(2000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Deposit, tx.Action);
-		Assert.Null(tx.SimpleAccount);
+		Assert.Equal("NetBank Checking", tx.SimpleAccount?.Name);
+		Assert.Same(tx.WithdrawAccount, tx.SimpleAccount);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2006, 10, 4), tx.When);
