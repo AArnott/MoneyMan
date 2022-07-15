@@ -392,7 +392,7 @@
 																	<ColumnDefinition Width="3*" />
 																	<ColumnDefinition Width="1*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
@@ -400,7 +400,7 @@
 																	DisplayMemberPath="Name" />
 																<StackPanel Grid.Column="2" Orientation="Horizontal">
 																	<TextBlock Text="@" Margin="3,3,3,0" />
-																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="auto" />
+																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35" />
 																</StackPanel>
 															</Grid>
 														</DataTemplate>
