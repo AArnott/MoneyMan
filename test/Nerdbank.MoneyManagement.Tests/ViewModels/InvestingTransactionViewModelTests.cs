@@ -304,6 +304,51 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Buy_WithCommission()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Buy;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 2; // 2 shares
+		tx.SimplePrice = 125; // $250 total
+		tx.Commission = 5;
+
+		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
+		Assert.Equal(-255, balances[this.Money.PreferredAssetId]);
+		Assert.Equal(2, balances[this.msft.Id]);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			tx = this.account.FindTransaction(tx.TransactionId)!;
+			Assert.Equal(TransactionAction.Buy, tx.Action);
+			Assert.True(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimpleAssetApplicable);
+			Assert.Same(this.msft, tx.DepositAsset);
+			Assert.Equal(2, tx.DepositAmount);
+			Assert.Equal(2, tx.SimpleAmount);
+			Assert.Equal(125, tx.SimplePrice);
+			Assert.Equal(250, tx.WithdrawAmount);
+			Assert.Equal(5, tx.Commission);
+			Assert.Equal("2 MSFT @ $125.00 (-$5)", tx.Description);
+		});
+	}
+
+	[Fact]
+	public void Commission_MustBePositive()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Buy;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 2; // 2 shares
+		tx.SimplePrice = 125; // $250 total
+
+		Assert.True(tx.IsReadyToSave);
+		tx.Commission = -5;
+		Assert.False(tx.IsReadyToSave);
+		this.Logger.WriteLine(tx.Error);
+	}
+
+	[Fact]
 	public void Sell()
 	{
 		InvestingTransactionViewModel tx = this.account.Transactions[^1];

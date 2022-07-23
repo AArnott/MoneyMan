@@ -410,11 +410,14 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	/// The commission is stored as an <see cref="TransactionEntryViewModel"/>,
 	/// attributed to the category identified by <see cref="ConfigurationPanelViewModel.CommissionCategory"/>.
 	/// </remarks>
+	[Range(0, double.MaxValue)]
 	public decimal? Commission
 	{
 		get => this.commission;
 		set => this.SetProperty(ref this.commission, value);
 	}
+
+	public string? CommissionFormatted => this.ThisAccount.CurrencyAsset?.Format(this.Commission);
 
 	public decimal? SimpleCurrencyImpact
 	{
@@ -458,14 +461,16 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				TransactionAction.Interest => $"+{this.DepositAmountFormatted}",
 				TransactionAction.Dividend when this.CashValue is not null => $"{this.DepositAsset?.TickerOrName} +{this.DepositAmountFormatted} ({this.CashValueFormatted})",
 				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.DepositAmountFormatted}",
-				TransactionAction.Sell => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
-				TransactionAction.Buy => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
+				TransactionAction.Sell => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} @ {this.SimplePriceFormatted}{CommissionString()}",
+				TransactionAction.Buy => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName} @ {this.SimplePriceFormatted}{CommissionString()}",
 				TransactionAction.Transfer => this.ThisAccount == this.DepositAccount ? $"{this.WithdrawAccount?.Name} -> {this.DepositAmountFormatted} {this.DepositAsset?.TickerOrName}" : $"{this.DepositAccount?.Name} <- {this.WithdrawAmountFormatted} {this.WithdrawAsset?.TickerOrName}",
 				TransactionAction.Deposit => $"{this.DepositAmountFormatted}",
 				TransactionAction.Withdraw => $"{this.WithdrawAmountFormatted}",
 				TransactionAction.Exchange => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} -> {this.DepositAmount} {this.DepositAsset?.TickerOrName}",
 				_ => string.Empty,
 			};
+
+			string CommissionString() => this.Commission > 0 ? $" (-{this.CommissionFormatted})" : string.Empty;
 		}
 	}
 
@@ -656,12 +661,25 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.CoverShort:
 				this.SortOutEntriesWithPossibleCommission(out TransactionEntryViewModel ourEntry, out TransactionEntryViewModel otherEntry, out TransactionEntryViewModel? commissionEntry);
 				bool deposit = ourEntry.Amount > 0;
-				this.DepositAmountWithValidation = Math.Abs(deposit ? ourEntry.Amount : otherEntry.Amount);
-				this.DepositAccount = deposit ? ourEntry.Account : otherEntry.Account;
-				this.DepositAsset = deposit ? ourEntry.Asset : otherEntry.Asset;
-				this.WithdrawAmountWithValidation = Math.Abs(deposit ? otherEntry.Amount : ourEntry.Amount);
-				this.WithdrawAccount = deposit ? otherEntry.Account : ourEntry.Account;
-				this.WithdrawAsset = deposit ? otherEntry.Asset : ourEntry.Asset;
+				if (deposit)
+				{
+					this.DepositAmountWithValidation = Math.Abs(ourEntry.Amount);
+					this.DepositAccount = ourEntry.Account;
+					this.DepositAsset = ourEntry.Asset;
+					this.WithdrawAmountWithValidation = Math.Abs(otherEntry.Amount) + (this.Commission ?? 0);
+					this.WithdrawAccount = otherEntry.Account;
+					this.WithdrawAsset = otherEntry.Asset;
+				}
+				else
+				{
+					this.DepositAmountWithValidation = Math.Abs(otherEntry.Amount);
+					this.DepositAccount = otherEntry.Account;
+					this.DepositAsset = otherEntry.Asset;
+					this.WithdrawAmountWithValidation = Math.Abs(ourEntry.Amount) + (this.Commission ?? 0);
+					this.WithdrawAccount = ourEntry.Account;
+					this.WithdrawAsset = ourEntry.Asset;
+				}
+
 				this.Commission = -commissionEntry?.Amount;
 				break;
 			case TransactionAction.Add:
