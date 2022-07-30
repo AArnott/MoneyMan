@@ -421,16 +421,16 @@ public class QifAdapter : IFileAdapter
 					newEntryTuples.Add((newTransaction, newEntry1));
 
 					// Our view model doesn't support categories on deposits yet.
-					////if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
-					////{
-					////	newEntry2 = new()
-					////	{
-					////		AccountId = categoryId,
-					////		Amount = importingTransaction.TransactionAmount.Value,
-					////		AssetId = this.moneyFile.PreferredAssetId,
-					////	};
-					////	newEntryTuples.Add((newTransaction, newEntry2));
-					////}
+					if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
+					{
+						newEntry2 = new()
+						{
+							AccountId = categoryId,
+							Amount = -importingTransaction.TransactionAmount.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry2));
+					}
 
 					break;
 				case InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell or InvestmentTransaction.Actions.BuyX or InvestmentTransaction.Actions.SellX:
@@ -474,6 +474,17 @@ public class QifAdapter : IFileAdapter
 						{
 							newEntry2.Amount *= -1;
 						}
+					}
+
+					if (importingTransaction.Commission.HasValue)
+					{
+						newEntry3 = new()
+						{
+							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
+							Amount = importingTransaction.Commission.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
 					}
 
 					break;
@@ -621,6 +632,17 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
 
+					if (importingTransaction.Commission.HasValue)
+					{
+						newEntry3 = new()
+						{
+							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
+							Amount = importingTransaction.Commission.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
+					}
+
 					break;
 				case InvestmentTransaction.Actions.CvrShrt:
 					newTransaction.Action = TransactionAction.CoverShort;
@@ -646,6 +668,17 @@ public class QifAdapter : IFileAdapter
 						AssetId = target.CurrencyAssetId.Value,
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
+
+					if (importingTransaction.Commission.HasValue)
+					{
+						newEntry3 = new()
+						{
+							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
+							Amount = importingTransaction.Commission.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
+					}
 
 					break;
 				case InvestmentTransaction.Actions.StkSplit:

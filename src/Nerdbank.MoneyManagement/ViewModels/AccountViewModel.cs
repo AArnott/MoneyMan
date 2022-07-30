@@ -27,7 +27,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 		this.CopyFrom(this.Model);
 	}
 
-	[Required]
+	[Required, Unique]
 	public string Name
 	{
 		get => this.name;

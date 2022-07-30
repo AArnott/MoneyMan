@@ -41,7 +41,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		int count = await this.ImportAsync(Simple1DataFileName);
 		Assert.Equal(1, chooseAccountFuncInvocationCount);
 		const int ExpectedCategoriesCount = 4;
-		Assert.Equal(ExpectedCategoriesCount, this.DocumentViewModel.CategoriesPanel.Categories.Count(t => t.IsPersisted));
+		Assert.Equal(DefaultCategoryCount + ExpectedCategoriesCount, this.DocumentViewModel.CategoriesPanel.Categories.Count(t => t.IsPersisted));
 
 		int transactionIndex = 0;
 		BankingTransactionViewModel tx = this.Checking.Transactions[transactionIndex++];
@@ -84,10 +84,11 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		int count = await this.ImportAsync(CategoriesDataFileName);
 		Assert.Equal(3, count);
 
-		Assert.Equal(3, this.DocumentViewModel.CategoriesPanel.Categories.Count);
+		Assert.Equal(DefaultCategoryCount + 3, this.DocumentViewModel.CategoriesPanel.Categories.Count);
 		Assert.Equal("Bonus", this.DocumentViewModel.CategoriesPanel.Categories[0].Name);
 		Assert.Equal("Citi Cards Credit Card", this.DocumentViewModel.CategoriesPanel.Categories[1].Name);
-		Assert.Equal("Consulting", this.DocumentViewModel.CategoriesPanel.Categories[2].Name);
+		Assert.Equal("Commission", this.DocumentViewModel.CategoriesPanel.Categories[2].Name);
+		Assert.Equal("Consulting", this.DocumentViewModel.CategoriesPanel.Categories[3].Name);
 
 		// Delete a category and re-import to see if it will import just the missing one.
 		this.DocumentViewModel.CategoriesPanel.DeleteCategory(this.DocumentViewModel.CategoriesPanel.Categories[1]);
@@ -128,7 +129,8 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2006, 6, 13), tx.When);
 		Assert.Equal(2000, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Deposit, tx.Action);
-		Assert.Null(tx.SimpleAccount);
+		Assert.Equal("NetBank Checking", tx.SimpleAccount?.Name);
+		Assert.Same(tx.WithdrawAccount, tx.SimpleAccount);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2006, 10, 4), tx.When);
@@ -149,10 +151,10 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2006, 10, 6), tx.When);
 		Assert.Equal(2, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Sell, tx.Action);
-		Assert.Equal(45.9355m, tx.SimplePrice); // 41.2655m after commission is supported
+		Assert.Equal(41.2655m, tx.SimplePrice);
 		Assert.Same(msft, tx.SimpleAsset?.Model);
 		Assert.Equal("YOU SOLD", tx.Memo);
-		////Assert.Equal(9.34m, tx.Commission);
+		Assert.Equal(9.34m, tx.Commission);
 		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		// A BuyX record that used money from a category.
@@ -168,19 +170,19 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 10, 8), tx.When);
 		Assert.Equal(100, tx.SimpleAmount);
-		Assert.Equal(1.3199m, tx.SimplePrice); // 1.3999 when commision is accounted for
+		Assert.Equal(1.3999m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.ShortSale, tx.Action);
 		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
-		////Assert.Equal(8, tx.Commission);
+		Assert.Equal(8, tx.Commission);
 		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 10, 26), tx.When);
 		Assert.Equal(100, tx.SimpleAmount);
-		Assert.Equal(5.7875m, tx.SimplePrice); // 5.7075 when commission is accounted for.
+		Assert.Equal(5.7075m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.CoverShort, tx.Action);
 		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
-		////Assert.Equal(8, tx.Commission);
+		Assert.Equal(8, tx.Commission);
 		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
 
 		tx = brokerage.Transactions[transactionCounter++];

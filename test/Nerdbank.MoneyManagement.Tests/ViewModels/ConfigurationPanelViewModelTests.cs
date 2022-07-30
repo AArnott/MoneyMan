@@ -20,4 +20,14 @@ public class ConfigurationPanelViewModelTests : MoneyTestBase
 		this.ReloadViewModel();
 		Assert.Equal("new", this.ViewModel.PreferredAsset.Name);
 	}
+
+	[Fact]
+	public void CommissionAccount()
+	{
+		Assert.NotNull(this.ViewModel.CommissionCategory);
+
+		this.ViewModel.CommissionCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("My commission");
+		this.ReloadViewModel();
+		Assert.Equal("My commission", this.ViewModel.CommissionCategory?.Name);
+	}
 }

@@ -14,7 +14,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 	[Fact]
 	public void InitialState()
 	{
-		Assert.Empty(this.ViewModel.Categories);
+		Assert.Equal(DefaultCommissionCategoryName, Assert.Single(this.ViewModel.Categories).Name);
 		Assert.Null(this.ViewModel.SelectedCategory);
 	}
 
@@ -27,12 +27,12 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 			h => this.ViewModel.AddingNewCategory += h,
 			h => this.ViewModel.AddingNewCategory -= h,
 			() => this.ViewModel.NewCategory());
-		CategoryAccountViewModel newCategory = Assert.Single(this.ViewModel.Categories);
+		CategoryAccountViewModel newCategory = Assert.Single(this.ViewModel.Categories, cat => cat.Name != DefaultCommissionCategoryName);
 		Assert.Same(newCategory, this.ViewModel.SelectedCategory);
 		Assert.Equal(string.Empty, newCategory.Name);
 
 		newCategory.Name = "cat";
-		Assert.Equal("cat", Assert.Single(this.Money.Categories).Name);
+		Assert.Equal("cat", Assert.Single(this.Money.Categories, cat => cat.Name != DefaultCommissionCategoryName).Name);
 	}
 
 	[Fact]
@@ -44,12 +44,12 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 			h => this.ViewModel.AddingNewCategory += h,
 			h => this.ViewModel.AddingNewCategory -= h,
 			() => this.ViewModel.AddCommand.ExecuteAsync());
-		CategoryAccountViewModel newCategory = Assert.Single(this.ViewModel.Categories);
+		CategoryAccountViewModel newCategory = Assert.Single(this.ViewModel.Categories, cat => cat.Name != DefaultCommissionCategoryName);
 		Assert.Same(newCategory, this.ViewModel.SelectedCategory);
 		Assert.Equal(string.Empty, newCategory.Name);
 
 		newCategory.Name = "cat";
-		Assert.Equal("cat", Assert.Single(this.Money.Categories).Name);
+		Assert.Equal("cat", Assert.Single(this.Money.Categories, cat => cat.Name != DefaultCommissionCategoryName).Name);
 	}
 
 	[Fact]
@@ -65,7 +65,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.NotNull(newCategory);
 		newCategory!.Name = "dog";
 
-		Assert.Equal(2, this.Money.Categories.Count());
+		Assert.Equal(DefaultCategoryCount + 2, this.Money.Categories.Count());
 	}
 
 	[Theory, PairwiseData]
@@ -79,9 +79,9 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 
 		Assert.True(this.ViewModel.DeleteCommand.CanExecute());
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
-		Assert.Empty(this.ViewModel.Categories);
+		Assert.Equal(DefaultCommissionCategoryName, Assert.Single(this.ViewModel.Categories).Name);
 		Assert.Null(this.ViewModel.SelectedCategory);
-		Assert.Empty(this.Money.Categories);
+		Assert.Single(this.Money.Categories);
 	}
 
 	[Fact]
@@ -95,9 +95,9 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.True(this.ViewModel.DeleteCommand.CanExecute());
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 
-		Assert.Equal("cat2", Assert.Single(this.ViewModel.Categories).Name);
+		Assert.Equal("cat2", Assert.Single(this.ViewModel.Categories, cat => cat.Name != DefaultCommissionCategoryName).Name);
 		Assert.Null(this.ViewModel.SelectedCategory);
-		Assert.Equal("cat2", Assert.Single(this.Money.Categories).Name);
+		Assert.Equal("cat2", Assert.Single(this.Money.Categories, cat => cat.Name != DefaultCommissionCategoryName).Name);
 	}
 
 	[Fact]
@@ -241,6 +241,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		transaction.Amount = 5;
 
 		this.ViewModel.SelectedCategories = new[] { cat1, cat2, cat3 };
+		this.ArrangeToPickClearCategoryOption();
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 
 		Assert.Null(transaction.OtherAccount);
@@ -280,7 +281,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		Assert.True(this.ViewModel.DeleteCommand.CanExecute());
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.Null(this.ViewModel.SelectedCategory);
-		Assert.Empty(this.ViewModel.Categories);
+		Assert.Equal(DefaultCommissionCategoryName, Assert.Single(this.ViewModel.Categories).Name);
 	}
 
 	[Fact]
@@ -325,6 +326,7 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 			this.ViewModel.SelectedCategories = new[] { category };
 		}
 
+		this.ArrangeToPickClearCategoryOption();
 		await this.ViewModel.DeleteCommand.ExecuteAsync();
 		Assert.DoesNotContain(this.ViewModel.Categories, cat => cat.Name == name);
 		this.DocumentViewModel.SelectedViewIndex = DocumentViewModel.SelectableViews.Banking;
@@ -339,5 +341,15 @@ public class CategoriesPanelViewModelTests : MoneyTestBase
 		BankingTransactionViewModel refreshedTransaction = ((BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(checking.Id)!).Transactions[0];
 		Assert.Equal(transaction.Memo, refreshedTransaction.Memo);
 		Assert.Equal(category.Id, refreshedTransaction.OtherAccount?.Id);
+	}
+
+	private void ArrangeToPickClearCategoryOption()
+	{
+		this.UserNotification.Presentation += (s, e) =>
+		{
+			var pickerWindowViewModel = (PickerWindowViewModel)e;
+			pickerWindowViewModel.SelectedOption = pickerWindowViewModel.Options[0];
+			pickerWindowViewModel.ProceedCommand?.Execute(null);
+		};
 	}
 }

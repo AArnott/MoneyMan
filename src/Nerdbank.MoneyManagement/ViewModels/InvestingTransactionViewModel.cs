@@ -19,6 +19,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private decimal? depositAmount;
 	private decimal? withdrawAmount;
 	private decimal? cashValue;
+	private decimal? commission;
 	private bool wasEverNonEmpty;
 
 	/// <summary>
@@ -402,6 +403,22 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
+	/// <summary>
+	/// Gets or sets the commission for this transaction.
+	/// </summary>
+	/// <remarks>
+	/// The commission is stored as an <see cref="TransactionEntryViewModel"/>,
+	/// attributed to the category identified by <see cref="ConfigurationPanelViewModel.CommissionCategory"/>.
+	/// </remarks>
+	[Range(0, double.MaxValue)]
+	public decimal? Commission
+	{
+		get => this.commission;
+		set => this.SetProperty(ref this.commission, value);
+	}
+
+	public string? CommissionFormatted => this.ThisAccount.CurrencyAsset?.Format(this.Commission);
+
 	public decimal? SimpleCurrencyImpact
 	{
 		get
@@ -444,14 +461,16 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				TransactionAction.Interest => $"+{this.DepositAmountFormatted}",
 				TransactionAction.Dividend when this.CashValue is not null => $"{this.DepositAsset?.TickerOrName} +{this.DepositAmountFormatted} ({this.CashValueFormatted})",
 				TransactionAction.Dividend => $"{this.RelatedAsset?.TickerOrName} +{this.DepositAmountFormatted}",
-				TransactionAction.Sell => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
-				TransactionAction.Buy => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName} @ {this.SimplePriceFormatted}",
+				TransactionAction.Sell => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} @ {this.SimplePriceFormatted}{CommissionString()}",
+				TransactionAction.Buy => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName} @ {this.SimplePriceFormatted}{CommissionString()}",
 				TransactionAction.Transfer => this.ThisAccount == this.DepositAccount ? $"{this.WithdrawAccount?.Name} -> {this.DepositAmountFormatted} {this.DepositAsset?.TickerOrName}" : $"{this.DepositAccount?.Name} <- {this.WithdrawAmountFormatted} {this.WithdrawAsset?.TickerOrName}",
 				TransactionAction.Deposit => $"{this.DepositAmountFormatted}",
 				TransactionAction.Withdraw => $"{this.WithdrawAmountFormatted}",
 				TransactionAction.Exchange => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName} -> {this.DepositAmount} {this.DepositAsset?.TickerOrName}",
 				_ => string.Empty,
 			};
+
+			string CommissionString() => this.Commission > 0 ? $" (-{this.CommissionFormatted})" : string.Empty;
 		}
 	}
 
@@ -564,17 +583,45 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Sell:
 			case TransactionAction.Buy:
 			case TransactionAction.Exchange:
-				if (TryEnsureEntryCount(2, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
+				int countRequired = this.Commission is null ? 2 : 3;
+				if (TryEnsureEntryCount(countRequired, this.DepositFullyInitialized && this.WithdrawFullyInitialized))
 				{
 					bool deposit = this.DepositAccount == this.ThisAccount;
-					TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
-					TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+					this.TrySortOutEntriesWithPossibleCommission(out TransactionEntryViewModel ourEntry, out TransactionEntryViewModel otherEntry, out TransactionEntryViewModel? commissionEntry);
 					ourEntry.Account = this.ThisAccount;
-					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
-					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
-					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
-					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
-					otherEntry.Amount = deposit ? -(this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
+					if (deposit)
+					{
+						otherEntry.Account = this.WithdrawAccount;
+						ourEntry.Asset = this.DepositAsset;
+						otherEntry.Asset = this.WithdrawAsset;
+						ourEntry.Amount = this.DepositAmount ?? 0;
+						otherEntry.Amount = -(this.WithdrawAmount ?? 0);
+					}
+					else
+					{
+						otherEntry.Account = this.DepositAccount;
+						ourEntry.Asset = this.WithdrawAsset;
+						otherEntry.Asset = this.DepositAsset;
+						ourEntry.Amount = -(this.WithdrawAmount ?? 0);
+						otherEntry.Amount = this.DepositAmount ?? 0;
+					}
+
+					if (this.Commission is not null)
+					{
+						Assumes.NotNull(commissionEntry);
+						commissionEntry.Account = this.ThisAccount.DocumentViewModel.ConfigurationPanel.CommissionCategory;
+						commissionEntry.Asset = this.ThisAccount.CurrencyAsset;
+						commissionEntry.Amount = -this.Commission.Value;
+
+						if (ourEntry.Asset == commissionEntry.Asset && ourEntry.Account == this.ThisAccount)
+						{
+							ourEntry.Amount -= this.Commission.Value;
+						}
+						else if (otherEntry.Asset == commissionEntry.Asset && otherEntry.Account == this.ThisAccount)
+						{
+							otherEntry.Amount -= this.Commission.Value;
+						}
+					}
 				}
 
 				break;
@@ -633,27 +680,76 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Buy:
 			case TransactionAction.ShortSale:
 			case TransactionAction.CoverShort:
-				Assumes.True(this.Entries.Count == 2, "Entries.Count is {0}", this.Entries.Count);
-				TransactionEntryViewModel ourEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[0] : this.Entries[1];
-				TransactionEntryViewModel otherEntry = this.Entries[0].Account == this.ThisAccount ? this.Entries[1] : this.Entries[0];
+				this.SortOutEntriesWithPossibleCommission(out TransactionEntryViewModel ourEntry, out TransactionEntryViewModel otherEntry, out TransactionEntryViewModel? commissionEntry);
 				bool deposit = ourEntry.Amount > 0;
-				this.DepositAmountWithValidation = Math.Abs(deposit ? ourEntry.Amount : otherEntry.Amount);
-				this.DepositAccount = deposit ? ourEntry.Account : otherEntry.Account;
-				this.DepositAsset = deposit ? ourEntry.Asset : otherEntry.Asset;
-				this.WithdrawAmountWithValidation = Math.Abs(deposit ? otherEntry.Amount : ourEntry.Amount);
-				this.WithdrawAccount = deposit ? otherEntry.Account : ourEntry.Account;
-				this.WithdrawAsset = deposit ? otherEntry.Asset : ourEntry.Asset;
+				this.Commission = -commissionEntry?.Amount;
+				if (deposit)
+				{
+					this.DepositAmountWithValidation = Math.Abs(ourEntry.Amount);
+					this.DepositAccount = ourEntry.Account;
+					this.DepositAsset = ourEntry.Asset;
+					this.WithdrawAmountWithValidation = Math.Abs(otherEntry.Amount);
+					this.WithdrawAccount = otherEntry.Account;
+					this.WithdrawAsset = otherEntry.Asset;
+				}
+				else
+				{
+					this.DepositAmountWithValidation = Math.Abs(otherEntry.Amount);
+					this.DepositAccount = otherEntry.Account;
+					this.DepositAsset = otherEntry.Asset;
+					this.WithdrawAmountWithValidation = Math.Abs(ourEntry.Amount);
+					this.WithdrawAccount = ourEntry.Account;
+					this.WithdrawAsset = ourEntry.Asset;
+				}
+
+				// Now adjust for commission.
+				if (commissionEntry is not null)
+				{
+					if (this.DepositAccount == this.ThisAccount && this.DepositAsset == commissionEntry.Asset)
+					{
+						this.DepositAmount -= commissionEntry.Amount;
+					}
+					else if (this.WithdrawAccount == this.ThisAccount && this.WithdrawAsset == commissionEntry.Asset)
+					{
+						this.WithdrawAmount += commissionEntry.Amount;
+					}
+				}
+
 				break;
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
 			case TransactionAction.Interest:
-				TransactionEntryViewModel securityAddEntry = this.Entries[0];
+				TransactionEntryViewModel? securityAddEntry = null;
+				TransactionEntryViewModel? categoryEntry = null;
+				foreach (TransactionEntryViewModel entry in this.Entries)
+				{
+					if (entry.Account?.Id == this.ThisAccount.Id)
+					{
+						if (securityAddEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with this account.");
+						}
+
+						securityAddEntry = entry;
+					}
+					else
+					{
+						if (categoryEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with another account.");
+						}
+
+						categoryEntry = entry;
+					}
+				}
+
+				Assumes.NotNull(securityAddEntry); // we wouldn't see this transaction at all if it didn't have an entry linked to this account.
 				this.DepositAccount = securityAddEntry.Account;
 				this.DepositAmountWithValidation = Math.Abs(securityAddEntry.Amount);
 				this.DepositAsset = securityAddEntry.Asset;
-				this.WithdrawAccount = null;
-				this.WithdrawAmountWithValidation = null;
-				this.WithdrawAsset = null;
+				this.WithdrawAccount = categoryEntry?.Account;
+				this.WithdrawAmountWithValidation = categoryEntry?.Amount;
+				this.WithdrawAsset = categoryEntry?.Asset;
 				break;
 			case TransactionAction.Dividend:
 				securityAddEntry = this.Entries.Count switch
@@ -701,4 +797,95 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	[DoesNotReturn]
 	private static Exception ThrowNotSimpleAction() => throw new InvalidOperationException("Not a simple operation.");
+
+	private void SortOutEntriesWithPossibleCommission([NotNull] out TransactionEntryViewModel? ourEntry, [NotNull] out TransactionEntryViewModel? otherEntry, out TransactionEntryViewModel? commissionEntry)
+	{
+		ourEntry = null;
+		otherEntry = null;
+		commissionEntry = null;
+		foreach (TransactionEntryViewModel entryViewModel in this.Entries)
+		{
+			if (entryViewModel.Account == this.ThisAccount)
+			{
+				// Two entries are allowed to reference this account.
+				if (ourEntry is null)
+				{
+					SetOnce(ref ourEntry, entryViewModel);
+				}
+				else
+				{
+					SetOnce(ref otherEntry, entryViewModel);
+				}
+			}
+			else if (entryViewModel.Account == this.ThisAccount.DocumentViewModel.ConfigurationPanel.CommissionCategory)
+			{
+				SetOnce(ref commissionEntry, entryViewModel);
+			}
+			else
+			{
+				SetOnce(ref otherEntry, entryViewModel);
+			}
+
+			void SetOnce(ref TransactionEntryViewModel? local, TransactionEntryViewModel newValue)
+			{
+				Verify.Operation(local is null, "Only one entry is allowed per account.");
+				local = newValue;
+			}
+		}
+
+		Verify.Operation(ourEntry is not null && otherEntry is not null, "Required entries not found.");
+	}
+
+	private void TrySortOutEntriesWithPossibleCommission([NotNull] out TransactionEntryViewModel? ourEntry, [NotNull] out TransactionEntryViewModel? otherEntry, out TransactionEntryViewModel? commissionEntry)
+	{
+		ourEntry = null;
+		otherEntry = null;
+		commissionEntry = null;
+
+		List<TransactionEntryViewModel> unclaimedEntries = this.Entries.ToList();
+		for (int i = unclaimedEntries.Count - 1; i >= 0; i--)
+		{
+			if (unclaimedEntries[i].Account == this.ThisAccount)
+			{
+				if (ourEntry is null)
+				{
+					Claim(ref ourEntry);
+				}
+				else if (otherEntry is null)
+				{
+					Claim(ref otherEntry);
+				}
+			}
+			else if (unclaimedEntries[i].Account == this.ThisAccount.DocumentViewModel.ConfigurationPanel.CommissionCategory)
+			{
+				Claim(ref commissionEntry);
+			}
+
+			void Claim(ref TransactionEntryViewModel? local)
+			{
+				local = unclaimedEntries[i];
+				unclaimedEntries.RemoveAt(i);
+			}
+		}
+
+		// Now assign unclaimed entries as required.
+		FillNeed(ref ourEntry);
+		FillNeed(ref otherEntry);
+		if (unclaimedEntries.Count > 0)
+		{
+			FillNeed(ref commissionEntry);
+		}
+
+		void FillNeed(ref TransactionEntryViewModel? local)
+		{
+			if (local is null)
+			{
+				Index idx = ^1;
+				local = unclaimedEntries[idx];
+				unclaimedEntries.RemoveAt(idx.GetOffset(unclaimedEntries.Count));
+			}
+		}
+
+		Verify.Operation(ourEntry is not null && otherEntry is not null, "Required entries not found.");
+	}
 }

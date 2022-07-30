@@ -3,6 +3,10 @@
 
 public class MoneyTestBase : TestBase
 {
+	public const int DefaultCategoryCount = 1;
+
+	public const string DefaultCommissionCategoryName = "Commission";
+
 	private readonly Lazy<MoneyFile> money;
 
 	public MoneyTestBase(ITestOutputHelper logger)

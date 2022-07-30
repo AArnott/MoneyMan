@@ -9,6 +9,7 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 {
 	private readonly DocumentViewModel documentViewModel;
 	private int? preferredAssetId;
+	private int? commissionAccountId;
 
 	public ConfigurationPanelViewModel(DocumentViewModel documentViewModel)
 		: base(documentViewModel.MoneyFile, documentViewModel.MoneyFile.CurrentConfiguration)
@@ -28,14 +29,24 @@ public class ConfigurationPanelViewModel : EntityViewModel<Configuration>
 		set => this.SetProperty(ref this.preferredAssetId, value?.Id);
 	}
 
+	[Required]
+	public CategoryAccountViewModel? CommissionCategory
+	{
+		get => this.documentViewModel.GetCategory(this.commissionAccountId);
+		set => this.SetProperty(ref this.commissionAccountId, value?.Id);
+	}
+
 	protected override void ApplyToCore()
 	{
 		this.Model.PreferredAssetId = this.preferredAssetId ?? 0;
+		this.Model.CommissionAccountId = this.commissionAccountId ?? 0;
 	}
 
 	protected override void CopyFromCore()
 	{
 		this.preferredAssetId = this.Model.PreferredAssetId;
 		this.OnPropertyChanged(nameof(this.PreferredAsset));
+		this.commissionAccountId = this.Model.CommissionAccountId;
+		this.OnPropertyChanged(nameof(this.CommissionCategory));
 	}
 }
