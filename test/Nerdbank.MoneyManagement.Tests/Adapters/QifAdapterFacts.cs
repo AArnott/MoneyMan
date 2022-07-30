@@ -151,7 +151,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal(new DateTime(2006, 10, 6), tx.When);
 		Assert.Equal(2, tx.SimpleAmount);
 		Assert.Equal(TransactionAction.Sell, tx.Action);
-		Assert.Equal(45.9355m, tx.SimplePrice); // 41.2655m after commission is supported
+		Assert.Equal(41.2655m, tx.SimplePrice);
 		Assert.Same(msft, tx.SimpleAsset?.Model);
 		Assert.Equal("YOU SOLD", tx.Memo);
 		Assert.Equal(9.34m, tx.Commission);
@@ -170,7 +170,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 10, 8), tx.When);
 		Assert.Equal(100, tx.SimpleAmount);
-		Assert.Equal(1.3199m, tx.SimplePrice); // 1.3999 when commision is accounted for
+		Assert.Equal(1.3999m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.ShortSale, tx.Action);
 		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
 		Assert.Equal(8, tx.Commission);
@@ -179,7 +179,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2007, 10, 26), tx.When);
 		Assert.Equal(100, tx.SimpleAmount);
-		Assert.Equal(5.7875m, tx.SimplePrice); // 5.7075 when commission is accounted for.
+		Assert.Equal(5.7075m, tx.SimplePrice);
 		Assert.Equal(TransactionAction.CoverShort, tx.Action);
 		Assert.Equal("CALL (MSQ) MICROSOFT CORP JAN 30 (100 SHS)", tx.SimpleAsset?.Name);
 		Assert.Equal(8, tx.Commission);

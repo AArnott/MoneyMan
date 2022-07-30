@@ -329,7 +329,37 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			Assert.Equal(125, tx.SimplePrice);
 			Assert.Equal(250, tx.WithdrawAmount);
 			Assert.Equal(5, tx.Commission);
-			Assert.Equal("2 MSFT @ $125.00 (-$5)", tx.Description);
+			Assert.Equal("2 MSFT @ $125.00 (-$5.00)", tx.Description);
+		});
+	}
+
+	[Fact]
+	public void Sell_WithCommission()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		tx.Action = TransactionAction.Sell;
+		tx.SimpleAsset = this.msft;
+		tx.SimpleAmount = 2; // 2 shares
+		tx.SimplePrice = 125; // $250 total
+		tx.Commission = 5;
+
+		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(this.account.Model!);
+		Assert.Equal(245, balances[this.Money.PreferredAssetId]);
+		Assert.Equal(-2, balances[this.msft.Id]);
+
+		this.AssertNowAndAfterReload(delegate
+		{
+			tx = this.account.FindTransaction(tx.TransactionId)!;
+			Assert.Equal(TransactionAction.Sell, tx.Action);
+			Assert.True(tx.IsSimplePriceApplicable);
+			Assert.True(tx.IsSimpleAssetApplicable);
+			Assert.Same(this.msft, tx.WithdrawAsset);
+			Assert.Equal(250, tx.DepositAmount);
+			Assert.Equal(2, tx.SimpleAmount);
+			Assert.Equal(125, tx.SimplePrice);
+			Assert.Equal(2, tx.WithdrawAmount);
+			Assert.Equal(5, tx.Commission);
+			Assert.Equal("2 MSFT @ $125.00 (-$5.00)", tx.Description);
 		});
 	}
 

@@ -589,17 +589,38 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					bool deposit = this.DepositAccount == this.ThisAccount;
 					this.TrySortOutEntriesWithPossibleCommission(out TransactionEntryViewModel ourEntry, out TransactionEntryViewModel otherEntry, out TransactionEntryViewModel? commissionEntry);
 					ourEntry.Account = this.ThisAccount;
-					otherEntry.Account = deposit ? this.WithdrawAccount : this.DepositAccount;
-					ourEntry.Asset = deposit ? this.DepositAsset : this.WithdrawAsset;
-					otherEntry.Asset = deposit ? this.WithdrawAsset : this.DepositAsset;
-					ourEntry.Amount = deposit ? (this.DepositAmount ?? 0) : -(this.WithdrawAmount ?? 0);
-					otherEntry.Amount = deposit ? -(this.WithdrawAmount ?? 0) : (this.DepositAmount ?? 0);
+					if (deposit)
+					{
+						otherEntry.Account = this.WithdrawAccount;
+						ourEntry.Asset = this.DepositAsset;
+						otherEntry.Asset = this.WithdrawAsset;
+						ourEntry.Amount = this.DepositAmount ?? 0;
+						otherEntry.Amount = -(this.WithdrawAmount ?? 0);
+					}
+					else
+					{
+						otherEntry.Account = this.DepositAccount;
+						ourEntry.Asset = this.WithdrawAsset;
+						otherEntry.Asset = this.DepositAsset;
+						ourEntry.Amount = -(this.WithdrawAmount ?? 0);
+						otherEntry.Amount = this.DepositAmount ?? 0;
+					}
+
 					if (this.Commission is not null)
 					{
 						Assumes.NotNull(commissionEntry);
 						commissionEntry.Account = this.ThisAccount.DocumentViewModel.ConfigurationPanel.CommissionCategory;
 						commissionEntry.Asset = this.ThisAccount.CurrencyAsset;
 						commissionEntry.Amount = -this.Commission.Value;
+
+						if (ourEntry.Asset == commissionEntry.Asset && ourEntry.Account == this.ThisAccount)
+						{
+							ourEntry.Amount -= this.Commission.Value;
+						}
+						else if (otherEntry.Asset == commissionEntry.Asset && otherEntry.Account == this.ThisAccount)
+						{
+							otherEntry.Amount -= this.Commission.Value;
+						}
 					}
 				}
 
@@ -661,12 +682,13 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.CoverShort:
 				this.SortOutEntriesWithPossibleCommission(out TransactionEntryViewModel ourEntry, out TransactionEntryViewModel otherEntry, out TransactionEntryViewModel? commissionEntry);
 				bool deposit = ourEntry.Amount > 0;
+				this.Commission = -commissionEntry?.Amount;
 				if (deposit)
 				{
 					this.DepositAmountWithValidation = Math.Abs(ourEntry.Amount);
 					this.DepositAccount = ourEntry.Account;
 					this.DepositAsset = ourEntry.Asset;
-					this.WithdrawAmountWithValidation = Math.Abs(otherEntry.Amount) + (this.Commission ?? 0);
+					this.WithdrawAmountWithValidation = Math.Abs(otherEntry.Amount);
 					this.WithdrawAccount = otherEntry.Account;
 					this.WithdrawAsset = otherEntry.Asset;
 				}
@@ -675,12 +697,24 @@ public class InvestingTransactionViewModel : TransactionViewModel
 					this.DepositAmountWithValidation = Math.Abs(otherEntry.Amount);
 					this.DepositAccount = otherEntry.Account;
 					this.DepositAsset = otherEntry.Asset;
-					this.WithdrawAmountWithValidation = Math.Abs(ourEntry.Amount) + (this.Commission ?? 0);
+					this.WithdrawAmountWithValidation = Math.Abs(ourEntry.Amount);
 					this.WithdrawAccount = ourEntry.Account;
 					this.WithdrawAsset = ourEntry.Asset;
 				}
 
-				this.Commission = -commissionEntry?.Amount;
+				// Now adjust for commission.
+				if (commissionEntry is not null)
+				{
+					if (this.DepositAccount == this.ThisAccount && this.DepositAsset == commissionEntry.Asset)
+					{
+						this.DepositAmount -= commissionEntry.Amount;
+					}
+					else if (this.WithdrawAccount == this.ThisAccount && this.WithdrawAsset == commissionEntry.Asset)
+					{
+						this.WithdrawAmount += commissionEntry.Amount;
+					}
+				}
+
 				break;
 			case TransactionAction.Add:
 			case TransactionAction.Deposit:
