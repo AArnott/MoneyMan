@@ -295,6 +295,12 @@ UPDATE Configuration SET CommissionAccountId = last_insert_rowid();
 		Assert.Equal("My commission", documentViewModel.ConfigurationPanel.CommissionCategory?.Name);
 	}
 
+	[Fact]
+	public void UpgradeFromV8()
+	{
+
+	}
+
 	private SQLiteConnection CreateDatabase(int schemaVersion)
 	{
 		SQLiteConnection connection = new(Debugger.IsAttached ? this.dbPath : ":memory:");
