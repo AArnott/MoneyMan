@@ -19,3 +19,4 @@ CREATE VIEW ListUnsoldAssets AS
 -- TODO: for purposes of UI presentation, add a filter for transaction 
 --       so that the RemainingAmount subtotal can exclude the transaction being shown,
 --       since it will have a unique column dedicated to showing (and editing) that transaction.
+-- TODO: How will tax lots work with transfers across accounts?
