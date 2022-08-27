@@ -20,3 +20,12 @@ CREATE VIEW ListUnsoldAssets AS
 --       so that the RemainingAmount subtotal can exclude the transaction being shown,
 --       since it will have a unique column dedicated to showing (and editing) that transaction.
 -- TODO: How will tax lots work with transfers across accounts?
+-- TODO: We may want to allow the user to Add shares with cost basis and purchase date information.
+-- USE CASES:
+--  * tax lots can be opened by purchase of shares
+--  * tax lots can be closed by sale of shares
+--  * tax lots can be opened by short sale
+--  * tax lots can be closed by covering a short sale
+--  * tax lots can be closed by removal of shares (without a sale)
+--  * tax lots can be opened by adding of shares (without a purchase)
+--  * tax lots must track a transfer of shares from one account to another.
