@@ -39,5 +39,6 @@ CREATE VIEW ListUnsoldAssets AS
 --  * Display unrealized losses and gains, *by account*.
 --  * Isolate tax lots to their accounts where important (401k, brokerage), but allow for transfers across accounts (crypto).
 --    We could say that tax lots are 'locked' into the account they are created inside. When shares are transferred,
---    that tax lot is closed and another created. 
---    When selecting tax lot(s) to close or take from in a transaction, only those assigned to that account are available for selection.
+--    that tax lot is closed and another created.
+--    When selecting tax lot(s) to close or take from in a transaction, only those assigned to that account 
+--    and with acquisition dates no newer than the closing date are available for selection.

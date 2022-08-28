@@ -6,28 +6,28 @@ using System.Diagnostics;
 namespace Nerdbank.MoneyManagement.Models;
 
 /// <summary>
-/// A many-to-many table for binding asset purchases to their eventual sales
-/// for purposes of tax reporting.
+/// A many-to-many table for <see cref="TransactionEntry"/> entities and the
+/// <see cref="TaxLot"/> entities that they consume.
 /// </summary>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public record TaxLotAssignment : ModelBase
 {
 	/// <summary>
-	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="TransactionEntry"/>
-	/// that acquired the tax lot.
+	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="TaxLot"/>
+	/// that is wholly or partially consumed by this assignment.
 	/// </summary>
-	public int AcquiredTransactionEntryId { get; set; }
+	public int TaxLotId { get; set; }
 
 	/// <summary>
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="TransactionEntry"/>
 	/// that dispensed with some or all of the tax lot.
 	/// </summary>
-	public int DispenseTransactionEntryId { get; set; }
+	public int ConsumingTransactionEntryId { get; set; }
 
 	/// <summary>
 	/// Gets or sets the amount dispensed.
 	/// </summary>
 	public decimal Amount { get; set; }
 
-	private string? DebuggerDisplay => $"A: {this.AcquiredTransactionEntryId} -> D: {this.DispenseTransactionEntryId}: {this.Amount}";
+	private string? DebuggerDisplay => $"TL: {this.TaxLotId} TE: {this.ConsumingTransactionEntryId}: {this.Amount}";
 }
