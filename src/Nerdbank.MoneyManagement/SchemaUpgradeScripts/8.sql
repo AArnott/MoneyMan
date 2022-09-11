@@ -1,7 +1,9 @@
 ﻿CREATE TABLE "TaxLot" (
 	"Id"                         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	"CreatingTransactionEntryId" INTEGER NOT NULL REFERENCES "TransactionEntry"("Id") ON DELETE CASCADE,
-	"AcquiredDate"               INTEGER -- when null, use the TransactionEntry's date
+	"AcquiredDate"               INTEGER, -- when null, use the TransactionEntry's date
+	"CostBasisAmount"            REAL,
+	"CostBasisAssetId"           REAL
 );
 
 CREATE TABLE "TaxLotAssignment" (
