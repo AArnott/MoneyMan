@@ -18,8 +18,8 @@ public class DocumentViewModelTests : MoneyTestBase
 			new Account { Name = "Cat1", Type = Account.AccountType.Category },
 		});
 		DocumentViewModel documentViewModel = new(this.Money);
-		Assert.Contains(documentViewModel.BankingPanel?.Accounts, acct => acct.Name == "Checking");
-		Assert.Contains(documentViewModel.CategoriesPanel?.Categories, cat => cat.Name == "Cat1");
+		Assert.Contains(documentViewModel.BankingPanel.Accounts, acct => acct.Name == "Checking");
+		Assert.Contains(documentViewModel.CategoriesPanel.Categories, cat => cat.Name == "Cat1");
 	}
 
 	[Fact]
@@ -45,7 +45,7 @@ public class DocumentViewModelTests : MoneyTestBase
 	public void NewFileGetsDefaultCategories()
 	{
 		DocumentViewModel documentViewModel = DocumentViewModel.CreateNew(MoneyFile.Load(":memory:"));
-		Assert.Contains(documentViewModel.CategoriesPanel!.Categories, cat => cat.Name == "Groceries");
+		Assert.Contains(documentViewModel.CategoriesPanel.Categories, cat => cat.Name == "Groceries");
 	}
 
 	[Fact]
