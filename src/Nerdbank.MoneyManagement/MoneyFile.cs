@@ -594,6 +594,15 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 
 	internal List<TransactionEntry> GetTransactionEntries(int transactionId) => this.TransactionEntries.Where(te => te.TransactionId == transactionId).ToList();
 
+	internal (int AccountId, int TransactionId) GetTransactionEntryOwnership(int transactionEntryId)
+	{
+		return (
+			from te in this.TransactionEntries
+			where te.Id == transactionEntryId
+			join t in this.Transactions on te.TransactionId equals t.Id
+			select (te.AccountId, t.Id)).First();
+	}
+
 	/// <summary>
 	/// Gets a list of IDs to the accounts whose ledgers would display any transactions with the given IDs.
 	/// </summary>
