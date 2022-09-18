@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace Nerdbank.MoneyManagement.Models;
+namespace Nerdbank.MoneyManagement;
 
 /// <summary>
 /// An entity to track tax lot information.

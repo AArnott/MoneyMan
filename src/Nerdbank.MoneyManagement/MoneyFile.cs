@@ -174,6 +174,24 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	public TableQuery<TaxLot> TaxLots
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<TaxLot>();
+		}
+	}
+
+	public TableQuery<TaxLotAssignment> TaxLotAssignments
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<TaxLotAssignment>();
+		}
+	}
+
 	public TableQuery<Account> Categories
 	{
 		get

@@ -48,6 +48,14 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public AccountViewModel ThisAccount => this.parent.ThisAccount;
 
+	/// <summary>
+	/// Gets or sets the tax lot created by this entry, if any.
+	/// </summary>
+	/// <remarks>
+	/// Only an <see cref="TransactionEntryViewModel"/> that opens a position (e.g. buy, add, short sale, etc.) should have created a tax lot.
+	/// </remarks>
+	public TaxLotViewModel? CreatedTaxLot { get; set; }
+
 	/// <inheritdoc cref="TransactionEntry.OfxFitId"/>
 	public string? OfxFitId
 	{

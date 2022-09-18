@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace Nerdbank.MoneyManagement.Models;
+namespace Nerdbank.MoneyManagement;
 
 /// <summary>
 /// A many-to-many table for <see cref="TransactionEntry"/> entities and the
