@@ -26,7 +26,7 @@ public record TaxLot : ModelBase
 
 	/// <summary>
 	/// Gets or sets the amount of the asset specified by <see cref="CostBasisAssetId"/> that was either
-	/// used to purchase this lot or was paid as income for the value of the asset when it was received.
+	/// used to purchase this lot or was the assessed value of the asset when it was received.
 	/// </summary>
 	public decimal? CostBasisAmount { get; set; }
 
