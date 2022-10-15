@@ -9,10 +9,16 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 {
 	private readonly DocumentViewModel documentViewModel;
 
-	public TaxLotViewModel(DocumentViewModel documentViewModel, TaxLot? model = null)
+	public TaxLotViewModel(DocumentViewModel documentViewModel, TransactionEntryViewModel creatingTransactionEntry, TaxLot? model = null)
 		: base(documentViewModel.MoneyFile, model)
 	{
 		this.documentViewModel = documentViewModel;
+		this.CreatingTransactionEntry = creatingTransactionEntry;
+		if (model is null)
+		{
+			this.Model.CreatingTransactionEntryId = creatingTransactionEntry.Id;
+		}
+
 		this.CopyFrom(this.Model);
 	}
 
@@ -22,7 +28,7 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 
 	public Asset? CostBasisAsset { get; set; }
 
-	public TransactionEntryViewModel? CreatingTransactionEntry { get; set; }
+	public TransactionEntryViewModel CreatingTransactionEntry { get; }
 
 	public override bool IsReadyToSave => base.IsReadyToSave && this.CreatingTransactionEntry is not null;
 
@@ -41,6 +47,6 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 		this.CostBasisAmount = this.Model.CostBasisAmount;
 		this.CostBasisAsset = this.documentViewModel.GetAsset(this.Model.CostBasisAssetId);
 		this.AcquiredDate = this.Model.AcquiredDate;
-		this.CreatingTransactionEntry = this.Model.CreatingTransactionEntryId > 0 ? this.documentViewModel.GetTransactionEntry(this.Model.CreatingTransactionEntryId) : null;
+		Assumes.True(this.CreatingTransactionEntry.Id == this.Model.CreatingTransactionEntryId);
 	}
 }

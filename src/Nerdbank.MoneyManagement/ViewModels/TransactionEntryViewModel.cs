@@ -4,6 +4,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using Microsoft;
+using Nerdbank.Qif;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
@@ -17,6 +18,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	private decimal amount;
 	private AssetViewModel? asset;
 	private ClearedState cleared;
+	private TaxLotViewModel? createdTaxLot;
 
 	public TransactionEntryViewModel(TransactionViewModel parent, TransactionEntry? model = null)
 		: base(parent.ThisAccount.MoneyFile, model)
@@ -34,7 +36,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		};
 	}
 
-	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted;
+	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted && this.CreatedTaxLot?.IsReadyToSave is not false;
 
 	public bool IsReadyToSaveIsolated => base.IsReadyToSave && !this.IsApplyingToModel;
 
@@ -49,12 +51,25 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	public AccountViewModel ThisAccount => this.parent.ThisAccount;
 
 	/// <summary>
-	/// Gets or sets the tax lot created by this entry, if any.
+	/// Gets the tax lot created by this entry, if any.
 	/// </summary>
 	/// <remarks>
 	/// Only an <see cref="TransactionEntryViewModel"/> that opens a position (e.g. buy, add, short sale, etc.) should have created a tax lot.
 	/// </remarks>
-	public TaxLotViewModel? CreatedTaxLot { get; set; }
+	public TaxLotViewModel? CreatedTaxLot
+	{
+		get
+		{
+			if (!this.IsTaxLotCreationAppropriate)
+			{
+				// Return null if no tax lot should be created, even if we have a non-null field,
+				// because we'll clear that field and delete the row in the database when we save.
+				return null;
+			}
+
+			return this.createdTaxLot ??= this.LoadOrCreateTaxLot();
+		}
+	}
 
 	/// <inheritdoc cref="TransactionEntry.OfxFitId"/>
 	public string? OfxFitId
@@ -104,6 +119,8 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	}
 
 	protected DocumentViewModel DocumentViewModel => this.ThisAccount.DocumentViewModel;
+
+	private bool IsTaxLotCreationAppropriate => this.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale };
 
 	private string DebuggerDisplay => $"TransactionEntry: ({this.Id}): {this.Memo} {this.Account?.Name} {this.Amount}";
 
@@ -155,6 +172,22 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.Model.AssetId = this.Asset.Id;
 		this.Model.Cleared = this.Cleared;
 		this.Model.OfxFitId = this.OfxFitId;
+
+		if (this.createdTaxLot is not null)
+		{
+			// If creating a tax lot is appropriate, we'll save it later in our OnSaved event handler, where *this* entity is sure to have an assigned ID.
+			if (!this.IsTaxLotCreationAppropriate)
+			{
+				this.MoneyFile.Delete(this.createdTaxLot.Model);
+				this.createdTaxLot = null;
+			}
+		}
+	}
+
+	protected override void OnSaved()
+	{
+		base.OnSaved();
+		this.createdTaxLot?.Save();
 	}
 
 	protected override void CopyFromCore()
@@ -192,4 +225,23 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	/// iff <see cref="Account"/> (the account it applies to) is set to any account other than <see cref="ThisAccount"/>.
 	/// </remarks>
 	private decimal NegateAmountIfAppropriate(decimal amount) => this.Account == this.ThisAccount ? amount : -amount;
+
+	private TaxLotViewModel LoadOrCreateTaxLot()
+	{
+		Assumes.True(this.IsTaxLotCreationAppropriate);
+
+		if (this.createdTaxLot is null)
+		{
+			// Try loading it in case it exists in the database.
+			TaxLot? taxLot = this.MoneyFile.TaxLots.SingleOrDefault(lot => lot.CreatingTransactionEntryId == this.Id);
+			if (taxLot is null)
+			{
+				taxLot = new() { CreatingTransactionEntryId = this.Id };
+			}
+
+			this.createdTaxLot = new(this.DocumentViewModel, this, taxLot);
+		}
+
+		return this.createdTaxLot;
+	}
 }

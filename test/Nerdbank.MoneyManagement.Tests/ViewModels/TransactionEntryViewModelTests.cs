@@ -4,9 +4,11 @@
 public class TransactionEntryViewModelTests : MoneyTestBase
 {
 	private BankingAccountViewModel checkingAccount;
+	private InvestingAccountViewModel brokerageAccount;
 	private CategoryAccountViewModel spendingCategory;
-	private BankingTransactionViewModel transaction;
-	private TransactionEntryViewModel viewModel;
+	private BankingTransactionViewModel bankingTransaction;
+	private TransactionEntryViewModel bankingViewModel;
+	private AssetViewModel msft;
 
 	private decimal amount = 5.5m;
 	private string ofxFitId = "someFitId";
@@ -15,10 +17,15 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	public TransactionEntryViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.spendingCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("Spending");
-		this.transaction = this.checkingAccount.NewTransaction();
-		this.viewModel = this.transaction.NewSplit();
+		this.msft = this.DocumentViewModel.AssetsPanel.NewAsset("Microsoft", "MSFT");
+
+		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		this.bankingTransaction = this.checkingAccount.NewTransaction();
+		this.bankingViewModel = this.bankingTransaction.NewSplit();
+
+		this.brokerageAccount = this.DocumentViewModel.AccountsPanel.NewInvestingAccount("Brokerage");
+
 		this.EnableSqlLogging();
 	}
 
@@ -26,71 +33,130 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	public void OfxFitId()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
-			this.viewModel,
-			() => this.viewModel.OfxFitId = this.ofxFitId,
-			nameof(this.viewModel.OfxFitId));
-		Assert.Equal(this.ofxFitId, this.viewModel.OfxFitId);
+			this.bankingViewModel,
+			() => this.bankingViewModel.OfxFitId = this.ofxFitId,
+			nameof(this.bankingViewModel.OfxFitId));
+		Assert.Equal(this.ofxFitId, this.bankingViewModel.OfxFitId);
 	}
 
 	[Fact]
 	public void Amount()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
-			this.viewModel,
-			() => this.viewModel.Amount = this.amount,
-			nameof(this.viewModel.Amount));
-		Assert.Equal(this.amount, this.viewModel.Amount);
+			this.bankingViewModel,
+			() => this.bankingViewModel.Amount = this.amount,
+			nameof(this.bankingViewModel.Amount));
+		Assert.Equal(this.amount, this.bankingViewModel.Amount);
 	}
 
 	[Fact]
 	public void Category()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
-			this.viewModel,
-			() => this.viewModel.Account = this.spendingCategory,
-			nameof(this.viewModel.Account));
-		Assert.Equal(this.spendingCategory, this.viewModel.Account);
+			this.bankingViewModel,
+			() => this.bankingViewModel.Account = this.spendingCategory,
+			nameof(this.bankingViewModel.Account));
+		Assert.Equal(this.spendingCategory, this.bankingViewModel.Account);
 	}
 
 	[Fact]
 	public void AvailableTransactionTargets()
 	{
-		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.DocumentViewModel.SplitCategory);
-		Assert.DoesNotContain(this.viewModel.AvailableTransactionTargets, tt => tt == this.viewModel.ThisAccount);
-		Assert.NotEmpty(this.viewModel.AvailableTransactionTargets);
+		Assert.DoesNotContain(this.bankingViewModel.AvailableTransactionTargets, tt => tt == this.DocumentViewModel.SplitCategory);
+		Assert.DoesNotContain(this.bankingViewModel.AvailableTransactionTargets, tt => tt == this.bankingViewModel.ThisAccount);
+		Assert.NotEmpty(this.bankingViewModel.AvailableTransactionTargets);
 	}
 
 	[Fact]
 	public void Memo()
 	{
 		TestUtilities.AssertPropertyChangedEvent(
-			this.viewModel,
-			() => this.viewModel.Memo = this.memo,
-			nameof(this.viewModel.Memo));
-		Assert.Equal(this.memo, this.viewModel.Memo);
+			this.bankingViewModel,
+			() => this.bankingViewModel.Memo = this.memo,
+			nameof(this.bankingViewModel.Memo));
+		Assert.Equal(this.memo, this.bankingViewModel.Memo);
+	}
+
+	[Fact]
+	public void CreatedTaxLot_BankingAccount()
+	{
+		Assert.Null(this.bankingViewModel.CreatedTaxLot);
+	}
+
+	[Fact]
+	public void CreatedTaxLot_InvestingAccount_Remove()
+	{
+		InvestingTransactionViewModel tx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Remove,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAsset = this.msft,
+			WithdrawAmount = 1,
+		};
+
+		Assert.Null(tx.Entries[0].CreatedTaxLot);
+	}
+
+	[Fact]
+	public void CreatedTaxLot_InvestingAccount_Add()
+	{
+		InvestingTransactionViewModel tx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+		};
+
+		TransactionEntryViewModel entry = tx.Entries[0];
+		Assert.NotNull(entry.CreatedTaxLot);
+		Assert.Same(entry, entry.CreatedTaxLot.CreatingTransactionEntry);
+
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == entry.CreatedTaxLot.Id));
+	}
+
+	[Fact]
+	public void CreatedTaxLot_InvestingAccount_ErasedWithChange()
+	{
+		InvestingTransactionViewModel tx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+		};
+
+		TransactionEntryViewModel entry = tx.Entries[0];
+		Assert.NotNull(entry.CreatedTaxLot);
+		int taxLotId = entry.CreatedTaxLot.Id;
+
+		// Verify that after an entry with a tax lot changes to one that shouldn't have a tax lot, the tax lot should be deleted.
+		tx.Action = TransactionAction.Remove;
+		Assert.Null(entry.CreatedTaxLot);
+		Assert.Empty(this.Money.TaxLots.Where(tl => tl.Id == taxLotId));
 	}
 
 	[Fact]
 	public void ApplyTo()
 	{
-		this.viewModel.Account = this.spendingCategory;
-		this.viewModel.Amount = this.amount;
-		this.viewModel.Asset = this.DocumentViewModel.DefaultCurrency;
-		this.viewModel.Memo = this.memo;
-		this.viewModel.Cleared = ClearedState.Cleared;
-		this.viewModel.OfxFitId = this.ofxFitId;
-		this.viewModel.ApplyToModel();
+		this.bankingViewModel.Account = this.spendingCategory;
+		this.bankingViewModel.Amount = this.amount;
+		this.bankingViewModel.Asset = this.DocumentViewModel.DefaultCurrency;
+		this.bankingViewModel.Memo = this.memo;
+		this.bankingViewModel.Cleared = ClearedState.Cleared;
+		this.bankingViewModel.OfxFitId = this.ofxFitId;
+		this.bankingViewModel.ApplyToModel();
 
-		Assert.Equal(-this.amount, this.viewModel.Model.Amount);
-		Assert.Equal(this.memo, this.viewModel.Model.Memo);
-		Assert.Equal(ClearedState.Cleared, this.viewModel.Model.Cleared);
-		Assert.Equal(this.ofxFitId, this.viewModel.Model.OfxFitId);
+		Assert.Equal(-this.amount, this.bankingViewModel.Model.Amount);
+		Assert.Equal(this.memo, this.bankingViewModel.Model.Memo);
+		Assert.Equal(ClearedState.Cleared, this.bankingViewModel.Model.Cleared);
+		Assert.Equal(this.ofxFitId, this.bankingViewModel.Model.OfxFitId);
 	}
 
 	[Fact]
 	public void CopyFrom()
 	{
-		Assert.Throws<ArgumentNullException>("model", () => this.viewModel.CopyFrom(null!));
+		Assert.Throws<ArgumentNullException>("model", () => this.bankingViewModel.CopyFrom(null!));
 
 		TransactionEntry splitTransaction = new()
 		{
@@ -102,16 +168,16 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 			Cleared = ClearedState.Cleared,
 		};
 
-		this.viewModel.CopyFrom(splitTransaction);
+		this.bankingViewModel.CopyFrom(splitTransaction);
 
-		Assert.Equal(-splitTransaction.Amount, this.viewModel.Amount);
-		Assert.Equal(splitTransaction.Memo, this.viewModel.Memo);
-		Assert.Equal(this.spendingCategory.Id, this.viewModel.Account?.Id);
-		Assert.Equal(this.ofxFitId, this.viewModel.OfxFitId);
-		Assert.Equal(ClearedState.Cleared, this.viewModel.Cleared);
+		Assert.Equal(-splitTransaction.Amount, this.bankingViewModel.Amount);
+		Assert.Equal(splitTransaction.Memo, this.bankingViewModel.Memo);
+		Assert.Equal(this.spendingCategory.Id, this.bankingViewModel.Account?.Id);
+		Assert.Equal(this.ofxFitId, this.bankingViewModel.OfxFitId);
+		Assert.Equal(ClearedState.Cleared, this.bankingViewModel.Cleared);
 
 		splitTransaction.AccountId = 0;
-		this.viewModel.CopyFrom(splitTransaction);
-		Assert.Null(this.viewModel.Account);
+		this.bankingViewModel.CopyFrom(splitTransaction);
+		Assert.Null(this.bankingViewModel.Account);
 	}
 }

@@ -7,12 +7,20 @@ public class TaxLotViewModelTests : MoneyTestBase
 {
 	private InvestingAccountViewModel brokerageAccount;
 	private AssetViewModel someAsset;
+	private InvestingTransactionViewModel transaction;
+	private TransactionEntryViewModel entry;
 
 	public TaxLotViewModelTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.brokerageAccount = this.DocumentViewModel.AccountsPanel.NewInvestingAccount("Brokerage");
 		this.someAsset = this.DocumentViewModel.AssetsPanel.NewAsset("Microsoft", "MSFT");
+		this.brokerageAccount = this.DocumentViewModel.AccountsPanel.NewInvestingAccount("Brokerage");
+		this.transaction = this.brokerageAccount.NewTransaction();
+		this.transaction.Action = TransactionAction.Add;
+		this.transaction.DepositAsset = this.someAsset;
+		this.transaction.DepositAmount = 1;
+		this.transaction.DepositAccount = this.brokerageAccount;
+		this.entry = this.transaction.Entries.Single();
 	}
 
 	[Fact]
@@ -22,12 +30,11 @@ public class TaxLotViewModelTests : MoneyTestBase
 		TransactionEntryViewModel txEntry = this.CreateBuyTransactionEntry(acquired);
 		Asset currency = this.DocumentViewModel.ConfigurationPanel.PreferredAsset ?? throw Assumes.Fail(null);
 
-		TaxLotViewModel viewModel = new(this.DocumentViewModel)
+		TaxLotViewModel viewModel = new(this.DocumentViewModel, txEntry)
 		{
 			CostBasisAmount = 15.35m,
 			CostBasisAsset = currency,
 			AcquiredDate = acquired,
-			CreatingTransactionEntry = txEntry,
 		};
 		viewModel.ApplyToModel();
 		Assert.Equal(15.35m, viewModel.Model.CostBasisAmount);
@@ -44,8 +51,9 @@ public class TaxLotViewModelTests : MoneyTestBase
 		{
 			CostBasisAmount = 12.34m,
 			CostBasisAssetId = asset.Id,
+			CreatingTransactionEntryId = this.entry.Id,
 		};
-		TaxLotViewModel viewModel = new(this.DocumentViewModel, taxLot);
+		TaxLotViewModel viewModel = new(this.DocumentViewModel, this.entry, taxLot);
 		Assert.Equal(12.34m, viewModel.CostBasisAmount);
 		Assert.Same(asset, viewModel.CostBasisAsset);
 	}
@@ -64,7 +72,7 @@ public class TaxLotViewModelTests : MoneyTestBase
 			AcquiredDate = acquired,
 			CreatingTransactionEntryId = txEntry.Id,
 		};
-		TaxLotViewModel viewModel = new(this.DocumentViewModel);
+		TaxLotViewModel viewModel = new(this.DocumentViewModel, txEntry);
 		viewModel.CopyFrom(taxLot);
 		Assert.Equal(12.34m, viewModel.CostBasisAmount);
 		Assert.Same(currency, viewModel.CostBasisAsset);

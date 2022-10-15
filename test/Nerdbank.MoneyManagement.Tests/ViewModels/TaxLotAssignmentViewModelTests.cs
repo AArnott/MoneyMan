@@ -25,7 +25,7 @@ public class TaxLotAssignmentViewModelTests : MoneyTestBase
 		{
 			Amount = 2,
 			ConsumingTransactionEntry = sellTe,
-			TaxLot = buyTe.CreatedTaxLot,
+			TaxLotId = buyTe.CreatedTaxLot.Id,
 		};
 		viewModel.ApplyToModel();
 		Assert.Equal(2, viewModel.Model.Amount);
@@ -49,7 +49,7 @@ public class TaxLotAssignmentViewModelTests : MoneyTestBase
 		viewModel.CopyFrom(model);
 		Assert.Equal(2, viewModel.Amount);
 		Assert.Same(sellTe, viewModel.ConsumingTransactionEntry);
-		Assert.Same(buyTe.CreatedTaxLot, viewModel.TaxLot);
+		Assert.Equal(buyTe.CreatedTaxLot.Id, viewModel.TaxLotId);
 	}
 
 	private TransactionEntryViewModel CreateBuyTransactionEntry(DateTime acquired)

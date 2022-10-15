@@ -14,23 +14,27 @@ public class TaxLotAssignmentViewModel : EntityViewModel<TaxLotAssignment>
 	}
 
 	/// <inheritdoc cref="TaxLotAssignment.TaxLotId" />
-	public TaxLot? TaxLot { get; set; }
+	public int? TaxLotId { get; set; }
 
 	/// <inheritdoc cref="TaxLotAssignment.ConsumingTransactionEntryId" />
-	public TransactionEntry? ConsumingTransactionEntry { get; set; }
+	public TransactionEntryViewModel? ConsumingTransactionEntry { get; set; }
 
 	/// <inheritdoc cref="TaxLotAssignment.Amount" />
 	public decimal Amount { get; set; }
 
-	public override bool IsReadyToSave => base.IsReadyToSave && this.TaxLot is not null && this.ConsumingTransactionEntry is not null;
+	public override bool IsReadyToSave => base.IsReadyToSave && this.TaxLotId is not null && this.ConsumingTransactionEntry is not null;
 
 	protected override void ApplyToCore()
 	{
-		throw new NotImplementedException();
+		this.Model.TaxLotId = this.TaxLotId!.Value;
+		this.Model.Amount = this.Amount;
+		this.Model.ConsumingTransactionEntryId = this.ConsumingTransactionEntry!.Id;
 	}
 
 	protected override void CopyFromCore()
 	{
-		throw new NotImplementedException();
+		this.TaxLotId = this.Model.TaxLotId;
+		this.Amount = this.Model.Amount;
+		this.ConsumingTransactionEntry = this.documentViewModel.GetTransactionEntry(this.Model.ConsumingTransactionEntryId);
 	}
 }
