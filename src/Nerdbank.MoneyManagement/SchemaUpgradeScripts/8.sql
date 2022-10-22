@@ -10,7 +10,8 @@ CREATE TABLE "TaxLotAssignment" (
 	"Id"                          INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	"TaxLotId"                    INTEGER NOT NULL REFERENCES "TaxLot"("Id") ON DELETE CASCADE,
 	"ConsumingTransactionEntryId" INTEGER NOT NULL REFERENCES "TransactionEntry"("Id") ON DELETE CASCADE,
-	"Amount"                      REAL NOT NULL
+	"Amount"                      REAL NOT NULL,
+	"Pinned"                      INTEGER NOT NULL DEFAULT(0)
 );
 
 CREATE INDEX "TaxLotAssignment_EntryIds" ON [TaxLotAssignment]("AcquiredTransactionEntryId", "DispenseTransactionEntryId");

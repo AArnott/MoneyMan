@@ -22,6 +22,9 @@ public class TaxLotAssignmentViewModel : EntityViewModel<TaxLotAssignment>
 	/// <inheritdoc cref="TaxLotAssignment.Amount" />
 	public decimal Amount { get; set; }
 
+	/// <inheritdoc cref="TaxLotAssignment.Pinned"/>
+	public bool Pinned { get; set; }
+
 	public override bool IsReadyToSave => base.IsReadyToSave && this.TaxLotId is not null && this.ConsumingTransactionEntry is not null;
 
 	protected override void ApplyToCore()
@@ -29,6 +32,7 @@ public class TaxLotAssignmentViewModel : EntityViewModel<TaxLotAssignment>
 		this.Model.TaxLotId = this.TaxLotId!.Value;
 		this.Model.Amount = this.Amount;
 		this.Model.ConsumingTransactionEntryId = this.ConsumingTransactionEntry!.Id;
+		this.Model.Pinned = this.Pinned;
 	}
 
 	protected override void CopyFromCore()
@@ -36,5 +40,6 @@ public class TaxLotAssignmentViewModel : EntityViewModel<TaxLotAssignment>
 		this.TaxLotId = this.Model.TaxLotId;
 		this.Amount = this.Model.Amount;
 		this.ConsumingTransactionEntry = this.documentViewModel.GetTransactionEntry(this.Model.ConsumingTransactionEntryId);
+		this.Pinned = this.Model.Pinned;
 	}
 }

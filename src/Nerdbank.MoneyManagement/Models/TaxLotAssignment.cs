@@ -29,5 +29,14 @@ public record TaxLotAssignment : ModelBase
 	/// </summary>
 	public decimal Amount { get; set; }
 
+	/// <summary>
+	/// Gets or sets a value indicating whether the user explicitly chose to consume from this tax lot.
+	/// </summary>
+	/// <remarks>
+	/// This value can be useful when tax lot assignments must be recomputed (e.g. a tax lot was removed entirely)
+	/// and we want to preserve the explicit assignments but reorganize the implicit ones.
+	/// </remarks>
+	public bool Pinned { get; set; }
+
 	private string? DebuggerDisplay => $"TL: {this.TaxLotId} TE: {this.ConsumingTransactionEntryId}: {this.Amount}";
 }

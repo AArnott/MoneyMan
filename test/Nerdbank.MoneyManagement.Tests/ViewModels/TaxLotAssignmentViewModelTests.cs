@@ -26,11 +26,13 @@ public class TaxLotAssignmentViewModelTests : MoneyTestBase
 			Amount = 2,
 			ConsumingTransactionEntry = sellTe,
 			TaxLotId = buyTe.CreatedTaxLot.Id,
+			Pinned = true,
 		};
 		viewModel.ApplyToModel();
-		Assert.Equal(2, viewModel.Model.Amount);
+		Assert.Equal(viewModel.Amount, viewModel.Model.Amount);
 		Assert.Equal(sellTe.Id, viewModel.Model.ConsumingTransactionEntryId);
 		Assert.Equal(buyTe.CreatedTaxLot.Id, viewModel.Model.TaxLotId);
+		Assert.Equal(viewModel.Pinned, viewModel.Model.Pinned);
 	}
 
 	[Fact]
@@ -44,12 +46,14 @@ public class TaxLotAssignmentViewModelTests : MoneyTestBase
 			Amount = 2,
 			ConsumingTransactionEntryId = sellTe.Id,
 			TaxLotId = buyTe.CreatedTaxLot.Id,
+			Pinned = true,
 		};
 		TaxLotAssignmentViewModel viewModel = new(this.DocumentViewModel);
 		viewModel.CopyFrom(model);
-		Assert.Equal(2, viewModel.Amount);
+		Assert.Equal(model.Amount, viewModel.Amount);
 		Assert.Same(sellTe, viewModel.ConsumingTransactionEntry);
 		Assert.Equal(buyTe.CreatedTaxLot.Id, viewModel.TaxLotId);
+		Assert.Equal(model.Pinned, viewModel.Pinned);
 	}
 
 	private TransactionEntryViewModel CreateBuyTransactionEntry(DateTime acquired)
