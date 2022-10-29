@@ -50,6 +50,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Requires.NotNull(connection, nameof(connection));
 		this.connection = connection;
 
+		this.TaxLotBookKeeping = new(this);
 		this.CurrentConfiguration = this.connection.Table<Configuration>().First();
 		this.Action = new TransactionOperations(this);
 	}
@@ -204,6 +205,17 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	public int PreferredAssetId => this.CurrentConfiguration.PreferredAssetId;
 
 	public bool IsDisposed => this.connection.Handle is null;
+
+	internal TableQuery<UnsoldAsset> UnsoldAssets
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<UnsoldAsset>();
+		}
+	}
+
+	internal TaxLotBookKeeping TaxLotBookKeeping { get; }
 
 	internal Configuration CurrentConfiguration { get; }
 

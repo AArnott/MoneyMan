@@ -153,6 +153,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 				if (!wasPersisted[i])
 				{
 					entries[i].OnPropertyChanged(nameof(IsPersisted));
+					entries[i].MoneyFile.TaxLotBookKeeping.UpdateLotAssignments(entries[i]);
 				}
 			}
 		}

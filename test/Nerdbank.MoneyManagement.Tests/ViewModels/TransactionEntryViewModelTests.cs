@@ -137,6 +137,121 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Remove_ConsumedTaxLot_PartialEachTime()
+	{
+		InvestingTransactionViewModel addTx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+		};
+
+		TransactionEntryViewModel addEntry = addTx.Entries[0];
+		Assert.NotNull(addEntry.CreatedTaxLot);
+		int taxLotId = addEntry.CreatedTaxLot.Id;
+
+		InvestingTransactionViewModel removeTx1 = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Remove,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAsset = this.msft,
+			WithdrawAmount = 0.5m,
+		};
+
+		TransactionEntryViewModel removeEntry1 = removeTx1.Entries[0];
+		TaxLotAssignment consumingAssignment1 = Assert.Single(this.Money.TaxLotAssignments.Where(tla => tla.TaxLotId == taxLotId && tla.ConsumingTransactionEntryId == removeEntry1.Id));
+		Assert.False(consumingAssignment1.Pinned);
+
+		// Remove more
+		InvestingTransactionViewModel removeTx2 = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Remove,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAsset = this.msft,
+			WithdrawAmount = 0.5m,
+		};
+
+		TransactionEntryViewModel removeEntry2 = removeTx2.Entries[0];
+		TaxLotAssignment consumingAssignment2 = Assert.Single(this.Money.TaxLotAssignments.Where(tla => tla.TaxLotId == taxLotId && tla.ConsumingTransactionEntryId == removeEntry2.Id));
+		Assert.False(consumingAssignment2.Pinned);
+	}
+
+	[Fact]
+	public void Remove_ConsumedTaxLot_MultipleAtOnce()
+	{
+		InvestingTransactionViewModel addTx1 = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+		};
+
+		TransactionEntryViewModel addEntry1 = addTx1.Entries[0];
+		Assert.NotNull(addEntry1.CreatedTaxLot);
+		int taxLotId1 = addEntry1.CreatedTaxLot.Id;
+		Assert.NotEqual(0, taxLotId1);
+
+		InvestingTransactionViewModel addTx2 = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 2,
+		};
+
+		TransactionEntryViewModel addEntry2 = addTx2.Entries[0];
+		Assert.NotNull(addEntry2.CreatedTaxLot);
+		int taxLotId2 = addEntry2.CreatedTaxLot.Id;
+
+		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Remove,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAsset = this.msft,
+			WithdrawAmount = 2.5m,
+		};
+
+		TransactionEntryViewModel removeEntry = removeTx.Entries[0];
+		Assert.Equal(2, this.Money.TaxLotAssignments.Count());
+		TaxLotAssignment consumingAssignment1 = this.Money.TaxLotAssignments.Single(tla => tla.TaxLotId == taxLotId1 && tla.ConsumingTransactionEntryId == removeEntry.Id);
+		TaxLotAssignment consumingAssignment2 = this.Money.TaxLotAssignments.Single(tla => tla.TaxLotId == taxLotId2 && tla.ConsumingTransactionEntryId == removeEntry.Id);
+		Assert.False(consumingAssignment1.Pinned);
+		Assert.False(consumingAssignment2.Pinned);
+		Assert.Equal(addTx1.DepositAmount, consumingAssignment1.Amount);
+		Assert.Equal(addTx2.DepositAmount, consumingAssignment2.Amount);
+	}
+
+	[Fact]
+	public void Remove_MoreThanWeHaveTaxLotsFor()
+	{
+		InvestingTransactionViewModel addTx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+		};
+
+		TransactionEntryViewModel addEntry = addTx.Entries[0];
+		Assert.NotNull(addEntry.CreatedTaxLot);
+		int taxLotId = addEntry.CreatedTaxLot.Id;
+
+		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Remove,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAsset = this.msft,
+			WithdrawAmount = 2,
+		};
+
+		TransactionEntryViewModel removeEntry = removeTx.Entries[0];
+		TaxLotAssignment tla = Assert.Single(this.Money.TaxLotAssignments.Where(tla => tla.TaxLotId == taxLotId && tla.ConsumingTransactionEntryId == removeEntry.Id));
+		Assert.Equal(addTx.DepositAmount, tla.Amount);
+	}
+
+	[Fact]
 	public void ApplyTo()
 	{
 		this.bankingViewModel.Account = this.spendingCategory;

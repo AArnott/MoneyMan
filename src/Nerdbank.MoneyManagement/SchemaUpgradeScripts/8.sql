@@ -14,15 +14,26 @@ CREATE TABLE "TaxLotAssignment" (
 	"Pinned"                      INTEGER NOT NULL DEFAULT(0)
 );
 
-CREATE INDEX "TaxLotAssignment_EntryIds" ON [TaxLotAssignment]("AcquiredTransactionEntryId", "DispenseTransactionEntryId");
+CREATE INDEX "TaxLotAssignment_ConsumingTransactionEntryId" ON [TaxLotAssignment]("ConsumingTransactionEntryId");
+CREATE INDEX "TaxLotAssignment_TaxLotId" ON [TaxLotAssignment]("TaxLotId");
 
-CREATE VIEW ListUnsoldAssets AS
-	SELECT t.[When] AS [AcquiredDate], t.[Id] AS [TransactionId], a.[Id] AS [AssetId], a.[Name] AS [AssetName], te.[Amount] AS [AcquiredAmount], (te.[Amount] - SUM(tl.[Amount])) AS [RemainingAmount]
+CREATE VIEW UnsoldAsset AS
+	SELECT
+		t.[When] AS [AcquiredDate],
+		t.[Id] AS [TransactionId],
+		a.[Id] AS [AssetId],
+		tl.[Id] AS [TaxLotId],
+		a.[Name] AS [AssetName],
+		te.[Amount] AS [AcquiredAmount],
+		(te.[Amount] - SUM(COALESCE(tla.[Amount],0))) AS [RemainingAmount]
 	FROM TransactionEntry te
 	JOIN Asset a ON a.Id = te.AssetId
 	JOIN [Transaction] t ON t.Id = te.TransactionId
-	LEFT OUTER JOIN TaxLotAssignment tl ON tl.AcquiredTransactionEntryId = te.Id
-	WHERE a.Type = 1;
+	JOIN TaxLot tl ON tl.CreatingTransactionEntryId = te.Id
+	LEFT OUTER JOIN TaxLotAssignment tla ON tla.TaxLotId = tl.Id
+	WHERE a.Type = 1
+	GROUP BY tl.Id
+	HAVING RemainingAmount > 0;
 -- TODO: add a column with cost basis / price information for the purchase
 -- TODO: for purposes of UI presentation, add a filter for transaction 
 --       so that the RemainingAmount subtotal can exclude the transaction being shown,
