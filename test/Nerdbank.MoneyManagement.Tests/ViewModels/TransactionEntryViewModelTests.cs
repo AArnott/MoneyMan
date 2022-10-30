@@ -224,6 +224,37 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Remove_ConsumedTaxLot_AssignmentDisappearsWithDeletionOfRemoval()
+	{
+		InvestingTransactionViewModel addTx1 = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+		};
+
+		TransactionEntryViewModel addEntry1 = addTx1.Entries[0];
+		Assert.NotNull(addEntry1.CreatedTaxLot);
+		int taxLotId1 = addEntry1.CreatedTaxLot.Id;
+		Assert.NotEqual(0, taxLotId1);
+
+		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Remove,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAsset = this.msft,
+			WithdrawAmount = 2.5m,
+		};
+
+		TransactionEntryViewModel removeEntry = removeTx.Entries[0];
+		Assert.NotEmpty(this.Money.TaxLotAssignments);
+
+		this.Money.Delete(removeTx.Transaction);
+		Assert.Empty(this.Money.TaxLotAssignments);
+	}
+
+	[Fact]
 	public void Remove_MoreThanWeHaveTaxLotsFor()
 	{
 		InvestingTransactionViewModel addTx = new(this.brokerageAccount)
