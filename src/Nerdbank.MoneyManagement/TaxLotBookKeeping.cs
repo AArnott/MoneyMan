@@ -25,28 +25,45 @@ internal class TaxLotBookKeeping
 			return;
 		}
 
+		List<TaxLotAssignment> existing = this.moneyFile.TaxLotAssignments.Where(a => a.ConsumingTransactionEntryId == transactionEntryViewModel.Id).ToList();
 		if (transactionEntryViewModel.Amount >= 0 || transactionEntryViewModel.Asset is null)
 		{
 			// We are not consuming any tax lots. Clear any existing assignments.
-			foreach (TaxLotAssignment row in this.moneyFile.TaxLotAssignments.Where(a => a.ConsumingTransactionEntryId == transactionEntryViewModel.Id))
-			{
-				this.moneyFile.Delete(row);
-			}
-
+			this.moneyFile.Delete(existing);
 			return;
 		}
 
-		// Do the assigned tax lots already match?
-		// TODO: verify that the *type* of asset (still) matches as well.
-		decimal sum = this.moneyFile.TaxLotAssignments.Sum(a => a.Amount);
-		if (sum == transactionEntryViewModel.Amount)
-		{
-			// The tax lot assignments already match.
-			return;
-		}
-
-		List<TaxLotAssignment> existing = this.moneyFile.TaxLotAssignments.Where(a => a.ConsumingTransactionEntryId == transactionEntryViewModel.Id).ToList();
 		if (existing.Count == 0)
+		{
+			BuildUpFromNothing();
+			return;
+		}
+
+		// Are the existing assignments from a compatible asset?
+		int anyLinkedTaxLotId = existing[0].TaxLotId;
+		int existingAssetId =
+			(from tl in this.moneyFile.TaxLots
+			 where tl.Id == anyLinkedTaxLotId
+			 join te in this.moneyFile.TransactionEntries on tl.CreatingTransactionEntryId equals te.Id
+			 select te.AssetId).First();
+		if (existingAssetId != transactionEntryViewModel.Asset.Id)
+		{
+			this.moneyFile.Delete(existing);
+			BuildUpFromNothing();
+			return;
+		}
+
+		decimal sum = -existing.Sum(a => a.Amount);
+		if (sum < transactionEntryViewModel.Amount)
+		{
+			// We need to assign more tax lots
+		}
+		else if (sum > transactionEntryViewModel.Amount)
+		{
+			// We need to reduce tax lot assignments.
+		}
+
+		void BuildUpFromNothing()
 		{
 			List<TaxLotAssignment> newAssignments = new();
 			SQLite.TableQuery<UnsoldAsset> unsoldAssets =

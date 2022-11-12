@@ -415,6 +415,17 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	public bool Delete(IEnumerable<ModelBase> models)
+	{
+		bool deletedAny = false;
+		foreach (ModelBase model in models)
+		{
+			deletedAny |= this.Delete(model);
+		}
+
+		return deletedAny;
+	}
+
 	public bool Delete(ModelBase model)
 	{
 		Verify.NotDisposed(this);

@@ -362,6 +362,31 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Remove_ThenChangeAsset()
+	{
+		InvestingTransactionViewModel addTx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Add,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+		};
+
+		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Remove,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAsset = this.msft,
+			WithdrawAmount = 1,
+		};
+
+		// The removal should be from a tax lot -- until changed to an asset for which no tax lot exists.
+		Assert.NotEmpty(this.Money.TaxLotAssignments);
+		removeTx.WithdrawAsset = this.aapl;
+		Assert.Empty(this.Money.TaxLotAssignments);
+	}
+
+	[Fact]
 	public void ApplyTo()
 	{
 		this.bankingViewModel.Account = this.spendingCategory;
