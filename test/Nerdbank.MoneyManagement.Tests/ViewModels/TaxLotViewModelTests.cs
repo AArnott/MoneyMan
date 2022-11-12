@@ -28,7 +28,7 @@ public class TaxLotViewModelTests : MoneyTestBase
 	{
 		DateTime acquired = new(2022, 9, 2);
 		TransactionEntryViewModel txEntry = this.CreateBuyTransactionEntry(acquired);
-		Asset currency = this.DocumentViewModel.ConfigurationPanel.PreferredAsset ?? throw Assumes.Fail(null);
+		AssetViewModel currency = this.DocumentViewModel.ConfigurationPanel.PreferredAsset ?? throw Assumes.Fail(null);
 
 		TaxLotViewModel viewModel = new(this.DocumentViewModel, txEntry)
 		{
@@ -46,7 +46,7 @@ public class TaxLotViewModelTests : MoneyTestBase
 	[Fact]
 	public void Ctor_CallsCopyFrom()
 	{
-		Asset asset = this.DocumentViewModel.ConfigurationPanel.PreferredAsset ?? throw Assumes.Fail(null);
+		AssetViewModel asset = this.DocumentViewModel.ConfigurationPanel.PreferredAsset ?? throw Assumes.Fail(null);
 		TaxLot taxLot = new()
 		{
 			CostBasisAmount = 12.34m,
@@ -63,7 +63,7 @@ public class TaxLotViewModelTests : MoneyTestBase
 	{
 		DateTime acquired = new(2022, 9, 2);
 		TransactionEntryViewModel txEntry = this.CreateBuyTransactionEntry(acquired);
-		Asset currency = this.DocumentViewModel.ConfigurationPanel.PreferredAsset ?? throw Assumes.Fail(null);
+		AssetViewModel currency = this.DocumentViewModel.ConfigurationPanel.PreferredAsset ?? throw Assumes.Fail(null);
 
 		TaxLot taxLot = new()
 		{

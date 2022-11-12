@@ -26,7 +26,7 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 
 	public decimal? CostBasisAmount { get; set; }
 
-	public Asset? CostBasisAsset { get; set; }
+	public AssetViewModel? CostBasisAsset { get; set; }
 
 	public TransactionEntryViewModel CreatingTransactionEntry { get; }
 
