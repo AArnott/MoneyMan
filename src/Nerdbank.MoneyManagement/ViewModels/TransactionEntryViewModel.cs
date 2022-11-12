@@ -120,7 +120,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 	protected DocumentViewModel DocumentViewModel => this.ThisAccount.DocumentViewModel;
 
-	private bool IsTaxLotCreationAppropriate => this.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale };
+	private bool IsTaxLotCreationAppropriate => this.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale } && this.Amount > 0;
 
 	private string DebuggerDisplay => $"TransactionEntry: ({this.Id}): {this.Memo} {this.Account?.Name} {this.Amount}";
 
@@ -144,6 +144,11 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		}
 
 		entries[0].MoneyFile.InsertOrReplace(dirtyModels);
+
+		for (int i = 0; i < entries.Count; i++)
+		{
+			entries[i].UpdateTaxLot();
+		}
 
 		for (int i = 0; i < entries.Count; i++)
 		{
@@ -244,5 +249,30 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		}
 
 		return this.createdTaxLot;
+	}
+
+	private void UpdateTaxLot()
+	{
+		if (this.CreatedTaxLot is { } createdTaxLot)
+		{
+			// Initialize the cost basis if this is a pattern we recognize.
+			if (this.Transaction is InvestingTransactionViewModel investingTx)
+			{
+				if (FindCostBasisEntry() is TransactionEntryViewModel costBasis)
+				{
+					switch (investingTx.Action)
+					{
+						case TransactionAction.Buy:
+							createdTaxLot.CostBasisAmount = -costBasis.Amount;
+							createdTaxLot.CostBasisAsset = costBasis.Asset;
+							break;
+					}
+				}
+
+				// There may be multiple negative entries due to fees, etc.
+				// We will consider that the highest magnitude entry is the direct cost the user paid.
+				TransactionEntryViewModel? FindCostBasisEntry() => investingTx.Entries.MinBy(te => te.Amount);
+			}
+		}
 	}
 }

@@ -9,6 +9,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	private BankingTransactionViewModel bankingTransaction;
 	private TransactionEntryViewModel bankingViewModel;
 	private AssetViewModel msft;
+	private AssetViewModel aapl;
 
 	private decimal amount = 5.5m;
 	private string ofxFitId = "someFitId";
@@ -19,6 +20,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	{
 		this.spendingCategory = this.DocumentViewModel.CategoriesPanel.NewCategory("Spending");
 		this.msft = this.DocumentViewModel.AssetsPanel.NewAsset("Microsoft", "MSFT");
+		this.aapl = this.DocumentViewModel.AssetsPanel.NewAsset("Apple", "AAPL");
 
 		this.checkingAccount = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
 		this.bankingTransaction = this.checkingAccount.NewTransaction();
@@ -78,7 +80,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
-	public void CreatedTaxLot_BankingAccount()
+	public void CreatedTaxLot_BankingAccount_IsNull()
 	{
 		Assert.Null(this.bankingViewModel.CreatedTaxLot);
 	}
@@ -111,8 +113,85 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		TransactionEntryViewModel entry = tx.Entries[0];
 		Assert.NotNull(entry.CreatedTaxLot);
 		Assert.Same(entry, entry.CreatedTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.When, entry.CreatedTaxLot.AcquiredDate);
+		Assert.Null(entry.CreatedTaxLot.CostBasisAmount);
+		Assert.Null(entry.CreatedTaxLot.CostBasisAsset);
 
 		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == entry.CreatedTaxLot.Id));
+	}
+
+	[Fact]
+	public void CreatedTaxLot_InvestingAccount_Buy()
+	{
+		InvestingTransactionViewModel tx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Buy,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAmount = 50,
+			WithdrawAsset = this.brokerageAccount.CurrencyAsset,
+		};
+
+		TransactionEntryViewModel addEntry = tx.Entries.Single(e => e.Amount > 0);
+		Assert.NotNull(addEntry.CreatedTaxLot);
+		Assert.Same(addEntry, addEntry.CreatedTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.When, addEntry.CreatedTaxLot.AcquiredDate);
+		Assert.Equal(tx.WithdrawAmount, addEntry.CreatedTaxLot.CostBasisAmount);
+		Assert.Same(tx.WithdrawAsset, addEntry.CreatedTaxLot.CostBasisAsset);
+
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == addEntry.CreatedTaxLot.Id));
+	}
+
+	[Fact]
+	public void CreatedTaxLot_InvestingAccount_Buy_ChangeAmount()
+	{
+		InvestingTransactionViewModel tx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Buy,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAmount = 50,
+			WithdrawAsset = this.brokerageAccount.CurrencyAsset,
+		};
+
+		tx.WithdrawAmount = 70;
+
+		TransactionEntryViewModel addEntry = tx.Entries.Single(e => e.Amount > 0);
+		Assert.NotNull(addEntry.CreatedTaxLot);
+		Assert.Same(addEntry, addEntry.CreatedTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.WithdrawAmount, addEntry.CreatedTaxLot.CostBasisAmount);
+
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == addEntry.CreatedTaxLot.Id));
+	}
+
+	[Fact]
+	public void CreatedTaxLot_InvestingAccount_Buy_ChangeAssetAndAmount()
+	{
+		InvestingTransactionViewModel tx = new(this.brokerageAccount)
+		{
+			Action = TransactionAction.Buy,
+			DepositAccount = this.brokerageAccount,
+			DepositAsset = this.msft,
+			DepositAmount = 1,
+			WithdrawAccount = this.brokerageAccount,
+			WithdrawAmount = 50,
+			WithdrawAsset = this.brokerageAccount.CurrencyAsset,
+		};
+
+		tx.WithdrawAsset = this.aapl;
+		tx.WithdrawAmount = 70;
+
+		TransactionEntryViewModel addEntry = tx.Entries.Single(e => e.Amount > 0);
+		Assert.NotNull(addEntry.CreatedTaxLot);
+		Assert.Same(addEntry, addEntry.CreatedTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.WithdrawAmount, addEntry.CreatedTaxLot.CostBasisAmount);
+		Assert.Same(tx.WithdrawAsset, addEntry.CreatedTaxLot.CostBasisAsset);
+
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == addEntry.CreatedTaxLot.Id));
 	}
 
 	[Fact]

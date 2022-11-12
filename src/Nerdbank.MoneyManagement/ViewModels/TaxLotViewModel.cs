@@ -8,6 +8,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class TaxLotViewModel : EntityViewModel<TaxLot>
 {
 	private readonly DocumentViewModel documentViewModel;
+	private DateTime? acquiredDate;
 
 	public TaxLotViewModel(DocumentViewModel documentViewModel, TransactionEntryViewModel creatingTransactionEntry, TaxLot? model = null)
 		: base(documentViewModel.MoneyFile, model)
@@ -22,12 +23,20 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 		this.CopyFrom(this.Model);
 	}
 
-	public DateTime? AcquiredDate { get; set; }
+	/// <inheritdoc cref="TaxLot.AcquiredDate"/>
+	public DateTime? AcquiredDate
+	{
+		get => this.acquiredDate ?? this.CreatingTransactionEntry.Transaction.When;
+		set => this.acquiredDate = value;
+	}
 
+	/// <inheritdoc cref="TaxLot.CostBasisAmount"/>
 	public decimal? CostBasisAmount { get; set; }
 
+	/// <inheritdoc cref="TaxLot.CostBasisAssetId"/>
 	public AssetViewModel? CostBasisAsset { get; set; }
 
+	/// <inheritdoc cref="TaxLot.CreatingTransactionEntryId"/>
 	public TransactionEntryViewModel CreatingTransactionEntry { get; }
 
 	public override bool IsReadyToSave => base.IsReadyToSave && this.CreatingTransactionEntry is not null;
@@ -38,7 +47,7 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 
 		this.Model.CostBasisAmount = this.CostBasisAmount;
 		this.Model.CostBasisAssetId = this.CostBasisAsset?.Id;
-		this.Model.AcquiredDate = this.AcquiredDate;
+		this.Model.AcquiredDate = this.acquiredDate;
 		this.Model.CreatingTransactionEntryId = this.CreatingTransactionEntry.Id;
 	}
 
@@ -46,7 +55,7 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 	{
 		this.CostBasisAmount = this.Model.CostBasisAmount;
 		this.CostBasisAsset = this.documentViewModel.GetAsset(this.Model.CostBasisAssetId);
-		this.AcquiredDate = this.Model.AcquiredDate;
+		this.acquiredDate = this.Model.AcquiredDate;
 		Assumes.True(this.CreatingTransactionEntry.Id == this.Model.CreatingTransactionEntryId);
 	}
 }
