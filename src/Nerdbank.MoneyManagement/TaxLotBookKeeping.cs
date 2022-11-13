@@ -96,18 +96,16 @@ internal class TaxLotBookKeeping
 				where lot.AssetId == transactionEntryViewModel.Asset.Id
 				orderby lot.AcquiredDate
 				select lot;
-			decimal amountRequired = targetAmount - amountCurrentlyAssigned;
-			Assumes.True(amountRequired >= 0);
+			decimal remainingRequired = targetAmount - amountCurrentlyAssigned;
+			Assumes.True(remainingRequired >= 0);
 			foreach (UnsoldAsset unsold in unsoldAssets)
 			{
-				// TODO: add test to identify terrible bug that we do not decrement amountToTake
-				//       in each loop.
-				if (amountRequired == 0)
+				if (remainingRequired == 0)
 				{
 					break;
 				}
 
-				decimal amountToTake = Math.Min(unsold.RemainingAmount, amountRequired);
+				decimal amountToTake = Math.Min(unsold.RemainingAmount, remainingRequired);
 				if (existingByTaxLotId.TryGetValue(unsold.TaxLotId, out TaxLotAssignment? existingAssignment))
 				{
 					existingAssignment.Amount += amountToTake;
@@ -122,6 +120,8 @@ internal class TaxLotBookKeeping
 						TaxLotId = unsold.TaxLotId,
 					});
 				}
+
+				remainingRequired -= amountToTake;
 			}
 
 			this.moneyFile.InsertAll(newAssignments);
