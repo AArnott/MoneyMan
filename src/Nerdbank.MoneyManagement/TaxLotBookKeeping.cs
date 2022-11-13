@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System;
+using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
 
 namespace Nerdbank.MoneyManagement;
@@ -25,22 +26,25 @@ internal class TaxLotBookKeeping
 			return;
 		}
 
-		List<TaxLotAssignment> existing = this.moneyFile.TaxLotAssignments.Where(a => a.ConsumingTransactionEntryId == transactionEntryViewModel.Id).ToList();
+		Dictionary<int, TaxLotAssignment> existingByTaxLotId = this.moneyFile.GetTaxLotAssignments(transactionEntryViewModel.Id)
+			.ToDictionary(tla => tla.TaxLotId);
+		decimal targetAmount = -transactionEntryViewModel.Amount;
+		decimal amountCurrentlyAssigned = existingByTaxLotId.Values.Sum(a => a.Amount);
 		if (transactionEntryViewModel.Amount >= 0 || transactionEntryViewModel.Asset is null)
 		{
 			// We are not consuming any tax lots. Clear any existing assignments.
-			this.moneyFile.Delete(existing);
+			this.moneyFile.Delete(existingByTaxLotId.Values);
 			return;
 		}
 
-		if (existing.Count == 0)
+		if (existingByTaxLotId.Count == 0)
 		{
-			BuildUpFromNothing();
+			IncreaseTaxLotAssignments();
 			return;
 		}
 
 		// Are the existing assignments from a compatible asset?
-		int anyLinkedTaxLotId = existing[0].TaxLotId;
+		int anyLinkedTaxLotId = existingByTaxLotId.First().Value.TaxLotId;
 		int existingAssetId =
 			(from tl in this.moneyFile.TaxLots
 			 where tl.Id == anyLinkedTaxLotId
@@ -48,22 +52,43 @@ internal class TaxLotBookKeeping
 			 select te.AssetId).First();
 		if (existingAssetId != transactionEntryViewModel.Asset.Id)
 		{
-			this.moneyFile.Delete(existing);
-			BuildUpFromNothing();
+			this.moneyFile.Delete(existingByTaxLotId.Values);
+			amountCurrentlyAssigned = 0;
+			IncreaseTaxLotAssignments();
 			return;
 		}
 
-		decimal sum = -existing.Sum(a => a.Amount);
-		if (sum < transactionEntryViewModel.Amount)
+		if (amountCurrentlyAssigned < targetAmount)
 		{
-			// We need to assign more tax lots
+			// We need to increase tax lot assignments.
+			IncreaseTaxLotAssignments();
+			return;
 		}
-		else if (sum > transactionEntryViewModel.Amount)
+		else if (amountCurrentlyAssigned > targetAmount)
 		{
 			// We need to reduce tax lot assignments.
+			decimal assignedSoFar = 0;
+			foreach (TaxLotAssignment tla in existingByTaxLotId.Values)
+			{
+				if (assignedSoFar >= targetAmount)
+				{
+					this.moneyFile.Delete(tla);
+				}
+				else
+				{
+					if (assignedSoFar + tla.Amount > targetAmount)
+					{
+						// This is the first one that assigns too much. Reduce it.
+						tla.Amount = targetAmount - assignedSoFar;
+						this.moneyFile.Update(tla);
+					}
+
+					assignedSoFar += tla.Amount;
+				}
+			}
 		}
 
-		void BuildUpFromNothing()
+		void IncreaseTaxLotAssignments()
 		{
 			List<TaxLotAssignment> newAssignments = new();
 			SQLite.TableQuery<UnsoldAsset> unsoldAssets =
@@ -71,16 +96,32 @@ internal class TaxLotBookKeeping
 				where lot.AssetId == transactionEntryViewModel.Asset.Id
 				orderby lot.AcquiredDate
 				select lot;
-			decimal amountRequired = -transactionEntryViewModel.Amount;
+			decimal amountRequired = targetAmount - amountCurrentlyAssigned;
+			Assumes.True(amountRequired >= 0);
 			foreach (UnsoldAsset unsold in unsoldAssets)
 			{
-				decimal amountToTake = Math.Min(unsold.RemainingAmount, amountRequired);
-				newAssignments.Add(new()
+				// TODO: add test to identify terrible bug that we do not decrement amountToTake
+				//       in each loop.
+				if (amountRequired == 0)
 				{
-					Amount = amountToTake,
-					ConsumingTransactionEntryId = transactionEntryViewModel.Id,
-					TaxLotId = unsold.TaxLotId,
-				});
+					break;
+				}
+
+				decimal amountToTake = Math.Min(unsold.RemainingAmount, amountRequired);
+				if (existingByTaxLotId.TryGetValue(unsold.TaxLotId, out TaxLotAssignment? existingAssignment))
+				{
+					existingAssignment.Amount += amountToTake;
+					this.moneyFile.Update(existingAssignment);
+				}
+				else
+				{
+					newAssignments.Add(new()
+					{
+						Amount = amountToTake,
+						ConsumingTransactionEntryId = transactionEntryViewModel.Id,
+						TaxLotId = unsold.TaxLotId,
+					});
+				}
 			}
 
 			this.moneyFile.InsertAll(newAssignments);

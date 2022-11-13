@@ -645,6 +645,16 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 	}
 
 	/// <summary>
+	/// Gets the tax lots that a given transaction entry consumes (via a sale or removal.)
+	/// </summary>
+	/// <param name="transactionEntryId">The <see cref="ModelBase.Id"/> of the <see cref="TransactionEntry"/>.</param>
+	/// <returns>The <see cref="TaxLotAssignment"/> rows that link the specified <paramref name="transactionEntryId"/> to to tax lots it pulls from.</returns>
+	internal TableQuery<TaxLotAssignment> GetTaxLotAssignments(int transactionEntryId)
+	{
+		return this.TaxLotAssignments.Where(tla => tla.ConsumingTransactionEntryId == transactionEntryId);
+	}
+
+	/// <summary>
 	/// Gets a list of IDs to the accounts whose ledgers would display any transactions with the given IDs.
 	/// </summary>
 	/// <param name="transactionIds">The IDs of the transactions.</param>

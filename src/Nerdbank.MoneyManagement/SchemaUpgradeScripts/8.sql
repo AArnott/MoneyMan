@@ -16,6 +16,7 @@ CREATE TABLE "TaxLotAssignment" (
 
 CREATE INDEX "TaxLotAssignment_ConsumingTransactionEntryId" ON [TaxLotAssignment]("ConsumingTransactionEntryId");
 CREATE INDEX "TaxLotAssignment_TaxLotId" ON [TaxLotAssignment]("TaxLotId");
+CREATE UNIQUE INDEX "TaxLotAssignment_TaxLotId_ConsumingTransactionEntryId" ON [TaxLotAssignment]("TaxLotId", "ConsumingTransactionEntryId");
 
 CREATE VIEW UnsoldAsset AS
 	SELECT
