@@ -8,6 +8,7 @@ namespace Nerdbank.MoneyManagement.ViewModels;
 public class TaxLotViewModel : EntityViewModel<TaxLot>
 {
 	private readonly DocumentViewModel documentViewModel;
+	private decimal? amount;
 	private DateTime? acquiredDate;
 
 	public TaxLotViewModel(DocumentViewModel documentViewModel, TransactionEntryViewModel creatingTransactionEntry, TaxLot? model = null)
@@ -46,6 +47,33 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 		{
 			ThrowIfNotInheriting(value, nameof(this.AcquiredDate));
 			this.acquiredDate = null;
+		}
+	}
+
+	/// <summary>
+	/// Gets or sets the amount of the asset created by the transaction entry identified by <see cref="CreatingTransactionEntry"/>
+	/// that this lot represents.
+	/// </summary>
+	/// <remarks>
+	/// If it is not explicitly set, this property will inherit from <see cref="TransactionEntryViewModel.ModelAmount"/> on the <see cref="CreatingTransactionEntry"/>.
+	/// To switch from an explicitly set value to an inherited one, set <see cref="AmountIsInherited"/> to <see langword="true" />.
+	/// </remarks>
+	public decimal Amount
+	{
+		get => this.amount ?? this.CreatingTransactionEntry.ModelAmount;
+		set => this.amount = value;
+	}
+
+	/// <summary>
+	/// Gets or sets a value indicating whether the value in the <see cref="Amount"/> property is inherited from the <see cref="TransactionEntryViewModel.Amount"/> in the <see cref="CreatingTransactionEntry"/>.
+	/// </summary>
+	public bool AmountIsInherited
+	{
+		get => this.amount is null;
+		set
+		{
+			ThrowIfNotInheriting(value, nameof(this.Amount));
+			this.amount = null;
 		}
 	}
 

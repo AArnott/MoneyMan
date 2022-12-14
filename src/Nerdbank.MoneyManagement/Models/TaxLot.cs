@@ -25,6 +25,13 @@ public record TaxLot : ModelBase
 	public DateTime? AcquiredDate { get; set; }
 
 	/// <summary>
+	/// Gets or sets the amount of the asset created by the transaction entry identified by <see cref="CreatingTransactionEntryId"/>
+	/// that this lot represents.
+	/// When <see langword="null"/>, the <see cref="TransactionEntry.Amount"/> should be used.
+	/// </summary>
+	public decimal? Amount { get; set; }
+
+	/// <summary>
 	/// Gets or sets the amount of the asset specified by <see cref="CostBasisAssetId"/> that was either
 	/// used to purchase this lot or was the assessed value of the asset when it was received.
 	/// </summary>

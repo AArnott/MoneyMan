@@ -2,6 +2,7 @@
 	"Id"                         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	"CreatingTransactionEntryId" INTEGER NOT NULL REFERENCES "TransactionEntry"("Id") ON DELETE CASCADE,
 	"AcquiredDate"               INTEGER, -- when null, use the TransactionEntry's date
+	"Amount"                     REAL, -- when null, use the TransactionEntry's amount
 	"CostBasisAmount"            REAL,
 	"CostBasisAssetId"           REAL
 );
@@ -25,8 +26,8 @@ CREATE VIEW UnsoldAsset AS
 		a.[Id] AS [AssetId],
 		tl.[Id] AS [TaxLotId],
 		a.[Name] AS [AssetName],
-		te.[Amount] AS [AcquiredAmount],
-		(te.[Amount] - SUM(COALESCE(tla.[Amount],0))) AS [RemainingAmount]
+		COALESCE(tl.[Amount], te.[Amount]) AS [AcquiredAmount],
+		(COALESCE(tl.[Amount], te.[Amount]) - SUM(COALESCE(tla.[Amount],0))) AS [RemainingAmount]
 	FROM TransactionEntry te
 	JOIN Asset a ON a.Id = te.AssetId
 	JOIN [Transaction] t ON t.Id = te.TransactionId
