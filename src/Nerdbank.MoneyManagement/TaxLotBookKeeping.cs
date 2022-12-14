@@ -28,9 +28,9 @@ internal class TaxLotBookKeeping
 
 		Dictionary<int, TaxLotAssignment> existingByTaxLotId = this.moneyFile.GetTaxLotAssignments(transactionEntryViewModel.Id)
 			.ToDictionary(tla => tla.TaxLotId);
-		decimal targetAmount = -transactionEntryViewModel.Amount;
+		decimal targetAmount = -transactionEntryViewModel.Model.Amount;
 		decimal amountCurrentlyAssigned = existingByTaxLotId.Values.Sum(a => a.Amount);
-		if (transactionEntryViewModel.Amount >= 0 || transactionEntryViewModel.Asset is null)
+		if (transactionEntryViewModel.Model.Amount >= 0 || transactionEntryViewModel.Asset is null)
 		{
 			// We are not consuming any tax lots. Clear any existing assignments.
 			this.moneyFile.Delete(existingByTaxLotId.Values);

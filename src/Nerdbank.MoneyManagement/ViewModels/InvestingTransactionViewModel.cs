@@ -644,7 +644,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			entry.Cleared = this.Cleared;
 		}
 
-		bool TryEnsureEntryCount(int requiredCount, bool condition)
+		bool TryEnsureEntryCount(int requiredCount, bool condition = true)
 		{
 			if (condition)
 			{

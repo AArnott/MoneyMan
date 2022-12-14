@@ -35,24 +35,22 @@ CREATE VIEW UnsoldAsset AS
 	WHERE a.Type = 1
 	GROUP BY tl.Id
 	HAVING RemainingAmount > 0;
--- TODO: add a column with cost basis / price information for the purchase
 -- TODO: for purposes of UI presentation, add a filter for transaction 
 --       so that the RemainingAmount subtotal can exclude the transaction being shown,
 --       since it will have a unique column dedicated to showing (and editing) that transaction.
 -- TODO: How will tax lots work with transfers across accounts?
--- TODO: We may want to allow the user to Add shares with cost basis and purchase date information.
 -- USE CASES:
 --  * tax lots can be opened 
---       purchase of shares
---       adding of shares (without a purchase)
---       short sale
+--       ✅ purchase of shares
+--       ✅ adding of shares (without a purchase)
+--       ⏹️ short sale
 --  * tax lots can be closed by 
---       sale of shares
---       covering a short sale
---       removal of shares (without a sale)
---  * tax lots must track a transfer of shares from one account to another.
---  * Display unrealized losses and gains, *by account*.
---  * Isolate tax lots to their accounts where important (401k, brokerage), but allow for transfers across accounts (crypto).
+--       ✅ sale of shares
+--       ✅ removal of shares (without a sale)
+--       ⏹️ covering a short sale
+--  * ⏹️ tax lots must track a transfer of shares from one account to another.
+--  * ⏹️ Display unrealized losses and gains, *by account*.
+--  * ⏹️ Isolate tax lots to their accounts where important (401k, brokerage), but allow for transfers across accounts (crypto).
 --    We could say that tax lots are 'locked' into the account they are created inside. When shares are transferred,
 --    that tax lot is closed and another created.
 --    When selecting tax lot(s) to close or take from in a transaction, only those assigned to that account 

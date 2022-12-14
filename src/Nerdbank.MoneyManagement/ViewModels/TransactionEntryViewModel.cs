@@ -118,9 +118,18 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		set => this.SetProperty(ref this.cleared, value);
 	}
 
+	/// <summary>
+	/// Gets or sets the <see cref="Amount"/> as it is persisted in the <see cref="TransactionEntry"/> model (e.g. without any negation that makes it look good in a split view).
+	/// </summary>
+	internal decimal ModelAmount
+	{
+		get => this.NegateAmountIfAppropriate(this.Amount);
+		set => this.Amount = this.NegateAmountIfAppropriate(value);
+	}
+
 	protected DocumentViewModel DocumentViewModel => this.ThisAccount.DocumentViewModel;
 
-	private bool IsTaxLotCreationAppropriate => this.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale } && this.Amount > 0;
+	private bool IsTaxLotCreationAppropriate => this.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale or TransactionAction.Transfer } && this.ModelAmount > 0;
 
 	private string DebuggerDisplay => $"TransactionEntry: ({this.Id}): {this.Memo} {this.Account?.Name} {this.Amount}";
 
@@ -175,7 +184,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.Model.TransactionId = this.Transaction.TransactionId;
 		this.Model.Memo = this.Memo;
 		this.Model.AccountId = this.Account.Id;
-		this.Model.Amount = this.NegateAmountIfAppropriate(this.Amount);
+		this.Model.Amount = this.ModelAmount;
 		this.Model.AssetId = this.Asset.Id;
 		this.Model.Cleared = this.Cleared;
 		this.Model.OfxFitId = this.OfxFitId;
@@ -201,7 +210,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	{
 		this.Memo = this.Model.Memo;
 		this.Account = this.Model.AccountId == 0 ? null : this.DocumentViewModel.GetAccount(this.Model.AccountId);
-		this.Amount = this.NegateAmountIfAppropriate(this.Model.Amount);
+		this.ModelAmount = this.Model.Amount;
 		this.Asset = this.DocumentViewModel.GetAsset(this.Model.AssetId);
 		this.Cleared = this.Model.Cleared;
 		this.OfxFitId = this.Model.OfxFitId;
@@ -227,7 +236,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	/// - Interest  -100
 	/// Notice how the 500 amount is negative when viewed from its own account, and positive when viewed from another.
 	/// Notice how the 400 amount is positive when viewed from its own account, and negative when viewed from another.
-	/// Interest is negative from both ledgers, but would be positive in a report.
+	/// Interest is negative from both ledgers, but would be positive in a report showing interest paid.
 	/// From this we deduce that a TransactionEntry should flip its Amount between model and view model
 	/// iff <see cref="Account"/> (the account it applies to) is set to any account other than <see cref="ThisAccount"/>.
 	/// </remarks>
