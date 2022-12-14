@@ -20,7 +20,7 @@ public record TaxLot : ModelBase
 
 	/// <summary>
 	/// Gets or sets the date this lot was acquired for tax reporting purposes.
-	/// When <see langword="null"/>, the date on the transaction should be used.
+	/// When <see langword="null"/>, the <see cref="Transaction.When"/> property on the transaction should be used.
 	/// </summary>
 	public DateTime? AcquiredDate { get; set; }
 

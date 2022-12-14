@@ -20,7 +20,7 @@ CREATE UNIQUE INDEX "TaxLotAssignment_TaxLotId_ConsumingTransactionEntryId" ON [
 
 CREATE VIEW UnsoldAsset AS
 	SELECT
-		t.[When] AS [AcquiredDate],
+		COALESCE(tl.[AcquiredDate], t.[When]) AS [AcquiredDate],
 		t.[Id] AS [TransactionId],
 		a.[Id] AS [AssetId],
 		tl.[Id] AS [TaxLotId],

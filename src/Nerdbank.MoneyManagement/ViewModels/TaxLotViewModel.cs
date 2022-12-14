@@ -23,11 +23,30 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 		this.CopyFrom(this.Model);
 	}
 
-	/// <inheritdoc cref="TaxLot.AcquiredDate"/>
-	public DateTime? AcquiredDate
+	/// <summary>
+	/// Gets or sets the date this lot was acquired for tax reporting purposes.
+	/// </summary>
+	/// <remarks>
+	/// If not explicitly set, this property will inherit from <see cref="Transaction.When"/> on the transaction to which the <see cref="CreatingTransactionEntry"/> belongs.
+	/// To switch from an explicitly set value to an inherited one, set <see cref="AcquiredDateIsInherited"/> to <see langword="true" />.
+	/// </remarks>
+	public DateTime AcquiredDate
 	{
 		get => this.acquiredDate ?? this.CreatingTransactionEntry.Transaction.When;
 		set => this.acquiredDate = value;
+	}
+
+	/// <summary>
+	/// Gets or sets a value indicating whether the value in the <see cref="AcquiredDate"/> property is inherited from the <see cref="TransactionViewModel.When"/> property of the <see cref="TransactionViewModel"/> to which the <see cref="CreatingTransactionEntry"/> belongs.
+	/// </summary>
+	public bool AcquiredDateIsInherited
+	{
+		get => this.acquiredDate is null;
+		set
+		{
+			ThrowIfNotInheriting(value, nameof(this.AcquiredDate));
+			this.acquiredDate = null;
+		}
 	}
 
 	/// <inheritdoc cref="TaxLot.CostBasisAmount"/>
@@ -57,5 +76,13 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 		this.CostBasisAsset = this.documentViewModel.GetAsset(this.Model.CostBasisAssetId);
 		this.acquiredDate = this.Model.AcquiredDate;
 		Assumes.True(this.CreatingTransactionEntry.Id == this.Model.CreatingTransactionEntryId);
+	}
+
+	private static void ThrowIfNotInheriting(bool inheriting, string valuePropertyName)
+	{
+		if (!inheriting)
+		{
+			throw new ArgumentException($"This property can only be set to true. To disinherit, set the new value on the {valuePropertyName} property.", "value");
+		}
 	}
 }
