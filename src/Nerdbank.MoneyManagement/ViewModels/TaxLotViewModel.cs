@@ -61,7 +61,11 @@ public class TaxLotViewModel : EntityViewModel<TaxLot>
 	public decimal Amount
 	{
 		get => this.amount ?? this.CreatingTransactionEntry.ModelAmount;
-		set => this.amount = value;
+		set
+		{
+			Requires.Range(value > 0, nameof(value), "Must be a positive number.");
+			this.amount = value;
+		}
 	}
 
 	/// <summary>

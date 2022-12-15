@@ -328,8 +328,8 @@ INSERT INTO [TaxLotAssignment] ([Id], [TaxLotId], [ConsumingTransactionEntryId],
 		InvestingTransactionViewModel? addTx1 = brokerage.FindTransaction(200);
 		Assert.NotNull(addTx1);
 		TransactionEntryViewModel addTx1Entry = addTx1.Entries.Single(e => e.Id == 201);
-		Assert.Equal(35, addTx1Entry.CreatedTaxLot?.CostBasisAmount);
-		Assert.Equal(brokerage.CurrencyAsset, addTx1Entry.CreatedTaxLot?.CostBasisAsset);
+		Assert.Equal(35, addTx1Entry.CreatedTaxLots?.Single().CostBasisAmount);
+		Assert.Equal(brokerage.CurrencyAsset, addTx1Entry.CreatedTaxLots?.Single().CostBasisAsset);
 	}
 
 	private SQLiteConnection CreateDatabase(int schemaVersion)

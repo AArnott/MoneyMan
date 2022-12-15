@@ -652,7 +652,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		tx1.SimpleAsset = this.msft;
 		tx1.SimplePrice = 100;
 		TransactionEntryViewModel tx1AddEntry = Assert.Single(tx1.Entries, e => e.Asset == this.msft);
-		Assert.NotNull(tx1AddEntry.CreatedTaxLot);
+		Assert.Single(tx1AddEntry.CreatedTaxLots!);
 
 		InvestingTransactionViewModel tx2 = this.account.Transactions[^1];
 		tx2.Action = TransactionAction.Buy;
@@ -661,7 +661,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		tx2.SimpleAsset = this.msft;
 		tx2.SimplePrice = 110;
 		TransactionEntryViewModel tx2AddEntry = Assert.Single(tx2.Entries, e => e.Asset == this.msft);
-		Assert.NotNull(tx2AddEntry.CreatedTaxLot);
+		Assert.Single(tx2AddEntry.CreatedTaxLots!);
 
 		InvestingTransactionViewModel txMove = this.account.Transactions[^1];
 		txMove.Action = TransactionAction.Transfer;
@@ -675,20 +675,19 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		TableQuery<TaxLotAssignment> tla = this.Money.GetTaxLotAssignments(txMoveFromEntry.Id);
 		Assert.Equal(2, tla.Count());
 
-		// Creating a tax lot requires exactly one entry. Since we have two lots to recreate, two entries are required.
-		List<TransactionEntryViewModel> txMoveToEntries = txMove.Entries.Where(e => e.Account == this.otherAccount).ToList();
-		Assert.All(txMoveToEntries, e => Assert.Empty(this.Money.GetTaxLotAssignments(e.Id)));
-		Assert.All(txMoveToEntries, e => Assert.NotNull(e.CreatedTaxLot));
-		Assert.Equal(2, txMoveToEntries.Count);
+		// And one entry is required to create all the new tax lots.
+		TransactionEntryViewModel txMoveToEntry = Assert.Single(txMove.Entries, e => e.Account == this.otherAccount);
+		Assert.Empty(this.Money.GetTaxLotAssignments(txMoveToEntry.Id));
+		Assert.Equal(2, txMoveToEntry.CreatedTaxLots?.Count);
 
 		// Verify that each created tax lot matches the data from the originals.
-		TransactionEntryViewModel taxLotCreator1 = Assert.Single(txMoveToEntries, e => e.CreatedTaxLot?.AcquiredDate == tx1.When);
-		Assert.Equal(tx1.SimpleAmount * tx1.SimplePrice, taxLotCreator1.CreatedTaxLot?.CostBasisAmount);
-		Assert.Same(this.msft, taxLotCreator1.CreatedTaxLot?.CostBasisAsset);
+		TaxLotViewModel taxLotRecreated1 = Assert.Single(txMoveToEntry.CreatedTaxLots!, lot => lot.AcquiredDate == tx1.When);
+		Assert.Equal(tx1.SimpleAmount * tx1.SimplePrice, taxLotRecreated1.CostBasisAmount);
+		Assert.Same(this.account.CurrencyAsset, taxLotRecreated1.CostBasisAsset);
 
-		TransactionEntryViewModel taxLotCreator2 = Assert.Single(txMoveToEntries, e => e.CreatedTaxLot?.AcquiredDate == tx2.When);
-		Assert.Equal(3 * tx2.SimplePrice, taxLotCreator2.CreatedTaxLot?.CostBasisAmount);
-		Assert.Same(this.msft, taxLotCreator2.CreatedTaxLot?.CostBasisAsset);
+		TaxLotViewModel taxLotRecreated2 = Assert.Single(txMoveToEntry.CreatedTaxLots!, lot => lot.AcquiredDate == tx2.When);
+		Assert.Equal(3 * tx2.SimplePrice, taxLotRecreated2.CostBasisAmount);
+		Assert.Same(this.account.CurrencyAsset, taxLotRecreated2.CostBasisAsset);
 	}
 
 	[Fact]

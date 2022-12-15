@@ -20,18 +20,18 @@ public class TaxLotAssignmentViewModelTests : MoneyTestBase
 	{
 		TransactionEntryViewModel buyTe = this.CreateBuyTransactionEntry(new DateTime(2022, 1, 2));
 		TransactionEntryViewModel sellTe = this.CreateSellTransactionEntry(new DateTime(2022, 2, 2));
-		Assumes.NotNull(buyTe.CreatedTaxLot);
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(buyTe);
 		TaxLotAssignmentViewModel viewModel = new(this.DocumentViewModel)
 		{
 			Amount = 2,
 			ConsumingTransactionEntry = sellTe,
-			TaxLotId = buyTe.CreatedTaxLot.Id,
+			TaxLotId = createdTaxLot.Id,
 			Pinned = true,
 		};
 		viewModel.ApplyToModel();
 		Assert.Equal(viewModel.Amount, viewModel.Model.Amount);
 		Assert.Equal(sellTe.Id, viewModel.Model.ConsumingTransactionEntryId);
-		Assert.Equal(buyTe.CreatedTaxLot.Id, viewModel.Model.TaxLotId);
+		Assert.Equal(createdTaxLot.Id, viewModel.Model.TaxLotId);
 		Assert.Equal(viewModel.Pinned, viewModel.Model.Pinned);
 	}
 
@@ -40,19 +40,19 @@ public class TaxLotAssignmentViewModelTests : MoneyTestBase
 	{
 		TransactionEntryViewModel buyTe = this.CreateBuyTransactionEntry(new DateTime(2022, 1, 2));
 		TransactionEntryViewModel sellTe = this.CreateSellTransactionEntry(new DateTime(2022, 2, 2));
-		Assumes.NotNull(buyTe.CreatedTaxLot);
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(buyTe);
 		TaxLotAssignment model = new()
 		{
 			Amount = 2,
 			ConsumingTransactionEntryId = sellTe.Id,
-			TaxLotId = buyTe.CreatedTaxLot.Id,
+			TaxLotId = createdTaxLot.Id,
 			Pinned = true,
 		};
 		TaxLotAssignmentViewModel viewModel = new(this.DocumentViewModel);
 		viewModel.CopyFrom(model);
 		Assert.Equal(model.Amount, viewModel.Amount);
 		Assert.Same(sellTe, viewModel.ConsumingTransactionEntry);
-		Assert.Equal(buyTe.CreatedTaxLot.Id, viewModel.TaxLotId);
+		Assert.Equal(createdTaxLot.Id, viewModel.TaxLotId);
 		Assert.Equal(model.Pinned, viewModel.Pinned);
 	}
 

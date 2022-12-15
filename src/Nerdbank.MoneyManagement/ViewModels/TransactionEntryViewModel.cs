@@ -18,7 +18,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	private decimal amount;
 	private AssetViewModel? asset;
 	private ClearedState cleared;
-	private TaxLotViewModel? createdTaxLot;
+	private List<TaxLotViewModel>? createdTaxLots;
 
 	public TransactionEntryViewModel(TransactionViewModel parent, TransactionEntry? model = null)
 		: base(parent.ThisAccount.MoneyFile, model)
@@ -36,7 +36,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		};
 	}
 
-	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted && this.CreatedTaxLot?.IsReadyToSave is not false;
+	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted && this.createdTaxLots?.Any(lot => !lot.IsReadyToSave) is not true;
 
 	public bool IsReadyToSaveIsolated => base.IsReadyToSave && !this.IsApplyingToModel;
 
@@ -54,20 +54,37 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	/// Gets the tax lot created by this entry, if any.
 	/// </summary>
 	/// <remarks>
-	/// Only an <see cref="TransactionEntryViewModel"/> that opens a position (e.g. buy, add, short sale, etc.) should have created a tax lot.
+	/// <para>Only an <see cref="TransactionEntryViewModel"/> that opens a position (e.g. buy, add, short sale, etc.) should have created a tax lot.</para>
+	/// <para>While most applicable entries will create just one tax lot, a transfer transaction may move assets from a bunch of tax lots, in which case one entry can recreate many.</para>
 	/// </remarks>
-	public TaxLotViewModel? CreatedTaxLot
+	public List<TaxLotViewModel>? CreatedTaxLots
 	{
 		get
 		{
+			// Return null if no tax lot should be created.
+			// If we have rows in the database, we'll delete them when we save.
 			if (!this.IsTaxLotCreationAppropriate)
 			{
-				// Return null if no tax lot should be created, even if we have a non-null field,
-				// because we'll clear that field and delete the row in the database when we save.
 				return null;
 			}
 
-			return this.createdTaxLot ??= this.LoadOrCreateTaxLot();
+			if (this.createdTaxLots is null)
+			{
+				if (this.Model.IsPersisted)
+				{
+					IEnumerable<TaxLotViewModel> query =
+						from lot in this.MoneyFile.TaxLots
+						where lot.CreatingTransactionEntryId == this.Id
+						select new TaxLotViewModel(this.DocumentViewModel, this, lot);
+					this.createdTaxLots = query.ToList();
+				}
+				else
+				{
+					this.createdTaxLots = new();
+				}
+			}
+
+			return this.createdTaxLots;
 		}
 	}
 
@@ -127,9 +144,9 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		set => this.Amount = this.NegateAmountIfAppropriate(value);
 	}
 
-	protected DocumentViewModel DocumentViewModel => this.ThisAccount.DocumentViewModel;
+	protected internal DocumentViewModel DocumentViewModel => this.ThisAccount.DocumentViewModel;
 
-	private bool IsTaxLotCreationAppropriate => this.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale or TransactionAction.Transfer } && this.ModelAmount > 0;
+	private bool IsTaxLotCreationAppropriate => this.MoneyFile.TaxLotBookKeeping.IsTaxLotCreationAppropriate(this);
 
 	private string DebuggerDisplay => $"TransactionEntry: ({this.Id}): {this.Memo} {this.Account?.Name} {this.Amount}";
 
@@ -156,7 +173,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 		for (int i = 0; i < entries.Count; i++)
 		{
-			entries[i].UpdateTaxLot();
+			entries[i].MoneyFile.TaxLotBookKeeping.UpdateLotCreations(entries[i]);
 		}
 
 		for (int i = 0; i < entries.Count; i++)
@@ -189,21 +206,12 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.Model.Cleared = this.Cleared;
 		this.Model.OfxFitId = this.OfxFitId;
 
-		if (this.createdTaxLot is not null)
+		// If creating a tax lot is appropriate, we'll save it later in our OnSaved event handler, where *this* entity is sure to have an assigned ID.
+		if (!this.IsTaxLotCreationAppropriate && this.Model.IsPersisted)
 		{
-			// If creating a tax lot is appropriate, we'll save it later in our OnSaved event handler, where *this* entity is sure to have an assigned ID.
-			if (!this.IsTaxLotCreationAppropriate)
-			{
-				this.MoneyFile.Delete(this.createdTaxLot.Model);
-				this.createdTaxLot = null;
-			}
+			this.MoneyFile.PurgeTaxLotsCreatedBy(this.Id);
+			this.createdTaxLots = null;
 		}
-	}
-
-	protected override void OnSaved()
-	{
-		base.OnSaved();
-		this.createdTaxLot?.Save();
 	}
 
 	protected override void CopyFromCore()
@@ -241,48 +249,4 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	/// iff <see cref="Account"/> (the account it applies to) is set to any account other than <see cref="ThisAccount"/>.
 	/// </remarks>
 	private decimal NegateAmountIfAppropriate(decimal amount) => this.Account == this.ThisAccount ? amount : -amount;
-
-	private TaxLotViewModel LoadOrCreateTaxLot()
-	{
-		Assumes.True(this.IsTaxLotCreationAppropriate);
-
-		if (this.createdTaxLot is null)
-		{
-			// Try loading it in case it exists in the database.
-			TaxLot? taxLot = this.MoneyFile.TaxLots.SingleOrDefault(lot => lot.CreatingTransactionEntryId == this.Id);
-			if (taxLot is null)
-			{
-				taxLot = new() { CreatingTransactionEntryId = this.Id };
-			}
-
-			this.createdTaxLot = new(this.DocumentViewModel, this, taxLot);
-		}
-
-		return this.createdTaxLot;
-	}
-
-	private void UpdateTaxLot()
-	{
-		if (this.CreatedTaxLot is { } createdTaxLot)
-		{
-			// Initialize the cost basis if this is a pattern we recognize.
-			if (this.Transaction is InvestingTransactionViewModel investingTx)
-			{
-				if (FindCostBasisEntry() is TransactionEntryViewModel costBasis)
-				{
-					switch (investingTx.Action)
-					{
-						case TransactionAction.Buy:
-							createdTaxLot.CostBasisAmount = -costBasis.Amount;
-							createdTaxLot.CostBasisAsset = costBasis.Asset;
-							break;
-					}
-				}
-
-				// There may be multiple negative entries due to fees, etc.
-				// We will consider that the highest magnitude entry is the direct cost the user paid.
-				TransactionEntryViewModel? FindCostBasisEntry() => investingTx.Entries.MinBy(te => te.Amount);
-			}
-		}
-	}
 }

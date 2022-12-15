@@ -2,8 +2,10 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
+using Nerdbank.Qif;
 
 namespace Nerdbank.MoneyManagement;
 
@@ -17,6 +19,102 @@ internal class TaxLotBookKeeping
 	internal TaxLotBookKeeping(MoneyFile moneyFile)
 	{
 		this.moneyFile = moneyFile;
+	}
+
+	internal bool IsTaxLotCreationAppropriate(TransactionEntryViewModel transactionEntryViewModel)
+		=> transactionEntryViewModel.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale or TransactionAction.Transfer } && transactionEntryViewModel.ModelAmount > 0;
+
+	/// <summary>
+	/// Adds, deletes or updates tax lots created by a given transaction entry.
+	/// </summary>
+	/// <param name="transactionEntryViewModel">The view model of the transaction entry to update created tax lots for.</param>
+	internal void UpdateLotCreations(TransactionEntryViewModel transactionEntryViewModel)
+	{
+		if (transactionEntryViewModel.CreatedTaxLots is null)
+		{
+			// This should only happen when IsTaxLotCreationAppropriate returns false,
+			// and we should therefore purge all persisted tax lots.
+			this.moneyFile.PurgeTaxLotsCreatedBy(transactionEntryViewModel.Id);
+			return;
+		}
+
+		decimal amountCurrentlyAssigned = transactionEntryViewModel.CreatedTaxLots.Sum(lot => lot.Amount);
+
+		// If this is a transfer, the tax lots are required to match on both sides.
+		if (transactionEntryViewModel.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Transfer } tx)
+		{
+			Assumes.True(TryFindOtherEntry(out TransactionEntryViewModel? fromEntry));
+			List<ConsumedTaxLot> consumedTaxLots = this.moneyFile.ConsumedTaxLots.Where(tla => tla.ConsumingTransactionEntryId == fromEntry.Id).ToList();
+
+			// Add or remove tax lots created by this transfer till the count of tax lots created equal the number of tax lots consumed.
+			transactionEntryViewModel.CreatedTaxLots.AddRange(Enumerable.Range(0, consumedTaxLots.Count - transactionEntryViewModel.CreatedTaxLots.Count).Select(_ => CreateTaxLot()));
+			transactionEntryViewModel.CreatedTaxLots.RemoveRange(consumedTaxLots.Count, transactionEntryViewModel.CreatedTaxLots.Count - consumedTaxLots.Count);
+
+			// Now initialize each created tax lot based on the values of the consumed tax lots.
+			for (int i = 0; i < transactionEntryViewModel.CreatedTaxLots.Count; i++)
+			{
+				ConsumedTaxLot consumedTaxLot = consumedTaxLots[i];
+				TaxLotViewModel createdTaxLot = transactionEntryViewModel.CreatedTaxLots[i];
+				createdTaxLot.AcquiredDate = consumedTaxLot.AcquiredDate;
+				createdTaxLot.Amount = consumedTaxLot.Amount;
+				createdTaxLot.CostBasisAmount = consumedTaxLot.CostBasisAmount;
+				createdTaxLot.CostBasisAsset = transactionEntryViewModel.DocumentViewModel.GetAsset(consumedTaxLot.CostBasisAssetId);
+			}
+		}
+		else
+		{
+			if (transactionEntryViewModel.CreatedTaxLots.Count > 1)
+			{
+				// Remove excess tax lots.
+				transactionEntryViewModel.CreatedTaxLots.RemoveRange(1, transactionEntryViewModel.CreatedTaxLots.Count - 1);
+			}
+
+			// Update the amounts in the tax lots.
+			TaxLotViewModel? taxLotViewModel = GetOrCreateFirstTaxLot();
+			taxLotViewModel.AmountIsInherited = true;
+			taxLotViewModel.AcquiredDateIsInherited = true;
+
+			// Update cost basis if we can.
+			if (TryFindCostBasisEntry(out TransactionEntryViewModel? costBasis))
+			{
+				taxLotViewModel.CostBasisAmount = Math.Abs(costBasis.Amount);
+				taxLotViewModel.CostBasisAsset = costBasis.Asset;
+			}
+		}
+
+		this.moneyFile.PurgeTaxLotsCreatedBy(transactionEntryViewModel.Id, transactionEntryViewModel.CreatedTaxLots.Select(e => e.Id));
+		foreach (TaxLotViewModel lot in transactionEntryViewModel.CreatedTaxLots)
+		{
+			lot.Save();
+		}
+
+		TaxLotViewModel CreateTaxLot()
+		{
+			TaxLotViewModel result = new(transactionEntryViewModel.DocumentViewModel, transactionEntryViewModel);
+			transactionEntryViewModel.CreatedTaxLots.Add(result);
+			return result;
+		}
+
+		TaxLotViewModel GetOrCreateFirstTaxLot() => transactionEntryViewModel.CreatedTaxLots.Count > 0 ? transactionEntryViewModel.CreatedTaxLots[0] : CreateTaxLot();
+
+		bool TryFindOtherEntry([NotNullWhen(true)] out TransactionEntryViewModel? other)
+		{
+			if (transactionEntryViewModel.Transaction.Entries.Count == 2)
+			{
+				other = transactionEntryViewModel.Transaction.Entries[transactionEntryViewModel.Transaction.Entries[0] == transactionEntryViewModel ? 1 : 0];
+				return true;
+			}
+
+			other = null;
+			return false;
+		}
+
+		bool TryFindCostBasisEntry([NotNullWhen(true)] out TransactionEntryViewModel? costBasis)
+		{
+			// A simple transaction with only two entries makes finding the 'cost' basis for this fairly trivial.
+			costBasis = null;
+			return transactionEntryViewModel.Transaction is InvestingTransactionViewModel && TryFindOtherEntry(out costBasis);
+		}
 	}
 
 	internal void UpdateLotAssignments(TransactionEntryViewModel transactionEntryViewModel)

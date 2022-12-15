@@ -85,7 +85,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 	[Fact]
 	public void CreatedTaxLot_BankingAccount_IsNull()
 	{
-		Assert.Null(this.bankingViewModel.CreatedTaxLot);
+		Assert.Null(this.bankingViewModel.CreatedTaxLots);
 	}
 
 	[Fact]
@@ -99,7 +99,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 			WithdrawAmount = 1,
 		};
 
-		Assert.Null(tx.Entries[0].CreatedTaxLot);
+		Assert.Null(tx.Entries[0].CreatedTaxLots);
 	}
 
 	[Fact]
@@ -114,13 +114,13 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel entry = tx.Entries[0];
-		Assert.NotNull(entry.CreatedTaxLot);
-		Assert.Same(entry, entry.CreatedTaxLot.CreatingTransactionEntry);
-		Assert.Equal(tx.When, entry.CreatedTaxLot.AcquiredDate);
-		Assert.Null(entry.CreatedTaxLot.CostBasisAmount);
-		Assert.Null(entry.CreatedTaxLot.CostBasisAsset);
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(entry);
+		Assert.Same(entry, createdTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.When, createdTaxLot.AcquiredDate);
+		Assert.Null(createdTaxLot.CostBasisAmount);
+		Assert.Null(createdTaxLot.CostBasisAsset);
 
-		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == entry.CreatedTaxLot.Id));
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == createdTaxLot.Id));
 	}
 
 	[Fact]
@@ -138,17 +138,17 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry = tx.Entries.Single(e => e.Amount > 0);
-		Assert.NotNull(addEntry.CreatedTaxLot);
-		Assert.Same(addEntry, addEntry.CreatedTaxLot.CreatingTransactionEntry);
-		Assert.Equal(tx.When, addEntry.CreatedTaxLot.AcquiredDate);
-		Assert.Equal(tx.WithdrawAmount, addEntry.CreatedTaxLot.CostBasisAmount);
-		Assert.Same(tx.WithdrawAsset, addEntry.CreatedTaxLot.CostBasisAsset);
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(addEntry);
+		Assert.Same(addEntry, createdTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.When, createdTaxLot.AcquiredDate);
+		Assert.Equal(tx.WithdrawAmount, createdTaxLot.CostBasisAmount);
+		Assert.Same(tx.WithdrawAsset, createdTaxLot.CostBasisAsset);
 
-		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == addEntry.CreatedTaxLot.Id));
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == createdTaxLot.Id));
 	}
 
-	[Fact]
-	public void CreatedTaxLot_InvestingAccount_Buy_ChangeAmount()
+	[Theory, PairwiseData]
+	public void CreatedTaxLot_InvestingAccount_Buy_ChangeCostBasisAmount(bool increaseAmount)
 	{
 		InvestingTransactionViewModel tx = new(this.brokerageAccount)
 		{
@@ -161,18 +161,18 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 			WithdrawAsset = this.brokerageAccount.CurrencyAsset,
 		};
 
-		tx.WithdrawAmount = 70;
+		tx.WithdrawAmount += increaseAmount ? 10 : -10;
 
 		TransactionEntryViewModel addEntry = tx.Entries.Single(e => e.Amount > 0);
-		Assert.NotNull(addEntry.CreatedTaxLot);
-		Assert.Same(addEntry, addEntry.CreatedTaxLot.CreatingTransactionEntry);
-		Assert.Equal(tx.WithdrawAmount, addEntry.CreatedTaxLot.CostBasisAmount);
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(addEntry);
+		Assert.Same(addEntry, createdTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.WithdrawAmount, createdTaxLot.CostBasisAmount);
 
-		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == addEntry.CreatedTaxLot.Id));
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == createdTaxLot.Id));
 	}
 
-	[Fact]
-	public void CreatedTaxLot_InvestingAccount_Buy_ChangeAssetAndAmount()
+	[Theory, PairwiseData]
+	public void CreatedTaxLot_InvestingAccount_Buy_ChangePurchasedAmount(bool increaseAmount)
 	{
 		InvestingTransactionViewModel tx = new(this.brokerageAccount)
 		{
@@ -185,16 +185,15 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 			WithdrawAsset = this.brokerageAccount.CurrencyAsset,
 		};
 
-		tx.WithdrawAsset = this.aapl;
-		tx.WithdrawAmount = 70;
+		tx.DepositAmount += increaseAmount ? 10 : -10;
 
 		TransactionEntryViewModel addEntry = tx.Entries.Single(e => e.Amount > 0);
-		Assert.NotNull(addEntry.CreatedTaxLot);
-		Assert.Same(addEntry, addEntry.CreatedTaxLot.CreatingTransactionEntry);
-		Assert.Equal(tx.WithdrawAmount, addEntry.CreatedTaxLot.CostBasisAmount);
-		Assert.Same(tx.WithdrawAsset, addEntry.CreatedTaxLot.CostBasisAsset);
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(addEntry);
+		Assert.Same(addEntry, createdTaxLot.CreatingTransactionEntry);
+		Assert.Equal(tx.WithdrawAmount, createdTaxLot.CostBasisAmount);
+		Assert.Same(tx.WithdrawAsset, createdTaxLot.CostBasisAsset);
 
-		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == addEntry.CreatedTaxLot.Id));
+		Assert.Single(this.Money.TaxLots.Where(tl => tl.Id == createdTaxLot.Id));
 	}
 
 	[Fact]
@@ -209,12 +208,11 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel entry = tx.Entries[0];
-		Assert.NotNull(entry.CreatedTaxLot);
-		int taxLotId = entry.CreatedTaxLot.Id;
+		int taxLotId = SingleCreatedTaxLot(entry).Id;
 
 		// Verify that after an entry with a tax lot changes to one that shouldn't have a tax lot, the tax lot should be deleted.
 		tx.Action = TransactionAction.Remove;
-		Assert.Null(entry.CreatedTaxLot);
+		Assert.Null(entry.CreatedTaxLots);
 		Assert.Empty(this.Money.TaxLots.Where(tl => tl.Id == taxLotId));
 	}
 
@@ -230,8 +228,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry = addTx.Entries[0];
-		Assert.NotNull(addEntry.CreatedTaxLot);
-		int taxLotId = addEntry.CreatedTaxLot.Id;
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(addEntry);
+		int taxLotId = createdTaxLot.Id;
 
 		InvestingTransactionViewModel removeTx1 = new(this.brokerageAccount)
 		{
@@ -242,7 +240,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel removeEntry1 = removeTx1.Entries[0];
-		TaxLotAssignment consumingAssignment1 = this.GetTaxLotAssignment(removeEntry1, addEntry.CreatedTaxLot);
+		TaxLotAssignment consumingAssignment1 = this.GetTaxLotAssignment(removeEntry1, createdTaxLot);
 		Assert.False(consumingAssignment1.Pinned);
 
 		// Remove more
@@ -255,7 +253,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel removeEntry2 = removeTx2.Entries[0];
-		TaxLotAssignment consumingAssignment2 = this.GetTaxLotAssignment(removeEntry2, addEntry.CreatedTaxLot);
+		TaxLotAssignment consumingAssignment2 = this.GetTaxLotAssignment(removeEntry2, createdTaxLot);
 		Assert.False(consumingAssignment2.Pinned);
 	}
 
@@ -271,8 +269,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry1 = addTx1.Entries[0];
-		Assert.NotNull(addEntry1.CreatedTaxLot);
-		int taxLotId1 = addEntry1.CreatedTaxLot.Id;
+		TaxLotViewModel createdTaxLot1 = SingleCreatedTaxLot(addEntry1);
+		int taxLotId1 = createdTaxLot1.Id;
 		Assert.NotEqual(0, taxLotId1);
 
 		InvestingTransactionViewModel addTx2 = new(this.brokerageAccount)
@@ -284,8 +282,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry2 = addTx2.Entries[0];
-		Assert.NotNull(addEntry2.CreatedTaxLot);
-		int taxLotId2 = addEntry2.CreatedTaxLot.Id;
+		TaxLotViewModel createdTaxLot2 = SingleCreatedTaxLot(addEntry2);
+		int taxLotId2 = createdTaxLot2.Id;
 
 		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
 		{
@@ -297,8 +295,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 
 		TransactionEntryViewModel removeEntry = removeTx.Entries[0];
 		Assert.Equal(2, this.Money.TaxLotAssignments.Count());
-		TaxLotAssignment consumingAssignment1 = this.GetTaxLotAssignment(removeEntry, addEntry1.CreatedTaxLot);
-		TaxLotAssignment consumingAssignment2 = this.GetTaxLotAssignment(removeEntry, addEntry2.CreatedTaxLot);
+		TaxLotAssignment consumingAssignment1 = this.GetTaxLotAssignment(removeEntry, createdTaxLot1);
+		TaxLotAssignment consumingAssignment2 = this.GetTaxLotAssignment(removeEntry, createdTaxLot2);
 		Assert.False(consumingAssignment1.Pinned);
 		Assert.False(consumingAssignment2.Pinned);
 		Assert.Equal(addTx1.DepositAmount, consumingAssignment1.Amount);
@@ -317,8 +315,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry1 = addTx1.Entries[0];
-		Assert.NotNull(addEntry1.CreatedTaxLot);
-		int taxLotId1 = addEntry1.CreatedTaxLot.Id;
+		TaxLotViewModel createdTaxLot1 = SingleCreatedTaxLot(addEntry1);
+		int taxLotId1 = createdTaxLot1.Id;
 		Assert.NotEqual(0, taxLotId1);
 
 		InvestingTransactionViewModel addTx2 = new(this.brokerageAccount)
@@ -330,8 +328,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry2 = addTx2.Entries[0];
-		Assert.NotNull(addEntry2.CreatedTaxLot);
-		int taxLotId2 = addEntry2.CreatedTaxLot.Id;
+		TaxLotViewModel createdTaxLot2 = SingleCreatedTaxLot(addEntry2);
+		int taxLotId2 = createdTaxLot2.Id;
 
 		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
 		{
@@ -343,7 +341,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 
 		TransactionEntryViewModel removeEntry = removeTx.Entries[0];
 		Assert.Equal(1, this.Money.TaxLotAssignments.Count());
-		TaxLotAssignment consumingAssignment1 = this.GetTaxLotAssignment(removeEntry, addEntry1.CreatedTaxLot);
+		TaxLotAssignment consumingAssignment1 = this.GetTaxLotAssignment(removeEntry, createdTaxLot1);
 		Assert.False(consumingAssignment1.Pinned);
 		Assert.Equal(0.5m, consumingAssignment1.Amount);
 	}
@@ -360,8 +358,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry1 = addTx1.Entries[0];
-		Assert.NotNull(addEntry1.CreatedTaxLot);
-		int taxLotId1 = addEntry1.CreatedTaxLot.Id;
+		TaxLotViewModel createdTaxLot1 = SingleCreatedTaxLot(addEntry1);
+		int taxLotId1 = createdTaxLot1.Id;
 		Assert.NotEqual(0, taxLotId1);
 
 		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
@@ -391,8 +389,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel addEntry = addTx.Entries[0];
-		Assert.NotNull(addEntry.CreatedTaxLot);
-		int taxLotId = addEntry.CreatedTaxLot.Id;
+		TaxLotViewModel createdTaxLot = SingleCreatedTaxLot(addEntry);
+		int taxLotId = createdTaxLot.Id;
 
 		InvestingTransactionViewModel removeTx = new(this.brokerageAccount)
 		{
@@ -403,7 +401,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		TransactionEntryViewModel removeEntry = removeTx.Entries[0];
-		TaxLotAssignment tla = this.GetTaxLotAssignment(removeEntry, addEntry.CreatedTaxLot);
+		TaxLotAssignment tla = this.GetTaxLotAssignment(removeEntry, createdTaxLot);
 		Assert.Equal(addTx.DepositAmount, tla.Amount);
 	}
 
@@ -452,8 +450,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		removeTx.WithdrawAmount = 0.8m;
-		TaxLotViewModel? taxLot = addTx.Entries[0].CreatedTaxLot;
-		Assert.NotNull(taxLot);
+		TaxLotViewModel taxLot = SingleCreatedTaxLot(addTx.Entries[0]);
 		TaxLotAssignment tla = this.GetTaxLotAssignment(removeTx.Entries[0], taxLot);
 		Assert.Equal(removeTx.WithdrawAmount, tla.Amount);
 	}
@@ -478,8 +475,7 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		};
 
 		removeTx.WithdrawAmount = 0.3m;
-		TaxLotViewModel? taxLot = addTx.Entries[0].CreatedTaxLot;
-		Assert.NotNull(taxLot);
+		TaxLotViewModel taxLot = SingleCreatedTaxLot(addTx.Entries[0]);
 		TaxLotAssignment tla = this.GetTaxLotAssignment(removeTx.Entries[0], taxLot);
 		Assert.Equal(removeTx.WithdrawAmount, tla.Amount);
 	}

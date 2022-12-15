@@ -36,6 +36,20 @@ CREATE VIEW UnsoldAsset AS
 	WHERE a.Type = 1
 	GROUP BY tl.Id
 	HAVING RemainingAmount > 0;
+
+CREATE VIEW ConsumedTaxLot AS
+	SELECT
+		tl.[Id] AS [TaxLotId],
+		tla.ConsumingTransactionEntryId AS ConsumingTransactionEntryId,
+		COALESCE(tl.[AcquiredDate], t.[When]) AS [AcquiredDate],
+		tla.[Amount] AS [Amount],
+		(tla.[Amount] / COALESCE(tl.[Amount], te.[Amount]) * tl.CostBasisAmount) AS [CostBasisAmount],
+		tl.[CostBasisAssetId] AS [CostBasisAssetId]
+	FROM TaxLotAssignment tla 
+	JOIN TaxLot tl ON tl.Id = tla.TaxLotId
+	JOIN TransactionEntry te ON te.Id = tl.CreatingTransactionEntryId
+	JOIN [Transaction] t ON t.Id = te.TransactionId;
+
 -- TODO: for purposes of UI presentation, add a filter for transaction 
 --       so that the RemainingAmount subtotal can exclude the transaction being shown,
 --       since it will have a unique column dedicated to showing (and editing) that transaction.
@@ -49,10 +63,13 @@ CREATE VIEW UnsoldAsset AS
 --       ✅ sale of shares
 --       ✅ removal of shares (without a sale)
 --       ⏹️ covering a short sale
---  * ⏹️ tax lots must track a transfer of shares from one account to another.
---  * ⏹️ Display unrealized losses and gains, *by account*.
---  * ⏹️ Isolate tax lots to their accounts where important (401k, brokerage), but allow for transfers across accounts (crypto).
---    We could say that tax lots are 'locked' into the account they are created inside. When shares are transferred,
---    that tax lot is closed and another created.
---    When selecting tax lot(s) to close or take from in a transaction, only those assigned to that account 
---    and with acquisition dates no newer than the closing date are available for selection.
+--  ✅ tax lots must track a transfer of shares from one account to another.
+--  ⏹️ Display unrealized losses and gains, *by account*.
+--  ✅ Isolate tax lots to their accounts where important (401k, brokerage), but allow for transfers across accounts (crypto).
+--     We could say that tax lots are 'locked' into the account they are created inside. When shares are transferred,
+--     that tax lot is closed and another created.
+--     When selecting tax lot(s) to close or take from in a transaction, only those assigned to that account 
+--     and with acquisition dates no newer than the closing date are available for selection.
+--  ⏹️ What about exchanges (trading BTC for ZEC)?
+--     We'll need to establish FMV in currency of the trade so that reports can represent a sale of the original tax lot,
+--     and the new tax lot can report a cost basis in currency.

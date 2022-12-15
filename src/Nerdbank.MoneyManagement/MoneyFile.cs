@@ -215,6 +215,15 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	internal TableQuery<ConsumedTaxLot> ConsumedTaxLots
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<ConsumedTaxLot>();
+		}
+	}
+
 	internal TaxLotBookKeeping TaxLotBookKeeping { get; }
 
 	internal Configuration CurrentConfiguration { get; }
@@ -517,11 +526,27 @@ WHERE [Balances].[AccountId] = ?
 		return this.TaxLotAssignments.Where(tla => tla.ConsumingTransactionEntryId == transactionEntryId);
 	}
 
+	public TableQuery<TaxLot> GetTaxLotsCreatedBy(int transactionEntryId) => this.TaxLots.Where(lot => lot.CreatingTransactionEntryId == transactionEntryId);
+
 	/// <inheritdoc/>
 	public void Dispose()
 	{
 		this.Save();
 		this.connection.Dispose();
+	}
+
+	internal bool IsMoreThanOneTaxLotConsumedBy(TransactionViewModel transaction)
+	{
+		// PERF: we could implement the TLA consumption check *much* more efficiently as a SQL query.
+		return transaction is InvestingTransactionViewModel { Action: TransactionAction.Transfer } tx && tx.Entries.SelectMany(e => this.GetTaxLotAssignments(e.Id)).Count() > 1;
+	}
+
+	internal void PurgeTaxLotsCreatedBy(int transactionEntryId, IEnumerable<int>? entryIdsToPreserve = null)
+	{
+		string sql = $"DELETE FROM [TaxLot] WHERE [CreatingTransactionEntryId] = {transactionEntryId} AND [Id] NOT IN ({string.Join(',', entryIdsToPreserve ?? Enumerable.Empty<int>())})";
+		this.ExecuteSql(sql);
+		this.LogSqlEvent(EventType.DeleteQuery, nameof(TaxLot), sql);
+		this.IncrementDataVersion();
 	}
 
 	internal void PurgeTransactionEntries(int transactionId, IEnumerable<int> entryIdsToPreserve)
