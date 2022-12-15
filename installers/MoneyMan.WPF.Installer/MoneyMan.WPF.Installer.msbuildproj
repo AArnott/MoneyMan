@@ -37,7 +37,7 @@
 	     by the release pipeline another way. But this target
 	     exists for convenience in testing installers locally. -->
 	<ItemGroup>
-		<PackageReference Include="Squirrel.Windows" Version="2.0.2-netcore.3" NoWarn="NU1701" />
+		<PackageReference Include="Squirrel.Windows" NoWarn="NU1701" />
 	</ItemGroup>
 	<Target Name="Installer" DependsOnTargets="Pack">
 		<ItemGroup>
