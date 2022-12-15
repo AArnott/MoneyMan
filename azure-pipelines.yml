@@ -17,9 +17,13 @@ parameters:
   displayName: Build on macOS
   type: boolean
   default: false # macOS is often bogged down in Azure Pipelines
+- name: RunTests
+  displayName: Run tests
+  type: boolean
+  default: true
 
 variables:
-  TreatWarningsAsErrors: true
+  MSBuildTreatWarningsAsErrors: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BuildConfiguration: Release
   codecov_token: 042b0b39-5508-4c6f-9085-5298203a5392
@@ -30,3 +34,4 @@ jobs:
 - template: azure-pipelines/build.yml
   parameters:
     includeMacOS: ${{ parameters.includeMacOS }}
+    RunTests: ${{ parameters.RunTests }}
