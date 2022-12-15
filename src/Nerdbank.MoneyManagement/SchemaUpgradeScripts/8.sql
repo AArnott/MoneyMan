@@ -1,4 +1,35 @@
-﻿CREATE TABLE "TaxLot" (
+﻿DROP VIEW "TransactionAndEntry";
+CREATE VIEW "TransactionAndEntry" AS
+	WITH AccountsAndTransactions AS (
+		SELECT a.[Id] AS [AccountId], t.[Id] AS [TransactionId]
+		FROM [Account] a
+		JOIN [Transaction] t
+		WHERE a.[Id] IN (SELECT [AccountId] FROM [TransactionEntry] WHERE [TransactionId] = t.[Id])
+	)
+	SELECT
+		a.[Id] AS [ContextAccountId],
+		t.[Id] AS [TransactionId],
+		te.[Id] AS [TransactionEntryId],
+		te.[AccountId] AS [AccountId],
+		te.[OfxFitId] AS [OfxFitId],
+		t.[When],
+		t.[Action],
+		t.[CheckNumber],
+		t.[RelatedAssetId],
+		t.[Payee],
+		t.[Memo] AS [TransactionMemo],
+		te.[Memo] AS [TransactionEntryMemo],
+		te.[Amount],
+		te.[AssetId],
+		te.[Cleared]
+
+	FROM [Account] a
+	JOIN [Transaction] t
+	INNER JOIN [TransactionEntry] te ON te.[TransactionId] = t.[Id]
+	WHERE (a.[Id], t.[Id]) IN AccountsAndTransactions
+	ORDER BY a.[Id], t.[Id], te.[Id];
+
+CREATE TABLE "TaxLot" (
 	"Id"                         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	"CreatingTransactionEntryId" INTEGER NOT NULL REFERENCES "TransactionEntry"("Id") ON DELETE CASCADE,
 	"AcquiredDate"               INTEGER, -- when null, use the TransactionEntry's date
