@@ -50,6 +50,7 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Requires.NotNull(connection, nameof(connection));
 		this.connection = connection;
 
+		this.TaxLotBookKeeping = new(this);
 		this.CurrentConfiguration = this.connection.Table<Configuration>().First();
 		this.Action = new TransactionOperations(this);
 	}
@@ -174,6 +175,24 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	public TableQuery<TaxLot> TaxLots
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<TaxLot>();
+		}
+	}
+
+	public TableQuery<TaxLotAssignment> TaxLotAssignments
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<TaxLotAssignment>();
+		}
+	}
+
 	public TableQuery<Account> Categories
 	{
 		get
@@ -186,6 +205,26 @@ public class MoneyFile : BindableBase, IDisposableObservable
 	public int PreferredAssetId => this.CurrentConfiguration.PreferredAssetId;
 
 	public bool IsDisposed => this.connection.Handle is null;
+
+	internal TableQuery<UnsoldAsset> UnsoldAssets
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<UnsoldAsset>();
+		}
+	}
+
+	internal TableQuery<ConsumedTaxLot> ConsumedTaxLots
+	{
+		get
+		{
+			Verify.NotDisposed(this);
+			return this.connection.Table<ConsumedTaxLot>();
+		}
+	}
+
+	internal TaxLotBookKeeping TaxLotBookKeeping { get; }
 
 	internal Configuration CurrentConfiguration { get; }
 
@@ -342,6 +381,60 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		}
 	}
 
+	public void InsertOrReplace(IReadOnlyList<ModelBase> models)
+	{
+		Verify.NotDisposed(this);
+
+		foreach (ModelBase model in models)
+		{
+			Requires.Argument(model.Id >= 0, nameof(model), "This model has a negative ID and therefore should never be persisted.");
+		}
+
+		List<ModelBase> inserted = new(models.Count);
+		List<(ModelBase, ModelBase)> changed = new(models.Count);
+		foreach (ModelBase model in models)
+		{
+			ModelBase? before = model.Id > 0 ? (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model)) : null;
+			if (before is not null && this.connection.Update(model) > 0)
+			{
+				this.LogUpdate(model);
+				changed.Add((before, model));
+			}
+			else
+			{
+				this.connection.Insert(model);
+				this.LogInsert(model);
+				inserted.Add(model);
+			}
+		}
+
+		if (changed.Count > 0 || inserted.Count > 0)
+		{
+			this.IncrementDataVersion();
+		}
+
+		if (changed.Count > 0)
+		{
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: changed));
+		}
+
+		if (inserted.Count > 0)
+		{
+			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: inserted));
+		}
+	}
+
+	public bool Delete(IEnumerable<ModelBase> models)
+	{
+		bool deletedAny = false;
+		foreach (ModelBase model in models)
+		{
+			deletedAny |= this.Delete(model);
+		}
+
+		return deletedAny;
+	}
+
 	public bool Delete(ModelBase model)
 	{
 		Verify.NotDisposed(this);
@@ -423,11 +516,37 @@ WHERE [Balances].[AccountId] = ?
 		return value;
 	}
 
+	/// <summary>
+	/// Gets the tax lots that a given transaction entry consumes (via a sale or removal.)
+	/// </summary>
+	/// <param name="transactionEntryId">The <see cref="ModelBase.Id"/> of the <see cref="TransactionEntry"/>.</param>
+	/// <returns>The <see cref="TaxLotAssignment"/> rows that link the specified <paramref name="transactionEntryId"/> to to tax lots it pulls from.</returns>
+	public TableQuery<TaxLotAssignment> GetTaxLotAssignments(int transactionEntryId)
+	{
+		return this.TaxLotAssignments.Where(tla => tla.ConsumingTransactionEntryId == transactionEntryId);
+	}
+
+	public TableQuery<TaxLot> GetTaxLotsCreatedBy(int transactionEntryId) => this.TaxLots.Where(lot => lot.CreatingTransactionEntryId == transactionEntryId);
+
 	/// <inheritdoc/>
 	public void Dispose()
 	{
 		this.Save();
 		this.connection.Dispose();
+	}
+
+	internal bool IsMoreThanOneTaxLotConsumedBy(TransactionViewModel transaction)
+	{
+		// PERF: we could implement the TLA consumption check *much* more efficiently as a SQL query.
+		return transaction is InvestingTransactionViewModel { Action: TransactionAction.Transfer } tx && tx.Entries.SelectMany(e => this.GetTaxLotAssignments(e.Id)).Count() > 1;
+	}
+
+	internal void PurgeTaxLotsCreatedBy(int transactionEntryId, IEnumerable<int>? entryIdsToPreserve = null)
+	{
+		string sql = $"DELETE FROM [TaxLot] WHERE [CreatingTransactionEntryId] = {transactionEntryId} AND [Id] NOT IN ({string.Join(',', entryIdsToPreserve ?? Enumerable.Empty<int>())})";
+		this.ExecuteSql(sql);
+		this.LogSqlEvent(EventType.DeleteQuery, nameof(TaxLot), sql);
+		this.IncrementDataVersion();
 	}
 
 	internal void PurgeTransactionEntries(int transactionId, IEnumerable<int> entryIdsToPreserve)
@@ -550,6 +669,15 @@ WHERE ""{nameof(TransactionEntry.AccountId)}"" IN ({string.Join(", ", oldCategor
 	}
 
 	internal List<TransactionEntry> GetTransactionEntries(int transactionId) => this.TransactionEntries.Where(te => te.TransactionId == transactionId).ToList();
+
+	internal (int AccountId, int TransactionId) GetTransactionEntryOwnership(int transactionEntryId)
+	{
+		return (
+			from te in this.TransactionEntries
+			where te.Id == transactionEntryId
+			join t in this.Transactions on te.TransactionId equals t.Id
+			select (te.AccountId, t.Id)).First();
+	}
 
 	/// <summary>
 	/// Gets a list of IDs to the accounts whose ledgers would display any transactions with the given IDs.
@@ -852,7 +980,7 @@ WHERE [Id] != ?
 		{
 			Transaction tx = new()
 			{
-				Action = TransactionAction.Withdraw,
+				Action = TransactionAction.Transfer,
 				When = when ?? DateTime.Today,
 			};
 			this.money.Insert(tx);

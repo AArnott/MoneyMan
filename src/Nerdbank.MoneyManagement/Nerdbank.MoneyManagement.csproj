@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
@@ -10,13 +10,12 @@
     <None Remove="SchemaUpgradeScripts\*.sql" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Nerdbank.Qif" Version="1.0.66-beta" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.1.46" />
-    <PackageReference Include="OfxNet" Version="1.2.0" />
-    <PackageReference Include="PCLCommandBase" Version="0.4.22-alpha" />
-    <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
-    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.0.7" />
-    <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
-    <PackageReference Include="Validation" Version="2.5.51" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" />
+    <PackageReference Include="Nerdbank.Qif" />
+    <PackageReference Include="OfxNet" />
+    <PackageReference Include="PCLCommandBase" />
+    <PackageReference Include="sqlite-net-pcl" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" />
+    <PackageReference Include="Validation" />
   </ItemGroup>
 </Project>

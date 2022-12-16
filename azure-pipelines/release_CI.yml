@@ -10,7 +10,7 @@ resources:
         include:
         - main
 
-stages:
+jobs:
 - template: release_squirrel.yml
   parameters:
     cibranch: $(resources.pipeline.CI.sourceBranch)

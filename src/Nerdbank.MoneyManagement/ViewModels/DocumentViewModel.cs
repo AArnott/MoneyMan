@@ -192,7 +192,7 @@ public class DocumentViewModel : BindableBase, IDisposable
 	[return: NotNullIfNotNull("accountId")]
 	public AccountViewModel? GetAccount(int? accountId) => accountId is null ? null : this.GetAccount(accountId.Value);
 
-	public AccountViewModel GetAccount(int accountId) => this.BankingPanel.Accounts.SingleOrDefault(acc => acc.Id == accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
+	public AccountViewModel GetAccount(int accountId) => this.BankingPanel.FindAccount(accountId) ?? this.CategoriesPanel.Categories.SingleOrDefault(cat => cat.Id == accountId) ?? throw new ArgumentException("No match found.");
 
 	public AccountViewModel? GetAccount(string name) => this.GetAccount(this.MoneyFile.Accounts.FirstOrDefault(acct => acct.Name == name)?.Id);
 
@@ -205,6 +205,21 @@ public class DocumentViewModel : BindableBase, IDisposable
 	public CategoryAccountViewModel? GetCategory(int? categoryId) => categoryId is null ? null : this.GetCategory(categoryId.Value);
 
 	public CategoryAccountViewModel? FindCategory(string name) => this.GetCategory(this.MoneyFile.Categories.FirstOrDefault(cat => cat.Name == name)?.Id);
+
+	[return: NotNullIfNotNull("creatingTransactionEntryId")]
+	public TransactionEntryViewModel? GetTransactionEntry(int? transactionEntryId)
+	{
+		if (transactionEntryId is null)
+		{
+			return null;
+		}
+
+		(int AccountId, int TransactionId) owner = this.MoneyFile.GetTransactionEntryOwnership(transactionEntryId.Value);
+		AccountViewModel account = this.GetAccount(owner.AccountId);
+		TransactionViewModel? tx = account.FindTransaction(owner.TransactionId);
+		Assumes.NotNull(tx);
+		return tx.Entries.First(te => te.Id == transactionEntryId.Value);
+	}
 
 	public void Save() => this.MoneyFile.Save();
 

@@ -27,7 +27,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 		this.CopyFrom(this.Model);
 	}
 
-	[Required]
+	[Required, Unique]
 	public string Name
 	{
 		get => this.name;
@@ -76,6 +76,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 
 	public string CurrencyAssetLabel => "Currency";
 
+	/// <inheritdoc cref="Account.CurrencyAssetId"/>
 	public AssetViewModel? CurrencyAsset
 	{
 		get => this.currencyAsset;

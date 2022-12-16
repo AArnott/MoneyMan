@@ -19,6 +19,7 @@
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
 		<converters:TypeToVisibilityConverter x:Key="typeToVisibilityConverter" />
 		<Style TargetType="{x:Type TextBox}">
+			<Setter Property="VerticalContentAlignment" Value="Center" />
 			<EventSetter Event="GotKeyboardFocus" Handler="TextBox_GotKeyboardFocus"/>
 			<Style.Triggers>
 				<Trigger Property="Validation.HasError" Value="True">
@@ -96,222 +97,229 @@
 				<Grid Name="BankingLayoutGrid">
 					<Grid.Resources>
 						<DataTemplate DataType="{x:Type vm:BankingAccountViewModel}">
-							<DockPanel>
-								<DockPanel.Resources>
-									<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" />
-								</DockPanel.Resources>
-								<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
-								<DataGrid Name="TransactionDataGrid"
-								          AlternationCount="2" 
-								          PreparingCellForEdit="DataGrid_PreparingCellForEdit"
-								          ItemsSource="{Binding Source={StaticResource transactions}}"
-								          IsSynchronizedWithCurrentItem="True"
-								          SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
-								          AutoGenerateColumns="False">
-									<DataGrid.RowStyle>
-										<Style TargetType="DataGridRow">
-											<Style.Triggers>
-												<Trigger Property="AlternationIndex" Value="0">
-													<Setter Property="Background" Value="AliceBlue" />
-												</Trigger>
-												<DataTrigger Binding="{Binding IsPersisted}" Value="False">
-													<Setter Property="Background" Value="LightYellow" />
-												</DataTrigger>
-											</Style.Triggers>
-										</Style>
-									</DataGrid.RowStyle>
-									<DataGrid.Columns>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Text="{Binding When, Mode=OneWay, StringFormat=d}" Margin="3pt" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.PayeeHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Text="{Binding Payee, Mode=OneWay}" Margin="3pt" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Text="{Binding OtherAccount.TransferTargetName}" Margin="3pt" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<StackPanel Orientation="Horizontal">
-														<ComboBox
-															ItemsSource="{Binding AvailableTransactionTargets}"
-															SelectedItem="{Binding OtherAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-															<ComboBox.ItemTemplate>
+							<Grid>
+								<DockPanel>
+									<DockPanel.Resources>
+										<CollectionViewSource Source="{Binding Transactions}" x:Key="transactions" />
+									</DockPanel.Resources>
+									<Label Content="{Binding Name}" DockPanel.Dock="Top" FontSize="14pt" FontWeight="Bold" />
+									<DataGrid Name="TransactionDataGrid"
+											  AlternationCount="2" 
+											  PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+											  ItemsSource="{Binding Source={StaticResource transactions}}"
+											  IsSynchronizedWithCurrentItem="True"
+											  SelectedItem="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=TwoWay, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
+											  AutoGenerateColumns="False">
+										<DataGrid.RowStyle>
+											<Style TargetType="DataGridRow">
+												<Style.Triggers>
+													<Trigger Property="AlternationIndex" Value="0">
+														<Setter Property="Background" Value="AliceBlue" />
+													</Trigger>
+													<DataTrigger Binding="{Binding IsPersisted}" Value="False">
+														<Setter Property="Background" Value="LightYellow" />
+													</DataTrigger>
+												</Style.Triggers>
+											</Style>
+										</DataGrid.RowStyle>
+										<DataGrid.Columns>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.WhenHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding When, Mode=OneWay, StringFormat=d}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<DatePicker SelectedDate="{Binding When, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.PayeeHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding Payee, Mode=OneWay}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding Payee, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding OtherAccount.TransferTargetName}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<StackPanel Orientation="Horizontal">
+															<ComboBox
+																ItemsSource="{Binding AvailableTransactionTargets}"
+																SelectedItem="{Binding OtherAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+																<ComboBox.ItemTemplate>
+																	<DataTemplate>
+																		<TextBlock Text="{Binding TransferTargetName}" />
+																	</DataTemplate>
+																</ComboBox.ItemTemplate>
+															</ComboBox>
+															<ToggleButton Content="📃" Command="{Binding SplitCommand}" IsChecked="{Binding ContainsSplits, Mode=OneWay}" ToolTip="{Binding SplitCommandToolTip}" />
+														</StackPanel>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Margin="3pt" Text="{Binding AmountFormatted}" HorizontalAlignment="Right" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CheckNumberHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Margin="3pt" Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" HorizontalAlignment="Right" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<TextBox Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.ClearedHeader, Source={StaticResource viewModel}}">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Margin="3pt" Text="{Binding ClearedShortCaption}" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+												<DataGridTemplateColumn.CellEditingTemplate>
+													<DataTemplate>
+														<ComboBox SelectedValue="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+																  ItemsSource="{Binding ClearedStates}"
+																  DisplayMemberPath="Caption" 
+																  SelectedValuePath="Value" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellEditingTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Header="{Binding Document.BankingPanel.BalanceHeader, Source={StaticResource viewModel}}" IsReadOnly="True">
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Margin="3pt" Text="{Binding BalanceFormatted}" HorizontalAlignment="Right" />
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+											</DataGridTemplateColumn>
+										</DataGrid.Columns>
+										<DataGrid.RowDetailsTemplate>
+											<DataTemplate>
+												<DataGrid
+													AlternationCount="2"
+													Margin="5,0,0,0"
+													PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+													ItemsSource="{Binding Splits}"
+													IsSynchronizedWithCurrentItem="True"
+													SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
+													SelectionMode="Single"
+													Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
+													AutoGenerateColumns="False">
+													<DataGrid.RowStyle>
+														<Style TargetType="DataGridRow">
+															<Style.Triggers>
+																<Trigger Property="AlternationIndex" Value="0">
+																	<Setter Property="Background" Value="BlanchedAlmond" />
+																</Trigger>
+																<DataTrigger Binding="{Binding IsPersisted}" Value="False">
+																	<Setter Property="Background" Value="LightYellow" />
+																</DataTrigger>
+															</Style.Triggers>
+														</Style>
+													</DataGrid.RowStyle>
+													<DataGrid.ContextMenu>
+														<ContextMenu>
+															<MenuItem Header="{Binding DeleteSplitCommandCaption}" 
+															  Command="{Binding DeleteSplitCommand}" />
+														</ContextMenu>
+													</DataGrid.ContextMenu>
+													<DataGrid.Columns>
+														<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
+															<DataGridTemplateColumn.CellTemplate>
 																<DataTemplate>
-																	<TextBlock Text="{Binding TransferTargetName}" />
+																	<TextBlock Text="{Binding Account.TransferTargetName}" Margin="3pt" />
 																</DataTemplate>
-															</ComboBox.ItemTemplate>
-														</ComboBox>
-														<ToggleButton Content="📃" Command="{Binding SplitCommand}" IsChecked="{Binding ContainsSplits, Mode=OneWay}" ToolTip="{Binding SplitCommandToolTip}" />
-													</StackPanel>
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Margin="3pt" Text="{Binding AmountFormatted}" HorizontalAlignment="Right" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CheckNumberHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Margin="3pt" Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}}" HorizontalAlignment="Right" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<TextBox Text="{Binding CheckNumber, Converter={StaticResource numberOrNullConverter}, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.ClearedHeader, Source={StaticResource viewModel}}">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Margin="3pt" Text="{Binding ClearedShortCaption}" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-											<DataGridTemplateColumn.CellEditingTemplate>
-												<DataTemplate>
-													<ComboBox SelectedValue="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-															  ItemsSource="{Binding ClearedStates}"
-															  DisplayMemberPath="Caption" 
-															  SelectedValuePath="Value" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellEditingTemplate>
-										</DataGridTemplateColumn>
-										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.BalanceHeader, Source={StaticResource viewModel}}" IsReadOnly="True">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<TextBlock Margin="3pt" Text="{Binding BalanceFormatted}" HorizontalAlignment="Right" />
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-										</DataGridTemplateColumn>
-									</DataGrid.Columns>
-									<DataGrid.RowDetailsTemplate>
-										<DataTemplate>
-											<DataGrid
-												AlternationCount="2"
-												Margin="5,0,0,0"
-												PreparingCellForEdit="DataGrid_PreparingCellForEdit"
-												ItemsSource="{Binding Splits}"
-												IsSynchronizedWithCurrentItem="True"
-												SelectedItem="{Binding Path=SelectedSplit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static CollectionView.NewItemPlaceholder}}"
-												SelectionMode="Single"
-												Visibility="{Binding ContainsSplits, Converter={StaticResource boolToVisibilityConverter}}"
-												AutoGenerateColumns="False">
-												<DataGrid.RowStyle>
-													<Style TargetType="DataGridRow">
-														<Style.Triggers>
-															<Trigger Property="AlternationIndex" Value="0">
-																<Setter Property="Background" Value="BlanchedAlmond" />
-															</Trigger>
-															<DataTrigger Binding="{Binding IsPersisted}" Value="False">
-																<Setter Property="Background" Value="LightYellow" />
-															</DataTrigger>
-														</Style.Triggers>
-													</Style>
-												</DataGrid.RowStyle>
-												<DataGrid.ContextMenu>
-													<ContextMenu>
-														<MenuItem Header="{Binding DeleteSplitCommandCaption}" 
-												          Command="{Binding DeleteSplitCommand}" />
-													</ContextMenu>
-												</DataGrid.ContextMenu>
-												<DataGrid.Columns>
-													<DataGridTemplateColumn Header="{Binding Document.BankingPanel.CategoryHeader, Source={StaticResource viewModel}}">
-														<DataGridTemplateColumn.CellTemplate>
-															<DataTemplate>
-																<TextBlock Text="{Binding Account.TransferTargetName}" Margin="3pt" />
-															</DataTemplate>
-														</DataGridTemplateColumn.CellTemplate>
-														<DataGridTemplateColumn.CellEditingTemplate>
-															<DataTemplate>
-																<ComboBox ItemsSource="{Binding AvailableTransactionTargets}"
-																		  SelectedItem="{Binding Account, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-																	<ComboBox.ItemTemplate>
-																		<DataTemplate>
-																			<TextBlock Text="{Binding TransferTargetName}" />
-																		</DataTemplate>
-																	</ComboBox.ItemTemplate>
-																</ComboBox>
-															</DataTemplate>
-														</DataGridTemplateColumn.CellEditingTemplate>
-													</DataGridTemplateColumn>
-													<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
-														<DataGridTemplateColumn.CellTemplate>
-															<DataTemplate>
-																<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
-															</DataTemplate>
-														</DataGridTemplateColumn.CellTemplate>
-														<DataGridTemplateColumn.CellEditingTemplate>
-															<DataTemplate>
-																<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
-															</DataTemplate>
-														</DataGridTemplateColumn.CellEditingTemplate>
-													</DataGridTemplateColumn>
-													<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
-														<DataGridTemplateColumn.CellTemplate>
-															<DataTemplate>
-																<TextBlock Margin="3pt" Text="{Binding AmountFormatted}" HorizontalAlignment="Right" />
-															</DataTemplate>
-														</DataGridTemplateColumn.CellTemplate>
-														<DataGridTemplateColumn.CellEditingTemplate>
-															<DataTemplate>
-																<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
-															</DataTemplate>
-														</DataGridTemplateColumn.CellEditingTemplate>
-													</DataGridTemplateColumn>
-												</DataGrid.Columns>
-											</DataGrid>
-										</DataTemplate>
-									</DataGrid.RowDetailsTemplate>
-									<DataGrid.ContextMenu>
-										<ContextMenu>
-											<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
-										</ContextMenu>
-									</DataGrid.ContextMenu>
-								</DataGrid>
-							</DockPanel>
+															</DataGridTemplateColumn.CellTemplate>
+															<DataGridTemplateColumn.CellEditingTemplate>
+																<DataTemplate>
+																	<ComboBox ItemsSource="{Binding AvailableTransactionTargets}"
+																			  SelectedItem="{Binding Account, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+																		<ComboBox.ItemTemplate>
+																			<DataTemplate>
+																				<TextBlock Text="{Binding TransferTargetName}" />
+																			</DataTemplate>
+																		</ComboBox.ItemTemplate>
+																	</ComboBox>
+																</DataTemplate>
+															</DataGridTemplateColumn.CellEditingTemplate>
+														</DataGridTemplateColumn>
+														<DataGridTemplateColumn Header="{Binding Document.BankingPanel.MemoHeader, Source={StaticResource viewModel}}">
+															<DataGridTemplateColumn.CellTemplate>
+																<DataTemplate>
+																	<TextBlock Text="{Binding Memo, Mode=OneWay}" Margin="3pt" />
+																</DataTemplate>
+															</DataGridTemplateColumn.CellTemplate>
+															<DataGridTemplateColumn.CellEditingTemplate>
+																<DataTemplate>
+																	<TextBox Text="{Binding Memo, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
+																</DataTemplate>
+															</DataGridTemplateColumn.CellEditingTemplate>
+														</DataGridTemplateColumn>
+														<DataGridTemplateColumn Header="{Binding Document.BankingPanel.AmountHeader, Source={StaticResource viewModel}}">
+															<DataGridTemplateColumn.CellTemplate>
+																<DataTemplate>
+																	<TextBlock Margin="3pt" Text="{Binding AmountFormatted}" HorizontalAlignment="Right" />
+																</DataTemplate>
+															</DataGridTemplateColumn.CellTemplate>
+															<DataGridTemplateColumn.CellEditingTemplate>
+																<DataTemplate>
+																	<TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																</DataTemplate>
+															</DataGridTemplateColumn.CellEditingTemplate>
+														</DataGridTemplateColumn>
+													</DataGrid.Columns>
+												</DataGrid>
+											</DataTemplate>
+										</DataGrid.RowDetailsTemplate>
+										<DataGrid.ContextMenu>
+											<ContextMenu>
+												<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
+											</ContextMenu>
+										</DataGrid.ContextMenu>
+									</DataGrid>
+								</DockPanel>
+								<TextBlock 
+									Visibility="{Binding Faulted, Converter={StaticResource nullToVisibilityConverter}}" 
+									Text="{Binding Faulted.Message}"
+									Background="White"
+									TextAlignment="Center" />
+							</Grid>
 						</DataTemplate>
 						<DataTemplate DataType="{x:Type vm:InvestingAccountViewModel}">
 							<DockPanel>
@@ -381,11 +389,12 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
-																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="auto" />
 																	<ColumnDefinition Width="3*" />
 																	<ColumnDefinition Width="1*" />
+																	<ColumnDefinition Width="1*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
@@ -393,7 +402,11 @@
 																	DisplayMemberPath="Name" />
 																<StackPanel Grid.Column="2" Orientation="Horizontal">
 																	<TextBlock Text="@" Margin="3,3,3,0" />
-																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="30pt" />
+																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="65" />
+																</StackPanel>
+																<StackPanel Grid.Column="3" Orientation="Horizontal">
+																	<TextBlock Text="- commission" Margin="3,3,3,0" />
+																	<TextBox Text="{Binding Commission, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35" />
 																</StackPanel>
 															</Grid>
 														</DataTemplate>
@@ -408,15 +421,20 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
-																	<ColumnDefinition Width="30pt" />
-																	<ColumnDefinition Width="*" />
+																	<ColumnDefinition Width="auto" />
+																	<ColumnDefinition Width="3*" />
+																	<ColumnDefinition Width="1*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
 																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
+																<StackPanel Grid.Column="2" Orientation="Horizontal">
+																	<TextBlock Text="@" Margin="3,3,3,0" />
+																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="65" />
+																</StackPanel>
 															</Grid>
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.AddShares>
@@ -424,7 +442,7 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
-																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="auto" />
 																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
 																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
@@ -440,15 +458,19 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="auto" />
 																	<ColumnDefinition Width="*" />
-																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="auto" />
+																	<ColumnDefinition Width="auto" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding CashValue, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 																<ComboBox
-																	Grid.Column="0"
+																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
 																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
+																<TextBlock Grid.Column="2" Text="Reinvested as shares:" />
+																<TextBox Grid.Column="3" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
 															</Grid>
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.Dividend>
@@ -456,9 +478,9 @@
 														<DataTemplate DataType="{x:Type vm:InvestingTransactionViewModel}">
 															<Grid>
 																<Grid.ColumnDefinitions>
-																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="auto" />
 																	<ColumnDefinition Width="*" />
-																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="auto" />
 																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
 																<TextBox Grid.Column="0" Text="{Binding DebitAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
@@ -481,7 +503,7 @@
 															<Grid>
 																<Grid.ColumnDefinitions>
 																	<ColumnDefinition Width="*" />
-																	<ColumnDefinition Width="30pt" />
+																	<ColumnDefinition Width="auto" />
 																	<ColumnDefinition Width="*" />
 																</Grid.ColumnDefinitions>
 																<ComboBox
@@ -489,7 +511,7 @@
 																	ItemsSource="{Binding Accounts}"
 																	SelectedItem="{Binding SimpleAccount, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
-																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35"/>
 																<ComboBox
 																	Grid.Column="2"
 																	ItemsSource="{Binding Assets}"
@@ -520,7 +542,75 @@
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Header="{Binding Document.BankingPanel.ClearedHeader, Source={StaticResource viewModel}}">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Margin="3pt" Text="{Binding ClearedShortCaption}" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+											<DataGridTemplateColumn.CellEditingTemplate>
+												<DataTemplate>
+													<ComboBox SelectedValue="{Binding Cleared, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+																  ItemsSource="{Binding ClearedStates}"
+																  DisplayMemberPath="Caption" 
+																  SelectedValuePath="Value" />
+												</DataTemplate>
+											</DataGridTemplateColumn.CellEditingTemplate>
+										</DataGridTemplateColumn>
 									</DataGrid.Columns>
+									<DataGrid.RowDetailsTemplate>
+										<DataTemplate>
+											<ContentControl DataContext="{Binding}" Name="X">
+												<ContentControl.Resources>
+													<DataTemplate x:Key="CreateLots">
+														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
+																		Margin="5">
+															<StackPanel>
+																<StackPanel Orientation="Horizontal">
+																	<Label Content="{Binding Document.BankingPanel.AcquisitionDatePrompt, Source={StaticResource viewModel}}"/>
+																	<DatePicker Width="80pt" SelectedDate="{Binding AcquisitionDate, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+																				ToolTip="{Binding Document.BankingPanel.AcquisitionDateToolTip, Source={StaticResource viewModel}}"/>
+																</StackPanel>
+																<TextBlock TextWrapping="Wrap" Text="{Binding Document.BankingPanel.LotInfoExplanation, Source={StaticResource viewModel}}" />
+															</StackPanel>
+														</ContentControl>
+													</DataTemplate>
+													<DataTemplate x:Key="SelectLots">
+														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
+																		Margin="5">
+															<StackPanel>
+																<StackPanel Orientation="Horizontal">
+																	<Label Content="🚧 Tax lot selection coming soon"/>
+																</StackPanel>
+																<TextBlock TextWrapping="Wrap" Text="{Binding Document.BankingPanel.LotInfoExplanation, Source={StaticResource viewModel}}" />
+															</StackPanel>
+														</ContentControl>
+													</DataTemplate>
+												</ContentControl.Resources>
+												<ContentControl.Style>
+													<Style TargetType="ContentControl">
+														<Style.Triggers>
+															<DataTrigger Binding="{Binding Action}" Value="Add">
+																<Setter Property="ContentTemplate" Value="{StaticResource CreateLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Transfer">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Sell">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Remove">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Exchange">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+														</Style.Triggers>
+													</Style>
+												</ContentControl.Style>
+											</ContentControl>
+										</DataTemplate>
+									</DataGrid.RowDetailsTemplate>
 									<DataGrid.ContextMenu>
 										<ContextMenu>
 											<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
@@ -722,13 +812,13 @@
 									 Grid.Column="1"
 									 MaxLength="1"
 									 Text="{Binding CurrencySymbol, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" />
-							<Label Content="{Binding Document.AssetsPanel.CurrencyDecimalDigitsLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CurrencyDecimalDigits}" 
+							<Label Content="{Binding Document.AssetsPanel.DecimalDigitsLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=DecimalDigits}" 
 								   Grid.Row="1" />
-							<TextBox Name="CurrencyDecimalDigits"
+							<TextBox Name="DecimalDigits"
 									 Grid.Row="1"
 									 Grid.Column="1"
 									 MaxLength="2"
-									 Text="{Binding CurrencyDecimalDigits, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
+									 Text="{Binding DecimalDigits, UpdateSourceTrigger=PropertyChanged, NotifyOnValidationError=True, ValidatesOnDataErrors=True}"
 									 InputScope="Number"/>
 						</Grid>
 					</StackPanel>
@@ -747,7 +837,8 @@
 					</CollectionViewSource>
 				</TabItem.Resources>
 				<DockPanel>
-					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource accounts}">
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource accounts}"
+					            Visibility="{Binding Document.AccountsPanel.SelectedAccount, Source={StaticResource viewModel}, Converter={StaticResource nullToVisibilityConverter}}">
 						<StackPanel.Resources>
 							<DataTemplate DataType="{x:Type vm:BankingAccountViewModel}">
 								<StackPanel>
@@ -812,7 +903,8 @@
 					<CollectionViewSource Source="{Binding Categories}" x:Key="categories" />
 				</TabItem.Resources>
 				<DockPanel>
-					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}">
+					<StackPanel Margin="5,0,5,0" DockPanel.Dock="Right" Width="150pt" DataContext="{StaticResource categories}"
+					            Visibility="{Binding Document.CategoriesPanel.SelectedCategory, Source={StaticResource viewModel}, Converter={StaticResource nullToVisibilityConverter}}">
 						<Label Content="{Binding Document.CategoriesPanel.NameLabel, Source={StaticResource viewModel}}" Target="{Binding ElementName=CategoryName}" />
 						<TextBox Name="CategoryName"
 								 MaxLength="{Binding Document.CategoriesPanel.NameMaxLength, Source={StaticResource viewModel}}"

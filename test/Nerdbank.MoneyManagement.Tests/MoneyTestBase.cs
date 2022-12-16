@@ -3,6 +3,10 @@
 
 public class MoneyTestBase : TestBase
 {
+	public const int DefaultCategoryCount = 1;
+
+	public const string DefaultCommissionCategoryName = "Commission";
+
 	private readonly Lazy<MoneyFile> money;
 
 	public MoneyTestBase(ITestOutputHelper logger)
@@ -39,6 +43,14 @@ public class MoneyTestBase : TestBase
 	}
 
 	private protected UserNotificationMock UserNotification { get; }
+
+	protected static TaxLotViewModel? SingleOrDefaultCreatedTaxLot(TransactionEntryViewModel entry) => entry.CreatedTaxLots is null ? null : Assert.Single(entry.CreatedTaxLots);
+
+	protected static TaxLotViewModel SingleCreatedTaxLot(TransactionEntryViewModel entry)
+	{
+		Assert.NotNull(entry.CreatedTaxLots);
+		return Assert.Single(entry.CreatedTaxLots);
+	}
 
 	protected void EnableSqlLogging()
 	{

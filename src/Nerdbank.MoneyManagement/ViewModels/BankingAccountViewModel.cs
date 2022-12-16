@@ -28,17 +28,31 @@ public class BankingAccountViewModel : AccountViewModel
 		{
 			if (this.transactions is null)
 			{
-				this.transactions = new(TransactionSort.Instance);
-				if (this.IsPersisted)
+				if (this.Faulted is not null)
 				{
-					this.transactions.AddRange(this.CreateEntryViewModels<BankingTransactionViewModel>());
-					this.UpdateBalances(0);
+					throw new InvalidOperationException("This account is in a faulted state.", this.Faulted);
 				}
 
-				// Always add one more "volatile" transaction at the end as a placeholder to add new data.
-				this.CreateVolatileTransaction();
+				try
+				{
+					this.transactions = new(TransactionSort.Instance);
+					if (this.IsPersisted)
+					{
+						this.transactions.AddRange(this.CreateEntryViewModels<BankingTransactionViewModel>());
+						this.UpdateBalances(0);
+					}
 
-				this.transactions.CollectionChanged += this.Transactions_CollectionChanged;
+					// Always add one more "volatile" transaction at the end as a placeholder to add new data.
+					this.CreateVolatileTransaction();
+
+					this.transactions.CollectionChanged += this.Transactions_CollectionChanged;
+				}
+				catch (Exception ex)
+				{
+					this.transactions = null;
+					this.Faulted = ex;
+					throw;
+				}
 			}
 
 			return this.transactions;

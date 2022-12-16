@@ -80,8 +80,8 @@ public class SortedObservableCollectionTests : TestBase
 		this.collection.AddRange(new[] { 1, 5 });
 		Assert.Equal(nameof(this.collection.Count), Assert.Single(propertyEvents).PropertyName);
 		Assert.Equal(2, collectionEvents.Count);
-		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems));
-		Assert.Equal(5, Assert.Single(collectionEvents[1].NewItems));
+		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems!));
+		Assert.Equal(5, Assert.Single(collectionEvents[1].NewItems!));
 		Assert.Equal(0, collectionEvents[0].NewStartingIndex);
 		Assert.Equal(0, collectionEvents[1].NewStartingIndex);
 
@@ -113,9 +113,9 @@ public class SortedObservableCollectionTests : TestBase
 		this.collection.AddRange(new[] { 1, 9, 3 });
 		Assert.Equal(nameof(this.collection.Count), Assert.Single(propertyEvents).PropertyName);
 		Assert.Equal(3, collectionEvents.Count);
-		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems));
-		Assert.Equal(9, Assert.Single(collectionEvents[1].NewItems));
-		Assert.Equal(3, Assert.Single(collectionEvents[2].NewItems));
+		Assert.Equal(1, Assert.Single(collectionEvents[0].NewItems!));
+		Assert.Equal(9, Assert.Single(collectionEvents[1].NewItems!));
+		Assert.Equal(3, Assert.Single(collectionEvents[2].NewItems!));
 		Assert.Equal(1, collectionEvents[0].NewStartingIndex);
 		Assert.Equal(0, collectionEvents[1].NewStartingIndex);
 		Assert.Equal(2, collectionEvents[2].NewStartingIndex);
@@ -452,8 +452,8 @@ public class SortedObservableCollectionTests : TestBase
 		Assert.Equal(NotifyCollectionChangedAction.Move, args.Action);
 		Assert.Equal(0, args.OldStartingIndex);
 		Assert.Equal(1, args.NewStartingIndex);
-		Assert.Same(a, Assert.Single(args.OldItems));
-		Assert.Same(a, Assert.Single(args.NewItems));
+		Assert.Same(a, Assert.Single(args.OldItems!));
+		Assert.Same(a, Assert.Single(args.NewItems!));
 		Assert.Equal(new[] { b, a }, collection);
 	}
 

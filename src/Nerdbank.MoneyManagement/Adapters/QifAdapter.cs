@@ -276,8 +276,8 @@ public class QifAdapter : IFileAdapter
 		List<(Transaction, TransactionEntry)> newEntryTuples = new();
 		foreach (BankTransaction importingTransaction in transactions)
 		{
-			int? transferAccountId = this.FindTransferAccountId(importingTransaction.Category)?.Id;
-			if (transferAccountId is not null && importingTransaction.Amount >= 0 && target.Id != transferAccountId)
+			Account? transferAccount = this.FindTransferAccountId(importingTransaction.Category);
+			if (transferAccount is not null && transferAccount.Type != Account.AccountType.Category && importingTransaction.Amount >= 0 && target.Id != transferAccount.Id)
 			{
 				// When it comes to transfers, skip importing the transaction on the receiving side
 				// so that we don't end up importing them on both ends and ending up with duplicates.
@@ -314,7 +314,7 @@ public class QifAdapter : IFileAdapter
 			{
 				if (!string.IsNullOrEmpty(importingTransaction.Category))
 				{
-					int? categoryId = this.FindCategoryId(importingTransaction.Category) ?? transferAccountId;
+					int? categoryId = this.FindCategoryId(importingTransaction.Category) ?? transferAccount?.Id;
 					if (categoryId.HasValue && categoryId.Value != target.Id)
 					{
 						TransactionEntry categoryEntry = new()
@@ -372,6 +372,7 @@ public class QifAdapter : IFileAdapter
 				Memo = importingTransaction.Memo,
 			};
 
+			TransactionEntry? newEntry1, newEntry2, newEntry3;
 			switch (importingTransaction.Action)
 			{
 				case InvestmentTransaction.Actions.XOut or InvestmentTransaction.Actions.XIn or InvestmentTransaction.Actions.WithdrwX or InvestmentTransaction.Actions.ContribX:
@@ -380,7 +381,7 @@ public class QifAdapter : IFileAdapter
 					Verify.Operation(transferAccount is { CurrencyAssetId: not null }, "Transfer account isn't recognized or has not set a currency: {0}", importingTransaction.AccountForTransfer);
 					Verify.Operation(importingTransaction.AmountTransferred is not null, "The transfer amount is unspecified.");
 
-					TransactionEntry newEntry1 = new()
+					newEntry1 = new()
 					{
 						AccountId = target.Id,
 						Amount = -importingTransaction.AmountTransferred.Value,
@@ -388,7 +389,7 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
 
-					TransactionEntry? newEntry2 = new()
+					newEntry2 = new()
 					{
 						AccountId = transferAccount.Id,
 						Amount = importingTransaction.AmountTransferred.Value,
@@ -420,16 +421,16 @@ public class QifAdapter : IFileAdapter
 					newEntryTuples.Add((newTransaction, newEntry1));
 
 					// Our view model doesn't support categories on deposits yet.
-					////if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
-					////{
-					////	newEntry2 = new()
-					////	{
-					////		AccountId = categoryId,
-					////		Amount = importingTransaction.TransactionAmount.Value,
-					////		AssetId = this.moneyFile.PreferredAssetId,
-					////	};
-					////	newEntryTuples.Add((newTransaction, newEntry2));
-					////}
+					if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
+					{
+						newEntry2 = new()
+						{
+							AccountId = categoryId,
+							Amount = -importingTransaction.TransactionAmount.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry2));
+					}
 
 					break;
 				case InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell or InvestmentTransaction.Actions.BuyX or InvestmentTransaction.Actions.SellX:
@@ -473,6 +474,17 @@ public class QifAdapter : IFileAdapter
 						{
 							newEntry2.Amount *= -1;
 						}
+					}
+
+					if (importingTransaction.Commission.HasValue)
+					{
+						newEntry3 = new()
+						{
+							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
+							Amount = importingTransaction.Commission.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
 					}
 
 					break;
@@ -529,15 +541,34 @@ public class QifAdapter : IFileAdapter
 
 					Assumes.NotNull(target.CurrencyAssetId);
 					Verify.Operation(this.assetsByName.TryGetValue(importingTransaction.Security, out asset), "No matching asset: {0}", importingTransaction.Security);
-					newTransaction.RelatedAssetId = asset.Id;
 
 					newEntry1 = new()
 					{
 						AccountId = target.Id,
 						Amount = importingTransaction.Quantity.Value,
-						AssetId = target.CurrencyAssetId.Value,
+						AssetId = asset.Id,
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
+
+					if (importingTransaction.TransactionAmount is not null)
+					{
+						// Create 2 more entries to represent that cash value was given,
+						// then spent on the asset that was added to account.
+						newEntry2 = new()
+						{
+							AccountId = target.Id,
+							Amount = importingTransaction.TransactionAmount.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry2));
+						newEntry3 = new()
+						{
+							AccountId = target.Id,
+							Amount = -importingTransaction.TransactionAmount.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
+					}
 
 					break;
 				case InvestmentTransaction.Actions.ShrsIn:
@@ -601,6 +632,17 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
 
+					if (importingTransaction.Commission.HasValue)
+					{
+						newEntry3 = new()
+						{
+							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
+							Amount = importingTransaction.Commission.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
+					}
+
 					break;
 				case InvestmentTransaction.Actions.CvrShrt:
 					newTransaction.Action = TransactionAction.CoverShort;
@@ -627,6 +669,17 @@ public class QifAdapter : IFileAdapter
 					};
 					newEntryTuples.Add((newTransaction, newEntry2));
 
+					if (importingTransaction.Commission.HasValue)
+					{
+						newEntry3 = new()
+						{
+							AccountId = this.moneyFile.CurrentConfiguration.CommissionAccountId,
+							Amount = importingTransaction.Commission.Value,
+							AssetId = target.CurrencyAssetId.Value,
+						};
+						newEntryTuples.Add((newTransaction, newEntry3));
+					}
+
 					break;
 				case InvestmentTransaction.Actions.StkSplit:
 				case InvestmentTransaction.Actions.CGLong:
@@ -641,6 +694,11 @@ public class QifAdapter : IFileAdapter
 
 			newTransactions.Add(newTransaction);
 			transactionsImported++;
+
+			foreach ((Transaction _, TransactionEntry entry) in newEntryTuples)
+			{
+				entry.Cleared = FromQifClearedState(importingTransaction.ClearedStatus);
+			}
 		}
 
 		this.InsertAllTransactions(newTransactions, newEntryTuples);

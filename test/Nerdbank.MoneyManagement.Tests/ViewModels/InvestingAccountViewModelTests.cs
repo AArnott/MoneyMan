@@ -150,6 +150,20 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		Assert.Equal(12, remainingTransactionEntry.Amount);
 	}
 
+	[Fact]
+	public void Cleared()
+	{
+		this.Money.Action.Transfer(this.checking, this.brokerage, 10);
+		Assert.Equal(ClearedState.None, this.checking.Transactions[0].Cleared);
+		Assert.Equal(ClearedState.None, this.brokerage.Transactions[0].Cleared);
+
+		this.brokerage.Transactions[0].Cleared = ClearedState.Cleared;
+		this.ReloadViewModel();
+
+		Assert.Equal(ClearedState.None, this.checking.Transactions[0].Cleared);
+		Assert.Equal(ClearedState.Cleared, this.brokerage.Transactions[0].Cleared);
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();

@@ -9,4 +9,9 @@ public record Configuration : ModelBase
 	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Asset"/> that is used for displaying the value of accounts.
 	/// </summary>
 	public int PreferredAssetId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the <see cref="ModelBase.Id"/> of the <see cref="Account"/> that is used for commission expenses.
+	/// </summary>
+	public int CommissionAccountId { get; set; }
 }
