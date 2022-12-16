@@ -3,12 +3,13 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <AvaloniaVersion>0.10.18</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Avalonia" Version="0.10.18" />
-    <PackageVersion Include="Avalonia.Desktop" Version="0.10.18" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="0.10.18" />
-    <PackageVersion Include="Avalonia.ReactiveUI" Version="0.10.18" />
+    <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.ReactiveUI" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Microsoft.CodeCoverage" Version="17.5.0-preview-20221201-06" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading" Version="17.4.27" />
