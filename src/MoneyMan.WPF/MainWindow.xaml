@@ -596,6 +596,15 @@
 															<DataTrigger Binding="{Binding Action}" Value="Transfer">
 																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
 															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Sell">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Remove">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Exchange">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
 														</Style.Triggers>
 													</Style>
 												</ContentControl.Style>
