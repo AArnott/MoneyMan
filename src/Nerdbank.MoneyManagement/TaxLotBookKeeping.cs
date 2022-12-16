@@ -41,7 +41,8 @@ internal class TaxLotBookKeeping
 		decimal amountCurrentlyAssigned = transactionEntryViewModel.CreatedTaxLots.Sum(lot => lot.Amount);
 
 		// If this is a transfer, the tax lots are required to match on both sides.
-		if (transactionEntryViewModel.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Transfer } tx)
+		InvestingTransactionViewModel? investingTx = transactionEntryViewModel.Transaction as InvestingTransactionViewModel;
+		if (investingTx is { Action: TransactionAction.Transfer })
 		{
 			Assumes.True(TryFindOtherEntry(out TransactionEntryViewModel? fromEntry));
 			List<ConsumedTaxLot> consumedTaxLots = this.moneyFile.ConsumedTaxLots.Where(tla => tla.ConsumingTransactionEntryId == fromEntry.Id).ToList();
@@ -79,6 +80,12 @@ internal class TaxLotBookKeeping
 			{
 				taxLotViewModel.CostBasisAmount = Math.Abs(costBasis.Amount);
 				taxLotViewModel.CostBasisAsset = costBasis.Asset;
+			}
+			else if (investingTx is { AcquisitionPrice: not null })
+			{
+				taxLotViewModel.AcquiredDate = investingTx.AcquisitionDate;
+				taxLotViewModel.CostBasisAmount = investingTx.AcquisitionPrice * transactionEntryViewModel.Amount;
+				taxLotViewModel.CostBasisAsset = investingTx.ThisAccount.CurrencyAsset;
 			}
 		}
 

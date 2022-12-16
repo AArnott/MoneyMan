@@ -21,6 +21,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private decimal? cashValue;
 	private decimal? commission;
 	private bool wasEverNonEmpty;
+	private DateTime? acquisitionDate;
+	private decimal? acquisitionPrice;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="InvestingTransactionViewModel"/> class
@@ -203,6 +205,28 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		set => this.SetProperty(ref this.withdrawAccount, value);
 	}
 
+	/// <summary>
+	/// Gets or sets the date the asset was acquired.
+	/// Only applicable when <see cref="Action"/> is set to <see cref="TransactionAction.Add"/>.
+	/// </summary>
+	public DateTime AcquisitionDate
+	{
+		get => this.acquisitionDate ?? this.When;
+		set => this.SetProperty(ref this.acquisitionDate, value);
+	}
+
+	/// <summary>
+	/// Gets or sets the total cost of the asset.
+	/// Only applicable when <see cref="Action"/> is set to <see cref="TransactionAction.Add"/>.
+	/// </summary>
+	public decimal? AcquisitionPrice
+	{
+		get => this.acquisitionPrice;
+		set => this.SetProperty(ref this.acquisitionPrice, value);
+	}
+
+	public string? AcquisitionPriceFormatted => this.ThisAccount.CurrencyAsset?.Format(this.AcquisitionPrice);
+
 	/// <inheritdoc cref="Transaction.RelatedAssetId"/>
 	public AssetViewModel? RelatedAsset
 	{
@@ -339,6 +363,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 				return value;
 			}
+			else if (this.Action is TransactionAction.Add)
+			{
+				return this.AcquisitionPrice;
+			}
 			else
 			{
 				return null;
@@ -359,6 +387,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			{
 				this.CashValue = value * this.DepositAmount;
 			}
+			else if (this.Action is TransactionAction.Add)
+			{
+				this.AcquisitionPrice = value;
+			}
 			else
 			{
 				throw ThrowNotSimpleAction();
@@ -368,7 +400,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		}
 	}
 
-	public bool IsSimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell or TransactionAction.CoverShort or TransactionAction.ShortSale or TransactionAction.Dividend;
+	public bool IsSimplePriceApplicable => this.Action is TransactionAction.Buy or TransactionAction.Sell or TransactionAction.CoverShort or TransactionAction.ShortSale or TransactionAction.Dividend or TransactionAction.Add;
 
 	public decimal? CashValue
 	{
@@ -456,7 +488,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		{
 			return this.Action switch
 			{
-				TransactionAction.Add => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName}",
+				TransactionAction.Add => $"{this.DepositAmount} {this.DepositAsset?.TickerOrName} @ {this.AcquisitionPriceFormatted}",
 				TransactionAction.Remove => $"{this.WithdrawAmount} {this.WithdrawAsset?.TickerOrName}",
 				TransactionAction.Interest => $"+{this.DepositAmountFormatted}",
 				TransactionAction.Dividend when this.CashValue is not null => $"{this.DepositAsset?.TickerOrName} +{this.DepositAmountFormatted} ({this.CashValueFormatted})",
@@ -785,6 +817,13 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				break;
 			default:
 				throw new NotImplementedException("Action is " + this.Action);
+		}
+
+		if (this.Action == TransactionAction.Add && this.Entries.Count == 1 && this.Entries[0].CreatedTaxLots?.Count == 1)
+		{
+			TaxLotViewModel taxLot = this.Entries[0].CreatedTaxLots![0];
+			this.AcquisitionPrice = taxLot.CostBasisAmount / taxLot.Amount;
+			this.AcquisitionDate = taxLot.AcquiredDate;
 		}
 	}
 

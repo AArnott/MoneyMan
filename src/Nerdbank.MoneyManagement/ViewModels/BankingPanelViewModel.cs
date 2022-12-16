@@ -51,6 +51,12 @@ public class BankingPanelViewModel : BindableBase
 
 	public string BalanceHeader => "Balance";
 
+	public string AcquisitionDatePrompt => "When did you first acquire this asset?";
+
+	public string AcquisitionDateToolTip => "The date of the transaction will typically reflect when the asset came into this account, whereas the acquisition date is when you originally bought or otherwise came to posses it.";
+
+	public string LotInfoExplanation => "This additional information will help you track capital gains/losses, and prepare reports for tax purposes.";
+
 	public AccountViewModel? FindAccount(int id) => this.Accounts.Concat(this.closedAccounts).FirstOrDefault(acct => acct.Id == id);
 
 	internal void Add(AccountViewModel account)

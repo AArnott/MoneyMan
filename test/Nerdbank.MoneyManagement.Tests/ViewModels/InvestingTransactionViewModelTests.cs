@@ -463,8 +463,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	{
 		InvestingTransactionViewModel tx = this.account.Transactions[^1];
 		tx.Action = TransactionAction.Add;
+		tx.When = new DateTime(2022, 1, 2);
 		tx.SimpleAsset = this.msft;
 		tx.SimpleAmount = 2; // 2 shares
+		tx.SimplePrice = 220;
+
+		Assert.Equal(tx.When, tx.AcquisitionDate);
+		tx.AcquisitionDate = new DateTime(2021, 9, 3);
 
 		this.AssertNowAndAfterReload(delegate
 		{
@@ -472,11 +477,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			Assert.Equal(TransactionAction.Add, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(2, tx.SimpleAmount);
-			Assert.False(tx.IsSimplePriceApplicable);
+			Assert.Equal(220, tx.SimplePrice);
+			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
-			Assert.Throws<InvalidOperationException>(() => tx.SimplePrice = 10);
 			Assert.Equal(0, tx.SimpleCurrencyImpact);
-			Assert.Equal($"2 MSFT", tx.Description); // add " @ $220.00 USD" when we track tax lots
+			Assert.Equal($"2 MSFT @ $220.00", tx.Description);
+
+			Assert.Equal(new DateTime(2021, 9, 3), tx.AcquisitionDate);
 		});
 	}
 
