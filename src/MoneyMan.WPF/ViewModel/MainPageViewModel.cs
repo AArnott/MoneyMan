@@ -7,6 +7,11 @@ namespace MoneyMan.ViewModel;
 
 public class MainPageViewModel : MainPageViewModelBase
 {
+	public MainPageViewModel()
+		: base(persistSettings: true)
+	{
+	}
+
 	internal MainWindow MainWindow { get; set; } = null!;
 
 	public override void ReplaceViewModel(DocumentViewModel? documentViewModel)

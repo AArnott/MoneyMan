@@ -2,23 +2,29 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.ComponentModel;
+using System.Threading.Tasks.Dataflow;
 using System.Windows.Input;
 using Microsoft;
+using Microsoft.VisualStudio.Threading;
 using PCLCommandBase;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
-public class MainPageViewModelBase : BindableBase
+public class MainPageViewModelBase : BindableBase, System.IAsyncDisposable
 {
+	private readonly bool persistSettings;
 	private string statusMessage = "Ready";
 	private bool updateAvailable;
 	private string version = ThisAssembly.AssemblyInformationalVersion;
 	private DocumentViewModel? document;
 	private int downloadingUpdatePercentage;
 	private string? updateChannel;
+	private PersistentAppSettings<LocalAppSettings> localAppSettings = new();
 
-	public MainPageViewModelBase()
+	public MainPageViewModelBase(bool persistSettings)
 	{
+		this.persistSettings = persistSettings;
+
 		this.FileSaveCommand = new SaveCommandImpl(this);
 		this.FileCloseCommand = new FileCloseCommandImpl(this);
 
@@ -29,6 +35,12 @@ public class MainPageViewModelBase : BindableBase
 	}
 
 	public event EventHandler? FileClosed;
+
+	public LocalAppSettings LocalAppSettings
+	{
+		get => this.localAppSettings.Value;
+		set => this.localAppSettings.Value = value;
+	}
 
 	public DocumentViewModel? Document
 	{
@@ -89,18 +101,62 @@ public class MainPageViewModelBase : BindableBase
 		DocumentViewModel.CreateNew(tempFile).Dispose();
 		this.Document?.Dispose();
 		File.Move(tempFile, path, overwrite: true);
-		this.ReplaceViewModel(DocumentViewModel.Open(path));
+		this.OpenExistingFile(path);
 	}
 
 	public void OpenExistingFile(string path)
 	{
 		this.ReplaceViewModel(DocumentViewModel.Open(path));
+		this.LocalAppSettings = this.LocalAppSettings with { LastOpenedFile = path };
 	}
 
 	public virtual void ReplaceViewModel(DocumentViewModel? documentViewModel)
 	{
 		this.Document?.Dispose();
 		this.Document = documentViewModel;
+	}
+
+	public virtual async Task InitializeAsync(CancellationToken cancellationToken)
+	{
+		if (this.persistSettings)
+		{
+			// Set the field to avoid the property setter immediately scheduling a re-save.
+			await this.localAppSettings.LoadAsync(cancellationToken);
+		}
+
+		LocalAppSettings settings = this.LocalAppSettings;
+		if (settings.ReopenLastFile && !string.IsNullOrEmpty(settings.LastOpenedFile) && !this.IsFileOpen)
+		{
+			bool openSucceeded = false;
+			try
+			{
+				if (File.Exists(settings.LastOpenedFile))
+				{
+					this.OpenExistingFile(settings.LastOpenedFile);
+					openSucceeded = true;
+				}
+			}
+			catch
+			{
+			}
+
+			if (!openSucceeded)
+			{
+				// Do not try to reopen this file next time.
+				this.LocalAppSettings = this.LocalAppSettings with { LastOpenedFile = null };
+			}
+		}
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		await this.localAppSettings.DisposeAsync();
+	}
+
+	protected virtual void OnFileClosed()
+	{
+		this.LocalAppSettings = this.LocalAppSettings with { LastOpenedFile = null };
+		this.FileClosed?.Invoke(this, EventArgs.Empty);
 	}
 
 	private class SaveCommandImpl : UICommandBase
@@ -177,7 +233,7 @@ public class MainPageViewModelBase : BindableBase
 		protected override Task ExecuteCoreAsync(object? parameter = null, CancellationToken cancellationToken = default)
 		{
 			this.viewModel.ReplaceViewModel(null);
-			this.viewModel.FileClosed?.Invoke(this.viewModel, EventArgs.Empty);
+			this.viewModel.OnFileClosed();
 			return Task.CompletedTask;
 		}
 
