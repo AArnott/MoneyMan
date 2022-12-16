@@ -11,6 +11,7 @@ namespace MoneyMan.Avl.ViewModels;
 public class MainPageViewModel : MainPageViewModelBase
 {
 	public MainPageViewModel()
+		: base(persistSettings: false)
 	{
 		this.FileNewCommand = ReactiveCommand.CreateFromTask(this.FileNewAsync);
 		this.FileOpenCommand = ReactiveCommand.CreateFromTask(this.FileOpenAsync);
