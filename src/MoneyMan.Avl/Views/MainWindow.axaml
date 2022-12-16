@@ -20,8 +20,8 @@
 	<DockPanel>
 		<Menu DockPanel.Dock="Top">
 			<MenuItem Header="_File">
-				<MenuItem Header="_New" Command="{Binding FileNewCommand}" />
-				<MenuItem Header="_Open" Command="{Binding FileOpenCommand}" />
+				<MenuItem Header="_New" Command="{Binding FileNewCommand}" HotKey="Ctrl+N" InputGesture="Ctrl+N" />
+				<MenuItem Header="_Open..." Command="{Binding FileOpenCommand}" HotKey="Ctrl+O" InputGesture="Ctrl+O" />
 				<MenuItem Header="_Close" Command="{Binding FileCloseCommand}" />
 			</MenuItem>
 		</Menu>
