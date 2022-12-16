@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-public class AppSettingsTests : TestBase
+public partial class AppSettingsTests : TestBase
 {
 	private static readonly LocalAppSettings NonDefaultSettings = new()
 	{
@@ -21,7 +21,7 @@ public class AppSettingsTests : TestBase
 		await NonDefaultSettings.SaveAsync(ms, this.TimeoutToken);
 		ms.Position = 0;
 		this.LogStreamText(ms);
-		LocalAppSettings? deserialized = await new LocalAppSettings().LoadAsync(ms, this.TimeoutToken);
+		LocalAppSettings? deserialized = await new LocalAppSettings().LoadAsync<LocalAppSettings>(ms, this.TimeoutToken);
 		Assert.Equal(NonDefaultSettings, deserialized);
 	}
 
@@ -36,7 +36,7 @@ public class AppSettingsTests : TestBase
 		using Stream settingsFileStream = File.OpenRead(settingsPath);
 		this.LogStreamText(settingsFileStream);
 
-		TestSettings deserialized = await new TestSettings(settingsPath).LoadAsync(this.TimeoutToken);
+		TestSettings deserialized = await new TestSettings(settingsPath).LoadAsync<TestSettings>(this.TimeoutToken) ?? throw new Exception("Deserialize returned null.");
 		Assert.Equal(settings.Number, deserialized.Number);
 	}
 
@@ -46,31 +46,5 @@ public class AppSettingsTests : TestBase
 		StreamReader sr = new(stream);
 		this.Logger.WriteLine(sr.ReadToEnd());
 		stream.Position = position;
-	}
-
-	private record TestSettings : AppSettings
-	{
-		private string? settingsPath;
-
-		internal TestSettings(string settingsPath)
-		{
-			this.settingsPath = settingsPath;
-		}
-
-		public TestSettings()
-		{
-		}
-
-		protected override string FileName => "testsettings.json";
-
-		protected override string SettingsPath => this.settingsPath ?? throw new InvalidOperationException("A deserialized instance doesn't know where to serialize again.");
-
-		public int Number { get; init; }
-
-		/// <inheritdoc cref="AppSettings.LoadAsync{T}(CancellationToken)"/>
-		public async ValueTask<TestSettings> LoadAsync(CancellationToken cancellationToken) => await this.LoadAsync<TestSettings>(cancellationToken) ?? this;
-
-		/// <inheritdoc cref="AppSettings.LoadAsync{T}(Stream, CancellationToken)"/>
-		public async ValueTask<TestSettings> LoadAsync(Stream stream, CancellationToken cancellationToken) => await this.LoadAsync<TestSettings>(stream, cancellationToken) ?? this;
 	}
 }

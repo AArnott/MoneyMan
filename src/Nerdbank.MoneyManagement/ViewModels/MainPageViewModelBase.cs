@@ -19,8 +19,7 @@ public class MainPageViewModelBase : BindableBase, System.IAsyncDisposable
 	private DocumentViewModel? document;
 	private int downloadingUpdatePercentage;
 	private string? updateChannel;
-	private LocalAppSettings localAppSettings = new();
-	private ActionBlock<Func<Task>> settingsSaver = new(a => a(), new() { BoundedCapacity = 2 });
+	private PersistentAppSettings<LocalAppSettings> localAppSettings = new();
 
 	public MainPageViewModelBase(bool persistSettings)
 	{
@@ -39,18 +38,8 @@ public class MainPageViewModelBase : BindableBase, System.IAsyncDisposable
 
 	public LocalAppSettings LocalAppSettings
 	{
-		get => this.localAppSettings;
-		set
-		{
-			if (this.localAppSettings != value)
-			{
-				this.localAppSettings = value;
-				if (this.persistSettings)
-				{
-					this.settingsSaver.Post(() => this.localAppSettings.SaveAsync());
-				}
-			}
-		}
+		get => this.localAppSettings.Value;
+		set => this.localAppSettings.Value = value;
 	}
 
 	public DocumentViewModel? Document
@@ -132,7 +121,7 @@ public class MainPageViewModelBase : BindableBase, System.IAsyncDisposable
 		if (this.persistSettings)
 		{
 			// Set the field to avoid the property setter immediately scheduling a re-save.
-			this.localAppSettings = await this.LocalAppSettings.LoadAsync(cancellationToken);
+			await this.localAppSettings.LoadAsync(cancellationToken);
 		}
 
 		LocalAppSettings settings = this.LocalAppSettings;
@@ -161,8 +150,7 @@ public class MainPageViewModelBase : BindableBase, System.IAsyncDisposable
 
 	public async ValueTask DisposeAsync()
 	{
-		this.settingsSaver.Complete();
-		await this.settingsSaver.Completion.NoThrowAwaitable();
+		await this.localAppSettings.DisposeAsync();
 	}
 
 	protected virtual void OnFileClosed()

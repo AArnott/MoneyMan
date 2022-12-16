@@ -17,10 +17,4 @@ public record LocalAppSettings : AppSettings
 	/// Gets a value indicating whether the last file should be reopened when the application launches next time.
 	/// </summary>
 	public bool ReopenLastFile { get; init; } = true;
-
-	/// <inheritdoc cref="AppSettings.LoadAsync{T}(CancellationToken)"/>
-	public async ValueTask<LocalAppSettings> LoadAsync(CancellationToken cancellationToken) => await this.LoadAsync<LocalAppSettings>(cancellationToken) ?? this;
-
-	/// <inheritdoc cref="AppSettings.LoadAsync{T}(Stream, CancellationToken)"/>
-	public async ValueTask<LocalAppSettings> LoadAsync(Stream stream, CancellationToken cancellationToken) => await this.LoadAsync<LocalAppSettings>(stream, cancellationToken) ?? this;
 }

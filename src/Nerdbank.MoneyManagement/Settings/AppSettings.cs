@@ -71,8 +71,8 @@ public abstract record AppSettings
 	/// <typeparam name="T">The type of settings class to load.</typeparam>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The settings object. Deserialized from disk if possible, otherwise a fresh instance of it.</returns>
-	protected async ValueTask<T?> LoadAsync<T>(CancellationToken cancellationToken = default)
-		where T : AppSettings
+	public async ValueTask<T?> LoadAsync<T>(CancellationToken cancellationToken = default)
+		where T : AppSettings, new()
 	{
 		string settingsPath = this.SettingsPath;
 		if (File.Exists(settingsPath))
@@ -97,7 +97,11 @@ public abstract record AppSettings
 	/// <param name="stream">The stream to load settings from.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The settings object. Deserialized from disk if possible, otherwise a fresh instance of it.</returns>
-	protected ValueTask<T?> LoadAsync<T>(Stream stream, CancellationToken cancellationToken) => JsonSerializer.DeserializeAsync<T>(stream, JsonOptions, cancellationToken);
+	public virtual ValueTask<T?> LoadAsync<T>(Stream stream, CancellationToken cancellationToken)
+		where T : AppSettings, new()
+	{
+		return JsonSerializer.DeserializeAsync<T>(stream, JsonOptions, cancellationToken);
+	}
 
 	/// <summary>
 	/// Saves a settings object to disk.
@@ -118,5 +122,5 @@ public abstract record AppSettings
 	/// <param name="stream">The stream to serialize to.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks completion of the save operation.</returns>
-	public Task SaveAsync(Stream stream, CancellationToken cancellationToken) => JsonSerializer.SerializeAsync(stream, this, this.GetType(), JsonOptions, cancellationToken);
+	public virtual Task SaveAsync(Stream stream, CancellationToken cancellationToken) => JsonSerializer.SerializeAsync(stream, this, this.GetType(), JsonOptions, cancellationToken);
 }
