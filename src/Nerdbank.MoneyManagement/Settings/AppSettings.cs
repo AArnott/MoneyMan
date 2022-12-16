@@ -112,8 +112,22 @@ public abstract record AppSettings
 	{
 		string settingsPath = this.SettingsPath;
 		Directory.CreateDirectory(Path.GetDirectoryName(settingsPath)!);
-		using Stream settingsStream = new FileStream(settingsPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-		await this.SaveAsync(settingsStream, cancellationToken).ConfigureAwait(false);
+
+		// Save to a temporary location first, then atomically rename. This way if anything goes wrong we haven't corrupted the existing file.
+		string tempPath = Path.GetTempFileName();
+		try
+		{
+			using (Stream settingsStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+			{
+				await this.SaveAsync(settingsStream, cancellationToken).ConfigureAwait(false);
+			}
+
+			File.Move(tempPath, settingsPath, overwrite: true);
+		}
+		finally
+		{
+			File.Delete(tempPath);
+		}
 	}
 
 	/// <summary>
