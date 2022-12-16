@@ -45,18 +45,33 @@
 					<ListBox Name="CategoriesListView" Items="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" SelectionMode="Multiple">
 						<ListBox.DataTemplates>
 							<DataTemplate DataType="{x:Type vm:CategoryAccountViewModel}">
-								<TextBlock Text="{Binding Name}">
-									<TextBlock.ContextMenu>
+								<Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Red">
+									<Grid.ContextMenu>
 										<ContextMenu>
-											<MenuItem Header="{Binding Document.CategoriesPanel.DeleteCommand.Caption, Source={StaticResource viewModel}}" 
+											<MenuItem Header="{Binding Document.CategoriesPanel.DeleteCommand.Caption, Source={StaticResource viewModel}}"
 											          Command="{Binding Document.CategoriesPanel.DeleteCommand, Source={StaticResource viewModel}}" />
 										</ContextMenu>
-									</TextBlock.ContextMenu>
-								</TextBlock>
+									</Grid.ContextMenu>
+									<TextBlock Text="{Binding Name}" />
+								</Grid>
 							</DataTemplate>
 						</ListBox.DataTemplates>
 					</ListBox>
 				</DockPanel>
+			</TabItem>
+			<TabItem Header="{Binding Title}" DataContext="{Binding ConfigurationPanel}">
+				<StackPanel MaxWidth="300" DataContext="{Binding ConfigurationPanel}">
+					<Label Content="{Binding PreferredAssetLabel}" Target="{Binding #PreferredAssetPicker}" />
+					<ComboBox Name="PreferredAssetPicker"
+							  Items="{Binding Document.AssetsPanel.Assets, Source={StaticResource viewModel}}"
+							  SelectedItem="{Binding PreferredAsset}">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Name}" />
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+				</StackPanel>
 			</TabItem>
 		</TabControl>
 	</DockPanel>
