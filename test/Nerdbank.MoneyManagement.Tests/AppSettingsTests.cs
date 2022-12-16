@@ -15,39 +15,29 @@ public class AppSettingsTests : TestBase
 	}
 
 	[Fact]
-	public async Task SaveAndLoadRoundtrip()
+	public async Task LocalAppSettings_RoundtripInMemory()
 	{
 		MemoryStream ms = new();
 		await NonDefaultSettings.SaveAsync(ms, this.TimeoutToken);
 		ms.Position = 0;
 		this.LogStreamText(ms);
-		LocalAppSettings? deserialized = await AppSettings.LoadAsync<LocalAppSettings>(ms, this.TimeoutToken);
+		LocalAppSettings? deserialized = await new LocalAppSettings().LoadAsync(ms, this.TimeoutToken);
 		Assert.Equal(NonDefaultSettings, deserialized);
 	}
 
 	[Fact]
-	public async Task SaveAndLoadToAlternateLocation()
+	public async Task TestSettings_RoundtripOnDisk()
 	{
-		string expectedPath = Path.Join(Environment.GetFolderPath(TestSettings.Location), AppSettings.AppFolderName, TestSettings.FileName);
-		if (File.Exists(expectedPath))
-		{
-			File.Delete(expectedPath);
-		}
-
-		TestSettings settings = new() { Number = 5 };
+		string settingsPath = this.GenerateTemporaryFileName();
+		TestSettings settings = new TestSettings(settingsPath) { Number = 5 };
 		await settings.SaveAsync(this.TimeoutToken);
 
-		Assert.True(File.Exists(expectedPath));
+		Assert.True(File.Exists(settingsPath));
+		using Stream settingsFileStream = File.OpenRead(settingsPath);
+		this.LogStreamText(settingsFileStream);
 
-		try
-		{
-			TestSettings deserialized = await AppSettings.LoadAsync<TestSettings>(this.TimeoutToken);
-			Assert.Equal(settings, deserialized);
-		}
-		finally
-		{
-			File.Delete(expectedPath);
-		}
+		TestSettings deserialized = await new TestSettings(settingsPath).LoadAsync(this.TimeoutToken);
+		Assert.Equal(settings.Number, deserialized.Number);
 	}
 
 	private void LogStreamText(Stream stream)
@@ -58,12 +48,29 @@ public class AppSettingsTests : TestBase
 		stream.Position = position;
 	}
 
-	private record TestSettings : IAppSettings
+	private record TestSettings : AppSettings
 	{
-		public static string FileName => "testsettings.json";
+		private string? settingsPath;
 
-		public static Environment.SpecialFolder Location => Environment.SpecialFolder.LocalApplicationData;
+		internal TestSettings(string settingsPath)
+		{
+			this.settingsPath = settingsPath;
+		}
+
+		public TestSettings()
+		{
+		}
+
+		protected override string FileName => "testsettings.json";
+
+		protected override string SettingsPath => this.settingsPath ?? throw new InvalidOperationException("A deserialized instance doesn't know where to serialize again.");
 
 		public int Number { get; init; }
+
+		/// <inheritdoc cref="AppSettings.LoadAsync{T}(CancellationToken)"/>
+		public async ValueTask<TestSettings> LoadAsync(CancellationToken cancellationToken) => await this.LoadAsync<TestSettings>(cancellationToken) ?? this;
+
+		/// <inheritdoc cref="AppSettings.LoadAsync{T}(Stream, CancellationToken)"/>
+		public async ValueTask<TestSettings> LoadAsync(Stream stream, CancellationToken cancellationToken) => await this.LoadAsync<TestSettings>(stream, cancellationToken) ?? this;
 	}
 }

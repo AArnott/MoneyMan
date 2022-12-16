@@ -132,7 +132,7 @@ public class MainPageViewModelBase : BindableBase, System.IAsyncDisposable
 		if (this.persistSettings)
 		{
 			// Set the field to avoid the property setter immediately scheduling a re-save.
-			this.localAppSettings = await AppSettings.LoadAsync<LocalAppSettings>(cancellationToken);
+			this.localAppSettings = await this.LocalAppSettings.LoadAsync(cancellationToken);
 		}
 
 		LocalAppSettings settings = this.LocalAppSettings;
