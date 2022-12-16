@@ -35,9 +35,9 @@ to the feeds that packages for this repo come from, if any.
 
 ## Building
 
-This repository can be fully built on Windows.
+This repository can be fully built on any operating system supported by the .NET SDK.
 
-Its reusable library can be built on mac and linux as well by adding the `/p:Platform=NonWindows` switch to omit the Windows-only application projects.
+When testing with `azure-pipelines/dotnet-test-cloud.ps1` on Mac or Linux, tests that require Windows will be skipped.
 
 Building, testing, and packing this repository can be done by using the standard dotnet CLI commands (e.g. `dotnet build`, `dotnet test`, `dotnet pack`, etc.).
 
