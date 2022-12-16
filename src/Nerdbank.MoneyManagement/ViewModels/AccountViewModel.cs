@@ -76,6 +76,7 @@ public abstract class AccountViewModel : EntityViewModel<Account>, ISelectableVi
 
 	public string CurrencyAssetLabel => "Currency";
 
+	/// <inheritdoc cref="Account.CurrencyAssetId"/>
 	public AssetViewModel? CurrencyAsset
 	{
 		get => this.currencyAsset;

@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using SQLite;
+
 public class InvestingTransactionViewModelTests : MoneyTestBase
 {
 	private InvestingAccountViewModel account;
@@ -461,8 +463,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	{
 		InvestingTransactionViewModel tx = this.account.Transactions[^1];
 		tx.Action = TransactionAction.Add;
+		tx.When = new DateTime(2022, 1, 2);
 		tx.SimpleAsset = this.msft;
 		tx.SimpleAmount = 2; // 2 shares
+		tx.SimplePrice = 220;
+
+		Assert.Equal(tx.When, tx.AcquisitionDate);
+		tx.AcquisitionDate = new DateTime(2021, 9, 3);
 
 		this.AssertNowAndAfterReload(delegate
 		{
@@ -470,11 +477,13 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 			Assert.Equal(TransactionAction.Add, tx.Action);
 			Assert.Same(this.msft, tx.SimpleAsset);
 			Assert.Equal(2, tx.SimpleAmount);
-			Assert.False(tx.IsSimplePriceApplicable);
+			Assert.Equal(220, tx.SimplePrice);
+			Assert.True(tx.IsSimplePriceApplicable);
 			Assert.True(tx.IsSimpleAssetApplicable);
-			Assert.Throws<InvalidOperationException>(() => tx.SimplePrice = 10);
 			Assert.Equal(0, tx.SimpleCurrencyImpact);
-			Assert.Equal($"2 MSFT", tx.Description); // add " @ $220.00 USD" when we track tax lots
+			Assert.Equal($"2 MSFT @ $220.00", tx.Description);
+
+			Assert.Equal(new DateTime(2021, 9, 3), tx.AcquisitionDate);
 		});
 	}
 
@@ -562,6 +571,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		tx.SimpleAccount = this.otherAccount;
 		tx.SimpleAmount = 2;
 		tx.SimpleAsset = this.msft;
+		Assert.Equal(0, tx.Entries.Sum(e => e.Model.Amount));
 
 		this.AssertNowAndAfterReload(delegate
 		{
@@ -590,6 +600,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		tx.SimpleAccount = this.otherAccount;
 		tx.SimpleAmount = -2;
 		tx.SimpleAsset = this.msft;
+		Assert.Equal(0, tx.Entries.Sum(e => e.Model.Amount));
 
 		this.AssertNowAndAfterReload(delegate
 		{
@@ -639,11 +650,59 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void Transfer_ConsumesAndRecreatesTaxLots()
+	{
+		InvestingTransactionViewModel tx1 = this.account.Transactions[^1];
+		tx1.Action = TransactionAction.Buy;
+		tx1.When = new DateTime(2022, 1, 2);
+		tx1.SimpleAmount = 3;
+		tx1.SimpleAsset = this.msft;
+		tx1.SimplePrice = 100;
+		TransactionEntryViewModel tx1AddEntry = Assert.Single(tx1.Entries, e => e.Asset == this.msft);
+		Assert.Single(tx1AddEntry.CreatedTaxLots!);
+
+		InvestingTransactionViewModel tx2 = this.account.Transactions[^1];
+		tx2.Action = TransactionAction.Buy;
+		tx2.When = new DateTime(2022, 1, 3);
+		tx2.SimpleAmount = 5;
+		tx2.SimpleAsset = this.msft;
+		tx2.SimplePrice = 110;
+		TransactionEntryViewModel tx2AddEntry = Assert.Single(tx2.Entries, e => e.Asset == this.msft);
+		Assert.Single(tx2AddEntry.CreatedTaxLots!);
+
+		InvestingTransactionViewModel txMove = this.account.Transactions[^1];
+		txMove.Action = TransactionAction.Transfer;
+		txMove.When = new DateTime(2022, 1, 4);
+		txMove.SimpleAmount = -6; // Enough that all of one and some of another must be consumed.
+		txMove.SimpleAsset = this.msft;
+		txMove.SimpleAccount = this.otherAccount;
+
+		// One entry is required to consume all the required tax lots.
+		TransactionEntryViewModel txMoveFromEntry = Assert.Single(txMove.Entries, e => e.Account == this.account);
+		TableQuery<TaxLotAssignment> tla = this.Money.GetTaxLotAssignments(txMoveFromEntry.Id);
+		Assert.Equal(2, tla.Count());
+
+		// And one entry is required to create all the new tax lots.
+		TransactionEntryViewModel txMoveToEntry = Assert.Single(txMove.Entries, e => e.Account == this.otherAccount);
+		Assert.Empty(this.Money.GetTaxLotAssignments(txMoveToEntry.Id));
+		Assert.Equal(2, txMoveToEntry.CreatedTaxLots?.Count);
+
+		// Verify that each created tax lot matches the data from the originals.
+		TaxLotViewModel taxLotRecreated1 = Assert.Single(txMoveToEntry.CreatedTaxLots!, lot => lot.AcquiredDate == tx1.When);
+		Assert.Equal(tx1.SimpleAmount * tx1.SimplePrice, taxLotRecreated1.CostBasisAmount);
+		Assert.Same(this.account.CurrencyAsset, taxLotRecreated1.CostBasisAsset);
+
+		TaxLotViewModel taxLotRecreated2 = Assert.Single(txMoveToEntry.CreatedTaxLots!, lot => lot.AcquiredDate == tx2.When);
+		Assert.Equal(3 * tx2.SimplePrice, taxLotRecreated2.CostBasisAmount);
+		Assert.Same(this.account.CurrencyAsset, taxLotRecreated2.CostBasisAsset);
+	}
+
+	[Fact]
 	public void Transfers_CreateOrDeleteTransactionViewsInOtherAccounts()
 	{
 		// Force population of the other accounts we'll be testing so we can test dynamically adding to it when a transfer is created that's related to it.
-		_ = this.checking!.Transactions;
-		_ = this.otherAccount!.Transactions;
+		_ = this.checking.Transactions;
+		_ = this.otherAccount.Transactions;
 
 		InvestingTransactionViewModel tx1 = this.account.Transactions[0];
 		tx1.Action = TransactionAction.Transfer;
@@ -652,7 +711,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.True(tx1.IsReadyToSave);
 		Assert.False(tx1.IsDirty);
 
-		Assert.Single(this.checking!.Transactions.Where(t => t.IsPersisted));
+		Assert.Single(this.checking.Transactions.Where(t => t.IsPersisted));
 		Assert.Equal(2, this.checking.Transactions.Count);
 		Assert.Equal(-10, this.checking.Transactions[0].Balance);
 
@@ -669,8 +728,8 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	public void Transfers_InitiateFromBankingAccount()
 	{
 		// Force population of the other accounts we'll be testing so we can test dynamically adding to it when a transfer is created that's related to it.
-		_ = this.checking!.Transactions;
-		_ = this.otherAccount!.Transactions;
+		_ = this.checking.Transactions;
+		_ = this.otherAccount.Transactions;
 
 		BankingTransactionViewModel bankingTx = this.checking.Transactions[0];
 		bankingTx.Amount = -10;

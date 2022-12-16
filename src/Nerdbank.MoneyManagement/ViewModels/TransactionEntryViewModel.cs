@@ -4,6 +4,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using Microsoft;
+using Nerdbank.Qif;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
@@ -17,6 +18,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	private decimal amount;
 	private AssetViewModel? asset;
 	private ClearedState cleared;
+	private List<TaxLotViewModel>? createdTaxLots;
 
 	public TransactionEntryViewModel(TransactionViewModel parent, TransactionEntry? model = null)
 		: base(parent.ThisAccount.MoneyFile, model)
@@ -34,7 +36,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		};
 	}
 
-	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted;
+	public override bool IsReadyToSave => this.IsReadyToSaveIsolated && this.Transaction.IsPersisted && this.createdTaxLots?.Any(lot => !lot.IsReadyToSave) is not true;
 
 	public bool IsReadyToSaveIsolated => base.IsReadyToSave && !this.IsApplyingToModel;
 
@@ -47,6 +49,44 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 	/// <inheritdoc cref="TransactionViewModel.ThisAccount"/>
 	public AccountViewModel ThisAccount => this.parent.ThisAccount;
+
+	/// <summary>
+	/// Gets the tax lot created by this entry, if any.
+	/// </summary>
+	/// <remarks>
+	/// <para>Only an <see cref="TransactionEntryViewModel"/> that opens a position (e.g. buy, add, short sale, etc.) should have created a tax lot.</para>
+	/// <para>While most applicable entries will create just one tax lot, a transfer transaction may move assets from a bunch of tax lots, in which case one entry can recreate many.</para>
+	/// </remarks>
+	public List<TaxLotViewModel>? CreatedTaxLots
+	{
+		get
+		{
+			// Return null if no tax lot should be created.
+			// If we have rows in the database, we'll delete them when we save.
+			if (!this.IsTaxLotCreationAppropriate)
+			{
+				return null;
+			}
+
+			if (this.createdTaxLots is null)
+			{
+				if (this.Model.IsPersisted)
+				{
+					IEnumerable<TaxLotViewModel> query =
+						from lot in this.MoneyFile.TaxLots
+						where lot.CreatingTransactionEntryId == this.Id
+						select new TaxLotViewModel(this.DocumentViewModel, this, lot);
+					this.createdTaxLots = query.ToList();
+				}
+				else
+				{
+					this.createdTaxLots = new();
+				}
+			}
+
+			return this.createdTaxLots;
+		}
+	}
 
 	/// <inheritdoc cref="TransactionEntry.OfxFitId"/>
 	public string? OfxFitId
@@ -95,7 +135,18 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		set => this.SetProperty(ref this.cleared, value);
 	}
 
-	protected DocumentViewModel DocumentViewModel => this.ThisAccount.DocumentViewModel;
+	/// <summary>
+	/// Gets or sets the <see cref="Amount"/> as it is persisted in the <see cref="TransactionEntry"/> model (e.g. without any negation that makes it look good in a split view).
+	/// </summary>
+	internal decimal ModelAmount
+	{
+		get => this.NegateAmountIfAppropriate(this.Amount);
+		set => this.Amount = this.NegateAmountIfAppropriate(value);
+	}
+
+	protected internal DocumentViewModel DocumentViewModel => this.ThisAccount.DocumentViewModel;
+
+	private bool IsTaxLotCreationAppropriate => this.MoneyFile.TaxLotBookKeeping.IsTaxLotCreationAppropriate(this);
 
 	private string DebuggerDisplay => $"TransactionEntry: ({this.Id}): {this.Memo} {this.Account?.Name} {this.Amount}";
 
@@ -122,6 +173,11 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 
 		for (int i = 0; i < entries.Count; i++)
 		{
+			entries[i].MoneyFile.TaxLotBookKeeping.UpdateLotCreations(entries[i]);
+		}
+
+		for (int i = 0; i < entries.Count; i++)
+		{
 			if (dirtyModels.Contains(entries[i].Model))
 			{
 				entries[i].OnSaved();
@@ -129,6 +185,8 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 				{
 					entries[i].OnPropertyChanged(nameof(IsPersisted));
 				}
+
+				entries[i].MoneyFile.TaxLotBookKeeping.UpdateLotAssignments(entries[i]);
 			}
 		}
 	}
@@ -143,17 +201,24 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 		this.Model.TransactionId = this.Transaction.TransactionId;
 		this.Model.Memo = this.Memo;
 		this.Model.AccountId = this.Account.Id;
-		this.Model.Amount = this.NegateAmountIfAppropriate(this.Amount);
+		this.Model.Amount = this.ModelAmount;
 		this.Model.AssetId = this.Asset.Id;
 		this.Model.Cleared = this.Cleared;
 		this.Model.OfxFitId = this.OfxFitId;
+
+		// If creating a tax lot is appropriate, we'll save it later in our OnSaved event handler, where *this* entity is sure to have an assigned ID.
+		if (!this.IsTaxLotCreationAppropriate && this.Model.IsPersisted)
+		{
+			this.MoneyFile.PurgeTaxLotsCreatedBy(this.Id);
+			this.createdTaxLots = null;
+		}
 	}
 
 	protected override void CopyFromCore()
 	{
 		this.Memo = this.Model.Memo;
 		this.Account = this.Model.AccountId == 0 ? null : this.DocumentViewModel.GetAccount(this.Model.AccountId);
-		this.Amount = this.NegateAmountIfAppropriate(this.Model.Amount);
+		this.ModelAmount = this.Model.Amount;
 		this.Asset = this.DocumentViewModel.GetAsset(this.Model.AssetId);
 		this.Cleared = this.Model.Cleared;
 		this.OfxFitId = this.Model.OfxFitId;
@@ -179,7 +244,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	/// - Interest  -100
 	/// Notice how the 500 amount is negative when viewed from its own account, and positive when viewed from another.
 	/// Notice how the 400 amount is positive when viewed from its own account, and negative when viewed from another.
-	/// Interest is negative from both ledgers, but would be positive in a report.
+	/// Interest is negative from both ledgers, but would be positive in a report showing interest paid.
 	/// From this we deduce that a TransactionEntry should flip its Amount between model and view model
 	/// iff <see cref="Account"/> (the account it applies to) is set to any account other than <see cref="ThisAccount"/>.
 	/// </remarks>

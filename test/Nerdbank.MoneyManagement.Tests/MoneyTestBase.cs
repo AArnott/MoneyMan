@@ -44,6 +44,14 @@ public class MoneyTestBase : TestBase
 
 	private protected UserNotificationMock UserNotification { get; }
 
+	protected static TaxLotViewModel? SingleOrDefaultCreatedTaxLot(TransactionEntryViewModel entry) => entry.CreatedTaxLots is null ? null : Assert.Single(entry.CreatedTaxLots);
+
+	protected static TaxLotViewModel SingleCreatedTaxLot(TransactionEntryViewModel entry)
+	{
+		Assert.NotNull(entry.CreatedTaxLots);
+		return Assert.Single(entry.CreatedTaxLots);
+	}
+
 	protected void EnableSqlLogging()
 	{
 		this.Money.TraceSource.Switch.Level = SourceLevels.Verbose;

@@ -295,6 +295,50 @@ UPDATE Configuration SET CommissionAccountId = last_insert_rowid();
 		Assert.Equal("My commission", documentViewModel.ConfigurationPanel.CommissionCategory?.Name);
 	}
 
+	[Fact]
+	public void UpgradeFromV8()
+	{
+		using SQLiteConnection connection = this.CreateDatabase(8);
+		string sql = @"
+INSERT INTO [Account] ([Id], [Name], [IsClosed], [Type], [CurrencyAssetId]) VALUES (100, 'Brokerage', 0, 1, 1);
+INSERT INTO [Asset] ([Id], [Name]) VALUES (101, 'MSFT');
+
+-- Add first lot with cost basis
+INSERT INTO [Transaction] ([Id], [When], [Action]) VALUES (200, 1234, 9);
+INSERT INTO [TransactionEntry] ([Id], [TransactionId], [AccountId], [Amount], [AssetId]) VALUES (201, 200, 100, 7, 101);
+INSERT INTO [TaxLot] ([Id], [CreatingTransactionEntryId], [AcquiredDate], [Amount], [CostBasisAmount], [CostBasisAssetId]) VALUES (210, 201, 1000, 7, 35, 1);
+
+-- Add second lot with cost basis
+INSERT INTO [Transaction] ([Id], [When], [Action]) VALUES (300, 1468, 9);
+INSERT INTO [TransactionEntry] ([Id], [TransactionId], [AccountId], [Amount], [AssetId]) VALUES (301, 300, 100, 9, 101);
+INSERT INTO [TaxLot] ([Id], [CreatingTransactionEntryId], [AcquiredDate], [CostBasisAmount], [CostBasisAssetId]) VALUES (310, 301, 800, 50, 1);
+
+-- Sell all of one tax lot and part of another tax lot.
+INSERT INTO [Transaction] ([Id], [When], [Action]) VALUES (400, 2000, 5);
+INSERT INTO [TransactionEntry] ([Id], [TransactionId], [AccountId], [Amount], [AssetId]) VALUES (401, 400, 100, -9, 101);
+INSERT INTO [TransactionEntry] ([Id], [TransactionId], [AccountId], [Amount], [AssetId]) VALUES (402, 400, 100, 200, 1);
+INSERT INTO [TaxLotAssignment] ([Id], [TaxLotId], [ConsumingTransactionEntryId], [Amount], [Pinned]) VALUES (410, 210, 401, -7, 1);
+INSERT INTO [TaxLotAssignment] ([Id], [TaxLotId], [ConsumingTransactionEntryId], [Amount], [Pinned]) VALUES (411, 310, 401, -2, 0);
+";
+		this.ExecuteSql(connection, sql);
+		MoneyFile file = MoneyFile.Load(connection);
+		DocumentViewModel documentViewModel = new(file);
+
+		var brokerage = (InvestingAccountViewModel)documentViewModel.GetAccount(100);
+		InvestingTransactionViewModel? addTx1 = brokerage.FindTransaction(200);
+		Assert.NotNull(addTx1);
+		TransactionEntryViewModel addTx1Entry = addTx1.Entries.Single(e => e.Id == 201);
+		Assert.Equal(35, addTx1Entry.CreatedTaxLots?.Single().CostBasisAmount);
+		Assert.Equal(7, addTx1Entry.CreatedTaxLots?.Single().Amount);
+		Assert.Equal(brokerage.CurrencyAsset, addTx1Entry.CreatedTaxLots?.Single().CostBasisAsset);
+
+		TableQuery<TaxLotAssignment> taxLotAssignments = file.GetTaxLotAssignments(401);
+		TaxLotAssignment tla410 = Assert.Single(taxLotAssignments, tla => tla.Amount == -7);
+		TaxLotAssignment tla411 = Assert.Single(taxLotAssignments, tla => tla.Amount == -2);
+		Assert.True(tla410.Pinned);
+		Assert.False(tla411.Pinned);
+	}
+
 	private SQLiteConnection CreateDatabase(int schemaVersion)
 	{
 		SQLiteConnection connection = new(Debugger.IsAttached ? this.dbPath : ":memory:");

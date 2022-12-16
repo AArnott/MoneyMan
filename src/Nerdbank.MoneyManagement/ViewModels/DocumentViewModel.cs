@@ -206,6 +206,21 @@ public class DocumentViewModel : BindableBase, IDisposable
 
 	public CategoryAccountViewModel? FindCategory(string name) => this.GetCategory(this.MoneyFile.Categories.FirstOrDefault(cat => cat.Name == name)?.Id);
 
+	[return: NotNullIfNotNull("creatingTransactionEntryId")]
+	public TransactionEntryViewModel? GetTransactionEntry(int? transactionEntryId)
+	{
+		if (transactionEntryId is null)
+		{
+			return null;
+		}
+
+		(int AccountId, int TransactionId) owner = this.MoneyFile.GetTransactionEntryOwnership(transactionEntryId.Value);
+		AccountViewModel account = this.GetAccount(owner.AccountId);
+		TransactionViewModel? tx = account.FindTransaction(owner.TransactionId);
+		Assumes.NotNull(tx);
+		return tx.Entries.First(te => te.Id == transactionEntryId.Value);
+	}
+
 	public void Save() => this.MoneyFile.Save();
 
 	/// <summary>

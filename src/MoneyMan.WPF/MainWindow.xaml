@@ -19,6 +19,7 @@
 		<converters:EnumToOrdinalConverter x:Key="enumToOrdinalConverter" />
 		<converters:TypeToVisibilityConverter x:Key="typeToVisibilityConverter" />
 		<Style TargetType="{x:Type TextBox}">
+			<Setter Property="VerticalContentAlignment" Value="Center" />
 			<EventSetter Event="GotKeyboardFocus" Handler="TextBox_GotKeyboardFocus"/>
 			<Style.Triggers>
 				<Trigger Property="Validation.HasError" Value="True">
@@ -401,7 +402,7 @@
 																	DisplayMemberPath="Name" />
 																<StackPanel Grid.Column="2" Orientation="Horizontal">
 																	<TextBlock Text="@" Margin="3,3,3,0" />
-																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35" />
+																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="65" />
 																</StackPanel>
 																<StackPanel Grid.Column="3" Orientation="Horizontal">
 																	<TextBlock Text="- commission" Margin="3,3,3,0" />
@@ -421,14 +422,19 @@
 															<Grid>
 																<Grid.ColumnDefinitions>
 																	<ColumnDefinition Width="auto" />
-																	<ColumnDefinition Width="*" />
+																	<ColumnDefinition Width="3*" />
+																	<ColumnDefinition Width="1*" />
 																</Grid.ColumnDefinitions>
-																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="0" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35" />
 																<ComboBox
 																	Grid.Column="1"
 																	ItemsSource="{Binding Assets}"
 																	SelectedItem="{Binding SimpleAsset, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
+																<StackPanel Grid.Column="2" Orientation="Horizontal">
+																	<TextBlock Text="@" Margin="3,3,3,0" />
+																	<TextBox Text="{Binding SimplePrice, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="65" />
+																</StackPanel>
 															</Grid>
 														</DataTemplate>
 													</local:InvestingTransactionEditingSelector.AddShares>
@@ -505,7 +511,7 @@
 																	ItemsSource="{Binding Accounts}"
 																	SelectedItem="{Binding SimpleAccount, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
-																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35"/>
 																<ComboBox
 																	Grid.Column="2"
 																	ItemsSource="{Binding Assets}"
@@ -552,6 +558,59 @@
 											</DataGridTemplateColumn.CellEditingTemplate>
 										</DataGridTemplateColumn>
 									</DataGrid.Columns>
+									<DataGrid.RowDetailsTemplate>
+										<DataTemplate>
+											<ContentControl DataContext="{Binding}" Name="X">
+												<ContentControl.Resources>
+													<DataTemplate x:Key="CreateLots">
+														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
+																		Margin="5">
+															<StackPanel>
+																<StackPanel Orientation="Horizontal">
+																	<Label Content="{Binding Document.BankingPanel.AcquisitionDatePrompt, Source={StaticResource viewModel}}"/>
+																	<DatePicker Width="80pt" SelectedDate="{Binding AcquisitionDate, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+																				ToolTip="{Binding Document.BankingPanel.AcquisitionDateToolTip, Source={StaticResource viewModel}}"/>
+																</StackPanel>
+																<TextBlock TextWrapping="Wrap" Text="{Binding Document.BankingPanel.LotInfoExplanation, Source={StaticResource viewModel}}" />
+															</StackPanel>
+														</ContentControl>
+													</DataTemplate>
+													<DataTemplate x:Key="SelectLots">
+														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
+																		Margin="5">
+															<StackPanel>
+																<StackPanel Orientation="Horizontal">
+																	<Label Content="🚧 Tax lot selection coming soon"/>
+																</StackPanel>
+																<TextBlock TextWrapping="Wrap" Text="{Binding Document.BankingPanel.LotInfoExplanation, Source={StaticResource viewModel}}" />
+															</StackPanel>
+														</ContentControl>
+													</DataTemplate>
+												</ContentControl.Resources>
+												<ContentControl.Style>
+													<Style TargetType="ContentControl">
+														<Style.Triggers>
+															<DataTrigger Binding="{Binding Action}" Value="Add">
+																<Setter Property="ContentTemplate" Value="{StaticResource CreateLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Transfer">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Sell">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Remove">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Exchange">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
+															</DataTrigger>
+														</Style.Triggers>
+													</Style>
+												</ContentControl.Style>
+											</ContentControl>
+										</DataTemplate>
+									</DataGrid.RowDetailsTemplate>
 									<DataGrid.ContextMenu>
 										<ContextMenu>
 											<MenuItem Header="{Binding Document.DeleteCommandCaption, Source={StaticResource viewModel}}" Command="{Binding Document.DeleteTransactionsCommand, Source={StaticResource viewModel}}" />
