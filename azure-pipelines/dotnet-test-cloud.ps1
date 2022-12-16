@@ -44,9 +44,16 @@ if ($x86) {
   }
 }
 
+$Platform = 'Any CPU'
+if ($IsMacOS -or $IsLinux) {
+	$Platform = 'NonWindows'
+	Write-Verbose 'Testing on a non-Windows agent. Windows-specific tests will be skipped.'
+}
+
 & $dotnet test $RepoRoot `
     --no-build `
     -c $Configuration `
+    -p:Platform=$Platform `
     --filter "TestCategory!=FailsInCloudTest" `
     --collect "Code Coverage;Format=cobertura" `
     --settings "$PSScriptRoot/test.runsettings" `
