@@ -19,6 +19,7 @@
     <PackageVersion Include="SQLitePCLRaw.bundle_green" Version="2.1.2" />
     <PackageVersion Include="Squirrel.Windows" Version="2.0.2-netcore.3" />
     <PackageVersion Include="Validation" Version="2.5.51" />
+    <PackageVersion Include="XamlNameReferenceGenerator" Version="1.5.1" />
     <PackageVersion Include="Xunit.Combinatorial" Version="1.5.25" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
     <PackageVersion Include="xunit.stafact" Version="1.1.11" />

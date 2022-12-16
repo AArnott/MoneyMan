@@ -2,15 +2,21 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="Roots.xml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Diagnostics" Condition="'$(Configuration)' == 'Debug'" />
     <PackageReference Include="Avalonia.ReactiveUI" />
+    <PackageReference Include="XamlNameReferenceGenerator" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nerdbank.MoneyManagement\Nerdbank.MoneyManagement.csproj" />
