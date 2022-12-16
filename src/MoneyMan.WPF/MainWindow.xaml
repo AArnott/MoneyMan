@@ -511,7 +511,7 @@
 																	ItemsSource="{Binding Accounts}"
 																	SelectedItem="{Binding SimpleAccount, UpdateSourceTrigger=PropertyChanged}"
 																	DisplayMemberPath="Name" />
-																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" />
+																<TextBox Grid.Column="1" Text="{Binding SimpleAmount, UpdateSourceTrigger=LostFocus, NotifyOnValidationError=True, ValidatesOnDataErrors=True}" InputScope="Number" MinWidth="35"/>
 																<ComboBox
 																	Grid.Column="2"
 																	ItemsSource="{Binding Assets}"
@@ -575,12 +575,26 @@
 															</StackPanel>
 														</ContentControl>
 													</DataTemplate>
+													<DataTemplate x:Key="SelectLots">
+														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
+																		Margin="5">
+															<StackPanel>
+																<StackPanel Orientation="Horizontal">
+																	<Label Content="🚧 Tax lot selection coming soon"/>
+																</StackPanel>
+																<TextBlock TextWrapping="Wrap" Text="{Binding Document.BankingPanel.LotInfoExplanation, Source={StaticResource viewModel}}" />
+															</StackPanel>
+														</ContentControl>
+													</DataTemplate>
 												</ContentControl.Resources>
 												<ContentControl.Style>
 													<Style TargetType="ContentControl">
 														<Style.Triggers>
 															<DataTrigger Binding="{Binding Action}" Value="Add">
 																<Setter Property="ContentTemplate" Value="{StaticResource CreateLots}" />
+															</DataTrigger>
+															<DataTrigger Binding="{Binding Action}" Value="Transfer">
+																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
 															</DataTrigger>
 														</Style.Triggers>
 													</Style>
