@@ -10,10 +10,7 @@ public abstract class UITestBase : MoneyTestBase
 	{
 		this.TraceListener = new XunitTraceListener(logger);
 
-		this.Window = new MainWindow
-		{
-			ReopenLastFile = false,
-		};
+		this.Window = new MainWindow();
 
 		PresentationTraceSources.Refresh();
 		PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Warning;

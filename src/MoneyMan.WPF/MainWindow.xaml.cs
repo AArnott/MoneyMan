@@ -29,14 +29,11 @@ public partial class MainWindow : Window
 		this.ViewModel.MainWindow = this;
 		this.DataContext = this.ViewModel;
 		this.Loaded += this.MainWindow_Loaded;
-		this.ViewModel.FileClosed += this.ViewModel_FileClosed;
 
 		this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, this.FileNew));
 		this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, this.FileOpen));
 		this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, this.FileSave));
 	}
-
-	public bool ReopenLastFile { get; set; } = true;
 
 	public MainPageViewModel ViewModel
 	{
@@ -48,7 +45,6 @@ public partial class MainWindow : Window
 	{
 		this.closingTokenSource.Cancel();
 		this.ViewModel.Document?.Dispose();
-		AppSettings.Default.Save();
 		base.OnClosed(e);
 	}
 
@@ -83,20 +79,14 @@ public partial class MainWindow : Window
 		this.InitializeFileDialog(dialog);
 		if (dialog.ShowDialog() is true)
 		{
-			this.FileOpen(dialog.FileName);
-		}
-	}
-
-	private void FileOpen(string path)
-	{
-		try
-		{
-			this.ViewModel.OpenExistingFile(path);
-			AppSettings.Default.LastOpenedFile = path;
-		}
-		catch (Exception ex)
-		{
-			MessageBox.Show($@"Failed to open ""{path}"". {ex.Message}");
+			try
+			{
+				this.ViewModel.OpenExistingFile(dialog.FileName);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($@"Failed to open ""{dialog.FileName}"". {ex.Message}");
+			}
 		}
 	}
 
@@ -104,11 +94,6 @@ public partial class MainWindow : Window
 	{
 		Verify.Operation(this.ViewModel.Document is not null, "No file to be saved.");
 		this.ViewModel.Document.Save();
-	}
-
-	private void ViewModel_FileClosed(object? sender, EventArgs e)
-	{
-		AppSettings.Default.LastOpenedFile = null;
 	}
 
 	private void InitializeFileDialog(FileDialog dialog)
@@ -124,17 +109,7 @@ public partial class MainWindow : Window
 	private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // Avoid async void methods
 	{
-		if (this.ReopenLastFile && !string.IsNullOrEmpty(AppSettings.Default.LastOpenedFile))
-		{
-			if (File.Exists(AppSettings.Default.LastOpenedFile))
-			{
-				this.FileOpen(AppSettings.Default.LastOpenedFile);
-			}
-			else
-			{
-				AppSettings.Default.LastOpenedFile = null;
-			}
-		}
+		await this.ViewModel.InitializeAsync(this.closingTokenSource.Token);
 
 		try
 		{
