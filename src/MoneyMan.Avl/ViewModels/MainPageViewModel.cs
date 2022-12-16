@@ -46,10 +46,10 @@ public class MainPageViewModel : MainPageViewModelBase
 
 	private async Task FileNewAsync()
 	{
-		SaveFileDialog dlg = new SaveFileDialog
+		SaveFileDialog dlg = new()
 		{
 			Title = "Save MoneyMan file",
-			Filters =
+			Filters = new()
 			{
 				new FileDialogFilter { Name = "MoneyMan Files", Extensions = { "moneyman" } },
 			},
@@ -68,10 +68,10 @@ public class MainPageViewModel : MainPageViewModelBase
 
 	private async Task FileOpenAsync()
 	{
-		OpenFileDialog dlg = new OpenFileDialog
+		OpenFileDialog dlg = new()
 		{
 			Title = "Open MoneyMan file",
-			Filters =
+			Filters = new()
 			{
 				new FileDialogFilter { Name = "MoneyMan Files", Extensions = { "moneyman" } },
 			},
