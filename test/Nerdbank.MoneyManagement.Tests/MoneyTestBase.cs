@@ -20,7 +20,7 @@ public class MoneyTestBase : TestBase
 			return result;
 		});
 		this.UserNotification = new UserNotificationMock(logger);
-		this.MainPageViewModel = new();
+		this.MainPageViewModel = new(persistSettings: false);
 	}
 
 	internal MoneyFileTraceListener MoneyFileTraceListener { get; }

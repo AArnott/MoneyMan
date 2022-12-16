@@ -11,7 +11,7 @@ public class MainPageViewModelBaseTests : MoneyTestBase
 	[Fact]
 	public void InitialState()
 	{
-		MainPageViewModelBase viewModel = new();
+		MainPageViewModelBase viewModel = new(persistSettings: false);
 		Assert.False(viewModel.IsFileOpen);
 		this.EnableSqlLogging();
 	}
