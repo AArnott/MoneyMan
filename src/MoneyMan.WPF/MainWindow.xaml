@@ -616,7 +616,7 @@
 																			</DataGridTemplateColumn.CellTemplate>
 																			<DataGridTemplateColumn.CellEditingTemplate>
 																				<DataTemplate>
-																					<TextBox Text="{Binding Assigned}" HorizontalContentAlignment="Right" InputScope="Number" />
+																					<TextBox Text="{Binding Assigned, UpdateSourceTrigger=LostFocus}" HorizontalContentAlignment="Right" InputScope="Number" />
 																				</DataTemplate>
 																			</DataGridTemplateColumn.CellEditingTemplate>
 																		</DataGridTemplateColumn>
@@ -629,6 +629,7 @@
 																		</DataGridTemplateColumn>
 																	</DataGrid.Columns>
 																</DataGrid>
+																<TextBlock Text="{Binding AssignmentsDeltaLabel, Mode=OneWay}" />
 																<WrapPanel>
 																	<Button Command="{Binding SelectOldest}" Content="{Binding SelectOldest.Caption}" Margin="4" Padding="3" />
 																	<Button Command="{Binding SelectNewest}" Content="{Binding SelectNewest.Caption}" Margin="4" Padding="3" />

@@ -19,6 +19,8 @@ public class TaxLotSelectionViewModel : BindableBase
 		this.Transaction = transaction;
 
 		this.RegisterDependentProperty(nameof(this.SalePrice), nameof(this.SalePriceFormatted));
+		this.RegisterDependentProperty(nameof(this.RequiredAssignments), nameof(this.AssignmentsDeltaLabel));
+		this.RegisterDependentProperty(nameof(this.ActualAssignments), nameof(this.AssignmentsDeltaLabel));
 
 		this.SelectOldest = new SelectionCommand(this, "Oldest", null);
 		this.SelectNewest = new SelectionCommand(this, "Newest", null);
@@ -45,13 +47,33 @@ public class TaxLotSelectionViewModel : BindableBase
 
 	public bool IsGainLossColumnVisible => this.Transaction.Action is not TransactionAction.Transfer;
 
+	public string? AssignmentsDeltaLabel
+	{
+		get
+		{
+			if (this.RequiredAssignments is null)
+			{
+				return null;
+			}
+
+			decimal target = this.RequiredAssignments.Value;
+			decimal deltaRequired = target - this.ActualAssignments;
+			return deltaRequired switch
+			{
+				< 0 => $"{this.ActualAssignments} assigned ➖ {Math.Abs(deltaRequired)} excess = {target}",
+				> 0 => $"{this.ActualAssignments} assigned ➕ {deltaRequired} more = {target}",
+				_ => $"{this.ActualAssignments} assigned ✅ as required.",
+			};
+		}
+	}
+
 	public decimal ActualAssignments
 	{
 		get => this.actual;
 		internal set => this.SetProperty(ref this.actual, value);
 	}
 
-	public decimal RequiredAssignments => this.Transaction.WithdrawAmount ?? 0;
+	public decimal? RequiredAssignments => this.Transaction.WithdrawAmount;
 
 	public decimal? SalePrice => this.Transaction.SimplePrice;
 

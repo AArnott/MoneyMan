@@ -77,7 +77,7 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 	{
 		this.transaction.Action = TransactionAction.Sell;
 		Assert.NotNull(this.transaction.TaxLotSelection);
-		Assert.Equal(0, this.transaction.TaxLotSelection.RequiredAssignments);
+		Assert.Null(this.transaction.TaxLotSelection.RequiredAssignments);
 
 		this.transaction.WithdrawAsset = this.msft;
 		this.transaction.WithdrawAccount = this.account;
