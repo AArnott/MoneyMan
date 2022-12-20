@@ -33,6 +33,18 @@ public class TaxLotSelectionViewModel : BindableBase
 
 	public string Explanation => "Which tax lots are dispensed with this transaction?";
 
+	public string AcquiredHeader => "Acquired";
+
+	public string PriceHeader => "Price";
+
+	public string AvailableHeader => "Available";
+
+	public string AssignedHeader => "Assigned";
+
+	public string GainLossHeader => "Gain/Loss";
+
+	public bool IsGainLossColumnVisible => this.Transaction.Action is not TransactionAction.Transfer;
+
 	public decimal ActualAssignments
 	{
 		get => this.actual;
@@ -76,6 +88,9 @@ public class TaxLotSelectionViewModel : BindableBase
 				break;
 			case nameof(InvestingTransactionViewModel.WithdrawAsset):
 				this.RefreshAssignments();
+				break;
+			case nameof(InvestingTransactionViewModel.Action):
+				this.OnPropertyChanged(nameof(this.IsGainLossColumnVisible));
 				break;
 		}
 	}

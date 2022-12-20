@@ -599,11 +599,34 @@
 																		</Style>
 																	</DataGrid.RowStyle>
 																	<DataGrid.Columns>
-																		<DataGridTextColumn Header="Acquired" Binding="{Binding AcquisitionDate}" IsReadOnly="true" />
-																		<DataGridTextColumn Header="Price" Binding="{Binding PriceFormatted}" IsReadOnly="true" />
-																		<DataGridTextColumn Header="Available" Binding="{Binding Available}" IsReadOnly="true" />
-																		<DataGridTextColumn Header="Assigned" Binding="{Binding Assigned}" />
-																		<DataGridTextColumn Header="GainLoss" Binding="{Binding GainLossFormatted}" IsReadOnly="true" />
+																		<DataGridTextColumn Header="{Binding Document.SelectedTransaction.TaxLotSelection.AcquiredHeader, Mode=OneTime, Source={StaticResource viewModel}}" Binding="{Binding AcquisitionDate, Mode=OneWay, StringFormat=d}" IsReadOnly="true" />
+																		<DataGridTextColumn Header="{Binding Document.SelectedTransaction.TaxLotSelection.PriceHeader, Mode=OneTime, Source={StaticResource viewModel}}" Binding="{Binding PriceFormatted}" IsReadOnly="true" />
+																		<DataGridTemplateColumn Header="{Binding Document.SelectedTransaction.TaxLotSelection.AvailableHeader, Mode=OneTime, Source={StaticResource viewModel}}">
+																			<DataGridTemplateColumn.CellTemplate>
+																				<DataTemplate>
+																					<TextBlock Text="{Binding Available}" HorizontalAlignment="Right" />
+																				</DataTemplate>
+																			</DataGridTemplateColumn.CellTemplate>
+																		</DataGridTemplateColumn>
+																		<DataGridTemplateColumn Header="{Binding Document.SelectedTransaction.TaxLotSelection.AssignedHeader, Mode=OneTime, Source={StaticResource viewModel}}">
+																			<DataGridTemplateColumn.CellTemplate>
+																				<DataTemplate>
+																					<TextBlock Text="{Binding Assigned}" HorizontalAlignment="Right" />
+																				</DataTemplate>
+																			</DataGridTemplateColumn.CellTemplate>
+																			<DataGridTemplateColumn.CellEditingTemplate>
+																				<DataTemplate>
+																					<TextBox Text="{Binding Assigned}" HorizontalContentAlignment="Right" InputScope="Number" />
+																				</DataTemplate>
+																			</DataGridTemplateColumn.CellEditingTemplate>
+																		</DataGridTemplateColumn>
+																		<DataGridTemplateColumn Header="{Binding Document.SelectedTransaction.TaxLotSelection.GainLossHeader, Mode=OneTime, Source={StaticResource viewModel}}" Visibility="{Binding Document.SelectedTransaction.TaxLotSelection.IsGainLossColumnVisible, Source={StaticResource viewModel}, Converter={StaticResource boolToVisibilityConverter}}">
+																			<DataGridTemplateColumn.CellTemplate>
+																				<DataTemplate>
+																					<TextBlock Text="{Binding GainLossFormatted}" HorizontalAlignment="Right" />
+																				</DataTemplate>
+																			</DataGridTemplateColumn.CellTemplate>
+																		</DataGridTemplateColumn>
 																	</DataGrid.Columns>
 																</DataGrid>
 																<WrapPanel>

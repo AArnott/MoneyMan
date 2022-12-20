@@ -163,6 +163,20 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 		Assert.Null(this.transaction.TaxLotSelection.SalePriceFormatted);
 	}
 
+	[Fact]
+	public void IsGainLossColumnVisible()
+	{
+		this.transaction.Action = TransactionAction.Transfer;
+		Assert.False(this.transaction.TaxLotSelection?.IsGainLossColumnVisible);
+		TestUtilities.AssertPropertyChangedEvent(
+			this.transaction.TaxLotSelection!,
+			() => this.transaction.Action = TransactionAction.Exchange,
+			nameof(this.transaction.TaxLotSelection.IsGainLossColumnVisible));
+		Assert.True(this.transaction.TaxLotSelection?.IsGainLossColumnVisible);
+		this.transaction.Action = TransactionAction.Sell;
+		Assert.True(this.transaction.TaxLotSelection?.IsGainLossColumnVisible);
+	}
+
 	private TransactionEntryViewModel CreateBuyTransactionEntry(DateTime acquired)
 	{
 		InvestingTransactionViewModel tx = this.account.NewTransaction();
