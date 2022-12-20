@@ -862,7 +862,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
 	{
 		base.OnPropertyChanged(propertyName);
-		this.TaxLotSelection?.OnTransactionPropertyChanged(propertyName);
+		this.taxLotSelection?.OnTransactionPropertyChanged(propertyName);
 	}
 
 	[DoesNotReturn]

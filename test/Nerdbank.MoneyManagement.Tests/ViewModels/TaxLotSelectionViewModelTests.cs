@@ -59,7 +59,9 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 	public void Assignments_IncludesOnlyLotsCreatedBeforeTransactionDate()
 	{
 		this.transaction.Action = TransactionAction.Sell;
-		this.transaction.WithdrawAsset = this.msft;
+		this.transaction.SimpleAsset = this.msft;
+		this.transaction.SimpleAmount = 5;
+		this.transaction.SimplePrice = 60;
 		Assert.NotNull(this.transaction.TaxLotSelection);
 
 		this.transaction.When = new DateTime(1999, 1, 1);
@@ -92,15 +94,17 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 	public void ActualAssignments()
 	{
 		this.transaction.Action = TransactionAction.Sell;
-		this.transaction.WithdrawAsset = this.msft;
+		this.transaction.SimpleAsset = this.msft;
+		this.transaction.SimpleAmount = 5;
+		this.transaction.SimplePrice = 60;
 		this.transaction.When = new DateTime(2000, 1, 1);
 		Assert.NotNull(this.transaction.TaxLotSelection);
-		Assert.Equal(0, this.transaction.TaxLotSelection.ActualAssignments);
+		Assert.Equal(5, this.transaction.TaxLotSelection.ActualAssignments);
 
 		this.transaction.TaxLotSelection.Assignments[0].Assigned = 18;
-		Assert.Equal(18, this.transaction.TaxLotSelection.ActualAssignments);
+		Assert.Equal(18 + 2, this.transaction.TaxLotSelection.ActualAssignments);
 		this.transaction.TaxLotSelection.Assignments[1].Assigned = 3;
-		Assert.Equal(21, this.transaction.TaxLotSelection.ActualAssignments);
+		Assert.Equal(18 + 3, this.transaction.TaxLotSelection.ActualAssignments);
 	}
 
 	[Fact]
@@ -124,6 +128,8 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 	{
 		this.transaction.Action = TransactionAction.Sell;
 		this.transaction.SimpleAsset = this.msft;
+		this.transaction.SimpleAmount = 5;
+		this.transaction.SimplePrice = 60;
 		this.transaction.When = new DateTime(1999, 1, 1);
 		Assert.NotNull(this.transaction.TaxLotSelection);
 		Assert.Equal(3, this.transaction.TaxLotSelection.Assignments[0].Available);
@@ -134,6 +140,8 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 	{
 		this.transaction.Action = TransactionAction.Sell;
 		this.transaction.SimpleAsset = this.msft;
+		this.transaction.SimpleAmount = 2;
+		this.transaction.SimplePrice = 50;
 		this.transaction.When = new DateTime(1999, 1, 1);
 		Assert.NotNull(this.transaction.TaxLotSelection);
 		Assert.Equal(50, this.transaction.TaxLotSelection.Assignments[0].Price);
@@ -175,6 +183,34 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 		Assert.True(this.transaction.TaxLotSelection?.IsGainLossColumnVisible);
 		this.transaction.Action = TransactionAction.Sell;
 		Assert.True(this.transaction.TaxLotSelection?.IsGainLossColumnVisible);
+	}
+
+	[Fact]
+	public void Assignment_ChangesAreSaved()
+	{
+		this.transaction.Action = TransactionAction.Sell;
+		this.transaction.SimpleAsset = this.msft;
+		this.transaction.SimpleAmount = 5;
+		this.transaction.SimplePrice = 60;
+		this.transaction.When = new DateTime(1999, 1, 1);
+		Assert.NotNull(this.transaction.TaxLotSelection);
+		this.transaction.TaxLotSelection.Assignments[0].Assigned = 1;
+		Assert.Equal(string.Empty, this.transaction.TaxLotSelection.Assignments[0].Error);
+		Assert.False(this.transaction.TaxLotSelection.Assignments[0].IsDirty);
+		Assert.Equal(1, this.transaction.TaxLotSelection.Assignments[0].Model.Amount);
+	}
+
+	[Fact]
+	public void Assignment_ZeroRowsAreRemoved()
+	{
+		this.transaction.Action = TransactionAction.Remove;
+		this.transaction.SimpleAsset = this.msft;
+		this.transaction.SimpleAmount = 1;
+		this.transaction.When = new DateTime(1999, 1, 1);
+		Assert.NotNull(this.transaction.TaxLotSelection);
+		this.transaction.TaxLotSelection.Assignments[0].Assigned = 1;
+		this.transaction.TaxLotSelection.Assignments[0].Assigned = 0;
+		Assert.Empty(this.Money.GetTaxLotAssignments(this.transaction.Entries.Single().Id));
 	}
 
 	private TransactionEntryViewModel CreateBuyTransactionEntry(DateTime acquired)

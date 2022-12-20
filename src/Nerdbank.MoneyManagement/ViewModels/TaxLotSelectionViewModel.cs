@@ -91,6 +91,8 @@ public class TaxLotSelectionViewModel : BindableBase
 
 	internal InvestingTransactionViewModel Transaction { get; }
 
+	internal TransactionEntryViewModel? ConsumingTransactionEntry => this.Transaction.Entries.SingleOrDefault(e => e.ModelAmount < 0);
+
 	protected MoneyFile MoneyFile => this.Transaction.MoneyFile;
 
 	protected DocumentViewModel DocumentViewModel => this.Transaction.ThisAccount.DocumentViewModel;
@@ -139,13 +141,13 @@ public class TaxLotSelectionViewModel : BindableBase
 	private void RefreshAssignments()
 	{
 		int? assetId = this.Transaction.WithdrawAsset?.Id;
-		if (assetId is null)
+		TransactionEntryViewModel? consumingTransactionEntry = this.ConsumingTransactionEntry;
+		if (assetId is null || consumingTransactionEntry is null)
 		{
 			this.assignments.Clear();
 			return;
 		}
 
-		int? consumingTransactionEntryId = this.Transaction.Entries.SingleOrDefault(e => e.ModelAmount < 0)?.Id;
 		HashSet<int> unobservedTaxLotIds = this.assignments.Select(a => a.TaxLotId).ToHashSet();
 		Dictionary<int, TaxLotAssignmentViewModel> assignmentsByTaxLotId = this.assignments.ToDictionary(a => a.TaxLotId);
 		SQLite.TableQuery<UnsoldAsset> unsoldAssets =
@@ -153,11 +155,13 @@ public class TaxLotSelectionViewModel : BindableBase
 			where lot.AssetId == assetId.Value
 			where lot.AcquiredDate <= this.Transaction.When && lot.TransactionDate <= this.Transaction.When
 			select lot;
-		IDictionary<int, decimal> existingLotSelections = consumingTransactionEntryId is null ? ImmutableDictionary<int, decimal>.Empty :
+		Dictionary<int, decimal> existingLotSelections =
 			(from lot in this.MoneyFile.ConsumedTaxLots
-			 where lot.ConsumingTransactionEntryId == consumingTransactionEntryId.Value
+			 where lot.ConsumingTransactionEntryId == consumingTransactionEntry.Id
 			 group lot by lot.TaxLotId into lotSet
 			 select (TaxLotId: lotSet.Key, Amount: lotSet.Sum(l => l.Amount))).ToDictionary(kv => kv.TaxLotId, kv => kv.Amount);
+		Dictionary<int, TaxLotAssignment> existingLotAssignmentsByTaxLotId =
+			this.MoneyFile.GetTaxLotAssignments(consumingTransactionEntry.Id).ToDictionary(tla => tla.TaxLotId, tla => tla);
 		foreach (UnsoldAsset lot in unsoldAssets)
 		{
 			if (existingLotSelections.TryGetValue(lot.TaxLotId, out decimal alreadyAssigned))
@@ -173,23 +177,11 @@ public class TaxLotSelectionViewModel : BindableBase
 			unobservedTaxLotIds.Remove(lot.TaxLotId);
 			if (!assignmentsByTaxLotId.TryGetValue(lot.TaxLotId, out TaxLotAssignmentViewModel? assignment))
 			{
-				this.assignments.Add(assignment = new TaxLotAssignmentViewModel(this.DocumentViewModel, this));
+				existingLotAssignmentsByTaxLotId.TryGetValue(lot.TaxLotId, out TaxLotAssignment? tla);
+				this.assignments.Add(assignment = new TaxLotAssignmentViewModel(this.DocumentViewModel, this, tla));
 			}
 
-			assignment.TaxLotId = lot.TaxLotId;
-			assignment.AcquisitionDate = lot.AcquiredDate;
-			assignment.Available = lot.RemainingAmount;
-			assignment.CostBasisAsset = this.DocumentViewModel.GetAsset(lot.CostBasisAssetId) ?? this.Transaction.ThisAccount.CurrencyAsset;
-			assignment.Assigned = alreadyAssigned;
-
-			if (lot.CostBasisAmount.HasValue)
-			{
-				assignment.Price = lot.CostBasisAmount.Value / lot.AcquiredAmount;
-			}
-			else
-			{
-				this.MoneyFile.GetTransactionDetails(lot.TransactionId);
-			}
+			assignment.CopyFrom(lot, consumingTransactionEntry, alreadyAssigned);
 		}
 
 		// Purge any tax lots that are no longer an option.

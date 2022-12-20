@@ -2,7 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Runtime.CompilerServices;
-using System.Windows.Input;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
@@ -25,6 +24,11 @@ public class TaxLotAssignmentViewModel : EntityViewModel<TaxLotAssignment>
 		this.RegisterDependentProperty(nameof(this.Price), nameof(this.GainLoss));
 		this.RegisterDependentProperty(nameof(this.Price), nameof(this.PriceFormatted));
 		this.RegisterDependentProperty(nameof(this.GainLoss), nameof(this.GainLossFormatted));
+
+		if (model is not null)
+		{
+			this.CopyFrom(model);
+		}
 	}
 
 	/// <inheritdoc cref="TaxLotAssignment.TaxLotId" />
@@ -77,12 +81,37 @@ public class TaxLotAssignmentViewModel : EntityViewModel<TaxLotAssignment>
 
 	public override bool IsReadyToSave => base.IsReadyToSave && this.ConsumingTransactionEntry is not null;
 
+	protected override bool ShouldBePersisted => base.ShouldBePersisted && this.Assigned != 0;
+
 	internal void OnSelectionViewModelPropertyChanged(string? propertyName)
 	{
 		if (propertyName is nameof(TaxLotSelectionViewModel.SalePrice))
 		{
 			this.OnPropertyChanged(nameof(this.GainLoss));
 		}
+	}
+
+	internal void CopyFrom(UnsoldAsset lot, TransactionEntryViewModel consumingTransactionEntry, decimal alreadyAssigned)
+	{
+		using (this.ApplyingToModel())
+		{
+			using (this.SuspendAutoSave(saveOnDisposal: false))
+			{
+				this.ConsumingTransactionEntry = consumingTransactionEntry;
+				this.TaxLotId = lot.TaxLotId;
+				this.AcquisitionDate = lot.AcquiredDate;
+				this.Available = lot.RemainingAmount;
+				this.CostBasisAsset = this.documentViewModel.GetAsset(lot.CostBasisAssetId) ?? this.selectionViewModel.Transaction.ThisAccount.CurrencyAsset;
+				this.Assigned = alreadyAssigned;
+
+				if (lot.CostBasisAmount.HasValue)
+				{
+					this.Price = lot.CostBasisAmount.Value / lot.AcquiredAmount;
+				}
+			}
+		}
+
+		this.IsDirty = false;
 	}
 
 	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -106,4 +135,7 @@ public class TaxLotAssignmentViewModel : EntityViewModel<TaxLotAssignment>
 		this.ConsumingTransactionEntry = this.documentViewModel.GetTransactionEntry(this.Model.ConsumingTransactionEntryId);
 		this.Pinned = this.Model.Pinned;
 	}
+
+	protected override bool IsPersistedProperty(string propertyName) => base.IsPersistedProperty(propertyName) && !propertyName.EndsWith("Formatted", StringComparison.Ordinal)
+		&& propertyName is not nameof(this.GainLoss) or nameof(this.Price);
 }
