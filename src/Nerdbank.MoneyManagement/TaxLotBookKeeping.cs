@@ -198,18 +198,14 @@ internal class TaxLotBookKeeping
 			List<TaxLotAssignment> newAssignments = new();
 			SQLite.TableQuery<UnsoldAsset> unsoldAssets =
 				from lot in this.moneyFile.UnsoldAssets
-				where lot.AssetId == transactionEntryViewModel.Asset.Id
-				orderby lot.AcquiredDate
+				where lot.AssetId == transactionEntryViewModel.Asset.Id && lot.RemainingAmount > 0
+				where lot.AcquiredDate <= transactionEntryViewModel.Transaction.When && lot.TransactionDate <= transactionEntryViewModel.Transaction.When
+				orderby lot.AcquiredDate, lot.RemainingAmount // keep this in sync with TaxLotAssignmentSort
 				select lot;
 			decimal remainingRequired = targetAmount - amountCurrentlyAssigned;
 			Assumes.True(remainingRequired >= 0);
 			foreach (UnsoldAsset unsold in unsoldAssets)
 			{
-				if (remainingRequired == 0)
-				{
-					break;
-				}
-
 				decimal amountToTake = Math.Min(unsold.RemainingAmount, remainingRequired);
 				if (existingByTaxLotId.TryGetValue(unsold.TaxLotId, out TaxLotAssignment? existingAssignment))
 				{
@@ -227,6 +223,11 @@ internal class TaxLotBookKeeping
 				}
 
 				remainingRequired -= amountToTake;
+
+				if (remainingRequired == 0)
+				{
+					break;
+				}
 			}
 
 			this.moneyFile.InsertAll(newAssignments);

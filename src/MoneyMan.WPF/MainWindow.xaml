@@ -560,7 +560,7 @@
 									</DataGrid.Columns>
 									<DataGrid.RowDetailsTemplate>
 										<DataTemplate>
-											<ContentControl DataContext="{Binding}" Name="X">
+											<ContentControl DataContext="{Binding}">
 												<ContentControl.Resources>
 													<DataTemplate x:Key="CreateLots">
 														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
@@ -576,12 +576,43 @@
 														</ContentControl>
 													</DataTemplate>
 													<DataTemplate x:Key="SelectLots">
-														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
-																		Margin="5">
+														<ContentControl DataContext="{Binding Document.SelectedTransaction.TaxLotSelection, Source={StaticResource viewModel}, Mode=OneWay}"
+														                Margin="5">
 															<StackPanel>
-																<StackPanel Orientation="Horizontal">
-																	<Label Content="🚧 Tax lot selection coming soon"/>
-																</StackPanel>
+																<TextBlock TextWrapping="Wrap" Text="{Binding Explanation}" />
+																<DataGrid AlternationCount="2" 
+																		  AutoGenerateColumns="False"
+																		  ItemsSource="{Binding Assignments}">
+																	<DataGrid.RowStyle>
+																		<Style TargetType="DataGridRow">
+																			<Style.Triggers>
+																				<Trigger Property="AlternationIndex" Value="0">
+																					<Setter Property="Background" Value="AliceBlue" />
+																				</Trigger>
+																				<DataTrigger Binding="{Binding IsPersisted}" Value="False">
+																					<Setter Property="Background" Value="LightYellow" />
+																				</DataTrigger>
+																				<Trigger Property="Validation.HasError" Value="True">
+																					<Setter Property="Background" Value="LightPink" />
+																				</Trigger>
+																			</Style.Triggers>
+																		</Style>
+																	</DataGrid.RowStyle>
+																	<DataGrid.Columns>
+																		<DataGridTextColumn Header="Acquired" Binding="{Binding AcquisitionDate}" IsReadOnly="true" />
+																		<DataGridTextColumn Header="Price" Binding="{Binding PriceFormatted}" IsReadOnly="true" />
+																		<DataGridTextColumn Header="Available" Binding="{Binding Available}" IsReadOnly="true" />
+																		<DataGridTextColumn Header="Assigned" Binding="{Binding Assigned}" />
+																		<DataGridTextColumn Header="GainLoss" Binding="{Binding GainLossFormatted}" IsReadOnly="true" />
+																	</DataGrid.Columns>
+																</DataGrid>
+																<WrapPanel>
+																	<Button Command="{Binding SelectOldest}" Content="{Binding SelectOldest.Caption}" Margin="4" Padding="3" />
+																	<Button Command="{Binding SelectNewest}" Content="{Binding SelectNewest.Caption}" Margin="4" Padding="3" />
+																	<Button Command="{Binding SelectMinimumGain}" Content="{Binding SelectMinimumGain.Caption}" Margin="4" Padding="3" />
+																	<Button Command="{Binding SelectMaximumGain}" Content="{Binding SelectMaximumGain.Caption}" Margin="4" Padding="3" />
+																	<Button Command="{Binding ClearSelections}" Content="{Binding ClearSelections.Caption}" Margin="4" Padding="3" />
+																</WrapPanel>
 																<TextBlock TextWrapping="Wrap" Text="{Binding Document.BankingPanel.LotInfoExplanation, Source={StaticResource viewModel}}" />
 															</StackPanel>
 														</ContentControl>

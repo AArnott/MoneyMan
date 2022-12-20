@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
@@ -23,6 +24,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private bool wasEverNonEmpty;
 	private DateTime? acquisitionDate;
 	private decimal? acquisitionPrice;
+	private TaxLotSelectionViewModel? taxLotSelection;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="InvestingTransactionViewModel"/> class
@@ -48,6 +50,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.CashValue), nameof(this.SimplePrice));
+		this.RegisterDependentProperty(nameof(this.AcquisitionPrice), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.SimpleAccount), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Accounts));
@@ -377,14 +380,17 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		{
 			if (this.Action is TransactionAction.Buy)
 			{
+				CheckPrereq(this.DepositAmount, nameof(this.DepositAmount));
 				this.WithdrawAmount = value * this.DepositAmount;
 			}
 			else if (this.Action is TransactionAction.Sell)
 			{
+				CheckPrereq(this.WithdrawAmount, nameof(this.WithdrawAmount));
 				this.DepositAmount = value * this.WithdrawAmount;
 			}
 			else if (this.Action is TransactionAction.Dividend)
 			{
+				CheckPrereq(this.DepositAmount, nameof(this.DepositAmount));
 				this.CashValue = value * this.DepositAmount;
 			}
 			else if (this.Action is TransactionAction.Add)
@@ -397,6 +403,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			}
 
 			this.OnPropertyChanged();
+
+			void CheckPrereq(decimal? value, string propertyName) => Verify.Operation(value is not null, $"{propertyName} must be set first.");
 		}
 	}
 
@@ -515,6 +523,23 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	public IEnumerable<AssetViewModel> Assets => this.ThisAccount.DocumentViewModel.AssetsPanel.Assets.Where(a => (this.Action == TransactionAction.Transfer && (this.SimpleAccount is not BankingAccountViewModel || (a.Type == Asset.AssetType.Currency))) || (this.Action != TransactionAction.Transfer && this.IsCashTransaction == (a.Type == Asset.AssetType.Currency)));
 
 	public IEnumerable<AccountViewModel> Accounts => this.ThisAccount.DocumentViewModel.AccountsPanel.Accounts.Where(a => a != this.ThisAccount);
+
+	/// <summary>
+	/// Gets a view model to assist with tax lot selection if this transaction consumes tax lots.
+	/// </summary>
+	public TaxLotSelectionViewModel? TaxLotSelection
+	{
+		get
+		{
+			if (this.Action is TransactionAction.Transfer or TransactionAction.Remove or TransactionAction.Sell or TransactionAction.Exchange)
+			{
+				this.taxLotSelection ??= new(this);
+				return this.taxLotSelection;
+			}
+
+			return null;
+		}
+	}
 
 	private decimal? WithdrawAmountWithValidation
 	{
@@ -832,6 +857,12 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		return base.IsPersistedProperty(propertyName)
 			&& propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact))
 			&& !(propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted"));
+	}
+
+	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+	{
+		base.OnPropertyChanged(propertyName);
+		this.TaxLotSelection?.OnTransactionPropertyChanged(propertyName);
 	}
 
 	[DoesNotReturn]

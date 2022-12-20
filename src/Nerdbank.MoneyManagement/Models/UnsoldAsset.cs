@@ -7,6 +7,8 @@ internal record UnsoldAsset
 {
 	public DateTime AcquiredDate { get; set; }
 
+	public DateTime TransactionDate { get; set; }
+
 	public int TransactionId { get; set; }
 
 	public int AssetId { get; set; }
@@ -14,6 +16,10 @@ internal record UnsoldAsset
 	public int TaxLotId { get; set; }
 
 	public string? AssetName { get; set; }
+
+	public decimal? CostBasisAmount { get; set; }
+
+	public int? CostBasisAssetId { get; set; }
 
 	public decimal AcquiredAmount { get; set; }
 

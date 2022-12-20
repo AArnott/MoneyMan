@@ -10,7 +10,7 @@ namespace Nerdbank.MoneyManagement;
 /// </summary>
 internal class AccountSort : IOptimizedComparer<AccountViewModel>
 {
-	internal static readonly AccountSort Instance = new AccountSort();
+	internal static readonly AccountSort Instance = new();
 
 	private AccountSort()
 	{
