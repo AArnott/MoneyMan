@@ -57,6 +57,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimplePriceApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimpleAssetApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.TaxLotSelection));
 		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.DepositAsset), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.DepositAccount), nameof(this.Description));

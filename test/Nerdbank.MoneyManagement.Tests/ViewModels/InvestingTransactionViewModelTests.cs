@@ -564,6 +564,18 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void TaxLotSelection()
+	{
+		InvestingTransactionViewModel tx = this.account.Transactions[^1];
+		Assert.Null(tx.TaxLotSelection);
+		TestUtilities.AssertPropertyChangedEvent(
+			tx,
+			() => tx.Action = TransactionAction.Sell,
+			nameof(tx.TaxLotSelection));
+		Assert.NotNull(tx.TaxLotSelection);
+	}
+
+	[Fact]
 	public void Transfer_BringAssetsIn()
 	{
 		InvestingTransactionViewModel tx = this.account.Transactions[^1];
