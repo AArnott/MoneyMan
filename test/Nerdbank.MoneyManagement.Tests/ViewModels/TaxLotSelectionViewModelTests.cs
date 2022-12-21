@@ -276,5 +276,31 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 			Assert.Equal(50, this.viewModel.Assignments[0].Price);
 			Assert.Equal("$50.00", this.viewModel.Assignments[0].PriceFormatted);
 		}
+
+		[Fact]
+		public void ShowAllTaxLots_Toggle()
+		{
+			Assert.True(this.viewModel.ShowAllTaxLots);
+			TestUtilities.AssertPropertyChangedEvent(
+				this.viewModel,
+				() => this.viewModel.ShowAllTaxLots = !this.viewModel.ShowAllTaxLots,
+				nameof(this.viewModel.ShowAllTaxLots),
+				nameof(this.viewModel.ShowAllTaxLotsLabel));
+			Assert.False(this.viewModel.ShowAllTaxLots);
+		}
+
+		[Fact]
+		public void ShowAllTaxLots_ChangesVisibleTransactions()
+		{
+			this.transaction.SimpleAmount = 1;
+			this.viewModel.Assignments[0].Assigned = 1;
+			this.viewModel.Assignments[1].Assigned = 0;
+			Assert.Equal(1, this.viewModel.ActualAssignments);
+			Assert.True(this.viewModel.Assignments.Count > 1);
+			this.viewModel.ShowAllTaxLots = false;
+			Assert.Equal(1, this.viewModel.Assignments.Count);
+			this.viewModel.ShowAllTaxLots = true;
+			Assert.True(this.viewModel.Assignments.Count > 1);
+		}
 	}
 }

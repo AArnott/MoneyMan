@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
-using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft;
@@ -13,6 +12,7 @@ public class TaxLotSelectionViewModel : BindableBase
 {
 	private readonly SortedObservableCollection<TaxLotAssignmentViewModel> assignments = new(TaxLotAssignmentSort.Instance);
 	private decimal actual;
+	private bool showAllTaxLots = true;
 
 	public TaxLotSelectionViewModel(InvestingTransactionViewModel transaction)
 	{
@@ -21,7 +21,9 @@ public class TaxLotSelectionViewModel : BindableBase
 		this.RegisterDependentProperty(nameof(this.SalePrice), nameof(this.SalePriceFormatted));
 		this.RegisterDependentProperty(nameof(this.RequiredAssignments), nameof(this.AssignmentsDeltaLabel));
 		this.RegisterDependentProperty(nameof(this.ActualAssignments), nameof(this.AssignmentsDeltaLabel));
+		this.RegisterDependentProperty(nameof(this.ShowAllTaxLots), nameof(this.ShowAllTaxLotsLabel));
 
+		this.SelectOptimal = new SelectionCommand(this, "Optimal", null);
 		this.SelectOldest = new SelectionCommand(this, "Oldest", null);
 		this.SelectNewest = new SelectionCommand(this, "Newest", null);
 		this.SelectMinimumGain = new SelectionCommand(this, "Minimum gain", null);
@@ -34,6 +36,20 @@ public class TaxLotSelectionViewModel : BindableBase
 	public IReadOnlyList<TaxLotAssignmentViewModel> Assignments => this.assignments;
 
 	public string Explanation => "Which tax lots are dispensed with this transaction?";
+
+	public string ShowAllTaxLotsLabel => this.ShowAllTaxLots ? "Showing all available lots" : "Showing only assigned lots";
+
+	public bool ShowAllTaxLots
+	{
+		get => this.showAllTaxLots;
+		set
+		{
+			if (this.SetProperty(ref this.showAllTaxLots, value))
+			{
+				this.RefreshAssignments();
+			}
+		}
+	}
 
 	public string AcquiredHeader => "Acquired";
 
@@ -78,6 +94,8 @@ public class TaxLotSelectionViewModel : BindableBase
 	public decimal? SalePrice => this.Transaction.SimplePrice;
 
 	public string? SalePriceFormatted => this.Transaction.DepositAsset?.Format(this.SalePrice);
+
+	public ICommand SelectOptimal { get; }
 
 	public ICommand SelectOldest { get; }
 
@@ -182,6 +200,10 @@ public class TaxLotSelectionViewModel : BindableBase
 			}
 
 			assignment.CopyFrom(lot, consumingTransactionEntry, alreadyAssigned);
+			if (assignment.Assigned == 0 && !this.ShowAllTaxLots)
+			{
+				this.assignments.Remove(assignment);
+			}
 		}
 
 		// Purge any tax lots that are no longer an option.

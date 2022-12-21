@@ -579,7 +579,10 @@
 														<ContentControl DataContext="{Binding Document.SelectedTransaction.TaxLotSelection, Source={StaticResource viewModel}, Mode=OneWay}"
 														                Margin="5">
 															<StackPanel>
-																<TextBlock TextWrapping="Wrap" Text="{Binding Explanation}" />
+																<DockPanel LastChildFill="true">
+																	<ToggleButton Content="{Binding ShowAllTaxLotsLabel}" IsChecked="{Binding ShowAllTaxLots}" DockPanel.Dock="Right" />
+																	<TextBlock TextWrapping="Wrap" Text="{Binding Explanation}" />
+																</DockPanel>
 																<DataGrid AlternationCount="2" 
 																		  AutoGenerateColumns="False"
 																		  ItemsSource="{Binding Assignments}">
@@ -631,6 +634,7 @@
 																</DataGrid>
 																<TextBlock Text="{Binding AssignmentsDeltaLabel, Mode=OneWay}" />
 																<WrapPanel>
+																	<Button Command="{Binding SelectOptimal}" Content="{Binding SelectOptimal.Caption}" Margin="4" Padding="3" />
 																	<Button Command="{Binding SelectOldest}" Content="{Binding SelectOldest.Caption}" Margin="4" Padding="3" />
 																	<Button Command="{Binding SelectNewest}" Content="{Binding SelectNewest.Caption}" Margin="4" Padding="3" />
 																	<Button Command="{Binding SelectMinimumGain}" Content="{Binding SelectMinimumGain.Caption}" Margin="4" Padding="3" />
