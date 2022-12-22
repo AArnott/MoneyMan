@@ -563,8 +563,7 @@
 											<ContentControl Content="{Binding}">
 												<ContentControl.Resources>
 													<DataTemplate x:Key="CreateLots">
-														<ContentControl DataContext="{Binding Document.SelectedTransaction, Source={StaticResource viewModel}, Mode=OneWay}"
-																		Margin="5">
+														<ContentControl Margin="5">
 															<StackPanel>
 																<StackPanel Orientation="Horizontal">
 																	<Label Content="{Binding Document.BankingPanel.AcquisitionDatePrompt, Source={StaticResource viewModel}}"/>
@@ -585,6 +584,9 @@
 																<DataGrid AlternationCount="2" 
 																		  AutoGenerateColumns="False"
 																		  ItemsSource="{Binding Assignments}">
+																	<DataGrid.Resources>
+																		<local:BindingProxy x:Key="selectionViewModelBindingProxy" Data="{Binding}" />
+																	</DataGrid.Resources>
 																	<DataGrid.RowStyle>
 																		<Style TargetType="DataGridRow">
 																			<Style.Triggers>
@@ -636,9 +638,9 @@
 																				</DataTemplate>
 																			</DataGridTemplateColumn.CellEditingTemplate>
 																		</DataGridTemplateColumn>
-																		<DataGridTemplateColumn Visibility="{Binding IsGainLossColumnVisible, Converter={StaticResource boolToVisibilityConverter}}">
+																		<DataGridTemplateColumn Visibility="{Binding Data.IsGainLossColumnVisible, Converter={StaticResource boolToVisibilityConverter}, Source={StaticResource selectionViewModelBindingProxy}}">
 																			<DataGridTemplateColumn.Header>
-																				<TextBlock Text="{Binding DataContext.GainLossHeader, Mode=OneTime, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+																				<TextBlock Text="{Binding Data.GainLossHeader, Mode=OneTime, Source={StaticResource selectionViewModelBindingProxy}}" />
 																			</DataGridTemplateColumn.Header>
 																			<DataGridTemplateColumn.CellTemplate>
 																				<DataTemplate>
@@ -667,19 +669,10 @@
 													<Style TargetType="ContentControl">
 														<Setter Property="ContentTemplate" Value="{StaticResource EmptyDataTemplate}" />
 														<Style.Triggers>
-															<DataTrigger Binding="{Binding Action}" Value="Add">
+															<DataTrigger Binding="{Binding ShowCreateLots}" Value="True">
 																<Setter Property="ContentTemplate" Value="{StaticResource CreateLots}" />
 															</DataTrigger>
-															<DataTrigger Binding="{Binding Action}" Value="Transfer">
-																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
-															</DataTrigger>
-															<DataTrigger Binding="{Binding Action}" Value="Sell">
-																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
-															</DataTrigger>
-															<DataTrigger Binding="{Binding Action}" Value="Remove">
-																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
-															</DataTrigger>
-															<DataTrigger Binding="{Binding Action}" Value="Exchange">
+															<DataTrigger Binding="{Binding ShowTaxLotSelection}" Value="True">
 																<Setter Property="ContentTemplate" Value="{StaticResource SelectLots}" />
 															</DataTrigger>
 														</Style.Triggers>

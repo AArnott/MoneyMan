@@ -71,6 +71,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.WithdrawAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.CashValue), nameof(this.CashValueFormatted));
 		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.ShowTaxLotSelection));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.ShowCreateLots));
 
 		this.PropertyChanged += (s, e) => this.wasEverNonEmpty |= !this.IsEmpty;
 
@@ -525,6 +527,10 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public IEnumerable<AccountViewModel> Accounts => this.ThisAccount.DocumentViewModel.AccountsPanel.Accounts.Where(a => a != this.ThisAccount);
 
+	public bool ShowCreateLots => this.Action is TransactionAction.Add;
+
+	public bool ShowTaxLotSelection => this.Action is TransactionAction.Transfer or TransactionAction.Remove or TransactionAction.Sell or TransactionAction.Exchange;
+
 	/// <summary>
 	/// Gets a view model to assist with tax lot selection if this transaction consumes tax lots.
 	/// </summary>
@@ -532,7 +538,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		get
 		{
-			if (this.Action is TransactionAction.Transfer or TransactionAction.Remove or TransactionAction.Sell or TransactionAction.Exchange)
+			if (this.ShowTaxLotSelection)
 			{
 				this.taxLotSelection ??= new(this);
 				return this.taxLotSelection;
