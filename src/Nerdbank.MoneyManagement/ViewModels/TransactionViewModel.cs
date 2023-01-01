@@ -31,6 +31,7 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		this.SplitModels(models, out this.transaction, out this.entries);
 
 		this.RegisterDependentProperty(nameof(this.Cleared), nameof(this.ClearedShortCaption));
+		this.RegisterDependentProperty(nameof(this.IsPersisted), nameof(this.TransactionId));
 	}
 
 	/// <summary>
