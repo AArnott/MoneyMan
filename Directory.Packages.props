@@ -12,7 +12,7 @@
     <PackageVersion Include="OfxNet" Version="1.2.0" />
     <PackageVersion Include="PCLCommandBase" Version="0.4.22-alpha" />
     <PackageVersion Include="sqlite-net-pcl" Version="1.8.116" />
-    <PackageVersion Include="SQLitePCLRaw.bundle_green" Version="2.1.2" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_green" Version="2.1.4" />
     <PackageVersion Include="Squirrel.Windows" Version="2.0.2-netcore.3" />
     <PackageVersion Include="Validation" Version="2.5.51" />
     <PackageVersion Include="Xunit.Combinatorial" Version="1.5.25" />
