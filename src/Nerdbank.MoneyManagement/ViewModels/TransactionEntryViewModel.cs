@@ -25,6 +25,7 @@ public class TransactionEntryViewModel : EntityViewModel<TransactionEntry>
 	{
 		this.AutoSave = false;
 		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.AmountFormatted));
+		this.RegisterDependentProperty(nameof(this.Amount), nameof(this.ModelAmount));
 		this.parent = parent;
 		this.CopyFrom(this.Model);
 		this.PropertyChanged += (s, e) =>
