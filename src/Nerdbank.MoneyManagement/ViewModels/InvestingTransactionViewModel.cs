@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -580,6 +581,12 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	/// Gets the entries that impact <see cref="ThisAccount"/>.
 	/// </summary>
 	private IEnumerable<TransactionEntryViewModel> TopLevelEntries => this.Entries.Where(e => e.Account == this.ThisAccount);
+
+	internal override void Entry_PropertyChanged(TransactionEntryViewModel sender, PropertyChangedEventArgs args)
+	{
+		base.Entry_PropertyChanged(sender, args);
+		this.taxLotSelection?.OnTransactionEntry_PropertyChanged(sender, args);
+	}
 
 	protected override void ApplyToCore()
 	{

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft;
@@ -114,6 +115,16 @@ public class TaxLotSelectionViewModel : BindableBase
 	protected MoneyFile MoneyFile => this.Transaction.MoneyFile;
 
 	protected DocumentViewModel DocumentViewModel => this.Transaction.ThisAccount.DocumentViewModel;
+
+	internal void OnTransactionEntry_PropertyChanged(TransactionEntryViewModel sender, PropertyChangedEventArgs args)
+	{
+		switch (args.PropertyName)
+		{
+			case nameof(TransactionEntryViewModel.ModelAmount):
+				this.RefreshAssignments();
+				break;
+		}
+	}
 
 	internal void OnTransactionPropertyChanged(string? propertyName)
 	{
