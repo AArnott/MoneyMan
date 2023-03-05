@@ -217,6 +217,13 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 		{
 			this.transaction.When = new DateTime(1999, 1, 1);
 			this.transaction.Action = TransactionAction.Sell;
+
+			// Besides asserting that the selector becomes visible early on,
+			// but checking this forces its initialization, which matches the View's behavior,
+			// and allows these tests to assert that subsequent initialization of the sale parameters
+			// is correctly compensated for in the tax lot selection view.
+			Assert.NotNull(this.transaction.TaxLotSelection);
+
 			this.transaction.SimpleAsset = this.msft;
 			this.transaction.SimpleAmount = 5;
 			this.transaction.SimplePrice = 60;
