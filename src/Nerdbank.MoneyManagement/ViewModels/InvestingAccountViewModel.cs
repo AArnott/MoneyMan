@@ -188,7 +188,10 @@ public class InvestingAccountViewModel : AccountViewModel
 		{
 			When = DateTime.Today,
 		};
-		InvestingTransactionViewModel volatileViewModel = new(this);
+		InvestingTransactionViewModel volatileViewModel = new(this)
+		{
+			When = DateTime.Today,
+		};
 		this.transactions!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileTransaction_Saved;
 	}

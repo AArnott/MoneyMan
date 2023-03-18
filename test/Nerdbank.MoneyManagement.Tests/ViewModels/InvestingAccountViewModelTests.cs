@@ -164,6 +164,14 @@ public class InvestingAccountViewModelTests : MoneyTestBase
 		Assert.Equal(ClearedState.Cleared, this.brokerage.Transactions[0].Cleared);
 	}
 
+	[Fact]
+	public void VolatileTransaction_Properties()
+	{
+		InvestingTransactionViewModel tx = Assert.Single(this.brokerage.Transactions);
+		Assert.False(tx.IsPersisted);
+		Assert.Equal(DateTime.Today, tx.When);
+	}
+
 	protected override void ReloadViewModel()
 	{
 		base.ReloadViewModel();
