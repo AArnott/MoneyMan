@@ -243,6 +243,10 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		}
 	}
 
+	protected virtual void Entries_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+	{
+	}
+
 	private void SplitModels(IReadOnlyList<TransactionAndEntry> models, out Transaction transaction, out ObservableCollection<TransactionEntryViewModel> entries)
 	{
 		if (models.Count == 0)
@@ -255,6 +259,8 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 			transaction = new Transaction(models[0]);
 			entries = new ObservableCollection<TransactionEntryViewModel>(models.Select(te => new TransactionEntryViewModel(this, new TransactionEntry(te))));
 		}
+
+		entries.CollectionChanged += this.Entries_CollectionChanged;
 	}
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]

@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
@@ -588,6 +589,11 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.taxLotSelection?.OnTransactionEntry_PropertyChanged(sender, args);
 	}
 
+	internal void TaxLotAssignmentChanged(TaxLotAssignment tla)
+	{
+		this.taxLotSelection?.OnTaxLotAssignmentChanged(tla);
+	}
+
 	protected override void ApplyToCore()
 	{
 		Verify.Operation(this.Action.HasValue, $"{nameof(this.Action)} must be set first.");
@@ -877,6 +883,12 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		base.OnPropertyChanged(propertyName);
 		this.taxLotSelection?.OnTransactionPropertyChanged(propertyName);
+	}
+
+	protected override void Entries_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+	{
+		base.Entries_CollectionChanged(sender, e);
+		this.taxLotSelection?.OnTransactionEntriesChanged(e);
 	}
 
 	[DoesNotReturn]

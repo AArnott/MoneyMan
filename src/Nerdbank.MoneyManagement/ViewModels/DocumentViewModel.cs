@@ -349,6 +349,11 @@ public class DocumentViewModel : BindableBase, IDisposable
 				{
 					RaiseNotifyTransactionChanged(entry.TransactionId);
 				}
+
+				if (model is TaxLotAssignment tla && this.GetTransactionEntry(tla.ConsumingTransactionEntryId)?.Transaction is InvestingTransactionViewModel t)
+				{
+					t.TaxLotAssignmentChanged(tla);
+				}
 			}
 
 			foreach (ModelBase model in e.Deleted)

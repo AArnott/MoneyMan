@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
@@ -126,6 +127,11 @@ public class TaxLotSelectionViewModel : BindableBase
 		}
 	}
 
+	internal void OnTransactionEntriesChanged(NotifyCollectionChangedEventArgs e)
+	{
+		this.RefreshAssignments();
+	}
+
 	internal void OnTransactionPropertyChanged(string? propertyName)
 	{
 		switch (propertyName)
@@ -158,6 +164,11 @@ public class TaxLotSelectionViewModel : BindableBase
 		}
 	}
 
+	internal void OnTaxLotAssignmentChanged(TaxLotAssignment tla)
+	{
+		this.RefreshAssignments();
+	}
+
 	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
 	{
 		base.OnPropertyChanged(propertyName);
@@ -177,6 +188,16 @@ public class TaxLotSelectionViewModel : BindableBase
 			return;
 		}
 
+		Dictionary<int, TaxLotAssignment> existingLotAssignmentsByTaxLotId =
+			this.MoneyFile.GetTaxLotAssignments(consumingTransactionEntry.Id).ToDictionary(tla => tla.TaxLotId, tla => tla);
+		if (existingLotAssignmentsByTaxLotId.Count > 0 && this.assignments.All(tla => tla.Id == 0))
+		{
+			// Transition from all view model speculation to what the database actually tells us to do.
+			// This may be a terrible way to synchronize our view model with the model,
+			// but it gets our existing tests to pass.
+			this.assignments.Clear();
+		}
+
 		HashSet<int> unobservedTaxLotIds = this.assignments.Select(a => a.TaxLotId).ToHashSet();
 		Dictionary<int, TaxLotAssignmentViewModel> assignmentsByTaxLotId = this.assignments.ToDictionary(a => a.TaxLotId);
 		SQLite.TableQuery<UnsoldAsset> unsoldAssets =
@@ -189,8 +210,6 @@ public class TaxLotSelectionViewModel : BindableBase
 			 where lot.ConsumingTransactionEntryId == consumingTransactionEntry.Id
 			 group lot by lot.TaxLotId into lotSet
 			 select (TaxLotId: lotSet.Key, Amount: lotSet.Sum(l => l.Amount))).ToDictionary(kv => kv.TaxLotId, kv => kv.Amount);
-		Dictionary<int, TaxLotAssignment> existingLotAssignmentsByTaxLotId =
-			this.MoneyFile.GetTaxLotAssignments(consumingTransactionEntry.Id).ToDictionary(tla => tla.TaxLotId, tla => tla);
 		foreach (UnsoldAsset lot in unsoldAssets)
 		{
 			if (existingLotSelections.TryGetValue(lot.TaxLotId, out decimal alreadyAssigned))
