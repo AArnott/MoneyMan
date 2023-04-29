@@ -50,7 +50,8 @@ public class TransactionEntryViewModelTests : MoneyTestBase
 		TestUtilities.AssertPropertyChangedEvent(
 			this.bankingViewModel,
 			() => this.bankingViewModel.Amount = this.amount,
-			nameof(this.bankingViewModel.Amount));
+			nameof(this.bankingViewModel.Amount),
+			"ModelAmount");
 		Assert.Equal(this.amount, this.bankingViewModel.Amount);
 	}
 

@@ -365,19 +365,26 @@ public class MoneyFile : BindableBase, IDisposableObservable
 		Requires.Argument(model.Id >= 0, nameof(model), "This model has a negative ID and therefore should never be persisted.");
 		Verify.NotDisposed(this);
 
-		ModelBase? before = model.Id > 0 ? (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model)) : null;
-		if (before is not null && this.connection.Update(model) > 0)
+		try
 		{
-			this.LogUpdate(model);
-			this.IncrementDataVersion();
-			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
+			ModelBase? before = model.Id > 0 ? (ModelBase)this.connection.Find(model.Id, this.GetTableMapping(model)) : null;
+			if (before is not null && this.connection.Update(model) > 0)
+			{
+				this.LogUpdate(model);
+				this.IncrementDataVersion();
+				this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(changed: new[] { (before, model) }));
+			}
+			else
+			{
+				this.connection.Insert(model);
+				this.LogInsert(model);
+				this.IncrementDataVersion();
+				this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
+			}
 		}
-		else
+		catch (Exception ex)
 		{
-			this.connection.Insert(model);
-			this.LogInsert(model);
-			this.IncrementDataVersion();
-			this.EntitiesChanged?.Invoke(this, new EntitiesChangedEventArgs(inserted: new[] { model }));
+			throw new InvalidOperationException($"Failure with insert/replace of {model}.", ex);
 		}
 	}
 

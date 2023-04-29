@@ -47,7 +47,7 @@ public class InvestingAccountViewModel : AccountViewModel
 
 	public override string? TransferTargetName => $"[{this.Name}]";
 
-	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
+	protected override bool IsEmpty => this.transactions is not null ? !this.transactions.Any(t => t.IsPersisted) : !this.MoneyFile.TransactionEntries.Any(te => te.AccountId == this.Id);
 
 	protected override bool IsPopulated => this.transactions is object;
 
@@ -127,6 +127,23 @@ public class InvestingAccountViewModel : AccountViewModel
 		}
 	}
 
+	internal void NotifyTaxLotChanged(TaxLot taxLot, InvestingTransactionViewModel transaction)
+	{
+		if (this.transactions is not null)
+		{
+			int idx = this.GetTransactionIndex(transaction);
+			if (idx < 0)
+			{
+				return;
+			}
+
+			for (int i = idx; i < this.transactions.Count; i++)
+			{
+				this.transactions[i].RefreshTaxLotSelection();
+			}
+		}
+	}
+
 	protected override TransactionViewModel CreateTransactionViewModel(IReadOnlyList<TransactionAndEntry> transactionDetails) => new InvestingTransactionViewModel(this, transactionDetails);
 
 	protected override int AddTransaction(TransactionViewModel transactionViewModel) => this.transactions?.Add((InvestingTransactionViewModel)transactionViewModel) ?? throw new InvalidOperationException();
@@ -188,7 +205,10 @@ public class InvestingAccountViewModel : AccountViewModel
 		{
 			When = DateTime.Today,
 		};
-		InvestingTransactionViewModel volatileViewModel = new(this);
+		InvestingTransactionViewModel volatileViewModel = new(this)
+		{
+			When = DateTime.Today,
+		};
 		this.transactions!.Add(volatileViewModel);
 		volatileViewModel.Saved += this.VolatileTransaction_Saved;
 	}

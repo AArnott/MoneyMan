@@ -65,5 +65,5 @@ public record TransactionEntry : ModelBase
 	/// </summary>
 	public ClearedState Cleared { get; set; }
 
-	private string DebuggerDisplay => $"{this.Amount}";
+	private string DebuggerDisplay => $"{nameof(TransactionEntry)} ({this.Id}): {this.Amount}";
 }

@@ -27,6 +27,12 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 	/// </summary>
 	public TEntity Model { get; private set; }
 
+	/// <summary>
+	/// Gets a value indicating whether this view model should be saved to the database.
+	/// If <see langword="false" />, the entity will be deleted instead of saved.
+	/// </summary>
+	protected virtual bool ShouldBePersisted => true;
+
 	[return: NotNullIfNotNull("viewModel")]
 	public static implicit operator TEntity?(EntityViewModel<TEntity>? viewModel)
 	{
@@ -60,7 +66,15 @@ public abstract class EntityViewModel<TEntity> : EntityViewModel
 	protected override void SaveCore()
 	{
 		this.ApplyToModel();
-		this.MoneyFile.InsertOrReplace(this.Model);
+		if (this.ShouldBePersisted)
+		{
+			this.MoneyFile.InsertOrReplace(this.Model);
+		}
+		else
+		{
+			this.MoneyFile.Delete(this.Model);
+			this.Model.Id = 0;
+		}
 	}
 
 	protected abstract void CopyFromCore();

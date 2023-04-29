@@ -2,12 +2,17 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
+[DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
 public class InvestingTransactionViewModel : TransactionViewModel
 {
 	private TransactionAction? action;
@@ -23,6 +28,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	private bool wasEverNonEmpty;
 	private DateTime? acquisitionDate;
 	private decimal? acquisitionPrice;
+	private TaxLotSelectionViewModel? taxLotSelection;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="InvestingTransactionViewModel"/> class
@@ -48,12 +54,14 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.WithdrawAmount), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.CashValue), nameof(this.SimplePrice));
+		this.RegisterDependentProperty(nameof(this.AcquisitionPrice), nameof(this.SimplePrice));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.SimpleAccount), nameof(this.Assets));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Accounts));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimplePriceApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.IsSimpleAssetApplicable));
 		this.RegisterDependentProperty(nameof(this.Action), nameof(this.Description));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.TaxLotSelection));
 		this.RegisterDependentProperty(nameof(this.DepositAmount), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.DepositAsset), nameof(this.Description));
 		this.RegisterDependentProperty(nameof(this.DepositAccount), nameof(this.Description));
@@ -67,6 +75,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.RegisterDependentProperty(nameof(this.WithdrawAsset), nameof(this.WithdrawAmountFormatted));
 		this.RegisterDependentProperty(nameof(this.CashValue), nameof(this.CashValueFormatted));
 		this.RegisterDependentProperty(nameof(this.SimpleCurrencyImpact), nameof(this.SimpleCurrencyImpactFormatted));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.ShowTaxLotSelection));
+		this.RegisterDependentProperty(nameof(this.Action), nameof(this.ShowCreateLots));
 
 		this.PropertyChanged += (s, e) => this.wasEverNonEmpty |= !this.IsEmpty;
 
@@ -377,14 +387,17 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		{
 			if (this.Action is TransactionAction.Buy)
 			{
+				CheckPrereq(this.DepositAmount, nameof(this.DepositAmount));
 				this.WithdrawAmount = value * this.DepositAmount;
 			}
 			else if (this.Action is TransactionAction.Sell)
 			{
+				CheckPrereq(this.WithdrawAmount, nameof(this.WithdrawAmount));
 				this.DepositAmount = value * this.WithdrawAmount;
 			}
 			else if (this.Action is TransactionAction.Dividend)
 			{
+				CheckPrereq(this.DepositAmount, nameof(this.DepositAmount));
 				this.CashValue = value * this.DepositAmount;
 			}
 			else if (this.Action is TransactionAction.Add)
@@ -397,6 +410,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			}
 
 			this.OnPropertyChanged();
+
+			void CheckPrereq(decimal? value, string propertyName) => Verify.Operation(value is not null, $"{propertyName} must be set first.");
 		}
 	}
 
@@ -516,6 +531,27 @@ public class InvestingTransactionViewModel : TransactionViewModel
 
 	public IEnumerable<AccountViewModel> Accounts => this.ThisAccount.DocumentViewModel.AccountsPanel.Accounts.Where(a => a != this.ThisAccount);
 
+	public bool ShowCreateLots => this.Action is TransactionAction.Add;
+
+	public bool ShowTaxLotSelection => this.Action is TransactionAction.Transfer or TransactionAction.Remove or TransactionAction.Sell or TransactionAction.Exchange;
+
+	/// <summary>
+	/// Gets a view model to assist with tax lot selection if this transaction consumes tax lots.
+	/// </summary>
+	public TaxLotSelectionViewModel? TaxLotSelection
+	{
+		get
+		{
+			if (this.ShowTaxLotSelection)
+			{
+				this.taxLotSelection ??= new(this);
+				return this.taxLotSelection;
+			}
+
+			return null;
+		}
+	}
+
 	private decimal? WithdrawAmountWithValidation
 	{
 		set
@@ -548,6 +584,21 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	/// Gets the entries that impact <see cref="ThisAccount"/>.
 	/// </summary>
 	private IEnumerable<TransactionEntryViewModel> TopLevelEntries => this.Entries.Where(e => e.Account == this.ThisAccount);
+
+	private string DebuggerDisplay => $"{nameof(InvestingTransactionViewModel)} ({this.TransactionId}): {this.When} {this.Action} {this.Description}";
+
+	internal override void Entry_PropertyChanged(TransactionEntryViewModel sender, PropertyChangedEventArgs args)
+	{
+		base.Entry_PropertyChanged(sender, args);
+		this.taxLotSelection?.OnTransactionEntry_PropertyChanged(sender, args);
+	}
+
+	internal void TaxLotAssignmentChanged(TaxLotAssignment tla)
+	{
+		this.taxLotSelection?.OnTaxLotAssignmentChanged(tla);
+	}
+
+	internal void RefreshTaxLotSelection() => this.taxLotSelection?.OnTaxLotsChanged();
 
 	protected override void ApplyToCore()
 	{
@@ -830,8 +881,20 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	protected override bool IsPersistedProperty(string propertyName)
 	{
 		return base.IsPersistedProperty(propertyName)
-			&& propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact))
-			&& !(propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted"));
+			&& propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact) or nameof(this.Description) or nameof(this.Assets) or nameof(this.Accounts) or nameof(this.TaxLotSelection) or nameof(this.ShowTaxLotSelection) or nameof(this.ShowCreateLots))
+			&& !(propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted") || propertyName.EndsWith("Applicable"));
+	}
+
+	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+	{
+		base.OnPropertyChanged(propertyName);
+		this.taxLotSelection?.OnTransactionPropertyChanged(propertyName);
+	}
+
+	protected override void Entries_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+	{
+		base.Entries_CollectionChanged(sender, e);
+		this.taxLotSelection?.OnTransactionEntriesChanged(e);
 	}
 
 	[DoesNotReturn]
