@@ -47,7 +47,7 @@ public class InvestingAccountViewModel : AccountViewModel
 
 	public override string? TransferTargetName => $"[{this.Name}]";
 
-	protected override bool IsEmpty => !this.Transactions.Any(t => t.IsPersisted);
+	protected override bool IsEmpty => this.transactions is not null ? !this.transactions.Any(t => t.IsPersisted) : !this.MoneyFile.TransactionEntries.Any(te => te.AccountId == this.Id);
 
 	protected override bool IsPopulated => this.transactions is object;
 
