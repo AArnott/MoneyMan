@@ -22,7 +22,11 @@ internal class TaxLotBookKeeping
 	}
 
 	internal bool IsTaxLotCreationAppropriate(TransactionEntryViewModel transactionEntryViewModel)
-		=> transactionEntryViewModel.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale or TransactionAction.Transfer } && transactionEntryViewModel.ModelAmount > 0;
+	{
+		return transactionEntryViewModel.Transaction is InvestingTransactionViewModel { Action: TransactionAction.Add or TransactionAction.Buy or TransactionAction.ShortSale or TransactionAction.Transfer }
+			&& transactionEntryViewModel.ModelAmount > 0
+			&& transactionEntryViewModel.Account is InvestingAccountViewModel;
+	}
 
 	/// <summary>
 	/// Adds, deletes or updates tax lots created by a given transaction entry.

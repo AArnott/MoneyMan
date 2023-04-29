@@ -309,5 +309,28 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 			this.viewModel.ShowAllTaxLots = true;
 			Assert.True(this.viewModel.Assignments.Count > 1);
 		}
+
+		[Fact]
+		public void Assignments_UpdateWithOtherTransactionChanges()
+		{
+			// The selected transaction has already initialized its tax lot view. Capture the number of tax lots currently visible.
+			int oldCount = this.viewModel.Assignments.Count;
+
+			// Create a new transaction that adds a tax lot, with a date that precedes the transaction we were looking at.
+			InvestingTransactionViewModel newTx = this.account.Transactions[^1];
+			this.DocumentViewModel.SelectedTransaction = newTx;
+			newTx.When = new DateTime(1998, 1, 1);
+			newTx.Action = TransactionAction.Add;
+			newTx.SimplePrice = 30;
+			newTx.SimpleAsset = this.msft;
+			newTx.SimpleAmount = 3;
+			Assert.False(newTx.IsDirty);
+
+			// Now go back to the original (later) transaction and verify that it shows the new tax lot.
+			this.DocumentViewModel.SelectedTransaction = this.transaction;
+			Assert.NotNull(this.transaction.TaxLotSelection);
+			this.viewModel = this.transaction.TaxLotSelection;
+			Assert.Equal(oldCount + 1, this.viewModel.Assignments.Count);
+		}
 	}
 }

@@ -169,6 +169,8 @@ public class TaxLotSelectionViewModel : BindableBase
 		this.RefreshAssignments();
 	}
 
+	internal void OnTaxLotsChanged() => this.RefreshAssignments();
+
 	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
 	{
 		base.OnPropertyChanged(propertyName);

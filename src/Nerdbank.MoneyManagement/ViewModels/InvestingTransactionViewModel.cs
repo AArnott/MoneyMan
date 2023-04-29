@@ -5,12 +5,14 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
 namespace Nerdbank.MoneyManagement.ViewModels;
 
+[DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
 public class InvestingTransactionViewModel : TransactionViewModel
 {
 	private TransactionAction? action;
@@ -583,6 +585,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	/// </summary>
 	private IEnumerable<TransactionEntryViewModel> TopLevelEntries => this.Entries.Where(e => e.Account == this.ThisAccount);
 
+	private string DebuggerDisplay => $"{nameof(InvestingTransactionViewModel)} ({this.TransactionId}): {this.When} {this.Action} {this.Description}";
+
 	internal override void Entry_PropertyChanged(TransactionEntryViewModel sender, PropertyChangedEventArgs args)
 	{
 		base.Entry_PropertyChanged(sender, args);
@@ -593,6 +597,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	{
 		this.taxLotSelection?.OnTaxLotAssignmentChanged(tla);
 	}
+
+	internal void RefreshTaxLotSelection() => this.taxLotSelection?.OnTaxLotsChanged();
 
 	protected override void ApplyToCore()
 	{
@@ -875,8 +881,8 @@ public class InvestingTransactionViewModel : TransactionViewModel
 	protected override bool IsPersistedProperty(string propertyName)
 	{
 		return base.IsPersistedProperty(propertyName)
-			&& propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact))
-			&& !(propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted"));
+			&& propertyName is not (nameof(this.SimpleAsset) or nameof(this.SimpleAmount) or nameof(this.SimplePrice) or nameof(this.SimpleCurrencyImpact) or nameof(this.Description) or nameof(this.Assets) or nameof(this.Accounts) or nameof(this.TaxLotSelection) or nameof(this.ShowTaxLotSelection) or nameof(this.ShowCreateLots))
+			&& !(propertyName.EndsWith("IsReadOnly") || propertyName.EndsWith("ToolTip") || propertyName.EndsWith("Formatted") || propertyName.EndsWith("Applicable"));
 	}
 
 	protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)

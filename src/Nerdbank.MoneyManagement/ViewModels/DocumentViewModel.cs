@@ -350,9 +350,14 @@ public class DocumentViewModel : BindableBase, IDisposable
 					RaiseNotifyTransactionChanged(entry.TransactionId);
 				}
 
-				if (model is TaxLotAssignment tla && this.GetTransactionEntry(tla.ConsumingTransactionEntryId)?.Transaction is InvestingTransactionViewModel t)
+				if (model is TaxLot taxLot && this.GetTransactionEntry(taxLot.CreatingTransactionEntryId)?.Transaction is InvestingTransactionViewModel t)
 				{
-					t.TaxLotAssignmentChanged(tla);
+					t.ThisAccount.NotifyTaxLotChanged(taxLot, t);
+				}
+
+				if (model is TaxLotAssignment tla && this.GetTransactionEntry(tla.ConsumingTransactionEntryId)?.Transaction is InvestingTransactionViewModel t2)
+				{
+					t2.TaxLotAssignmentChanged(tla);
 				}
 			}
 
