@@ -856,13 +856,37 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				break;
 			case TransactionAction.Remove:
 			case TransactionAction.Withdraw:
-				Assumes.True(this.Entries.Count == 1);
-				this.WithdrawAccount = this.Entries[0].Account;
-				this.WithdrawAmountWithValidation = Math.Abs(this.Entries[0].Amount);
-				this.WithdrawAsset = this.Entries[0].Asset;
-				this.DepositAccount = null;
-				this.DepositAmountWithValidation = null;
-				this.DepositAsset = null;
+				TransactionEntryViewModel? securityRemoveEntry = null;
+				categoryEntry = null;
+				foreach (TransactionEntryViewModel entry in this.Entries)
+				{
+					if (entry.Account?.Id == this.ThisAccount.Id)
+					{
+						if (securityRemoveEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with this account.");
+						}
+
+						securityRemoveEntry = entry;
+					}
+					else
+					{
+						if (categoryEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with another account.");
+						}
+
+						categoryEntry = entry;
+					}
+				}
+
+				Assumes.NotNull(securityRemoveEntry); // we wouldn't see this transaction at all if it didn't have an entry linked to this account.
+				this.WithdrawAccount = securityRemoveEntry.Account;
+				this.WithdrawAmountWithValidation = Math.Abs(securityRemoveEntry.Amount);
+				this.WithdrawAsset = securityRemoveEntry.Asset;
+				this.DepositAccount = categoryEntry?.Account;
+				this.DepositAmountWithValidation = categoryEntry is not null ? Math.Abs(categoryEntry.Amount) : null;
+				this.DepositAsset = categoryEntry?.Asset;
 				break;
 			case TransactionAction.Unspecified when this.Entries.Count(e => !e.IsEmpty) == 0:
 				break;

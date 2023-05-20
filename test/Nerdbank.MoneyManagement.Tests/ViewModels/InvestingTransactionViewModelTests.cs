@@ -5,6 +5,7 @@ using SQLite;
 
 public class InvestingTransactionViewModelTests : MoneyTestBase
 {
+	private readonly CategoryAccountViewModel[] categories;
 	private InvestingAccountViewModel account;
 	private InvestingAccountViewModel otherAccount;
 	private BankingAccountViewModel checking;
@@ -21,6 +22,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		this.account = (InvestingAccountViewModel)this.DocumentViewModel.GetAccount(thisAccountModel.Id);
 		this.otherAccount = (InvestingAccountViewModel)this.DocumentViewModel.GetAccount(otherAccountModel.Id);
 		this.checking = this.DocumentViewModel.AccountsPanel.NewBankingAccount("Checking");
+		this.categories = Enumerable.Range(1, 3).Select(i => this.DocumentViewModel.CategoriesPanel.NewCategory($"Category {i}")).ToArray();
 		this.DocumentViewModel.BankingPanel.SelectedAccount = this.account;
 		this.viewModel = this.account.Transactions[^1];
 		this.msft = this.DocumentViewModel.AssetsPanel.NewAsset("Microsoft", "MSFT");
@@ -208,6 +210,20 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Null(exchange.WithdrawAmount);
 		Assert.Null(exchange.WithdrawAsset);
 		Assert.Equal(0, exchange.DepositAmount);
+	}
+
+	[Theory, PairwiseData]
+	public void AutoDetectedAction_Deposit([CombinatorialRange(0, 2)] int assignedCategories)
+	{
+		TransactionViewModel tx = this.CreateDepositTransaction(this.account, assignedCategories);
+		Assert.Equal(TransactionAction.Deposit, tx.AutoDetectedAction);
+	}
+
+	[Theory, PairwiseData]
+	public void AutoDetectedAction_Withdraw([CombinatorialRange(0, 2)] int assignedCategories)
+	{
+		TransactionViewModel tx = this.CreateWithdrawTransaction(this.account, assignedCategories);
+		Assert.Equal(TransactionAction.Withdraw, tx.AutoDetectedAction);
 	}
 
 	[Fact]
@@ -901,5 +917,73 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		this.checking = (BankingAccountViewModel)this.DocumentViewModel.AccountsPanel.FindAccount(this.checking.Id)!;
 		this.msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
 		this.appl = this.DocumentViewModel.AssetsPanel.FindAsset("Apple") ?? throw new InvalidOperationException("Unable to find Microsoft asset.");
+	}
+
+	private TransactionViewModel CreateDepositTransaction(AccountViewModel account, int assignedCategories)
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Deposit,
+			When = DateTime.Now,
+		};
+		this.Money.Insert(tx);
+		TransactionEntry te1 = new()
+		{
+			TransactionId = tx.Id,
+			AccountId = account.Id,
+			AssetId = account.CurrencyAsset!.Id,
+			Amount = 2 + assignedCategories,
+		};
+		this.Money.Insert(te1);
+
+		for (int i = 0; i < assignedCategories; i++)
+		{
+			TransactionEntry teCategory = new()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.categories[i].Id,
+				AssetId = account.CurrencyAsset!.Id,
+				Amount = -1,
+			};
+			this.Money.Insert(teCategory);
+		}
+
+		TransactionViewModel? txVm = account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		return txVm;
+	}
+
+	private TransactionViewModel CreateWithdrawTransaction(AccountViewModel account, int assignedCategories)
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Withdraw,
+			When = DateTime.Now,
+		};
+		this.Money.Insert(tx);
+		TransactionEntry te1 = new()
+		{
+			TransactionId = tx.Id,
+			AccountId = account.Id,
+			AssetId = account.CurrencyAsset!.Id,
+			Amount = -2 - assignedCategories,
+		};
+		this.Money.Insert(te1);
+
+		for (int i = 0; i < assignedCategories; i++)
+		{
+			TransactionEntry teCategory = new()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.categories[i].Id,
+				AssetId = account.CurrencyAsset!.Id,
+				Amount = 1,
+			};
+			this.Money.Insert(teCategory);
+		}
+
+		TransactionViewModel? txVm = account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		return txVm;
 	}
 }

@@ -34,6 +34,8 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		this.RegisterDependentProperty(nameof(this.IsPersisted), nameof(this.TransactionId));
 	}
 
+	public TransactionAction AutoDetectedAction => this.DetectTransactionAction();
+
 	/// <summary>
 	/// Gets the account this transaction was created to be displayed within.
 	/// </summary>
@@ -261,6 +263,47 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		}
 
 		entries.CollectionChanged += this.Entries_CollectionChanged;
+	}
+
+	private TransactionAction DetectTransactionAction()
+	{
+		if (this.Entries.Count == 0)
+		{
+			return TransactionAction.Unspecified;
+		}
+
+		bool hasCurrencyDeposit = false, hasCurrencyWithdrawal = false;
+		foreach (TransactionEntryViewModel entry in this.Entries)
+		{
+			if (entry.Asset is null || entry.Account is null)
+			{
+				continue;
+			}
+
+			if (entry.Asset.Type == Asset.AssetType.Currency && entry.Account.Type != Account.AccountType.Category)
+			{
+				if (entry.Amount > 0)
+				{
+					hasCurrencyDeposit = true;
+				}
+				else if (entry.Amount < 0)
+				{
+					hasCurrencyWithdrawal = true;
+				}
+			}
+		}
+
+		if (hasCurrencyDeposit)
+		{
+			return TransactionAction.Deposit;
+		}
+
+		if (hasCurrencyWithdrawal)
+		{
+			return TransactionAction.Withdraw;
+		}
+
+		return TransactionAction.Unspecified;
 	}
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
