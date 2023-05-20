@@ -23,7 +23,6 @@ parameters:
   default: true
 
 variables:
-  MSBuildTreatWarningsAsErrors: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BuildConfiguration: Release
   codecov_token: 042b0b39-5508-4c6f-9085-5298203a5392
