@@ -226,6 +226,37 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(TransactionAction.Withdraw, tx.AutoDetectedAction);
 	}
 
+	[Theory, PairwiseData]
+	public void AutoDetectedAction_Transfer(bool security)
+	{
+		Asset asset = security ? this.msft : this.checking.CurrencyAsset!;
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Transfer,
+			When = DateTime.Now,
+		};
+		this.Money.Insert(tx);
+		this.Money.InsertAll(
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = asset.Id,
+				Amount = -50,
+			},
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.otherAccount.Id,
+				AssetId = asset.Id,
+				Amount = 50,
+			});
+
+		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		Assert.Equal(TransactionAction.Transfer, txVm.AutoDetectedAction);
+	}
+
 	[Fact]
 	public void ExchangeSecurity_WithinAccount()
 	{

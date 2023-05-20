@@ -272,7 +272,7 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 			return TransactionAction.Unspecified;
 		}
 
-		bool hasCurrencyDeposit = false, hasCurrencyWithdrawal = false;
+		int currencyDeposits = 0, currencyWithdrawals = 0, currencyCategories = 0, categories = 0;
 		foreach (TransactionEntryViewModel entry in this.Entries)
 		{
 			if (entry.Asset is null || entry.Account is null)
@@ -280,30 +280,83 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 				continue;
 			}
 
-			if (entry.Asset.Type == Asset.AssetType.Currency && entry.Account.Type != Account.AccountType.Category)
+			if (entry.Account.Type == Account.AccountType.Category)
 			{
-				if (entry.Amount > 0)
+				categories++;
+			}
+
+			if (entry.Asset.Type == Asset.AssetType.Currency)
+			{
+				if (entry.Account.Type == Account.AccountType.Category)
 				{
-					hasCurrencyDeposit = true;
+					currencyCategories++;
 				}
-				else if (entry.Amount < 0)
+				else
 				{
-					hasCurrencyWithdrawal = true;
+					if (entry.Amount > 0)
+					{
+						currencyDeposits++;
+					}
+					else if (entry.Amount < 0)
+					{
+						currencyWithdrawals++;
+					}
 				}
 			}
 		}
 
-		if (hasCurrencyDeposit)
+		if (currencyDeposits == 1 && currencyCategories == this.Entries.Count - 1)
 		{
 			return TransactionAction.Deposit;
 		}
 
-		if (hasCurrencyWithdrawal)
+		if (currencyWithdrawals == 1 && currencyCategories == this.Entries.Count - 1)
 		{
 			return TransactionAction.Withdraw;
 		}
 
+		if (this.Entries.Count >= 2 && categories == 0 && HasAtLeastTwoUniqueAccounts() && ExactlyOneAsset())
+		{
+			return TransactionAction.Transfer;
+		}
+
 		return TransactionAction.Unspecified;
+
+		bool HasAtLeastTwoUniqueAccounts()
+		{
+			Account? account = null;
+			foreach (TransactionEntryViewModel entry in this.Entries)
+			{
+				if (account is null)
+				{
+					account = entry.Account;
+				}
+				else if (account != entry.Account)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		bool ExactlyOneAsset()
+		{
+			Asset? asset = null;
+			foreach (TransactionEntryViewModel entry in this.Entries)
+			{
+				if (asset is null)
+				{
+					asset = entry.Asset;
+				}
+				else if (asset != entry.Asset)
+				{
+					return false;
+				}
+			}
+
+			return asset is not null;
+		}
 	}
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
