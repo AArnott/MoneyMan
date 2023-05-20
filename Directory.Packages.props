@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Threading" Version="17.5.22" />
+    <PackageVersion Include="Microsoft.VisualStudio.Threading" Version="17.6.40" />
     <PackageVersion Include="Nerdbank.Qif" Version="1.0.66-beta" />
     <PackageVersion Include="OfxNet" Version="1.2.0" />
     <PackageVersion Include="PCLCommandBase" Version="0.4.22-alpha" />
