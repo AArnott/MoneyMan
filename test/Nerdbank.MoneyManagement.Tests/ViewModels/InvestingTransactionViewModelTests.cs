@@ -258,6 +258,168 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 	}
 
 	[Fact]
+	public void AutoDetectedAction_Buy()
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Buy,
+			When = DateTime.Now,
+		};
+		this.Money.Insert(tx);
+		this.Money.InsertAll(
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.account.CurrencyAsset!.Id,
+				Amount = -50,
+			},
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.msft.Id,
+				Amount = 2,
+			});
+
+		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		Assert.Equal(TransactionAction.Buy, txVm.AutoDetectedAction);
+	}
+
+	[Fact]
+	public void AutoDetectedAction_Sell()
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Sell,
+			When = DateTime.Now,
+		};
+		this.Money.Insert(tx);
+		this.Money.InsertAll(
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.account.CurrencyAsset!.Id,
+				Amount = 50,
+			},
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.msft.Id,
+				Amount = -2,
+			});
+
+		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		Assert.Equal(TransactionAction.Sell, txVm.AutoDetectedAction);
+	}
+
+	[Fact]
+	public void AutoDetectedAction_Exchange()
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Exchange,
+			When = DateTime.Now,
+		};
+		this.Money.Insert(tx);
+		this.Money.InsertAll(
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.appl.Id,
+				Amount = 5,
+			},
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.msft.Id,
+				Amount = -2,
+			});
+
+		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		Assert.Equal(TransactionAction.Exchange, txVm.AutoDetectedAction);
+	}
+
+	[Fact]
+	public void AutoDetectedAction_Dividend()
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Dividend,
+			When = DateTime.Now,
+			RelatedAssetId = this.msft.Id,
+		};
+		this.Money.Insert(tx);
+		this.Money.InsertAll(
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.account.CurrencyAsset!.Id,
+				Amount = 5,
+			});
+
+		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		Assert.Equal(TransactionAction.Dividend, txVm.AutoDetectedAction);
+	}
+
+	[Fact]
+	public void AutoDetectedAction_Add()
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Add,
+			When = DateTime.Now,
+			RelatedAssetId = this.msft.Id,
+		};
+		this.Money.Insert(tx);
+		this.Money.InsertAll(
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.msft.Id,
+				Amount = 5,
+			});
+
+		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		Assert.Equal(TransactionAction.Add, txVm.AutoDetectedAction);
+	}
+
+	[Fact]
+	public void AutoDetectedAction_Remove()
+	{
+		Transaction tx = new()
+		{
+			Action = TransactionAction.Remove,
+			When = DateTime.Now,
+			RelatedAssetId = this.msft.Id,
+		};
+		this.Money.Insert(tx);
+		this.Money.InsertAll(
+			new TransactionEntry()
+			{
+				TransactionId = tx.Id,
+				AccountId = this.account.Id,
+				AssetId = this.msft.Id,
+				Amount = -5,
+			});
+
+		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
+		Assert.NotNull(txVm);
+		Assert.Equal(TransactionAction.Remove, txVm.AutoDetectedAction);
+	}
+
+	[Fact]
 	public void ExchangeSecurity_WithinAccount()
 	{
 		InvestingTransactionViewModel exchange = this.account.Transactions[^1];

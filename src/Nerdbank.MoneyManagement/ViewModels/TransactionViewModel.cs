@@ -273,6 +273,7 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		}
 
 		int currencyDeposits = 0, currencyWithdrawals = 0, currencyCategories = 0, categories = 0;
+		int securityDeposits = 0, securityWithdrawals = 0;
 		foreach (TransactionEntryViewModel entry in this.Entries)
 		{
 			if (entry.Asset is null || entry.Account is null)
@@ -303,6 +304,23 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 					}
 				}
 			}
+
+			if (entry.Asset.Type == Asset.AssetType.Security)
+			{
+				if (entry.Amount > 0)
+				{
+					securityDeposits++;
+				}
+				else if (entry.Amount < 0)
+				{
+					securityWithdrawals++;
+				}
+			}
+		}
+
+		if (this.Transaction.RelatedAssetId is not null && currencyDeposits == 1 && this.Entries.Count == 1)
+		{
+			return TransactionAction.Dividend;
 		}
 
 		if (currencyDeposits == 1 && currencyCategories == this.Entries.Count - 1)
@@ -318,6 +336,31 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		if (this.Entries.Count >= 2 && categories == 0 && HasAtLeastTwoUniqueAccounts() && ExactlyOneAsset())
 		{
 			return TransactionAction.Transfer;
+		}
+
+		if (currencyWithdrawals == 1 && securityDeposits == 1 && currencyCategories <= 1)
+		{
+			return TransactionAction.Buy;
+		}
+
+		if (currencyDeposits == 1 && securityWithdrawals == 1 && currencyCategories <= 1)
+		{
+			return TransactionAction.Sell;
+		}
+
+		if (securityDeposits > 0 && securityWithdrawals > 0)
+		{
+			return TransactionAction.Exchange;
+		}
+
+		if (securityDeposits == 1 && this.Entries.Count == 1)
+		{
+			return TransactionAction.Add;
+		}
+
+		if (securityWithdrawals == 1 && this.Entries.Count == 1)
+		{
+			return TransactionAction.Remove;
 		}
 
 		return TransactionAction.Unspecified;

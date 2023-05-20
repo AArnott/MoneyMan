@@ -45,6 +45,7 @@ public enum TransactionAction
 	/// </summary>
 	/// <remarks>
 	/// Used in an investment transaction that has one entry that withdraws currency from an account, and another entry that adds a security to an account.
+	/// A third entry that assigns a portion of the withdrawn currency to a category (for a commission) is also allowed.
 	/// </remarks>
 	Buy,
 
@@ -53,6 +54,7 @@ public enum TransactionAction
 	/// </summary>
 	/// <remarks>
 	/// Used in an investment transaction that has one entry that withdraws a security from an account, and another entry that adds currency to an account.
+	/// A third entry that assigns some of the currency to a category (for a commission) is also allowed.
 	/// </remarks>
 	Sell,
 
