@@ -755,6 +755,12 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.SetProperty(ref this.action, this.Transaction.Action, nameof(this.Action));
 		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Transaction.RelatedAssetId);
 		this.Cleared = this.TopLevelEntries.FirstOrDefault(e => e.Cleared != ClearedState.None)?.Cleared ?? ClearedState.None;
+		if (this.Action == TransactionAction.Unspecified)
+		{
+			// Try to auto-detect it.
+			this.Action = this.GetSuggestedTransactionAction();
+		}
+
 		switch (this.Action)
 		{
 			case TransactionAction.Transfer:
@@ -891,7 +897,7 @@ public class InvestingTransactionViewModel : TransactionViewModel
 			case TransactionAction.Unspecified when this.Entries.Count(e => !e.IsEmpty) == 0:
 				break;
 			default:
-				throw new NotImplementedException("Action is " + this.Action);
+				throw new NotImplementedException($"Action is {this.Action}");
 		}
 
 		if (this.Action == TransactionAction.Add && this.Entries.Count == 1 && this.Entries[0].CreatedTaxLots?.Count == 1)
