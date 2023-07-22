@@ -305,7 +305,7 @@ public class TaxLotSelectionViewModelTests : MoneyTestBase
 			Assert.Equal(1, this.viewModel.ActualAssignments);
 			Assert.True(this.viewModel.Assignments.Count > 1);
 			this.viewModel.ShowAllTaxLots = false;
-			Assert.Equal(1, this.viewModel.Assignments.Count);
+			Assert.Single(this.viewModel.Assignments);
 			this.viewModel.ShowAllTaxLots = true;
 			Assert.True(this.viewModel.Assignments.Count > 1);
 		}

@@ -240,7 +240,7 @@ public class BankingTransactionViewModelTests : MoneyTestBase
 		this.viewModel.DeleteSplit(split1);
 		Assert.Equal(2, this.viewModel.Splits.Count);
 		this.viewModel.DeleteSplit(split2);
-		Assert.Equal(0, this.viewModel.Splits.Count); // jump to zero since the only remaining split was provisionary
+		Assert.Empty(this.viewModel.Splits); // jump to zero since the only remaining split was provisionary
 	}
 
 	[Fact]

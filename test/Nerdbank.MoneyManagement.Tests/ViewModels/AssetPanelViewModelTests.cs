@@ -232,7 +232,7 @@ public class AssetPanelViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.ViewModel.AssetPrices.Count);
 
 		await this.ViewModel.DeletePriceCommand.ExecuteAsync();
-		Assert.Equal(1, this.ViewModel.AssetPrices.Count);
+		Assert.Single(this.ViewModel.AssetPrices);
 		Assert.Null(this.ViewModel.SelectedAssetPrice);
 
 		Assert.False(this.ViewModel.AssetPrices[0].IsPersisted);
@@ -248,7 +248,7 @@ public class AssetPanelViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.ViewModel.AssetPrices.Count);
 
 		await this.ViewModel.DeletePriceCommand.ExecuteAsync();
-		Assert.Equal(1, this.ViewModel.AssetPrices.Count);
+		Assert.Single(this.ViewModel.AssetPrices);
 
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		Assert.Equal(2, this.ViewModel.AssetPrices.Count);
