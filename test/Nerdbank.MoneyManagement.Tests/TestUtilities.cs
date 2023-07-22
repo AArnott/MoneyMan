@@ -39,7 +39,7 @@ internal static class TestUtilities
 			trigger();
 			if (args is null)
 			{
-				Assert.True(false, "Expected event was not raised.");
+				Assert.Fail("Expected event was not raised.");
 			}
 
 			return args!;
