@@ -10,6 +10,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 	private const string SecuritiesDataFileName = "securities.qif";
 	private const string RealWorldSamplesDataFileName = "RealWorldSamples.qif";
 	private const string BankAndInvestmentTransactionsDataFileName = "BankAndInvestmentTransactions.qif";
+	private const string TransfersDataFileName = "Transfers.qif";
 	private QifAdapter adapter;
 
 	public QifAdapterFacts(ITestOutputHelper logger)
@@ -112,6 +113,65 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Null(myHouse.Transactions[0].OtherAccount);
 		Assert.Equal(-1_000, myHouse.Transactions[1].Amount);
 		Assert.Equal("Mortgage Payment", myHouse.Transactions[1].OtherAccount?.Name);
+	}
+
+	[Fact]
+	public async Task Transfers()
+	{
+		await this.ImportAsync(TransfersDataFileName);
+		BankingAccountViewModel checking = Assert.IsType<BankingAccountViewModel>(this.DocumentViewModel.GetAccount("Checking"));
+		InvestingAccountViewModel brokerage1 = Assert.IsType<InvestingAccountViewModel>(this.DocumentViewModel.GetAccount("Brokerage 1"));
+		InvestingAccountViewModel brokerage2 = Assert.IsType<InvestingAccountViewModel>(this.DocumentViewModel.GetAccount("Brokerage 2"));
+		AssetViewModel? msft = this.DocumentViewModel.AssetsPanel.FindAsset("Microsoft Corp");
+		Assert.NotNull(msft);
+
+		// Checking account assertions
+		Assert.Equal(2, checking.Transactions.Count(t => t.IsPersisted));
+		Assert.Equal(100, checking.Transactions[0].Amount);
+		Assert.Equal(-80, checking.Transactions[1].Amount);
+		Assert.Same(brokerage1, checking.Transactions[1].OtherAccount);
+		IReadOnlyDictionary<int, decimal> balances = this.Money.GetBalances(checking);
+		Assert.Equal(20m, balances[checking.CurrencyAsset!.Id]);
+
+		// Brokerage 1 account assertions
+		Assert.Equal(4, brokerage1.Transactions.Count(t => t.IsPersisted));
+
+		Assert.Equal(TransactionAction.Transfer, brokerage1.Transactions[0].Action);
+		Assert.Equal(80, brokerage1.Transactions[0].DepositAmount);
+		Assert.Same(checking, brokerage1.Transactions[0].WithdrawAccount);
+
+		Assert.Equal(TransactionAction.Buy, brokerage1.Transactions[1].Action);
+		Assert.Equal(2, brokerage1.Transactions[1].DepositAmount);
+
+		Assert.Equal(TransactionAction.Transfer, brokerage1.Transactions[2].Action);
+		Assert.Equal(1, brokerage1.Transactions[2].WithdrawAmount);
+		Assert.Same(msft, brokerage1.Transactions[2].WithdrawAsset);
+		Assert.Same(brokerage2, brokerage1.Transactions[2].DepositAccount);
+
+		Assert.Equal(TransactionAction.Transfer, brokerage1.Transactions[3].Action);
+		Assert.Equal(10, brokerage1.Transactions[3].WithdrawAmount);
+		Assert.Equal(10, brokerage1.Transactions[3].DepositAmount);
+		Assert.Same(brokerage2, brokerage1.Transactions[3].DepositAccount);
+
+		balances = this.Money.GetBalances(brokerage1);
+		Assert.Equal(10m, balances[brokerage1.CurrencyAsset!.Id]);
+		Assert.Equal(1, balances[msft.Id]);
+
+		// Brokerage 2 account assertions
+		Assert.Equal(2, brokerage2.Transactions.Count(t => t.IsPersisted));
+
+		Assert.Equal(TransactionAction.Transfer, brokerage2.Transactions[0].Action);
+		Assert.Equal(1, brokerage2.Transactions[0].DepositAmount);
+		Assert.Same(msft, brokerage2.Transactions[0].DepositAsset);
+		Assert.Same(brokerage1, brokerage2.Transactions[0].WithdrawAccount);
+
+		Assert.Equal(TransactionAction.Transfer, brokerage2.Transactions[1].Action);
+		Assert.Equal(10, brokerage2.Transactions[1].DepositAmount);
+		Assert.Same(brokerage1, brokerage2.Transactions[1].WithdrawAccount);
+
+		balances = this.Money.GetBalances(brokerage2);
+		Assert.Equal(10m, balances[brokerage2.CurrencyAsset!.Id]);
+		Assert.Equal(1, balances[msft.Id]);
 	}
 
 	[Fact]
@@ -259,6 +319,7 @@ public class QifAdapterFacts : AdapterTestBase<QifAdapter>
 		Assert.Equal("USD Coin (USDC)", tx.SimpleAsset?.Name);
 		Assert.Equal(TransactionAction.Remove, tx.Action);
 		Assert.Equal(ClearedState.Reconciled, tx.Cleared);
+		Assert.Equal("Xfr To: Brokerage 2", tx.Memo);
 
 		tx = brokerage.Transactions[transactionCounter++];
 		Assert.Equal(new DateTime(2021, 4, 11), tx.When);
