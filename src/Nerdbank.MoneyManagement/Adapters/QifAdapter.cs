@@ -405,7 +405,7 @@ public class QifAdapter : IFileAdapter
 
 					break;
 				case InvestmentTransaction.Actions.Cash:
-					newTransaction.Action = TransactionAction.Deposit;
+					newTransaction.Action = importingTransaction.TransactionAmount < 0 ? TransactionAction.Withdraw : TransactionAction.Deposit;
 					if (importingTransaction is not { TransactionAmount: not null })
 					{
 						LogIncompleteTransaction();
