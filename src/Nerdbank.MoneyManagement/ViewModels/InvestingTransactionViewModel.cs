@@ -755,6 +755,12 @@ public class InvestingTransactionViewModel : TransactionViewModel
 		this.SetProperty(ref this.action, this.Transaction.Action, nameof(this.Action));
 		this.RelatedAsset = this.ThisAccount.DocumentViewModel.GetAsset(this.Transaction.RelatedAssetId);
 		this.Cleared = this.TopLevelEntries.FirstOrDefault(e => e.Cleared != ClearedState.None)?.Cleared ?? ClearedState.None;
+		if (this.Action == TransactionAction.Unspecified)
+		{
+			// Try to auto-detect it.
+			this.Action = this.GetSuggestedTransactionAction();
+		}
+
 		switch (this.Action)
 		{
 			case TransactionAction.Transfer:
@@ -856,18 +862,42 @@ public class InvestingTransactionViewModel : TransactionViewModel
 				break;
 			case TransactionAction.Remove:
 			case TransactionAction.Withdraw:
-				Assumes.True(this.Entries.Count == 1);
-				this.WithdrawAccount = this.Entries[0].Account;
-				this.WithdrawAmountWithValidation = Math.Abs(this.Entries[0].Amount);
-				this.WithdrawAsset = this.Entries[0].Asset;
-				this.DepositAccount = null;
-				this.DepositAmountWithValidation = null;
-				this.DepositAsset = null;
+				TransactionEntryViewModel? securityRemoveEntry = null;
+				categoryEntry = null;
+				foreach (TransactionEntryViewModel entry in this.Entries)
+				{
+					if (entry.Account?.Id == this.ThisAccount.Id)
+					{
+						if (securityRemoveEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with this account.");
+						}
+
+						securityRemoveEntry = entry;
+					}
+					else
+					{
+						if (categoryEntry is not null)
+						{
+							throw new NotSupportedException("Too many transaction entries associated with another account.");
+						}
+
+						categoryEntry = entry;
+					}
+				}
+
+				Assumes.NotNull(securityRemoveEntry); // we wouldn't see this transaction at all if it didn't have an entry linked to this account.
+				this.WithdrawAccount = securityRemoveEntry.Account;
+				this.WithdrawAmountWithValidation = Math.Abs(securityRemoveEntry.Amount);
+				this.WithdrawAsset = securityRemoveEntry.Asset;
+				this.DepositAccount = categoryEntry?.Account;
+				this.DepositAmountWithValidation = categoryEntry is not null ? Math.Abs(categoryEntry.Amount) : null;
+				this.DepositAsset = categoryEntry?.Asset;
 				break;
 			case TransactionAction.Unspecified when this.Entries.Count(e => !e.IsEmpty) == 0:
 				break;
 			default:
-				throw new NotImplementedException("Action is " + this.Action);
+				throw new NotImplementedException($"Action is {this.Action}");
 		}
 
 		if (this.Action == TransactionAction.Add && this.Entries.Count == 1 && this.Entries[0].CreatedTaxLots?.Count == 1)
