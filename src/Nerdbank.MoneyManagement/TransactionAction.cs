@@ -81,6 +81,7 @@ public enum TransactionAction
 	/// <remarks>
 	/// Used in a banking transaction that has one entry that adds currency to an account.
 	/// TODO: consider removing this as it is not significantly different from a special case of <see cref="Deposit"/> where the negative amount entry is to a category named "Interest" or similar.
+	///       But first we'll have to support setting categories for investment transactions in the view model.
 	/// </remarks>
 	Interest,
 

@@ -34,8 +34,6 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		this.RegisterDependentProperty(nameof(this.IsPersisted), nameof(this.TransactionId));
 	}
 
-	public TransactionAction AutoDetectedAction => this.DetectTransactionAction();
-
 	/// <summary>
 	/// Gets the account this transaction was created to be displayed within.
 	/// </summary>
@@ -98,6 +96,147 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		}
 
 		this.IsDirty = false;
+	}
+
+	/// <summary>
+	/// Gets a suggestion for the value of <see cref="Transaction.Action" />.
+	/// </summary>
+	/// <returns>The suggested value.</returns>
+	public TransactionAction GetSuggestedTransactionAction()
+	{
+		if (this.Entries.Count == 0)
+		{
+			return TransactionAction.Unspecified;
+		}
+
+		int currencyDeposits = 0, currencyWithdrawals = 0, currencyCategories = 0, categories = 0;
+		int securityDeposits = 0, securityWithdrawals = 0;
+		foreach (TransactionEntryViewModel entry in this.Entries)
+		{
+			if (entry.Asset is null || entry.Account is null)
+			{
+				continue;
+			}
+
+			if (entry.Account.Type == Account.AccountType.Category)
+			{
+				categories++;
+			}
+
+			if (entry.Asset.Type == Asset.AssetType.Currency)
+			{
+				if (entry.Account.Type == Account.AccountType.Category)
+				{
+					currencyCategories++;
+				}
+				else
+				{
+					if (entry.Amount > 0)
+					{
+						currencyDeposits++;
+					}
+					else if (entry.Amount < 0)
+					{
+						currencyWithdrawals++;
+					}
+				}
+			}
+
+			if (entry.Asset.Type == Asset.AssetType.Security)
+			{
+				if (entry.Amount > 0)
+				{
+					securityDeposits++;
+				}
+				else if (entry.Amount < 0)
+				{
+					securityWithdrawals++;
+				}
+			}
+		}
+
+		if (this.Transaction.RelatedAssetId is not null && currencyDeposits == 1 && this.Entries.Count == 1)
+		{
+			return TransactionAction.Dividend;
+		}
+
+		if (currencyDeposits == 1 && currencyCategories == this.Entries.Count - 1)
+		{
+			return TransactionAction.Deposit;
+		}
+
+		if (currencyWithdrawals == 1 && currencyCategories == this.Entries.Count - 1)
+		{
+			return TransactionAction.Withdraw;
+		}
+
+		if (this.Entries.Count >= 2 && categories == 0 && HasAtLeastTwoUniqueAccounts() && ExactlyOneAsset())
+		{
+			return TransactionAction.Transfer;
+		}
+
+		if (currencyWithdrawals == 1 && securityDeposits == 1 && currencyCategories <= 1)
+		{
+			return TransactionAction.Buy;
+		}
+
+		if (currencyDeposits == 1 && securityWithdrawals == 1 && currencyCategories <= 1)
+		{
+			return TransactionAction.Sell;
+		}
+
+		if (securityDeposits > 0 && securityWithdrawals > 0)
+		{
+			return TransactionAction.Exchange;
+		}
+
+		if (securityDeposits == 1 && this.Entries.Count == 1)
+		{
+			return TransactionAction.Add;
+		}
+
+		if (securityWithdrawals == 1 && this.Entries.Count == 1)
+		{
+			return TransactionAction.Remove;
+		}
+
+		return TransactionAction.Unspecified;
+
+		bool HasAtLeastTwoUniqueAccounts()
+		{
+			Account? account = null;
+			foreach (TransactionEntryViewModel entry in this.Entries)
+			{
+				if (account is null)
+				{
+					account = entry.Account;
+				}
+				else if (account != entry.Account)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		bool ExactlyOneAsset()
+		{
+			Asset? asset = null;
+			foreach (TransactionEntryViewModel entry in this.Entries)
+			{
+				if (asset is null)
+				{
+					asset = entry.Asset;
+				}
+				else if (asset != entry.Asset)
+				{
+					return false;
+				}
+			}
+
+			return asset is not null;
+		}
 	}
 
 	void ISelectableView.Select()
@@ -263,143 +402,6 @@ public abstract class TransactionViewModel : EntityViewModel, ISelectableView
 		}
 
 		entries.CollectionChanged += this.Entries_CollectionChanged;
-	}
-
-	private TransactionAction DetectTransactionAction()
-	{
-		if (this.Entries.Count == 0)
-		{
-			return TransactionAction.Unspecified;
-		}
-
-		int currencyDeposits = 0, currencyWithdrawals = 0, currencyCategories = 0, categories = 0;
-		int securityDeposits = 0, securityWithdrawals = 0;
-		foreach (TransactionEntryViewModel entry in this.Entries)
-		{
-			if (entry.Asset is null || entry.Account is null)
-			{
-				continue;
-			}
-
-			if (entry.Account.Type == Account.AccountType.Category)
-			{
-				categories++;
-			}
-
-			if (entry.Asset.Type == Asset.AssetType.Currency)
-			{
-				if (entry.Account.Type == Account.AccountType.Category)
-				{
-					currencyCategories++;
-				}
-				else
-				{
-					if (entry.Amount > 0)
-					{
-						currencyDeposits++;
-					}
-					else if (entry.Amount < 0)
-					{
-						currencyWithdrawals++;
-					}
-				}
-			}
-
-			if (entry.Asset.Type == Asset.AssetType.Security)
-			{
-				if (entry.Amount > 0)
-				{
-					securityDeposits++;
-				}
-				else if (entry.Amount < 0)
-				{
-					securityWithdrawals++;
-				}
-			}
-		}
-
-		if (this.Transaction.RelatedAssetId is not null && currencyDeposits == 1 && this.Entries.Count == 1)
-		{
-			return TransactionAction.Dividend;
-		}
-
-		if (currencyDeposits == 1 && currencyCategories == this.Entries.Count - 1)
-		{
-			return TransactionAction.Deposit;
-		}
-
-		if (currencyWithdrawals == 1 && currencyCategories == this.Entries.Count - 1)
-		{
-			return TransactionAction.Withdraw;
-		}
-
-		if (this.Entries.Count >= 2 && categories == 0 && HasAtLeastTwoUniqueAccounts() && ExactlyOneAsset())
-		{
-			return TransactionAction.Transfer;
-		}
-
-		if (currencyWithdrawals == 1 && securityDeposits == 1 && currencyCategories <= 1)
-		{
-			return TransactionAction.Buy;
-		}
-
-		if (currencyDeposits == 1 && securityWithdrawals == 1 && currencyCategories <= 1)
-		{
-			return TransactionAction.Sell;
-		}
-
-		if (securityDeposits > 0 && securityWithdrawals > 0)
-		{
-			return TransactionAction.Exchange;
-		}
-
-		if (securityDeposits == 1 && this.Entries.Count == 1)
-		{
-			return TransactionAction.Add;
-		}
-
-		if (securityWithdrawals == 1 && this.Entries.Count == 1)
-		{
-			return TransactionAction.Remove;
-		}
-
-		return TransactionAction.Unspecified;
-
-		bool HasAtLeastTwoUniqueAccounts()
-		{
-			Account? account = null;
-			foreach (TransactionEntryViewModel entry in this.Entries)
-			{
-				if (account is null)
-				{
-					account = entry.Account;
-				}
-				else if (account != entry.Account)
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		bool ExactlyOneAsset()
-		{
-			Asset? asset = null;
-			foreach (TransactionEntryViewModel entry in this.Entries)
-			{
-				if (asset is null)
-				{
-					asset = entry.Asset;
-				}
-				else if (asset != entry.Asset)
-				{
-					return false;
-				}
-			}
-
-			return asset is not null;
-		}
 	}
 
 	[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]

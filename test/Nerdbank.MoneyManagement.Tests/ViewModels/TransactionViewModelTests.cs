@@ -28,21 +28,21 @@ public class TransactionViewModelTests : MoneyTestBase
 	}
 
 	[Theory, PairwiseData]
-	public void AutoDetectedAction_Deposit([CombinatorialRange(0, 2)] int assignedCategories)
+	public void GetSuggestedTransactionAction_Deposit([CombinatorialRange(0, 2)] int assignedCategories)
 	{
 		TransactionViewModel tx = this.CreateDepositTransaction(this.account, assignedCategories);
-		Assert.Equal(TransactionAction.Deposit, tx.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Deposit, tx.GetSuggestedTransactionAction());
 	}
 
 	[Theory, PairwiseData]
-	public void AutoDetectedAction_Withdraw([CombinatorialRange(0, 2)] int assignedCategories)
+	public void GetSuggestedTransactionAction_Withdraw([CombinatorialRange(0, 2)] int assignedCategories)
 	{
 		TransactionViewModel tx = this.CreateWithdrawTransaction(this.account, assignedCategories);
-		Assert.Equal(TransactionAction.Withdraw, tx.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Withdraw, tx.GetSuggestedTransactionAction());
 	}
 
 	[Theory, PairwiseData]
-	public void AutoDetectedAction_Transfer(bool security)
+	public void GetSuggestedTransactionAction_Transfer(bool security)
 	{
 		Asset asset = security ? this.msft : this.checking.CurrencyAsset!;
 		Transaction tx = new()
@@ -69,11 +69,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
 		Assert.NotNull(txVm);
-		Assert.Equal(TransactionAction.Transfer, txVm.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Transfer, txVm.GetSuggestedTransactionAction());
 	}
 
 	[Fact]
-	public void AutoDetectedAction_Buy()
+	public void GetSuggestedTransactionAction_Buy()
 	{
 		Transaction tx = new()
 		{
@@ -99,11 +99,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
 		Assert.NotNull(txVm);
-		Assert.Equal(TransactionAction.Buy, txVm.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Buy, txVm.GetSuggestedTransactionAction());
 	}
 
 	[Fact]
-	public void AutoDetectedAction_Sell()
+	public void GetSuggestedTransactionAction_Sell()
 	{
 		Transaction tx = new()
 		{
@@ -129,11 +129,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
 		Assert.NotNull(txVm);
-		Assert.Equal(TransactionAction.Sell, txVm.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Sell, txVm.GetSuggestedTransactionAction());
 	}
 
 	[Fact]
-	public void AutoDetectedAction_Exchange()
+	public void GetSuggestedTransactionAction_Exchange()
 	{
 		Transaction tx = new()
 		{
@@ -159,11 +159,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
 		Assert.NotNull(txVm);
-		Assert.Equal(TransactionAction.Exchange, txVm.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Exchange, txVm.GetSuggestedTransactionAction());
 	}
 
 	[Fact]
-	public void AutoDetectedAction_Dividend()
+	public void GetSuggestedTransactionAction_Dividend()
 	{
 		Transaction tx = new()
 		{
@@ -183,11 +183,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
 		Assert.NotNull(txVm);
-		Assert.Equal(TransactionAction.Dividend, txVm.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Dividend, txVm.GetSuggestedTransactionAction());
 	}
 
 	[Fact]
-	public void AutoDetectedAction_Add()
+	public void GetSuggestedTransactionAction_Add()
 	{
 		Transaction tx = new()
 		{
@@ -207,11 +207,11 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
 		Assert.NotNull(txVm);
-		Assert.Equal(TransactionAction.Add, txVm.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Add, txVm.GetSuggestedTransactionAction());
 	}
 
 	[Fact]
-	public void AutoDetectedAction_Remove()
+	public void GetSuggestedTransactionAction_Remove()
 	{
 		Transaction tx = new()
 		{
@@ -231,7 +231,7 @@ public class TransactionViewModelTests : MoneyTestBase
 
 		TransactionViewModel? txVm = this.account.FindTransaction(tx.Id);
 		Assert.NotNull(txVm);
-		Assert.Equal(TransactionAction.Remove, txVm.AutoDetectedAction);
+		Assert.Equal(TransactionAction.Remove, txVm.GetSuggestedTransactionAction());
 	}
 
 	private TransactionViewModel CreateDepositTransaction(AccountViewModel account, int assignedCategories)
