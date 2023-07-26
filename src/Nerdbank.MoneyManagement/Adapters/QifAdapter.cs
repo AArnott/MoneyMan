@@ -2,6 +2,7 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft;
 using Nerdbank.MoneyManagement.ViewModels;
@@ -276,7 +277,7 @@ public class QifAdapter : IFileAdapter
 		List<(Transaction, TransactionEntry)> newEntryTuples = new();
 		foreach (BankTransaction importingTransaction in transactions)
 		{
-			Account? transferAccount = this.FindTransferAccountId(importingTransaction.Category);
+			Account? transferAccount = this.FindTransferAccount(importingTransaction.Category);
 			if (transferAccount is not null && transferAccount.Type != Account.AccountType.Category && importingTransaction.Amount >= 0 && target.Id != transferAccount.Id)
 			{
 				// When it comes to transfers, skip importing the transaction on the receiving side
@@ -335,7 +336,7 @@ public class QifAdapter : IFileAdapter
 				{
 					int? categoryId =
 						split.Category is not null && this.categories.TryGetValue(split.Category, out Account? category) ? category.Id :
-						this.FindTransferAccountId(split.Category)?.Id;
+						this.FindTransferAccount(split.Category)?.Id;
 					if (categoryId.HasValue && split.Amount.HasValue)
 					{
 						TransactionEntry categoryEntry = new()
@@ -375,9 +376,17 @@ public class QifAdapter : IFileAdapter
 			TransactionEntry? newEntry1, newEntry2, newEntry3;
 			switch (importingTransaction.Action)
 			{
-				case InvestmentTransaction.Actions.XOut or InvestmentTransaction.Actions.XIn or InvestmentTransaction.Actions.WithdrwX or InvestmentTransaction.Actions.ContribX:
+				case InvestmentTransaction.Actions.XIn:
+					// When it comes to transfers, skip importing the transaction on the receiving side
+					// so that we don't end up importing them on both ends and ending up with duplicates.
+					// For splits with transfers it's even more important to drop the receiving side because
+					// when it comes to paychecks, there is just one sender and many receiving accounts.
+					// QIF only expresses the split on one account, so we always import a transaction with splits.
+					// We get that for free because splits don't (tend to?) have transfer accounts mentioned in the Category.
+					continue;
+				case InvestmentTransaction.Actions.XOut or InvestmentTransaction.Actions.WithdrwX or InvestmentTransaction.Actions.ContribX:
 					newTransaction.Action = TransactionAction.Transfer;
-					Account? transferAccount = this.FindTransferAccountId(importingTransaction.AccountForTransfer);
+					Account? transferAccount = this.FindTransferAccount(importingTransaction.AccountForTransfer);
 					Verify.Operation(transferAccount is { CurrencyAssetId: not null }, "Transfer account isn't recognized or has not set a currency: {0}", importingTransaction.AccountForTransfer);
 					Verify.Operation(importingTransaction.AmountTransferred is not null, "The transfer amount is unspecified.");
 
@@ -421,11 +430,16 @@ public class QifAdapter : IFileAdapter
 					newEntryTuples.Add((newTransaction, newEntry1));
 
 					// Our view model doesn't support categories on deposits yet.
-					if (this.FindCategoryId(importingTransaction.AccountForTransfer) is int categoryId)
+					if ((transferAccount = this.FindTransferAccount(importingTransaction.AccountForTransfer)) is not null)
 					{
+						if (transferAccount.Type != Account.AccountType.Category)
+						{
+							newTransaction.Action = TransactionAction.Transfer;
+						}
+
 						newEntry2 = new()
 						{
-							AccountId = categoryId,
+							AccountId = transferAccount.Id,
 							Amount = -importingTransaction.TransactionAmount.Value,
 							AssetId = target.CurrencyAssetId.Value,
 						};
@@ -436,7 +450,7 @@ public class QifAdapter : IFileAdapter
 				case InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell or InvestmentTransaction.Actions.BuyX or InvestmentTransaction.Actions.SellX:
 					newTransaction.Action = TransactionAction.Buy;
 					transferAccount = importingTransaction.Action is InvestmentTransaction.Actions.Buy or InvestmentTransaction.Actions.Sell ?
-						target : this.FindTransferAccountId(importingTransaction.AccountForTransfer);
+						target : this.FindTransferAccount(importingTransaction.AccountForTransfer);
 					Verify.Operation(transferAccount is not null, "Transfer account not known.");
 					if (importingTransaction is not { Quantity: not null, TransactionAmount: not null, Security: not null })
 					{
@@ -572,6 +586,12 @@ public class QifAdapter : IFileAdapter
 
 					break;
 				case InvestmentTransaction.Actions.ShrsIn:
+					if (TryGetTransferOtherAccount(out Account? otherAccount))
+					{
+						// Skip transfers IN to avoid double-accounting.
+						continue;
+					}
+
 					newTransaction.Action = TransactionAction.Add;
 					if (importingTransaction is not { Quantity: not null, Security: not null })
 					{
@@ -605,6 +625,19 @@ public class QifAdapter : IFileAdapter
 						AssetId = asset.Id,
 					};
 					newEntryTuples.Add((newTransaction, newEntry1));
+
+					// If we can recognize where the shares went, make this a transfer.
+					if (TryGetTransferOtherAccount(out transferAccount))
+					{
+						newTransaction.Action = TransactionAction.Transfer;
+						newEntry2 = new()
+						{
+							AccountId = transferAccount.Id,
+							Amount = importingTransaction.Quantity.Value,
+							AssetId = asset.Id,
+						};
+						newEntryTuples.Add((newTransaction, newEntry2));
+					}
 
 					break;
 				case InvestmentTransaction.Actions.ShtSell:
@@ -691,6 +724,28 @@ public class QifAdapter : IFileAdapter
 			}
 
 			void LogIncompleteTransaction() => this.TraceSource.TraceEvent(TraceEventType.Warning, 0, "Skipping transaction in account \"{0}\" because it is missing required fields: {1}", target.Name, importingTransaction);
+			bool TryGetTransferOtherAccount([NotNullWhen(true)] out Account? account)
+			{
+				const string xfrToPrefix = "Xfr To: ";
+				const string xfrFromPrefix = "Xfr From: ";
+				string accountName;
+				if (importingTransaction.Memo?.StartsWith(xfrToPrefix, StringComparison.OrdinalIgnoreCase) is true)
+				{
+					accountName = importingTransaction.Memo.Substring(xfrToPrefix.Length);
+				}
+				else if (importingTransaction.Memo?.StartsWith(xfrFromPrefix, StringComparison.OrdinalIgnoreCase) is true)
+				{
+					accountName = importingTransaction.Memo.Substring(xfrFromPrefix.Length);
+				}
+				else
+				{
+					account = null;
+					return false;
+				}
+
+				account = this.moneyFile.Accounts.FirstOrDefault(a => a.Name == accountName);
+				return account is not null;
+			}
 
 			newTransactions.Add(newTransaction);
 			transactionsImported++;
@@ -726,7 +781,12 @@ public class QifAdapter : IFileAdapter
 		return category is not null && this.categories.TryGetValue(category, out Account? account) ? account.Id : null;
 	}
 
-	private Account? FindTransferAccountId(string? categoryOrAccountName)
+	/// <summary>
+	/// Searches for an account matching a category or account name.
+	/// </summary>
+	/// <param name="categoryOrAccountName">The name of a category or an [account]. Accounts are only matched when surrounded by brackets.</param>
+	/// <returns>The matching account, if any.</returns>
+	private Account? FindTransferAccount(string? categoryOrAccountName)
 	{
 		if (categoryOrAccountName is not null)
 		{
