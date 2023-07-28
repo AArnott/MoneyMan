@@ -190,6 +190,12 @@ NChecking
 TBank
 ^
 !Type:Bank
+D10/ 4' 6
+U-500.00
+T-500.00
+CX
+L[Brokerage]
+^
 D1/ 4' 8
 U1,000.00
 T1,000.00

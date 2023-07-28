@@ -1,0 +1,82 @@
+!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+NBrokerage 1
+TPort
+^
+NBrokerage 2
+TPort
+^
+!Clear:AutoSwitch
+!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+!Type:Bank 
+D7/20'23
+U100.00
+T100.00
+CX
+^
+D7/21'23
+U-80.00
+T-80.00
+L[Brokerage 1]
+^
+!Account
+NBrokerage 1
+TInvst
+^
+!Type:Invst
+D7/21'23
+NXIn
+U80.00
+T80.00
+L[Checking]
+$80.00
+^
+D7/22'23
+NBuy
+YMicrosoft Corp
+I30
+Q2
+U60.00
+T60.00
+^
+D7/23'23
+NShrsOut
+YMicrosoft Corp
+Q1
+MXfr To: Brokerage 2
+^
+D7/24'23
+NCash
+U-10.00
+T-10.00
+L[Brokerage 2]
+^
+!Account
+NBrokerage 2
+TInvst
+^
+!Type:Invst
+D7/23'23
+NShrsIn
+YMicrosoft Corp
+I30
+Q1
+U30.00
+T30.00
+MXfr From: Brokerage 1
+^
+D7/24'23
+NXIn
+PSome Payee
+U10.00
+T10.00
+L[Brokerage 1]
+$10.00
+^
