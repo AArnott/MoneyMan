@@ -7,15 +7,15 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Threading" Version="17.6.40" />
+    <PackageVersion Include="Microsoft.VisualStudio.Threading" Version="17.10.48" />
     <PackageVersion Include="Nerdbank.Qif" Version="1.0.66-beta" />
-    <PackageVersion Include="OfxNet" Version="1.2.0" />
+    <PackageVersion Include="OfxNet" Version="1.5.0" />
     <PackageVersion Include="PCLCommandBase" Version="0.4.22-alpha" />
-    <PackageVersion Include="sqlite-net-pcl" Version="1.8.116" />
-    <PackageVersion Include="SQLitePCLRaw.bundle_green" Version="2.1.5" />
+    <PackageVersion Include="sqlite-net-pcl" Version="1.9.172" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_green" Version="2.1.8" />
     <PackageVersion Include="Squirrel.Windows" Version="2.0.2-netcore.3" />
     <PackageVersion Include="Validation" Version="2.5.51" />
-    <PackageVersion Include="Xunit.Combinatorial" Version="1.5.25" />
+    <PackageVersion Include="Xunit.Combinatorial" Version="1.6.24" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="xunit.stafact" Version="1.1.11" />
     <PackageVersion Include="xunit" Version="2.9.0" />
