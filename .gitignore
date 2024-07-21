@@ -353,5 +353,8 @@ MigrationBackup/
 # mac-created file to track user view preferences for a directory
 .DS_Store
 
+# Analysis results
+*.sarif
+
 # Our own data files, which for interactive test purposes may end up in our directory
 *.moneyman
