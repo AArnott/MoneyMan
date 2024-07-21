@@ -52,7 +52,11 @@ internal class TaxLotBookKeeping
 			List<ConsumedTaxLot> consumedTaxLots = this.moneyFile.ConsumedTaxLots.Where(tla => tla.ConsumingTransactionEntryId == fromEntry.Id).ToList();
 
 			// Add or remove tax lots created by this transfer till the count of tax lots created equal the number of tax lots consumed.
-			transactionEntryViewModel.CreatedTaxLots.AddRange(Enumerable.Range(0, consumedTaxLots.Count - transactionEntryViewModel.CreatedTaxLots.Count).Select(_ => CreateTaxLot()));
+			for (int i = 0; i <= consumedTaxLots.Count - transactionEntryViewModel.CreatedTaxLots.Count; i++)
+			{
+				CreateTaxLot();
+			}
+
 			transactionEntryViewModel.CreatedTaxLots.RemoveRange(consumedTaxLots.Count, transactionEntryViewModel.CreatedTaxLots.Count - consumedTaxLots.Count);
 
 			// Now initialize each created tax lot based on the values of the consumed tax lots.
