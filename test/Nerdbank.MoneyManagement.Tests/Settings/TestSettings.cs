@@ -5,22 +5,22 @@ internal record TestSettings : AppSettings
 {
 	private string? settingsPath;
 
+	public TestSettings()
+	{
+	}
+
 	internal TestSettings(string settingsPath)
 	{
 		this.settingsPath = settingsPath;
 	}
 
-	public TestSettings()
-	{
-	}
+	public int Number { get; init; }
+
+	internal int SaveCount { get; private set; }
 
 	protected override string FileName => "testsettings.json";
 
 	protected override string SettingsPath => this.settingsPath ?? throw new InvalidOperationException("A deserialized instance doesn't know where to serialize again.");
-
-	public int Number { get; init; }
-
-	internal int SaveCount { get; private set; }
 
 	/// <inheritdoc cref="AppSettings.LoadAsync{T}(CancellationToken)"/>
 	public override async ValueTask<T?> LoadAsync<T>(Stream stream, CancellationToken cancellationToken)

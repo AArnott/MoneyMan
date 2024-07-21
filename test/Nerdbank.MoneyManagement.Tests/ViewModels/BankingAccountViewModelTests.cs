@@ -459,7 +459,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		BankingTransactionViewModel tx2 = this.savings!.Transactions[0];
 
 		this.checking.DeleteTransaction(tx1);
-		Assert.Empty(this.savings!.Transactions.Where(tx => tx.IsPersisted));
+		Assert.DoesNotContain(this.savings!.Transactions, tx => tx.IsPersisted);
 	}
 
 	[Fact]
@@ -496,7 +496,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 		Assert.Equal(2, this.savings.Transactions.Count);
 		Assert.Single(this.rainyDay.Transactions);
 		tx1.OtherAccount = cat;
-		Assert.Empty(this.savings.Transactions.Where(t => t.IsPersisted));
+		Assert.DoesNotContain(this.savings.Transactions, t => t.IsPersisted);
 		Assert.Contains(tx1, this.checking.Transactions);
 	}
 
@@ -629,7 +629,7 @@ public class BankingAccountViewModelTests : MoneyTestBase
 
 		this.AssertNowAndAfterReload(delegate
 		{
-			Assert.Empty(this.savings!.Transactions.Where(tx => tx.IsPersisted));
+			Assert.DoesNotContain(this.savings!.Transactions, tx => tx.IsPersisted);
 		});
 	}
 

@@ -538,7 +538,7 @@ public class BankingTransactionViewModel : TransactionViewModel
 			{
 				if (this.transactionViewModel.ThisAccount.DocumentViewModel.UserNotification is { } userNotification && this.transactionViewModel.Splits.Count(s => s.IsPersisted) > 1)
 				{
-					if (!await userNotification.ConfirmAsync("This operation will delete all splits.", defaultConfirm: false))
+					if (!await userNotification.ConfirmAsync("This operation will delete all splits.", defaultConfirm: false, cancellationToken))
 					{
 						return;
 					}

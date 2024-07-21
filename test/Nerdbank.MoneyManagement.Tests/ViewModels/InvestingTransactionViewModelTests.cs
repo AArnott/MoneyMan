@@ -546,7 +546,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(-1, exchange.SimpleAmount);
 		Assert.False(string.IsNullOrEmpty(exchange.Error));
 		this.Logger.WriteLine(exchange.Error);
-		Assert.Empty(exchange.Entries.Where(te => te.Amount != 0));
+		Assert.DoesNotContain(exchange.Entries, te => te.Amount != 0);
 	}
 
 	[Theory]
@@ -731,7 +731,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Equal(10, this.checking.Transactions[0].Balance);
 
 		tx1.SimpleAccount = this.otherAccount;
-		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
+		Assert.DoesNotContain(this.checking.Transactions, t => t.IsPersisted);
 		Assert.Equal(2, this.otherAccount.Transactions.Count);
 		Assert.Contains(tx1, this.account.Transactions);
 	}
@@ -756,7 +756,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.Same(this.checking, investingTx.SimpleAccount);
 		investingTx.SimpleAccount = this.otherAccount;
 
-		Assert.Empty(this.checking.Transactions.Where(t => t.IsPersisted));
+		Assert.DoesNotContain(this.checking.Transactions, t => t.IsPersisted);
 		Assert.Single(this.checking.Transactions);
 		Assert.Equal(2, this.otherAccount.Transactions.Count);
 	}

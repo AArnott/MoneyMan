@@ -2,7 +2,6 @@
 // Licensed under the Ms-PL license. See LICENSE.txt file in the project root for full license information.
 
 using Nerdbank.MoneyManagement.ViewModels;
-using NuGet.Frameworks;
 using SQLite;
 
 /// <summary>
