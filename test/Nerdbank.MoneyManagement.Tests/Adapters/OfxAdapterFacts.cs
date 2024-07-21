@@ -125,7 +125,7 @@ public class OfxAdapterFacts : AdapterTestBase<OfxAdapter>
 		Assert.Equal(3, this.Checking.Transactions.Count(t => t.IsPersisted));
 		await this.DocumentViewModel.UndoCommand.ExecuteAsync();
 		this.RefetchViewModels();
-		Assert.Empty(this.Checking.Transactions.Where(t => t.IsPersisted));
+		Assert.DoesNotContain(this.Checking.Transactions, t => t.IsPersisted);
 		Assert.Equal(DocumentViewModel.SelectableViews.Banking, this.DocumentViewModel.SelectedViewIndex);
 		Assert.Same(this.Checking, this.DocumentViewModel.BankingPanel.SelectedAccount);
 	}
