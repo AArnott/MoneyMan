@@ -723,7 +723,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		Assert.True(tx1.IsReadyToSave);
 		Assert.False(tx1.IsDirty);
 
-		Assert.Single(this.checking.Transactions.Where(t => t.IsPersisted));
+		Assert.Single(this.checking.Transactions, t => t.IsPersisted);
 		Assert.Equal(2, this.checking.Transactions.Count);
 		Assert.Equal(-10, this.checking.Transactions[0].Balance);
 
@@ -747,7 +747,7 @@ public class InvestingTransactionViewModelTests : MoneyTestBase
 		bankingTx.Amount = -10;
 		bankingTx.OtherAccount = this.account;
 
-		Assert.Single(this.account!.Transactions.Where(t => t.IsPersisted));
+		Assert.Single(this.account!.Transactions, t => t.IsPersisted);
 		Assert.Equal(2, this.account.Transactions.Count);
 
 		InvestingTransactionViewModel investingTx = this.account.Transactions[0];
