@@ -10,7 +10,6 @@ using System.Windows.Media;
 using Microsoft;
 using Microsoft.Win32;
 using MoneyMan.ViewModel;
-using Squirrel;
 
 namespace MoneyMan;
 
