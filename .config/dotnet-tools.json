@@ -29,6 +29,13 @@
         "docfx"
       ],
       "rollForward": false
+    },
+    "vpk": {
+      "version": "0.0.942",
+      "commands": [
+        "vpk"
+      ],
+      "rollForward": false
     }
   }
 }

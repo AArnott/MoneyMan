@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Squirrel.Windows" />
+    <PackageReference Include="Velopack" />
   </ItemGroup>
 
   <ItemGroup>
