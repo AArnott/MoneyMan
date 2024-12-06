@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using Squirrel;
+using Velopack;
 
 namespace MoneyMan;
 
@@ -21,13 +21,7 @@ public partial class App : Application
 	public static void Main()
 	{
 		// Note, in most of these scenarios, the app exits after this method completes!
-		using (UpdateManager mgr = CreateUpdateManager(out _))
-		{
-			SquirrelAwareApp.HandleEvents(
-				onInitialInstall: v => mgr.CreateShortcutForThisExe(),
-				onAppUpdate: v => mgr.CreateShortcutForThisExe(),
-				onAppUninstall: v => mgr.RemoveShortcutForThisExe());
-		}
+		VelopackApp.Build().Run();
 
 		App app = new();
 		app.InitializeComponent();
