@@ -2,16 +2,7 @@
 
 A financial money management library and applications that utilize it.
 
-[![Install](https://img.shields.io/badge/prerelease-win--x64-green)](https://moneymanreleases.blob.core.windows.net/releases/prerelease/win-x64/Nerdbank.MoneyMan.Setup.exe)
-[![Install](https://img.shields.io/badge/prerelease-win--arm64-green)](https://moneymanreleases.blob.core.windows.net/releases/prerelease/win-arm64/Nerdbank.MoneyMan.Setup.exe)
-
-[![Install](https://img.shields.io/badge/CI-win--x64-green)](https://moneymanreleases.blob.core.windows.net/releases/main-CI/win-x64/Nerdbank.MoneyMan.Setup.exe)
-[![Install](https://img.shields.io/badge/CI-win--arm64-green)](https://moneymanreleases.blob.core.windows.net/releases/main-CI/win-arm64/Nerdbank.MoneyMan.Setup.exe)
-
-[![Join the chat at https://gitter.im/MoneyManagement/Lobby](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/MoneyManagement/Lobby?utm_source=badge&utm_medium=badge&utm_content=badge)
-
-[![Build Status](https://dev.azure.com/andrewarnott/OSS/_apis/build/status/MoneyMan/MoneyMan?branchName=main)](https://dev.azure.com/andrewarnott/OSS/_build/latest?definitionId=51&branchName=main)
-[![codecov](https://codecov.io/gh/aarnott/moneyman/branch/main/graph/badge.svg)](https://codecov.io/gh/aarnott/moneyman)
+**This repo is no longer being maintained. My current endeavor is [MoneyStream](https://moneystreamapp.com) which is far more polished, works on all 3 desktop OS's and mobile.**
 
 ## Why?
 
